@@ -1,0 +1,130 @@
+# Visual Studio
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+bin/
+obj/
+out/
+
+# Debug / Release folders
+[Bb]in/
+[Oo]bj/
+[Dd]ebug*/
+[Rr]elease*/
+
+# Rider
+.idea/
+
+# NuGet
+*.nupkg
+# Packages folder (if using legacy packages)
+[Pp]ackages/
+!**/[Pp]ackages/build/
+
+# MSBuild
+*.ilk
+*.meta
+*.obj
+*.pch
+*.pdb
+*.idb
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+
+# Visual Studio Code workspace
+.history/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# ASP.NET / IIS
+appsettings*.json
+appsettings.Development.json
+.env
+project.lock.json
+project.fragment.lock.json
+
+# Logs
+*.log
+
+# Rider & ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+_ReSharper.*
+*.DotSettings.user
+
+# Coverage & Test results
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+*.trx
+
+# Publish outputs
+publish/
+*.publishsettings
+
+# Database files
+*.mdf
+*.ldf
+*.sqlite
+*.db
+*.db-shm
+*.db-wal
+
+# OS files
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Node / frontend (if present)
+node_modules/
+npm-debug.log*
+yarn-error.log
+.pnp/
+.pnp.js
+
+# Frontend build artifacts
+dist/
+build/
+wwwroot/lib/
+wwwroot/dist/
+
+# Fonts / binaries that are often large (if you don't want them tracked)
+*.woff
+*.woff2
+*.eot
+*.ttf
+*.otf
+
+# Images / media you may want to ignore (optional)
+# *.png
+# *.jpg
+# *.jpeg
+# *.gif
+# *.mp4
+# *.webm
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# JetBrains Rider caches
+.idea/
+
+# Git LFS placeholder (if using)
+.gitattributes
