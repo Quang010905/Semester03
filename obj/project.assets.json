@@ -1164,7 +1164,6 @@
           }
         }
       },
-<<<<<<< HEAD
       "Microsoft.EntityFrameworkCore/9.0.10": {
         "type": "package",
         "dependencies": {
@@ -1249,12 +1248,6 @@
         "type": "package",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "9.0.10"
-=======
-      "Microsoft.Extensions.DependencyInjection/9.0.0-rc.2.24473.5": {
-        "type": "package",
-        "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "9.0.0-rc.2.24473.5"
->>>>>>> 44c44aedf2f4bd2f46c4de0137320e068c055de3
         },
         "compile": {
           "lib/net9.0/Microsoft.Extensions.DependencyInjection.dll": {
@@ -1270,11 +1263,7 @@
           "buildTransitive/net8.0/_._": {}
         }
       },
-<<<<<<< HEAD
       "Microsoft.Extensions.DependencyInjection.Abstractions/9.0.10": {
-=======
-      "Microsoft.Extensions.DependencyInjection.Abstractions/9.0.0-rc.2.24473.5": {
->>>>>>> 44c44aedf2f4bd2f46c4de0137320e068c055de3
         "type": "package",
         "compile": {
           "lib/net9.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll": {
@@ -1306,7 +1295,6 @@
           "buildTransitive/net8.0/_._": {}
         }
       },
-<<<<<<< HEAD
       "Microsoft.Extensions.Logging/9.0.10": {
         "type": "package",
         "dependencies": {
@@ -1383,8 +1371,6 @@
           "buildTransitive/net8.0/_._": {}
         }
       },
-=======
->>>>>>> 44c44aedf2f4bd2f46c4de0137320e068c055de3
       "Microsoft.NET.StringTools/17.10.4": {
         "type": "package",
         "compile": {
@@ -4132,7 +4118,6 @@
         "microsoft.dotnet.scaffolding.shared.nuspec"
       ]
     },
-<<<<<<< HEAD
     "Microsoft.EntityFrameworkCore/9.0.10": {
       "sha512": "WjjxVyOTVs85V7SUe+lZjtGOEeVzF4RO8amrqL4adgbyThNq7vGCFzPw8buZj44gHeQYD5V/uZ/6XuqG9Jq+kA==",
       "type": "package",
@@ -4238,12 +4223,6 @@
       "sha512": "iEtXCkNd5XhjNJAOb/wO4IhDRdLIE2CsPxZggZQWJ/q2+sa8dmEPC393nnsiqdH8/4KV8Xn25IzgKPR1UEQ0og==",
       "type": "package",
       "path": "microsoft.extensions.dependencyinjection/9.0.10",
-=======
-    "Microsoft.Extensions.DependencyInjection/9.0.0-rc.2.24473.5": {
-      "sha512": "FHb7uxiX/08FBBtwat7fiBdQltxst1Farux6Ifn1dfke+D8h1rcDj1ZbKzNB9SvLh1XmEXNYmoWGkTjt1mVzXg==",
-      "type": "package",
-      "path": "microsoft.extensions.dependencyinjection/9.0.0-rc.2.24473.5",
->>>>>>> 44c44aedf2f4bd2f46c4de0137320e068c055de3
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -4265,26 +4244,15 @@
         "lib/netstandard2.0/Microsoft.Extensions.DependencyInjection.xml",
         "lib/netstandard2.1/Microsoft.Extensions.DependencyInjection.dll",
         "lib/netstandard2.1/Microsoft.Extensions.DependencyInjection.xml",
-<<<<<<< HEAD
         "microsoft.extensions.dependencyinjection.9.0.10.nupkg.sha512",
-=======
-        "microsoft.extensions.dependencyinjection.9.0.0-rc.2.24473.5.nupkg.sha512",
->>>>>>> 44c44aedf2f4bd2f46c4de0137320e068c055de3
         "microsoft.extensions.dependencyinjection.nuspec",
         "useSharedDesignerContext.txt"
       ]
     },
-<<<<<<< HEAD
     "Microsoft.Extensions.DependencyInjection.Abstractions/9.0.10": {
       "sha512": "r9waLiOPe9ZF1PvzUT+RDoHvpMmY8MW+lb4lqjYGObwKpnyPMLI3odVvlmshwuZcdoHynsGWOrCPA0hxZ63lIA==",
       "type": "package",
       "path": "microsoft.extensions.dependencyinjection.abstractions/9.0.10",
-=======
-    "Microsoft.Extensions.DependencyInjection.Abstractions/9.0.0-rc.2.24473.5": {
-      "sha512": "T8oVF5Kz+J5IVagQAqcFFUrc/JrjaSvpACSm+t6cNolBX1S41PZVe3JLa3bxKnz0GTkUfSPPIkaekLmpAmHu3Q==",
-      "type": "package",
-      "path": "microsoft.extensions.dependencyinjection.abstractions/9.0.0-rc.2.24473.5",
->>>>>>> 44c44aedf2f4bd2f46c4de0137320e068c055de3
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -4306,11 +4274,7 @@
         "lib/netstandard2.0/Microsoft.Extensions.DependencyInjection.Abstractions.xml",
         "lib/netstandard2.1/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
         "lib/netstandard2.1/Microsoft.Extensions.DependencyInjection.Abstractions.xml",
-<<<<<<< HEAD
         "microsoft.extensions.dependencyinjection.abstractions.9.0.10.nupkg.sha512",
-=======
-        "microsoft.extensions.dependencyinjection.abstractions.9.0.0-rc.2.24473.5.nupkg.sha512",
->>>>>>> 44c44aedf2f4bd2f46c4de0137320e068c055de3
         "microsoft.extensions.dependencyinjection.abstractions.nuspec",
         "useSharedDesignerContext.txt"
       ]
@@ -4343,7 +4307,6 @@
         "useSharedDesignerContext.txt"
       ]
     },
-<<<<<<< HEAD
     "Microsoft.Extensions.Logging/9.0.10": {
       "sha512": "UBXHqE9vyptVhaFnT1R7YJKCve7TqVI10yjjUZBNGMlW2lZ4c031Slt9hxsOzWCzlpPxxIFyf1Yk4a6Iubxx7w==",
       "type": "package",
@@ -4518,8 +4481,6 @@
         "useSharedDesignerContext.txt"
       ]
     },
-=======
->>>>>>> 44c44aedf2f4bd2f46c4de0137320e068c055de3
     "Microsoft.NET.StringTools/17.10.4": {
       "sha512": "wyABaqY+IHCMMSTQmcc3Ca6vbmg5BaEPgicnEgpll+4xyWZWlkQqUwafweUd9VAhBb4jqplMl6voUHQ6yfdUcg==",
       "type": "package",
@@ -5964,10 +5925,7 @@
   },
   "projectFileDependencyGroups": {
     "net9.0": [
-<<<<<<< HEAD
       "Microsoft.EntityFrameworkCore >= 9.0.10",
-=======
->>>>>>> 44c44aedf2f4bd2f46c4de0137320e068c055de3
       "Microsoft.VisualStudio.Web.CodeGeneration.Design >= 9.0.0"
     ]
   },
@@ -6021,13 +5979,10 @@
       "net9.0": {
         "targetAlias": "net9.0",
         "dependencies": {
-<<<<<<< HEAD
           "Microsoft.EntityFrameworkCore": {
             "target": "Package",
             "version": "[9.0.10, )"
           },
-=======
->>>>>>> 44c44aedf2f4bd2f46c4de0137320e068c055de3
           "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
             "target": "Package",
             "version": "[9.0.0, )"
@@ -6055,5 +6010,13 @@
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.201/PortableRuntimeIdentifierGraph.json"
       }
     }
-  }
+  },
+  "logs": [
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Problem reading the cache file J:\\CodeC#\\Semester03\\obj\\project.nuget.cache : Invalid property identifier character: <. Path 'version', line 3, position 0."
+    }
+  ]
 }

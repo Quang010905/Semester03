@@ -50,13 +50,10 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
-<<<<<<< HEAD
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
               "version": "[9.0.10, )"
             },
-=======
->>>>>>> 44c44aedf2f4bd2f46c4de0137320e068c055de3
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[9.0.0, )"

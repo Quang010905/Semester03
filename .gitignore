@@ -1,82 +1,61 @@
-# Visual Studio
+##############################
+#       VISUAL STUDIO
+##############################
 .vs/
 .vscode/
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
+*.rsuser
+*.DotSettings.user
+.vsconfig
 
-# Build results
-bin/
-obj/
-out/
-
-# Debug / Release folders
+##############################
+#       BUILD RESULTS
+##############################
 [Bb]in/
 [Oo]bj/
 [Dd]ebug*/
 [Rr]elease*/
-
-# Rider
-.idea/
-
-# NuGet
-*.nupkg
-# Packages folder (if using legacy packages)
-[Pp]ackages/
-!**/[Pp]ackages/build/
-
-# MSBuild
-*.ilk
-*.meta
-*.obj
-*.pch
-*.pdb
-*.idb
-*.ipdb
-*.pgc
-*.pgd
-*.rsp
-*.sbr
-
-# Visual Studio Code workspace
-.history/
-
-# User-specific files
-*.rsuser
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
-
-# ASP.NET / IIS
-appsettings*.json
-appsettings.Development.json
-.env
-project.lock.json
-project.fragment.lock.json
-
-# Logs
+[Rr]eleases/
+out/
+publish/
+artifacts/
+logs/
 *.log
 
-# Rider & ReSharper
-_ReSharper*/
-*.[Rr]e[Ss]harper
-_ReSharper.*
-*.DotSettings.user
+##############################
+#       TEMPORARY FILES
+##############################
+*.tmp
+*.temp
+*.bak
+*.swp
+*.cache
+*.pid
+*.seed
+*.psess
+*.vsp
+*.vspx
+*.vspscc
+*.orig
 
-# Coverage & Test results
+##############################
+#       TEST RESULTS & COVERAGE
+##############################
 TestResults/
 coverage/
 *.coverage
 *.coveragexml
 *.trx
+*.xml.coverage
+*.opencover.xml
+*.codecov.json
 
-# Publish outputs
-publish/
-*.publishsettings
-
-# Database files
+##############################
+#       DATABASE FILES
+##############################
 *.mdf
 *.ldf
 *.sqlite
@@ -84,47 +63,102 @@ publish/
 *.db-shm
 *.db-wal
 
-# OS files
-Thumbs.db
-desktop.ini
-.DS_Store
+##############################
+#       ASP.NET / IIS / CONFIG
+##############################
+appsettings*.json
+appsettings.Development.json
+appsettings.Local.json
+.env
+project.lock.json
+project.fragment.lock.json
+Properties/PublishProfiles/
+launchSettings.json
+wwwroot/lib/
+wwwroot/dist/
+wwwroot/node_modules/
+wwwroot/temp/
 
-# Node / frontend (if present)
+##############################
+#       RIDER / RESHARPER
+##############################
+.idea/
+_ReSharper*/
+*.[Rr]e[Ss]harper
+_ReSharper.*
+*.DotSettings.user
+
+##############################
+#       NUGET / PACKAGES
+##############################
+*.nupkg
+*.snupkg
+.nuget/
+[Pp]ackages/
+!**/[Pp]ackages/build/
+*.nuspec
+
+##############################
+#       FRONTEND / NODE
+##############################
 node_modules/
 npm-debug.log*
 yarn-error.log
 .pnp/
 .pnp.js
-
-# Frontend build artifacts
 dist/
 build/
-wwwroot/lib/
-wwwroot/dist/
 
-# Fonts / binaries that are often large (if you don't want them tracked)
+##############################
+#       STATIC FILES (optional)
+##############################
+# Uncomment if you want to ignore image/media assets
+# *.png
+# *.jpg
+# *.jpeg
+# *.gif
+# *.svg
+# *.mp4
+# *.webm
+# *.ico
+
+##############################
+#       FONTS / BINARIES
+##############################
 *.woff
 *.woff2
 *.eot
 *.ttf
 *.otf
+*.exe
+*.dll
+*.so
+*.dylib
 
-# Images / media you may want to ignore (optional)
-# *.png
-# *.jpg
-# *.jpeg
-# *.gif
-# *.mp4
-# *.webm
+##############################
+#       OS FILES
+##############################
+Thumbs.db
+desktop.ini
+.DS_Store
+ehthumbs.db
+Icon?
+$RECYCLE.BIN/
+*.lnk
 
-# Temporary files
+##############################
+#       MISC
+##############################
+.history/
+*.orig
+*.bak
+*.rej
+*.swo
+*.swp
 *.tmp
 *.temp
-*.bak
-*.swp
 
-# JetBrains Rider caches
-.idea/
-
-# Git LFS placeholder (if using)
+##############################
+#       GIT LFS PLACEHOLDER
+##############################
 .gitattributes
