@@ -1,0 +1,24 @@
+﻿@using System.Linq
+@{
+    var events = Model as IEnumerable<dynamic> ?? ViewBag.Events as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+<div class="list-group small">
+    @if (events.Any())
+    {
+        foreach (var e in events)
+        {
+            var title = e?.Title ?? (e as object)?.ToString() ?? "Event";
+            var date = e?.Date ?? "";
+            <a href="@Url.Action("EventDetails","Mall", new { id = e?.Id })" class="list-group-item list-group-item-action">
+                <div class="d-flex justify-content-between">
+                    <div>@title</div>
+                    <small class="text-muted">@date</small>
+                </div>
+            </a>
+        }
+    }
+    else
+    {
+        <div class="text-muted small p-2">No upcoming events</div>
+    }
+</div>

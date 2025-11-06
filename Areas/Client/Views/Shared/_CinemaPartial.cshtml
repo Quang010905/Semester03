@@ -1,0 +1,23 @@
+﻿@using System.Linq
+@{
+    var shows = Model as IEnumerable<dynamic> ?? ViewBag.Showtimes as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+<ul class="list-unstyled small mb-0">
+    @if (shows.Any())
+    {
+        foreach (var s in shows)
+        {
+            var title = s?.Title ?? "Movie";
+            var time = s?.Time ?? "";
+            <li class="mb-2">
+                <a class="text-decoration-none" href="@Url.Action("Showtime","Mall", new { id = s?.Id })">
+                    <strong>@title</strong> <small class="text-muted"> — @time</small>
+                </a>
+            </li>
+        }
+    }
+    else
+    {
+        <li class="text-muted">No showtimes available</li>
+    }
+</ul>

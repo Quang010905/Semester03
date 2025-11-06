@@ -1,0 +1,22 @@
+﻿@using System.Linq
+@{
+    var cats = Model as IEnumerable<string> ?? ViewBag.Categories as IEnumerable<string> ?? Enumerable.Empty<string>();
+}
+<ul class="list-unstyled mb-0">
+    @if (cats.Any())
+    {
+        foreach (var c in cats)
+        {
+            <li class="mb-2">
+                <a href="@Url.Action("Category","Mall", new { name = c })" class="d-flex align-items-center text-decoration-none">
+                    <div class="category-icon me-2 bg-light d-flex align-items-center justify-content-center">@c.Substring(0, 1)</div>
+                    <div>@c</div>
+                </a>
+            </li>
+        }
+    }
+    else
+    {
+        <li class="text-muted small">No categories available</li>
+    }
+</ul>

@@ -1,0 +1,30 @@
+﻿@using System.Linq
+@{
+    var stores = Model as IEnumerable<dynamic> ?? ViewBag.Stores as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+<div class="row g-3">
+    @if (stores.Any())
+    {
+        foreach (var s in stores)
+        {
+            var name = s?.Name ?? "Store";
+            var img = s?.ImageUrl ?? "/images/store-placeholder.png";
+            var floor = s?.Floor ?? "";
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card store-card h-100">
+                    <img src="@img" class="card-img-top" alt="@name" />
+                    <div class="card-body p-2">
+                        <h6 class="card-title mb-1">@name</h6>
+                        <small class="text-muted">Floor: @floor</small>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="p-3 bg-light rounded text-muted">No stores to display</div>
+        </div>
+    }
+</div>

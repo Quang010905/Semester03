@@ -1,0 +1,21 @@
+﻿@using System.Linq
+@{
+    var modelNotifs = Model as IEnumerable<string>;
+    var notifs = modelNotifs ?? ViewBag.Notifications as IEnumerable<string> ?? Enumerable.Empty<string>();
+}
+
+<div class="p-2" style="max-height:330px; overflow:auto;">
+    @if (notifs.Any())
+    {
+        <div class="list-group list-group-flush small">
+            @foreach (var n in notifs)
+            {
+                <a href="#" class="list-group-item list-group-item-action">@n</a>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-muted small">No notifications</div>
+    }
+</div>

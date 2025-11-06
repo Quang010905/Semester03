@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Source C#\\Semester03\\Semester03.csproj": {}
+    "J:\\CodeC#\\Semester03\\Semester03.csproj": {}
   },
   "projects": {
-    "C:\\Source C#\\Semester03\\Semester03.csproj": {
+    "J:\\CodeC#\\Semester03\\Semester03.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Source C#\\Semester03\\Semester03.csproj",
+        "projectUniqueName": "J:\\CodeC#\\Semester03\\Semester03.csproj",
         "projectName": "Semester03",
-        "projectPath": "C:\\Source C#\\Semester03\\Semester03.csproj",
-        "packagesPath": "C:\\Users\\minhq\\.nuget\\packages\\",
-        "outputPath": "C:\\Source C#\\Semester03\\obj\\",
+        "projectPath": "J:\\CodeC#\\Semester03\\Semester03.csproj",
+        "packagesPath": "C:\\Users\\My Computer\\.nuget\\packages\\",
+        "outputPath": "J:\\CodeC#\\Semester03\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\minhq\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\My Computer\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -26,7 +26,6 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -50,6 +49,16 @@
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
+          "dependencies": {
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[9.0.10, )"
+            },
+            "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",

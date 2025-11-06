@@ -1,0 +1,15 @@
+﻿@{
+    var mallName = ViewData["MallName"] ?? "ABCD Mall";
+    var heroImage = ViewData["HeroImage"] ?? "/images/hero-default.jpg";
+}
+<section class="hero d-flex align-items-center" style="background-image: url('@heroImage'); background-size:cover;">
+    <div class="container text-white py-5">
+        <h1 class="display-5">@mallName</h1>
+        <p class="lead">Welcome to the sample shopping center — discover stores, events and deals.</p>
+
+        <form class="d-flex mt-3" method="get" action="@Url.Action("Search","Mall")" role="search">
+            <input class="form-control me-2" name="q" placeholder="Search stores, events..." />
+            <button class="btn btn-primary">Search</button>
+        </form>
+    </div>
+</section>
