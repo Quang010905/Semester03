@@ -7,15 +7,25 @@
   </PropertyGroup>
 
   <ItemGroup>
+<<<<<<< HEAD
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
+=======
+>>>>>>> 44c44aedf2f4bd2f46c4de0137320e068c055de3
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>
+<<<<<<< HEAD
+    <Folder Include="Areas\Client\Data\" />
+    <Folder Include="Areas\Client\Models\" />
+    <Folder Include="Areas\Client\Views\Home\" />
+=======
     <Folder Include="Areas\Admin\Data\" />
     <Folder Include="Areas\Admin\Models\" />
     <Folder Include="Models\Entities\" />
     <Folder Include="Models\ModelViews\" />
     <Folder Include="Models\Repositories\" />
+>>>>>>> 44c44aedf2f4bd2f46c4de0137320e068c055de3
   </ItemGroup>
 
 </Project>

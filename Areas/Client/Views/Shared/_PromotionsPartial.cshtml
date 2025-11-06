@@ -1,0 +1,17 @@
+﻿@using System.Linq
+@{
+    var promos = Model as IEnumerable<string> ?? ViewBag.Promotions as IEnumerable<string> ?? Enumerable.Empty<string>();
+}
+@if (promos.Any())
+{
+    <ul class="list-unstyled small mb-0">
+        @foreach (var p in promos)
+        {
+            <li class="mb-2"><a href="@Url.Action("Promotions","Mall")" class="text-decoration-none">@p</a></li>
+        }
+    </ul>
+}
+else
+{
+    <div class="text-muted small">No promotions at the moment</div>
+}
