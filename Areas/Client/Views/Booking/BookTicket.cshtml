@@ -1,0 +1,142 @@
+﻿@model Semester03.Areas.Client.Models.ViewModels.BookTicketVm
+@{
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+}
+
+@section Styles {
+    <style>
+        .week-days {
+            display: flex;
+            gap: .5rem;
+            overflow: auto;
+            padding-bottom: .5rem;
+        }
+
+        .day-card {
+            min-width: 110px;
+            text-align: center;
+            padding: .6rem;
+            border-radius: .5rem;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+            .day-card.selected {
+                background: #0d6efd;
+                color: white;
+                border-color: rgba(0,0,0,0.05);
+                box-shadow: 0 6px 18px rgba(13,110,253,0.12);
+            }
+
+        .showtime-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill,minmax(160px,1fr));
+            gap: .75rem;
+            margin-top: 1rem;
+        }
+
+        .showtime-slot {
+            padding: .6rem;
+            border-radius: .5rem;
+            border: 1px solid #e9ecef;
+            text-align: center;
+            cursor: pointer;
+            background: #fff;
+        }
+
+            .showtime-slot:hover {
+                box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+                transform: translateY(-3px);
+            }
+
+        .movie-head {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+            .movie-head img {
+                width: 90px;
+                height: 130px;
+                object-fit: cover;
+                border-radius: .25rem;
+            }
+    </style>
+}
+
+<div class="container py-4">
+    <div class="mb-3 movie-head">
+        <img src="@(Model.Movie?.PosterUrl ?? "/wwwroot/Admin/img/download (5).jpg")"
+             alt="@Model.Movie?.Title"
+             class="rounded shadow-sm" style="width:90px;height:130px;object-fit:cover;" />
+        <div>
+            <h3 class="mb-1">@Model.Movie?.Title</h3>
+            <div class="text-muted">Time: @Model.Movie?.DurationMin</div>
+            <div class="mt-2">@Model.Movie?.Description</div>
+        </div>
+    </div>
+
+    <div class="card p-3 mb-3">
+        <div class="week-days" id="weekDays">
+            @foreach (var d in Model.WeekDays)
+            {
+                var sel = d.Date.Date == Model.SelectedDate.Date ? "selected" : "";
+                <div class="day-card @sel" data-date="@d.Date.ToString("yyyy-MM-dd")">
+                    <div class="fw-semibold">@d.Date.ToString("ddd")</div>
+                    <div>@d.Date.ToString("dd MMM")</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div id="showtimeContainer">
+        @* initial load of today's showtimes via partial *@
+        @{
+            var initialDate = Model.SelectedDate.ToString("yyyy-MM-dd");
+            var url = Url.Action("GetShowtimes", "Booking", new { area = "Client", movieId = Model.Movie?.Id, date = initialDate });
+        }
+        <div id="loadingInitial" class="text-center py-5">Loading showtimes…</div>
+        <div id="showtimeContent"></div>
+
+        <script>
+            (function(){
+                const movieId = @Model.Movie?.Id;
+                const container = document.getElementById('showtimeContent');
+                const loading = document.getElementById('loadingInitial');
+
+                function loadFor(date) {
+                    loading.style.display = '';
+                    container.innerHTML = '';
+                    fetch('@Url.Action("GetShowtimes", "Booking", new { area = "Client" })' + '?movieId=' + movieId + '&date=' + date)
+                        .then(r => {
+                            if (!r.ok) throw new Error('Failed');
+                            return r.text();
+                        })
+                        .then(html => {
+                            container.innerHTML = html;
+                        })
+                        .catch(err => {
+                            container.innerHTML = '<div class="text-danger p-3">Không thể tải suất chiếu.</div>';
+                            console.error(err);
+                        })
+                        .finally(()=> loading.style.display='none');
+                }
+
+                // initial load for selected date
+                const selDay = document.querySelector('.day-card.selected');
+                if (selDay) loadFor(selDay.getAttribute('data-date'));
+
+                // click handler for days
+                document.getElementById('weekDays').addEventListener('click', function(e){
+                    const card = e.target.closest('.day-card');
+                    if (!card) return;
+                    // toggles
+                    document.querySelectorAll('.day-card').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    loadFor(card.getAttribute('data-date'));
+                });
+
+            })();
+        </script>
+    </div>
+</div>

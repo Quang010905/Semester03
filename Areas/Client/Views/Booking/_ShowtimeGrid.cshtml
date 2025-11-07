@@ -1,0 +1,25 @@
+﻿@model List<Semester03.Areas.Client.Models.ViewModels.ShowtimeVm>
+
+@if (Model == null || !Model.Any())
+{
+    <div class="alert alert-info">Không có suất chiếu trong ngày này.</div>
+}
+else
+{
+    <div class="showtime-grid">
+        @foreach (var s in Model)
+        {
+            <div class="showtime-slot" data-id="@s.Id" data-start="@s.StartTime.ToString("o")">
+                <div class="fw-semibold">@s.StartTime.ToLocalTime().ToString("HH:mm")</div>
+                <div class="small text-muted">@s.ScreenName @if (!string.IsNullOrEmpty(s.CinemaName))
+                    {
+                        <text>• @s.CinemaName</text>
+                    } </div>
+                <div class="mt-1">@String.Format("{0:N0}", s.Price ?? 0) VND</div>
+                <div class="mt-2">
+                    <a class="btn btn-sm btn-primary w-100" href="@Url.Action("SelectSeat","Booking", new { area="Client", showtimeId = s.Id })">Choose</a>
+                </div>
+            </div>
+        }
+    </div>
+}

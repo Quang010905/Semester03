@@ -125,7 +125,7 @@
                     <div class="carousel-item @active">
                         <div class="row align-items-center">
                             <div class="col-lg-7">
-                                <img src="@f.PosterUrl" class="d-block w-100 carousel-poster rounded" alt="@f.Title" />
+                                <img src="~/Admin/img/download (5).jpg" class="d-block w-100 carousel-poster rounded" alt="@f.Title" />
                             </div>
                             <div class="col-lg-5">
                                 <h2>@f.Title</h2>
@@ -145,9 +145,8 @@
                                 <div class="mt-3">
                                     @if (f.NextShowtimeId.HasValue)
                                     {
-                                        <a class="btn btn-primary" href="@Url.Action("Book","Booking", new { showtimeId = f.NextShowtimeId })">Book ticket</a>
+                                        <a class="btn btn-primary" href="@Url.Action("BookTicket","Booking", new { area = "Client", movieId = f.Id })">Book ticket</a>
                                     }
-                                    <a class="btn btn-outline-secondary ms-2" href="javascript:void(0)" onclick="loadShowtimes(@f.Id)">Showtimes</a>
                                 </div>
                             </div>
                         </div>
@@ -180,14 +179,14 @@
             {
                 <div class="slider-item">
                     <div class="card movie-card position-relative h-100">
-                        <img src="@m.PosterUrl" class="movie-poster card-img-top" alt="@m.Title" />
+                        <img src="~/Admin/img/images (2).jpg" class="movie-poster card-img-top" alt="@m.Title" />
                         <div class="movie-overlay">
                             <div class="w-100 text-center">
                                 <div class="movie-title">@m.Title</div>
                                 <div class="small">@((m.DurationMin?.ToString() ?? "--") + " min")</div>
                                 <div class="mt-2">
                                     <a class="btn btn-sm btn-light" href="javascript:void(0)" onclick="loadShowtimes(@m.Id)">Showtimes</a>
-                                    <a class="btn btn-sm btn-primary ms-1" href="@Url.Action("Book","Booking", new { showtimeId = m.NextShowtimeId })">Book</a>
+                                    <a class="btn btn-sm btn-primary ms-1" href="@Url.Action("BookTicket","Booking", new { area = "Client", movieId = m.Id })">Book</a>
                                 </div>
                             </div>
                         </div>
@@ -208,7 +207,7 @@
         {
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="card movie-card h-100 position-relative">
-                    <img src="@m.PosterUrl" class="card-img-top movie-poster" alt="@m.Title" />
+                    <img src="~/Admin/img/download (2).jpg" class="card-img-top movie-poster" alt="@m.Title" />
                     <div class="card-body">
                         <h6 class="card-title mb-1">@m.Title</h6>
                         <small class="text-muted">@m.DurationMin min</small>

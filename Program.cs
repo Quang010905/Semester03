@@ -17,6 +17,8 @@ builder.Services.AddDbContext<AbcdmallContext>(options =>
 
 // Register application services / repositories
 builder.Services.AddScoped<ICinemaRepository, CinemaRepository>();
+builder.Services.AddScoped<IShowtimeRepository, ShowtimeRepository>();
+builder.Services.AddScoped<IMovieRepository, MovieRepository>();
 
 var app = builder.Build();
 
@@ -60,4 +62,3 @@ app.MapControllerRoute(
 )
 .WithStaticAssets();
 app.Run();
-'
