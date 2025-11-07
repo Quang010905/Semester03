@@ -1,8 +1,9 @@
 ﻿@*
   _LayoutClient.cshtml
   Main layout for Mall website (ASP.NET Core MVC - Razor)
-  - Expanded main content area for cinema / now-showing
-  - Fixed CSS media query typo and layout sizing
+  - Increased main content width (max 1600px)
+  - Left column wider (col-lg-10) and sidebar slimmer (col-lg-2)
+  - Fixed CSS media query typos and improved responsive rules
 *@
 <!DOCTYPE html>
 <html lang="en">
@@ -22,7 +23,7 @@
 
     <style>
         :root {
-            --main-max-width: 1300px;
+            --main-max-width: 1600px; /* increased width */
         }
 
         body {
@@ -103,26 +104,43 @@
             padding-right: 1rem;
         }
 
-        /* Slightly larger left column on large screens so main content has more space */
+        /* Make main content even wider on large screens: left column 83.33%, right 16.66% */
         @@media (min-width: 1200px) {
-            .col-lg-9
+            .col-lg-10
 
         {
-            flex: 0 0 75%;
-            max-width: 75%;
+            flex: 0 0 83.333333%;
+            max-width: 83.333333%;
         }
 
-        .col-lg-3 {
-            flex: 0 0 25%;
-            max-width: 25%;
+        .col-lg-2 {
+            flex: 0 0 16.666667%;
+            max-width: 16.666667%;
+        }
+
+        }
+
+        /* On very large screens allow a bit more breathing room */
+        @@media (min-width: 1600px) {
+            : root
+
+        {
+            --main-max-width: 1800px;
         }
 
         }
 
         /* Accessibility: focus outline for keyboard users */
         a:focus, button:focus {
-            outline: 3px solid rgba(13,110,253,0.15);
+            outline: 3px solid rgba(13,110,253,0.12);
             outline-offset: 2px;
+        }
+
+        /* Ensure sidebar doesn't overlap content and is sticky */
+        .content-maxwide aside {
+            position: sticky;
+            top: 100px;
+            z-index: 20;
         }
     </style>
 
@@ -165,7 +183,7 @@
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notifDropdown" style="width:320px;">
                             <li class="dropdown-header">Notifications</li>
                             <li>
-                                @* If _NotificationsPartial missing, this will throw; create partial or replace with static fallback *@
+                                @* If _NotificationsPartial missing, create it or replace with fallback *@
                                 @await Html.PartialAsync("_NotificationsPartial")
                             </li>
                             <li><hr class="dropdown-divider" /></li>
@@ -185,7 +203,7 @@
                 <form class="flex-grow-1" method="get" action="@Url.Action("Search", "Mall")" role="search">
                     <div class="input-group search-box">
                         <input type="search" name="q" class="form-control" placeholder="Search stores, food, events, movies..." aria-label="Search" value="@(ViewData["SearchQuery"] ?? "")" />
-                        <select name="type" class="form-select d-none d-lg-block" style="max-width:200px;">
+                        <select name="type" class="form-select d-none d-lg-block" style="max-width:220px;">
                             <option value="">All</option>
                             <option value="store">Store</option>
                             <option value="dining">Dining</option>
@@ -202,7 +220,6 @@
 
     <!-- Hero area (partial) -->
     <section>
-        @* Create ~/Areas/Client/Views/Shared/_Hero.cshtml or ~/Views/Shared/_Hero.cshtml *@
         @await Html.PartialAsync("_Hero")
     </section>
 
@@ -210,17 +227,17 @@
     <main class="container-fluid my-4">
         <div class="content-maxwide">
             <div class="row">
-                <!-- Left: main content -->
-                <div class="col-lg-9">
+                <!-- Left: main content (wider) -->
+                <div class="col-lg-10">
                     @RenderBody()
                 </div>
 
-                <!-- Right: sidebar -->
-                <aside class="col-lg-3">
+                <!-- Right: slim sidebar -->
+                <aside class="col-lg-2">
                     <div class="mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <h6 class="mb-0">Categories</h6>
-                            <a class="small" href="@Url.Action("Categories", "Mall")">View all</a>
+                            <a class="small" href="@Url.Action("Categories", "Mall")">All</a>
                         </div>
                         @await Html.PartialAsync("_CategoriesPartial")
                     </div>
@@ -228,7 +245,7 @@
                     <div class="mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <h6 class="mb-0">Upcoming events</h6>
-                            <a class="small" href="@Url.Action("Events", "Mall")">View all</a>
+                            <a class="small" href="@Url.Action("Events", "Mall")">All</a>
                         </div>
                         @await Html.PartialAsync("_EventListPartial")
                     </div>
@@ -243,7 +260,7 @@
 
                     <div class="mb-4">
                         <div class="p-3 bg-light rounded">
-                            <h6>Promotions & Deals</h6>
+                            <h6>Promotions</h6>
                             <ul class="list-unstyled small mb-0">
                                 @await Html.PartialAsync("_PromotionsPartial")
                             </ul>
@@ -303,7 +320,7 @@
     <script>
         // small helper
         document.addEventListener('click', function (e) {
-            // nothing here for now
+            // placeholder
         });
 
         // Provide a global object
