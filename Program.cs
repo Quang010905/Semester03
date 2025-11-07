@@ -1,13 +1,22 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.EntityFrameworkCore;
+using Semester03.Models.Entities; // <-- namespace của AbcdmallContext (điều chỉnh nếu khác)
+using Semester03.Areas.Client.Repositories; // <-- namespace repo (điều chỉnh nếu khác)
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews()
+// Add services to the container.
+builder.Services.AddControllersWithViews();
 
-;
+// Register EF DbContext using connection string "DefaultConnection" from appsettings.json
+builder.Services.AddDbContext<AbcdmallContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+);
 
+// Register application services / repositories
+builder.Services.AddScoped<ICinemaRepository, CinemaRepository>();
 
 var app = builder.Build();
 
@@ -19,40 +28,35 @@ if (!app.Environment.IsDevelopment())
 }
 else
 {
-    // Trong dev, hiển thị trang lỗi chi tiết (tuỳ ý)
+    // Detailed error page in development
     app.UseDeveloperExceptionPage();
 }
 
 app.UseHttpsRedirection();
-
-// Static files (wwwroot)
 app.UseStaticFiles();
 
-// Nếu bạn có extension MapStaticAssets (giữ lại như trước)
-app.MapStaticAssets();
-
-// routing & auth
 app.UseRouting();
+
 app.UseAuthorization();
 
 
 app.MapStaticAssets();
 
-app.MapControllerRoute(
-    name: "areas",
-    pattern: "{area:exists}/{controller=Admin}/{action=Index}/{id?}");
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Admin}/{action=Index}/{id?}",
-    defaults: new { area = "Admin" })
-    .WithStaticAssets();
-
-
-
 //app.MapControllerRoute(
-//    name: "client_default",
-//    pattern: "{controller=Mall}/{action=TestLayout}/{id?}",
-//    defaults: new { area = "Client" }
-//)
-//.WithStaticAssets(); 
+//    name: "areas",
+//    pattern: "{area:exists}/{controller=Admin}/{action=Index}/{id?}");
+//app.MapControllerRoute(
+//    name: "default",
+//    pattern: "{controller=Admin}/{action=Index}/{id?}",
+//    defaults: new { area = "Admin" })
+//    .WithStaticAssets();
+
+
+
+app.MapControllerRoute(
+    name: "client_default",
+    pattern: "{controller=Cinema}/{action=Index}/{id?}",
+    defaults: new { area = "Client" }
+)
+.WithStaticAssets();
 app.Run();

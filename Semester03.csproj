@@ -23,7 +23,6 @@
 
 	<ItemGroup>
 		<Folder Include="Areas/Client/Data/" />
-		<Folder Include="Areas/Client/Models/" />
 		<Folder Include="Areas/Client/Views/Home/" />
 		<Folder Include="Areas/Admin/Data/" />
 		<Folder Include="Areas/Admin/Models/" />

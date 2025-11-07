@@ -1,0 +1,28 @@
+﻿@model IEnumerable<Semester03.Areas.Client.Models.ViewModels.ShowtimeVm>
+
+<div class="p-3 bg-white border rounded">
+    <h6>Showtimes (selected date)</h6>
+    @if (!Model.Any())
+    {
+        <div class="small text-muted">No showtimes for the selected date.</div>
+    }
+    else
+    {
+        <div>
+            @foreach (var g in Model.GroupBy(s => s.CinemaName))
+            {
+                <div class="mb-2">
+                    <strong>@g.Key</strong>
+                    <div class="d-flex flex-wrap gap-2 mt-1">
+                        @foreach (var s in g)
+                        {
+                            <a class="btn btn-outline-secondary btn-sm" href="@Url.Action("Book","Booking", new { showtimeId = s.Id })">
+                                @s.StartTime.ToString("HH:mm") <small class="text-muted">(@s.ScreenName)</small>
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
