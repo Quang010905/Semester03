@@ -1,0 +1,311 @@
+﻿@model Semester03.Areas.Client.Models.ViewModels.CinemaHomeVm
+@{
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+}
+
+@section Styles {
+    <style>
+        /* movie grid hover / overlay */
+        .movie-card {
+            transition: transform .25s ease, box-shadow .25s ease;
+            cursor: pointer;
+        }
+
+            .movie-card:hover {
+                transform: translateY(-6px) scale(1.03);
+                box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+            }
+
+        .movie-poster {
+            height: 260px;
+            object-fit: cover;
+            width: 100%;
+            border-radius: .25rem;
+        }
+
+        .movie-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 1rem;
+            background: linear-gradient(transparent, rgba(0,0,0,0.45));
+            color: #fff;
+            opacity: 0;
+            transition: opacity .18s ease;
+            border-radius: .25rem;
+        }
+
+        .movie-card:hover .movie-overlay {
+            opacity: 1;
+        }
+
+        .movie-title {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .carousel-poster {
+            height: 420px;
+            object-fit: cover;
+            width: 100%;
+        }
+
+        /* horizontal auto slider wrapper */
+        .slider-wrapper {
+            overflow: hidden;
+            position: relative;
+        }
+
+        .slider-track {
+            display: flex;
+            gap: 1rem;
+            transition: transform .6s ease;
+            will-change: transform;
+            align-items: stretch;
+        }
+
+        .slider-item {
+            min-width: 220px;
+            flex: 0 0 220px;
+        }
+
+        @@media (max-width:767px) {
+            .movie-poster
+
+        {
+            height: 200px;
+        }
+
+        .carousel-poster {
+            height: 240px;
+        }
+
+        .slider-item {
+            min-width: 160px;
+            flex: 0 0 160px;
+        }
+
+        }
+
+        /* ensure card text doesn't overflow */
+        .card .text-truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+    </style>
+}
+
+<div class="container my-4">
+    <!-- Featured carousel -->
+    @if (Model.Featured?.Any() == true)
+    {
+        <div id="featuredCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                @for (int i = 0; i < Model.Featured.Count; i++)
+                {
+                    var f = Model.Featured[i];
+                    var active = i == 0 ? "active" : "";
+                    <div class="carousel-item @active">
+                        <div class="row align-items-center">
+                            <div class="col-lg-7">
+                                <img src="@f.PosterUrl" class="d-block w-100 carousel-poster rounded" alt="@f.Title" />
+                            </div>
+                            <div class="col-lg-5">
+                                <h2>@f.Title</h2>
+                                <p class="text-muted">@f.Description</p>
+                                <p>
+                                    <strong>Next:</strong>
+                                    @if (f.NextShowtime.HasValue)
+                                    {
+                                        <span>@f.NextShowtime.Value.ToString("dd MMM yyyy HH:mm")</span>
+                                        <span class="ms-2 text-muted">(@String.Format("{0:N0}", f.NextPrice) VND)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">No upcoming showtime</span>
+                                    }
+                                </p>
+                                <div class="mt-3">
+                                    @if (f.NextShowtimeId.HasValue)
+                                    {
+                                        <a class="btn btn-primary" href="@Url.Action("Book","Booking", new { showtimeId = f.NextShowtimeId })">Book ticket</a>
+                                    }
+                                    <a class="btn btn-outline-secondary ms-2" href="javascript:void(0)" onclick="loadShowtimes(@f.Id)">Showtimes</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#featuredCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#featuredCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+            </button>
+        </div>
+    }
+
+    <!-- Search bar for cinema (optional) -->
+    <div class="mb-4">
+        <form class="d-flex" onsubmit="event.preventDefault();">
+            <input id="movieSearch" class="form-control me-2" placeholder="Search movies..." />
+            <button class="btn btn-outline-secondary" onclick="filterMovies()">Search</button>
+        </form>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Slider of movies (auto scroll) -->
+            <h4 class="mb-3">Now showing</h4>
+
+            <div class="slider-wrapper mb-3">
+                <div id="sliderTrack" class="slider-track">
+                    @foreach (var m in Model.NowShowing)
+                    {
+                        <div class="slider-item">
+                            <div class="card movie-card position-relative h-100">
+                                <img src="@m.PosterUrl" class="movie-poster card-img-top" alt="@m.Title" />
+                                <div class="movie-overlay">
+                                    <div class="w-100 text-center">
+                                        <div class="movie-title">@m.Title</div>
+                                        <div class="small">@((m.DurationMin?.ToString() ?? "--") + " min")</div>
+                                        <div class="mt-2">
+                                            <a class="btn btn-sm btn-light" href="javascript:void(0)" onclick="loadShowtimes(@m.Id)">Showtimes</a>
+                                            <a class="btn btn-sm btn-primary ms-1" href="@Url.Action("Book","Booking", new { showtimeId = m.NextShowtimeId })">Book</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body p-2">
+                                    <div class="small text-muted">@m.NextShowtime?.ToString("dd MMM HH:mm")</div>
+                                    <div class="fw-semibold">@m.Title</div>
+                                    <p class="small text-truncate" title="@m.Description">@m.Description</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Large grid (also shows full details) -->
+            <div class="row g-3">
+                @foreach (var m in Model.NowShowing)
+                {
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <div class="card movie-card h-100 position-relative">
+                            <img src="@m.PosterUrl" class="card-img-top movie-poster" alt="@m.Title" />
+                            <div class="card-body">
+                                <h6 class="card-title mb-1">@m.Title</h6>
+                                <small class="text-muted">@m.DurationMin min</small>
+                                <p class="small text-truncate mt-2" title="@m.Description">@m.Description</p>
+                            </div>
+                            <div class="card-footer bg-white border-0">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">@m.NextShowtime?.ToString("dd MMM HH:mm")</small>
+                                    <div>
+                                        <a class="btn btn-sm btn-outline-primary" href="javascript:void(0)" onclick="loadShowtimes(@m.Id)">Showtimes</a>
+                                        <a class="btn btn-sm btn-primary ms-1" href="@Url.Action("Book","Booking", new { showtimeId = m.NextShowtimeId })">Book</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Right sidebar: showtimes / promotions -->
+        <aside class="col-lg-4">
+            <div id="showtimesContainer">
+                <div class="p-3 bg-light rounded">
+                    <h6>Showtimes</h6>
+                    <div class="small text-muted">Select a movie to view showtimes</div>
+                </div>
+            </div>
+
+            <div class="mt-4 p-3 bg-white border rounded">
+                <h6>Promotions</h6>
+                <p class="small text-muted">Look for combos and coupon codes at the box office.</p>
+            </div>
+        </aside>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto play bootstrap carousel (5s)
+        document.addEventListener('DOMContentLoaded', function () {
+            var featured = document.querySelector('#featuredCarousel');
+            if (featured) {
+                var carousel = new bootstrap.Carousel(featured, { interval: 5000, ride: 'carousel' });
+            }
+
+            // Auto slider for horizontal track
+            (function () {
+                const track = document.getElementById('sliderTrack');
+                if (!track) return;
+                let pos = 0;
+                const item = track.querySelector('.slider-item');
+                const gap = 16; // matches CSS gap (approx)
+                const step = (item ? item.offsetWidth : 220) + gap;
+
+                // Recompute step on resize to adapt responsive item widths
+                function computeStep() {
+                    const first = track.querySelector('.slider-item');
+                    const width = first ? first.getBoundingClientRect().width : 220;
+                    return Math.round(width + gap);
+                }
+
+                let autoInterval = setInterval(() => {
+                    const computedStep = computeStep();
+                    pos += computedStep;
+                    const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+                    if (pos > maxScroll) pos = 0;
+                    track.style.transform = `translateX(-${pos}px)`;
+                }, 3000);
+
+                // Pause on hover for better UX
+                track.addEventListener('mouseenter', () => clearInterval(autoInterval));
+                track.addEventListener('mouseleave', () => {
+                    autoInterval = setInterval(() => {
+                        const computedStep = computeStep();
+                        pos += computedStep;
+                        const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+                        if (pos > maxScroll) pos = 0;
+                        track.style.transform = `translateX(-${pos}px)`;
+                    }, 3000);
+                });
+
+                // Ensure the track has no inline transform on load
+                track.style.transform = 'translateX(0)';
+            })();
+        });
+
+        // AJAX: load showtimes into sidebar
+        function loadShowtimes(movieId) {
+            const url = '@Url.Action("Showtimes", "Cinema", new { area = "Client" })' + '?movieId=' + movieId;
+            fetch(url)
+                .then(r => r.text())
+                .then(html => {
+                    document.getElementById('showtimesContainer').innerHTML = html;
+                    window.scrollTo({ top: 300, behavior: 'smooth' });
+                })
+                .catch(err => console.error(err));
+        }
+
+        // quick search filter client-side
+        function filterMovies() {
+            const q = document.getElementById('movieSearch').value.toLowerCase();
+            document.querySelectorAll('.card.movie-card').forEach(card => {
+                const title = (card.querySelector('.card-title')?.innerText || card.querySelector('.movie-title')?.innerText || '').toLowerCase();
+                const parent = card.closest('.col-6, .slider-item');
+                if (parent) parent.style.display = title.includes(q) ? '' : 'none';
+            });
+        }
+    </script>
+}

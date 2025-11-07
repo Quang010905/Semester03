@@ -1,26 +1,34 @@
 ﻿@*
   _LayoutClient.cshtml
   Main layout for Mall website (ASP.NET Core MVC - Razor)
-  Based on DB: Tbl_Mall, Tbl_Floor, Tbl_Unit, Tbl_Tenant, Tbl_ProductCategory, Tbl_Event, Tbl_Cinema, Tbl_Showtime, Tbl_Coupon, Tbl_LoyaltyProgram, Tbl_ParkingSpot, Tbl_Notification ...
-  Note: create the partial views referenced below and bind data in controllers / view components.
+  - Expanded main content area for cinema / now-showing
+  - Fixed CSS media query typo and layout sizing
 *@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@ViewData["Title"] - @(ViewData["MallName"] ?? "GigaMall")</title>
+    <title>@ViewData["Title"] - @(ViewData["MallName"] ?? "ABCD Mall")</title>
 
     <!-- Bootstrap 5 CSS (CDN) -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
 
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
     <style>
+        :root {
+            --main-max-width: 1300px;
+        }
+
         body {
             font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            background-color: #f8fafc;
+            color: #212529;
         }
 
         .hero {
@@ -29,6 +37,7 @@
             min-height: 360px;
             display: flex;
             align-items: center;
+            padding: 2rem 0;
         }
 
         .search-box {
@@ -74,14 +83,46 @@
         .sticky-top-shadow {
             box-shadow: 0 4px 12px rgba(0,0,0,0.06);
         }
+
         @@media (max-width: 767px) {
             .hero
 
         {
             min-height: 220px;
-            padding: 1rem;
+            padding: 1rem 0;
         }
 
+        }
+
+        /* Expanded centered content wrapper */
+        .content-maxwide {
+            max-width: var(--main-max-width);
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        /* Slightly larger left column on large screens so main content has more space */
+        @@media (min-width: 1200px) {
+            .col-lg-9
+
+        {
+            flex: 0 0 75%;
+            max-width: 75%;
+        }
+
+        .col-lg-3 {
+            flex: 0 0 25%;
+            max-width: 25%;
+        }
+
+        }
+
+        /* Accessibility: focus outline for keyboard users */
+        a:focus, button:focus {
+            outline: 3px solid rgba(13,110,253,0.15);
+            outline-offset: 2px;
         }
     </style>
 
@@ -96,27 +137,26 @@
                     <a class="d-flex align-items-center text-decoration-none" href="@Url.Action("Index", "Home")">
                         <img src="/images/logo.png" alt="logo" style="height:48px; width:auto;" />
                         <div class="ms-2">
-                            <div style="font-weight:700; font-size:1.05rem;">@ViewData["MallName"] ?? "GigaMall"</div>
-                            <small class="text-muted">@ViewData["MallAddress"] ?? "123 Le Loi, HCMC"</small>
+                            <div style="font-weight:700; font-size:1.05rem;">@ViewData["MallName"] ?? "ABCD Mall"</div>
+                            <small class="text-muted">@ViewData["MallAddress"] ?? "123 Main Street"</small>
                         </div>
                     </a>
                 </div>
 
-                <div class="d-none d-md-flex align-items-center gap-3">
-                    <a class="text-muted" href="@Url.Action("Stores", "Mall")">Stores</a>
-                    <a class="text-muted" href="@Url.Action("Dining", "Mall")">Dining</a>
-                    <a class="text-muted" href="@Url.Action("Entertainment", "Mall")">Entertainment</a>
-                    <a class="text-muted" href="@Url.Action("Events", "Mall")">Events</a>
-                    <a class="text-muted" href="@Url.Action("Promotions", "Mall")">Promotions</a>
-                    <a class="text-muted" href="@Url.Action("Contact", "Home")">Contact</a>
-                </div>
+                <nav class="d-none d-md-flex align-items-center gap-3 mall-nav">
+                    <a class="nav-link" href="@Url.Action("Stores", "Mall")">Stores</a>
+                    <a class="nav-link" href="@Url.Action("Dining", "Mall")">Dining</a>
+                    <a class="nav-link" href="@Url.Action("Entertainment", "Mall")">Entertainment</a>
+                    <a class="nav-link" href="@Url.Action("Events", "Mall")">Events</a>
+                    <a class="nav-link" href="@Url.Action("Promotions", "Mall")">Promotions</a>
+                    <a class="nav-link" href="@Url.Action("Contact", "Home")">Contact</a>
+                </nav>
 
                 <div class="d-flex align-items-center gap-2">
                     <!-- Notifications dropdown -->
                     <div class="dropdown">
                         <button class="btn btn-sm btn-outline-secondary position-relative" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-bell"></i>
-                            @* show unread count if provided *@
                             @if (ViewBag.UnreadNotificationsCount != null && (int)ViewBag.UnreadNotificationsCount > 0)
                             {
                                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">@ViewBag.UnreadNotificationsCount</span>
@@ -124,8 +164,8 @@
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notifDropdown" style="width:320px;">
                             <li class="dropdown-header">Notifications</li>
-                            <!-- Example: iterate notifications in partial -->
                             <li>
+                                @* If _NotificationsPartial missing, this will throw; create partial or replace with static fallback *@
                                 @await Html.PartialAsync("_NotificationsPartial")
                             </li>
                             <li><hr class="dropdown-divider" /></li>
@@ -134,9 +174,7 @@
                     </div>
 
                     <!-- Account -->
-                    <div class="dropdown">
-                        <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Login", "Account")">Login</a>
-                    </div>
+                    <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Login", "Account")">Login</a>
                 </div>
             </div>
         </div>
@@ -144,7 +182,6 @@
         <!-- Secondary nav (search + quick filters) -->
         <nav class="bg-light border-top border-bottom">
             <div class="container d-flex align-items-center py-2 gap-3">
-                <!-- Search -->
                 <form class="flex-grow-1" method="get" action="@Url.Action("Search", "Mall")" role="search">
                     <div class="input-group search-box">
                         <input type="search" name="q" class="form-control" placeholder="Search stores, food, events, movies..." aria-label="Search" value="@(ViewData["SearchQuery"] ?? "")" />
@@ -159,67 +196,61 @@
                         <button class="btn btn-primary" type="submit">Search</button>
                     </div>
                 </form>
-
-                <!-- Quick contact/phone/parking -->
-                <div class="d-none d-md-flex align-items-center gap-3 ms-3">
-                    <a class="text-decoration-none text-muted" href="@Url.Action("Parking", "Mall")"><i class="bi bi-car-front-fill"></i> Parking</a>
-                    <a class="text-decoration-none text-muted" href="@Url.Action("Help", "Home")"><i class="bi bi-question-circle"></i> Help</a>
-                </div>
             </div>
         </nav>
     </header>
 
     <!-- Hero area (partial) -->
     <section>
-        @* Create ~/Views/Shared/_Hero.cshtml to customize banner, hero search, promo carousel *@
+        @* Create ~/Areas/Client/Views/Shared/_Hero.cshtml or ~/Views/Shared/_Hero.cshtml *@
         @await Html.PartialAsync("_Hero")
     </section>
 
-    <main class="container my-4">
-        <div class="row">
-            <!-- Left: main content -->
-            <div class="col-lg-8">
-                @RenderBody()
+    <!-- Main area: expanded centered content wrapper -->
+    <main class="container-fluid my-4">
+        <div class="content-maxwide">
+            <div class="row">
+                <!-- Left: main content -->
+                <div class="col-lg-9">
+                    @RenderBody()
+                </div>
+
+                <!-- Right: sidebar -->
+                <aside class="col-lg-3">
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="mb-0">Categories</h6>
+                            <a class="small" href="@Url.Action("Categories", "Mall")">View all</a>
+                        </div>
+                        @await Html.PartialAsync("_CategoriesPartial")
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="mb-0">Upcoming events</h6>
+                            <a class="small" href="@Url.Action("Events", "Mall")">View all</a>
+                        </div>
+                        @await Html.PartialAsync("_EventListPartial")
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="mb-0">Cinema</h6>
+                            <a class="small" href="@Url.Action("Cinema", "Mall")">Showtimes</a>
+                        </div>
+                        @await Html.PartialAsync("_CinemaPartial")
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="p-3 bg-light rounded">
+                            <h6>Promotions & Deals</h6>
+                            <ul class="list-unstyled small mb-0">
+                                @await Html.PartialAsync("_PromotionsPartial")
+                            </ul>
+                        </div>
+                    </div>
+                </aside>
             </div>
-
-            <!-- Right: sidebar (categories, promotions, upcoming events, cinema showtimes, loyalty) -->
-            <aside class="col-lg-4">
-                <div class="mb-4">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <h6 class="mb-0">Categories</h6>
-                        <a class="small" href="@Url.Action("Categories", "Mall")">View all</a>
-                    </div>
-                    @* Partial: categories from Tbl_ProductCategory *@
-                    @await Html.PartialAsync("_CategoriesPartial")
-                </div>
-
-                <div class="mb-4">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <h6 class="mb-0">Upcoming events</h6>
-                        <a class="small" href="@Url.Action("Events", "Mall")">View all</a>
-                    </div>
-                    @await Html.PartialAsync("_EventListPartial")
-                </div>
-
-                <div class="mb-4">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <h6 class="mb-0">Cinema</h6>
-                        <a class="small" href="@Url.Action("Cinema", "Mall")">Showtimes</a>
-                    </div>
-                    @await Html.PartialAsync("_CinemaPartial")
-                </div>
-
-                <div class="mb-4">
-                    <div class="p-3 bg-light rounded">
-                        <h6>Promotions & Deals</h6>
-                        @* Show coupons from Tbl_Coupon *@
-                        <ul class="list-unstyled small mb-0">
-                            @* example static fallback. Replace with dynamic partial *@
-                            @await Html.PartialAsync("_PromotionsPartial")
-                        </ul>
-                    </div>
-                </div>
-            </aside>
         </div>
 
         <!-- Floor & Stores quick section -->
@@ -229,18 +260,16 @@
                 <a href="@Url.Action("Stores", "Mall")" class="small">View all stores</a>
             </div>
 
-            @* Partial: store list (Tenant + Unit info) *@
             @await Html.PartialAsync("_StoreListPartial")
         </section>
 
-        <!-- Optional additional blocks: Map, Parking status, Loyalty CTA -->
+        <!-- Optional additional blocks: Map, Parking status -->
         <section class="mt-5">
             <div class="row gx-4 gy-4">
                 <div class="col-md-6">
                     <div class="p-4 bg-white border rounded">
                         <h5>Center map</h5>
                         <p class="small text-muted">Shows store locations, entrances & parking.</p>
-                        @* Put an interactive map component or image map *@
                         <div class="position-relative" style="height:220px; background:#f6f9fc; display:flex; align-items:center; justify-content:center;">
                             <a href="@Url.Action("Map", "Mall")" class="stretched-link text-decoration-none">View map</a>
                         </div>
@@ -251,7 +280,6 @@
                     <div class="p-4 bg-white border rounded">
                         <h5>Parking status</h5>
                         <p class="small text-muted">Current number of free spaces (data from Tbl_ParkingSpot).</p>
-                        @* You can show counts or live status via API *@
                         <div>
                             <strong>@(ViewBag.ParkingFreeCount ?? "--")</strong> free spaces
                             <a class="d-block mt-2" href="@Url.Action("Parking", "Mall")">View parking details</a>
@@ -260,32 +288,27 @@
                 </div>
             </div>
         </section>
-
     </main>
 
     <!-- Footer -->
     <footer class="mt-5">
-        @* Create ~/Views/Shared/_Footer.cshtml for copyright/social/contact *@
         <div class="container">
             @await Html.PartialAsync("_Footer")
         </div>
     </footer>
 
-    <!-- Bootstrap 5 JS and dependencies (CDN) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="" crossorigin="anonymous"></script>
-
-    <!-- Icons (Bootstrap Icons) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <!-- Bootstrap 5 JS bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Small helper: close mobile nav on click (if you implement a mobile menu)
+        // small helper
         document.addEventListener('click', function (e) {
-            // Example: close dropdowns when clicking outside - bootstrap handles most cases
+            // nothing here for now
         });
 
-        // Example: provide a global JS object to allow partials to read preloaded data
+        // Provide a global object
         window.GigaMall = window.GigaMall || {};
-        window.GigaMall.mallName = "@(ViewData["MallName"] ?? "GigaMall")";
+        window.GigaMall.mallName = "@(ViewData["MallName"] ?? "ABCD Mall")";
     </script>
 
     @RenderSection("Scripts", required: false)
