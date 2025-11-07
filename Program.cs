@@ -19,6 +19,7 @@ builder.Services.AddDbContext<AbcdmallContext>(options =>
 builder.Services.AddScoped<ICinemaRepository, CinemaRepository>();
 builder.Services.AddScoped<IShowtimeRepository, ShowtimeRepository>();
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
+builder.Services.AddScoped<ISeatRepository, SeatRepository>();
 
 var app = builder.Build();
 

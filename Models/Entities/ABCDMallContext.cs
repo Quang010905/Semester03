@@ -15,6 +15,8 @@ public partial class AbcdmallContext : DbContext
     {
     }
 
+    public virtual DbSet<TblSeat> TblSeats { get; set; }
+    public virtual DbSet<TblShowtimeSeat> TblShowtimeSeats { get; set; }
     public virtual DbSet<TblCinema> TblCinemas { get; set; }
 
     public virtual DbSet<TblCoupon> TblCoupons { get; set; }
@@ -284,6 +286,67 @@ public partial class AbcdmallContext : DbContext
             entity.Property(e => e.ParkingSpotStatus)
                 .HasDefaultValue(1)
                 .HasColumnName("ParkingSpot_Status");
+        });
+
+        modelBuilder.Entity<TblSeat>(entity =>
+        {
+            entity.HasKey(e => e.SeatId).HasName("PK_Tbl_Seat");
+            entity.ToTable("Tbl_Seat");
+
+            entity.Property(e => e.SeatId).HasColumnName("Seat_ID");
+            entity.Property(e => e.SeatScreenId).HasColumnName("Seat_ScreenID");
+            entity.Property(e => e.SeatLabel).HasMaxLength(10).HasColumnName("Seat_Label");
+            entity.Property(e => e.SeatRow).HasMaxLength(5).HasColumnName("Seat_Row");
+            entity.Property(e => e.SeatCol).HasColumnName("Seat_Col");
+            entity.Property(e => e.SeatType).HasMaxLength(50).HasColumnName("Seat_Type");
+            entity.Property(e => e.SeatIsActive).HasDefaultValue(true).HasColumnName("Seat_IsActive");
+
+            // Nếu TblScreen không có navigation property TblSeats, dùng .WithMany() để không bắt buộc property đó
+            entity.HasOne(d => d.SeatScreen)
+                .WithMany()
+                .HasForeignKey(d => d.SeatScreenId)
+                .HasConstraintName("FK_Tbl_Seat_Tbl_Screen");
+        });
+
+        modelBuilder.Entity<TblShowtimeSeat>(entity =>
+        {
+            entity.HasKey(e => e.ShowtimeSeatId).HasName("PK_Tbl_ShowtimeSeat");
+            entity.ToTable("Tbl_ShowtimeSeat");
+
+            entity.Property(e => e.ShowtimeSeatId).HasColumnName("ShowtimeSeat_ID");
+            entity.Property(e => e.ShowtimeSeatShowtimeId).HasColumnName("ShowtimeSeat_ShowtimeID");
+            entity.Property(e => e.ShowtimeSeatSeatId).HasColumnName("ShowtimeSeat_SeatID");
+            entity.Property(e => e.ShowtimeSeatStatus).HasMaxLength(20).HasColumnName("ShowtimeSeat_Status");
+            entity.Property(e => e.ShowtimeSeatReservedByUserId).HasColumnName("ShowtimeSeat_ReservedByUserID");
+            entity.Property(e => e.ShowtimeSeatReservedAt).HasColumnName("ShowtimeSeat_ReservedAt");
+            entity.Property(e => e.ShowtimeSeatUpdatedAt).HasColumnName("ShowtimeSeat_UpdatedAt");
+
+            // NEW: shadow property mapping for ShowtimeSeat_MovieID (keeps model compatibility if entity class not yet modified)
+            entity.Property<int?>("ShowtimeSeatMovieId").HasColumnName("ShowtimeSeat_MovieID");
+
+            // FK -> Tbl_Showtime
+            entity.HasOne(d => d.ShowtimeSeatShowtime)
+                .WithMany()
+                .HasForeignKey(d => d.ShowtimeSeatShowtimeId)
+                .HasConstraintName("FK_Tbl_ShowtimeSeat_Tbl_Showtime");
+
+            // FK -> Tbl_Seat
+            entity.HasOne(d => d.ShowtimeSeatSeat)
+                .WithMany()
+                .HasForeignKey(d => d.ShowtimeSeatSeatId)
+                .HasConstraintName("FK_Tbl_ShowtimeSeat_Tbl_Seat");
+
+            // FK -> Tbl_Users (reserved by)
+            entity.HasOne(d => d.ShowtimeSeatReservedByUser)
+                .WithMany()
+                .HasForeignKey(d => d.ShowtimeSeatReservedByUserId)
+                .HasConstraintName("FK_Tbl_ShowtimeSeat_Tbl_Users");
+
+            // FK -> Tbl_Movie via shadow property
+            entity.HasOne<TblMovie>()
+                .WithMany()
+                .HasForeignKey("ShowtimeSeatMovieId")
+                .HasConstraintName("FK_Tbl_ShowtimeSeat_Tbl_Movie");
         });
 
         modelBuilder.Entity<TblProduct>(entity =>

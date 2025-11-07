@@ -26,7 +26,6 @@
 		<Folder Include="Areas/Client/Views/Home/" />
 		<Folder Include="Areas/Admin/Data/" />
 		<Folder Include="Areas/Admin/Models/" />
-		<Folder Include="Models/Entities/" />
 		<Folder Include="Models/ModelViews/" />
 		<Folder Include="Models/Repositories/" />
 	</ItemGroup>

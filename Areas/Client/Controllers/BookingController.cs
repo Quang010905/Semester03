@@ -9,11 +9,13 @@ namespace Semester03.Areas.Client.Controllers
     {
         private readonly IShowtimeRepository _showRepo;
         private readonly IMovieRepository _movieRepo;
+        private readonly ISeatRepository _seatRepo;
 
-        public BookingController(IShowtimeRepository showRepo, IMovieRepository movieRepo)
+        public BookingController(IShowtimeRepository showRepo, IMovieRepository movieRepo, ISeatRepository seatRepo)
         {
             _showRepo = showRepo;
             _movieRepo = movieRepo;
+            _seatRepo = seatRepo;
         }
 
         // GET: /Client/Booking/BookTicket?movieId=1
@@ -49,6 +51,41 @@ namespace Semester03.Areas.Client.Controllers
             var list = _showRepo.GetShowtimesForMovieOnDate(movieId, dt);
             // render partial view
             return PartialView("_ShowtimeGrid", list);
+        }
+
+        public IActionResult SelectSeat(int showtimeId)
+        {
+            var vm = _seatRepo.GetSeatLayoutForShowtime(showtimeId);
+            if (vm == null || vm.Seats == null) return NotFound();
+            return View(vm);
+        }
+
+        // POST: /Client/Booking/ReserveSeats
+        [HttpPost]
+        public IActionResult ReserveSeats([FromBody] ReserveRequestVm req)
+        {
+            if (req == null || req.ShowtimeSeatIds == null || !req.ShowtimeSeatIds.Any())
+                return BadRequest(new { success = false, message = "No seats selected" });
+
+            // for demo, use current user id if signed in - otherwise null
+            int? userId = null;
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                // replace with your user id retrieval
+                // userId = int.Parse(User.FindFirst("UserId")?.Value ?? "0");
+            }
+
+            var (succeeded, failed) = _seatRepo.ReserveSeats(req.ShowtimeId, req.ShowtimeSeatIds, userId);
+
+            var refreshed = _seatRepo.RefreshSeatLayout(req.ShowtimeId);
+
+            return Ok(new
+            {
+                success = succeeded.Any(),
+                succeeded,
+                failed,
+                layout = refreshed
+            });
         }
     }
 }
