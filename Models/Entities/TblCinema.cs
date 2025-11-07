@@ -9,6 +9,10 @@ public partial class TblCinema
 
     public string CinemaName { get; set; } = null!;
 
+    public string CinemaImg { get; set; } = null!;
+
+    public DateTime? CinemaStartDate { get; set; }
+
     public string? CinemaDescription { get; set; }
 
     public int? CinemaTenantPositionId { get; set; }
