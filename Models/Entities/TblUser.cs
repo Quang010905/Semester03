@@ -1,0 +1,41 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace Semester03.Models.Entities;
+
+public partial class TblUser
+{
+    public int UsersId { get; set; }
+
+    public string UsersUsername { get; set; } = null!;
+
+    public string? UsersPassword { get; set; }
+
+    public string? UsersFullName { get; set; }
+
+    public string? UsersEmail { get; set; }
+
+    public string? UsersPhone { get; set; }
+
+    public int? UsersRoleId { get; set; }
+
+    public int? UsersPoints { get; set; }
+
+    public DateTime? UsersCreatedAt { get; set; }
+
+    public DateTime? UsersUpdatedAt { get; set; }
+
+    public virtual ICollection<TblCouponUser> TblCouponUsers { get; set; } = new List<TblCouponUser>();
+
+    public virtual ICollection<TblCustomerComplaint> TblCustomerComplaints { get; set; } = new List<TblCustomerComplaint>();
+
+    public virtual ICollection<TblEventBooking> TblEventBookings { get; set; } = new List<TblEventBooking>();
+
+    public virtual ICollection<TblNotification> TblNotifications { get; set; } = new List<TblNotification>();
+
+    public virtual ICollection<TblTenant> TblTenants { get; set; } = new List<TblTenant>();
+
+    public virtual ICollection<TblTicket> TblTickets { get; set; } = new List<TblTicket>();
+
+    public virtual TblRole? UsersRole { get; set; }
+}
