@@ -245,7 +245,8 @@
                     <div class="mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <h6 class="mb-0">Upcoming events</h6>
-                            <a class="small" href="@Url.Action("Events", "Mall")">All</a>
+                            <a class="nav-link" href="@Url.Action("Index", "Event", new { area = "Client" })">Events</a>
+
                         </div>
                         @await Html.PartialAsync("_EventListPartial")
                     </div>

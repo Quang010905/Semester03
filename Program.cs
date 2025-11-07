@@ -20,6 +20,8 @@ builder.Services.AddScoped<ICinemaRepository, CinemaRepository>();
 builder.Services.AddScoped<IShowtimeRepository, ShowtimeRepository>();
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
 builder.Services.AddScoped<ISeatRepository, SeatRepository>();
+builder.Services.AddScoped<IEventRepository, EventRepository>();
+
 
 var app = builder.Build();
 

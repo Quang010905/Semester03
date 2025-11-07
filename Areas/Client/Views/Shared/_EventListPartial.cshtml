@@ -1,24 +1,71 @@
 ﻿@using System.Linq
+@using Semester03.Areas.Client.Models.ViewModels
+@model object
+
 @{
-    var events = Model as IEnumerable<dynamic> ?? ViewBag.Events as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    // Normalize: try to get IEnumerable<EventCardVm> first, else try IEnumerable<MovieCardVm>, else try dynamic list
+    IEnumerable<EventCardVm> events = null;
+
+    if (Model is IEnumerable<EventCardVm> evs)
+    {
+        events = evs;
+    }
+    else if (Model is IEnumerable<MovieCardVm> movies)
+    {
+        events = movies.Select(m => new EventCardVm
+        {
+            Id = m.Id,
+            Title = m.Title,
+            ShortDescription = (m.Description?.Length > 120) ? m.Description.Substring(0, 117).TrimEnd() + "..." : m.Description,
+            StartDate = m.NextShowtime,
+            ImageUrl = string.IsNullOrEmpty(m.PosterUrl) ? "/images/event-placeholder.png" : m.PosterUrl
+        });
+    }
+    else if (Model is IEnumerable<dynamic> dyns)
+    {
+        // try map dynamic to EventCardVm defensively
+        events = dyns.Select(d => new EventCardVm
+        {
+            Id = (int?)(d?.Id ?? d?.EventId) ?? 0,
+            Title = (string)(d?.Title ?? d?.EventName ?? ""),
+            ShortDescription = (string)(d?.ShortDescription ?? d?.ShortDescription ?? d?.Description ?? d?.EventDescription ?? ""),
+            StartDate = (DateTime?)(d?.StartDate ?? d?.EventStart ?? d?.NextShowtime),
+            ImageUrl = (string)(d?.ImageUrl ?? d?.EventImg ?? d?.PosterUrl ?? "/images/event-placeholder.png")
+        });
+    }
+    else
+    {
+        events = Enumerable.Empty<EventCardVm>();
+    }
 }
+
 <div class="list-group small">
     @if (events.Any())
     {
         foreach (var e in events)
         {
-            var title = e?.Title ?? (e as object)?.ToString() ?? "Event";
-            var date = e?.Date ?? "";
-            <a href="@Url.Action("EventDetails","Mall", new { id = e?.Id })" class="list-group-item list-group-item-action">
-                <div class="d-flex justify-content-between">
-                    <div>@title</div>
-                    <small class="text-muted">@date</small>
+            var title = e?.Title ?? "Event";
+            var start = e?.StartDate.HasValue == true ? e.StartDate.Value.ToString("dd MMM yyyy HH:mm") : "";
+            <a href="@Url.Action("Details", "Event", new { area = "Client", id = e?.Id })" class="list-group-item list-group-item-action">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="text-truncate" style="max-width:180px;">@title</div>
+                    <small class="text-muted">@start</small>
                 </div>
+                @if (!string.IsNullOrWhiteSpace(e?.ShortDescription))
+                {
+                    <div class="small text-muted ps-2 pe-2">@e.ShortDescription</div>
+                }
             </a>
         }
     }
     else
     {
-        <div class="text-muted small p-2">No upcoming events</div>
+
+        <div class="text-center text-muted small p-3">
+            <div>No upcoming items 🔕</div>
+            <div class="mt-2">
+                <a href="@Url.Action("Index", "Event", new { area = "Client" })" class="btn btn-sm btn-outline-primary">See all events</a>
+            </div>
+        </div>
     }
 </div>
