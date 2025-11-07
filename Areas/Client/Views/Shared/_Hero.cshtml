@@ -3,30 +3,222 @@
     var heroImage = ViewData["HeroImage"] ?? "/images/hero-default.jpg";
 }
 <section class="hero-outer">
-    <div class="container text-white py-5">
-        <h1 class="display-5">@mallName</h1>
-        <p class="lead">Welcome to the sample shopping center — discover stores, events and deals.</p>
+    <div class="container text-white py-4 hero-top">
+        <h1 class="display-5 mb-1">@mallName</h1>
+        <p class="lead mb-0">Welcome to the sample shopping center — discover stores, events and deals.</p>
     </div>
 
-    <!-- HERO CAROUSEL (FULL-WIDTH) -->
-    <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="500">
-        <div class="carousel-indicators custom-indicators">
-            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
-            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
-            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
-        </div>
+    <!-- HERO: centered inner width so left/right "thụt vào" -->
+    <div class="hero-carousel">
+        <div class="hero-inner">
+            <!-- this centers the carousel and creates the side inset -->
+            <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
 
-        <<div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
-            <div class="carousel-inner"> <div class="carousel-item active"> <img src="/Admin/img/download (2).jpg" class="d-block w-100 hero-img" /> </div> <div class="carousel-item"> <img src="/Admin/img/download (5).jpg" class="d-block w-100 hero-img" /> </div> <div class="carousel-item"> <img src="/Admin/img/images (2).jpg" class="d-block w-100 hero-img" /> </div> </div>
+                <div class="carousel-indicators custom-indicators">
+                    <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true"></button>
+                    <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
+                    <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
+                </div>
 
-        <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Previous</span>
-        </button>
+                <div class="carousel-inner">
+                    <div class="carousel-item active">
+                        <img src="/Admin/img/download (2).jpg" class="d-block w-100 hero-img" alt="slide-1" />
+                    </div>
+                    <div class="carousel-item">
+                        <img src="/Admin/img/download (5).jpg" class="d-block w-100 hero-img" alt="slide-2" />
+                    </div>
+                    <div class="carousel-item">
+                        <img src="/Admin/img/images (2).jpg" class="d-block w-100 hero-img" alt="slide-3" />
+                    </div>
+                </div>
 
-        <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
-            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Next</span>
-        </button>
-    </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev" aria-label="Previous slide">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                </button>
+
+                <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next" aria-label="Next slide">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                </button>
+            </div> <!-- /#heroCarousel -->
+        </div> <!-- /.hero-inner -->
+    </div> <!-- /.hero-carousel -->
 </section>
+
+<style>
+    /* HERO - centered with side inset + autoplay enabled via JS/data attribute */
+
+    /* outer spacing */
+    .hero-top {
+        max-width: 1200px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 5;
+    }
+
+    /* center the carousel content and create side gutters */
+    .hero-carousel {
+        width: 100%;
+        display: block;
+        background: transparent;
+        padding: 0; /* keeps full width background if any */
+        box-sizing: border-box;
+    }
+
+    /* this inner element defines the centered content width (thụt vào hai bên) */
+    .hero-inner {
+        max-width: 1580px; /* adjust how much "thụt vào" you want (smaller -> thụt nhiều hơn) */
+        margin: 0 auto;
+        position: relative; /* controls/indicators positioned relative to this */
+    }
+
+    /* image sizing: fill the hero-inner width and keep aspect */
+    .hero-img {
+        width: 100%;
+        height: 500px; /* desktop height - change if you want */
+        object-fit: cover; /* crop nicely without distortion */
+        object-position: center;
+        display: block;
+    }
+
+    /* controls and indicators positioned inside hero-inner (so they thụt vào cùng) */
+    .hero-inner .carousel-control-prev,
+    .hero-inner .carousel-control-next {
+        width: 48px;
+        height: 48px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0,0,0,0.28);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 6;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+    }
+
+    /* put the prev/next a little inside the hero-inner edges */
+    .hero-inner .carousel-control-prev {
+        left: 12px;
+    }
+
+    .hero-inner .carousel-control-next {
+        right: 12px;
+    }
+
+    /* indicator dots centered within hero-inner */
+    .hero-inner .custom-indicators {
+        position: absolute;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-120%);
+        z-index: 7;
+        display: flex;
+        gap: 8px;
+    }
+
+
+        .hero-inner .custom-indicators button {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.45);
+            background: rgba(255,255,255,0.35);
+            padding: 0;
+        }
+
+            .hero-inner .custom-indicators button.active {
+                background: #f5a623;
+                transform: scale(1.25);
+                box-shadow: 0 4px 8px rgba(245,166,35,0.18);
+            }
+
+    /* icon style */
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
+        filter: invert(1);
+        background-size: 18px 18px; /* keep icon visible inside circle */
+    }
+
+    /* responsive changes */
+    @@media (max-width: 992px) {
+        .hero-img
+
+    {
+        height: 420px;
+    }
+
+    .hero-inner {
+        max-width: 940px;
+    }
+
+        .hero-inner .carousel-control-prev, .hero-inner .carousel-control-next {
+            width: 44px;
+            height: 44px;
+            left: 8px;
+            right: 8px;
+        }
+
+    }
+    @@media (max-width: 576px) {
+        .hero-img
+
+    {
+        height: 260px;
+    }
+
+    .hero-inner {
+        padding: 0 12px;
+        max-width: calc(100% - 24px);
+    }
+
+        .hero-inner .carousel-control-prev, .hero-inner .carousel-control-next {
+            width: 40px;
+            height: 40px;
+        }
+
+        .hero-inner .carousel-control-prev {
+            left: 6px;
+        }
+
+        .hero-inner .carousel-control-next {
+            right: 6px;
+        }
+
+        .hero-inner .custom-indicators {
+            bottom: 10px;
+            gap: 6px;
+        }
+
+            .hero-inner .custom-indicators button {
+                width: 8px;
+                height: 8px;
+            }
+
+    }
+
+    /* prevent horizontal scroll */
+    html, body {
+        overflow-x: hidden;
+    }
+</style>
+
+<!-- Optional JS init: ensure autoplay definitely runs and allow pause-on-hover -->
+<script>
+    // If bootstrap JS is loaded, initialize/ensure carousel autoplay
+    (function () {
+        try {
+            var el = document.getElementById('heroCarousel');
+            if (el) {
+                // Create or re-init with desired options
+                var carousel = bootstrap.Carousel.getInstance(el) || new bootstrap.Carousel(el, {
+                    interval: 3000,   // 3 seconds
+                    ride: 'carousel',
+                    pause: 'hover',   // pause when user hovers
+                    touch: true
+                });
+            }
+        } catch (e) {
+            console.warn('Bootstrap carousel init failed:', e);
+        }
+    })();
+</script>
