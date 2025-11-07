@@ -5,14 +5,23 @@
 
 @section Styles {
     <style>
+        /* ensure layout sidebar is sticky and above content visually but not overlapping content */
+        .content-maxwide aside {
+            position: sticky;
+            top: 110px; /* adjust if header taller */
+            z-index: 20;
+        }
+
         /* movie grid hover / overlay */
         .movie-card {
             transition: transform .25s ease, box-shadow .25s ease;
             cursor: pointer;
+            z-index: 1;
+            background: #fff;
         }
 
             .movie-card:hover {
-                transform: translateY(-6px) scale(1.03);
+                transform: translateY(-6px) scale(1.02);
                 box-shadow: 0 10px 30px rgba(0,0,0,0.12);
             }
 
@@ -35,10 +44,12 @@
             opacity: 0;
             transition: opacity .18s ease;
             border-radius: .25rem;
+            pointer-events: none; /* prevent overlay from blocking clicks */
         }
 
         .movie-card:hover .movie-overlay {
             opacity: 1;
+            pointer-events: auto;
         }
 
         .movie-title {
@@ -89,7 +100,7 @@
 
         }
 
-        /* ensure card text doesn't overflow */
+        /* clamp description lines */
         .card .text-truncate {
             overflow: hidden;
             text-overflow: ellipsis;
@@ -100,7 +111,8 @@
     </style>
 }
 
-<div class="container my-4">
+<div class="py-2">
+    <!-- page content (no separate aside here) -->
     <!-- Featured carousel -->
     @if (Model.Featured?.Any() == true)
     {
@@ -151,7 +163,7 @@
         </div>
     }
 
-    <!-- Search bar for cinema (optional) -->
+    <!-- Search bar -->
     <div class="mb-4">
         <form class="d-flex" onsubmit="event.preventDefault();">
             <input id="movieSearch" class="form-control me-2" placeholder="Search movies..." />
@@ -159,146 +171,124 @@
         </form>
     </div>
 
-    <div class="row">
-        <div class="col-lg-8">
-            <!-- Slider of movies (auto scroll) -->
-            <h4 class="mb-3">Now showing</h4>
+    <!-- Now showing area -->
+    <h4 class="mb-3">Now showing</h4>
 
-            <div class="slider-wrapper mb-3">
-                <div id="sliderTrack" class="slider-track">
-                    @foreach (var m in Model.NowShowing)
-                    {
-                        <div class="slider-item">
-                            <div class="card movie-card position-relative h-100">
-                                <img src="@m.PosterUrl" class="movie-poster card-img-top" alt="@m.Title" />
-                                <div class="movie-overlay">
-                                    <div class="w-100 text-center">
-                                        <div class="movie-title">@m.Title</div>
-                                        <div class="small">@((m.DurationMin?.ToString() ?? "--") + " min")</div>
-                                        <div class="mt-2">
-                                            <a class="btn btn-sm btn-light" href="javascript:void(0)" onclick="loadShowtimes(@m.Id)">Showtimes</a>
-                                            <a class="btn btn-sm btn-primary ms-1" href="@Url.Action("Book","Booking", new { showtimeId = m.NextShowtimeId })">Book</a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="card-body p-2">
-                                    <div class="small text-muted">@m.NextShowtime?.ToString("dd MMM HH:mm")</div>
-                                    <div class="fw-semibold">@m.Title</div>
-                                    <p class="small text-truncate" title="@m.Description">@m.Description</p>
+    <div class="slider-wrapper mb-3">
+        <div id="sliderTrack" class="slider-track">
+            @foreach (var m in Model.NowShowing)
+            {
+                <div class="slider-item">
+                    <div class="card movie-card position-relative h-100">
+                        <img src="@m.PosterUrl" class="movie-poster card-img-top" alt="@m.Title" />
+                        <div class="movie-overlay">
+                            <div class="w-100 text-center">
+                                <div class="movie-title">@m.Title</div>
+                                <div class="small">@((m.DurationMin?.ToString() ?? "--") + " min")</div>
+                                <div class="mt-2">
+                                    <a class="btn btn-sm btn-light" href="javascript:void(0)" onclick="loadShowtimes(@m.Id)">Showtimes</a>
+                                    <a class="btn btn-sm btn-primary ms-1" href="@Url.Action("Book","Booking", new { showtimeId = m.NextShowtimeId })">Book</a>
                                 </div>
                             </div>
                         </div>
-                    }
+                        <div class="card-body p-2">
+                            <div class="small text-muted">@m.NextShowtime?.ToString("dd MMM HH:mm")</div>
+                            <div class="fw-semibold">@m.Title</div>
+                            <p class="small text-truncate" title="@m.Description">@m.Description</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            }
+        </div>
+    </div>
 
-            <!-- Large grid (also shows full details) -->
-            <div class="row g-3">
-                @foreach (var m in Model.NowShowing)
-                {
-                    <div class="col-6 col-md-4 col-lg-3">
-                        <div class="card movie-card h-100 position-relative">
-                            <img src="@m.PosterUrl" class="card-img-top movie-poster" alt="@m.Title" />
-                            <div class="card-body">
-                                <h6 class="card-title mb-1">@m.Title</h6>
-                                <small class="text-muted">@m.DurationMin min</small>
-                                <p class="small text-truncate mt-2" title="@m.Description">@m.Description</p>
-                            </div>
-                            <div class="card-footer bg-white border-0">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">@m.NextShowtime?.ToString("dd MMM HH:mm")</small>
-                                    <div>
-                                        <a class="btn btn-sm btn-outline-primary" href="javascript:void(0)" onclick="loadShowtimes(@m.Id)">Showtimes</a>
-                                        <a class="btn btn-sm btn-primary ms-1" href="@Url.Action("Book","Booking", new { showtimeId = m.NextShowtimeId })">Book</a>
-                                    </div>
-                                </div>
+    <!-- Grid of movies -->
+    <div class="row g-3">
+        @foreach (var m in Model.NowShowing)
+        {
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="card movie-card h-100 position-relative">
+                    <img src="@m.PosterUrl" class="card-img-top movie-poster" alt="@m.Title" />
+                    <div class="card-body">
+                        <h6 class="card-title mb-1">@m.Title</h6>
+                        <small class="text-muted">@m.DurationMin min</small>
+                        <p class="small text-truncate mt-2" title="@m.Description">@m.Description</p>
+                    </div>
+                    <div class="card-footer bg-white border-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">@m.NextShowtime?.ToString("dd MMM HH:mm")</small>
+                            <div>
+                                <a class="btn btn-sm btn-outline-primary" href="javascript:void(0)" onclick="loadShowtimes(@m.Id)">Showtimes</a>
+                                <a class="btn btn-sm btn-primary ms-1" href="@Url.Action("Book","Booking", new { showtimeId = m.NextShowtimeId })">Book</a>
                             </div>
                         </div>
                     </div>
-                }
-            </div>
-        </div>
-
-        <!-- Right sidebar: showtimes / promotions -->
-        <aside class="col-lg-4">
-            <div id="showtimesContainer">
-                <div class="p-3 bg-light rounded">
-                    <h6>Showtimes</h6>
-                    <div class="small text-muted">Select a movie to view showtimes</div>
                 </div>
             </div>
-
-            <div class="mt-4 p-3 bg-white border rounded">
-                <h6>Promotions</h6>
-                <p class="small text-muted">Look for combos and coupon codes at the box office.</p>
-            </div>
-        </aside>
+        }
     </div>
 </div>
 
 @section Scripts {
     <script>
-        // Auto play bootstrap carousel (5s)
         document.addEventListener('DOMContentLoaded', function () {
             var featured = document.querySelector('#featuredCarousel');
             if (featured) {
                 var carousel = new bootstrap.Carousel(featured, { interval: 5000, ride: 'carousel' });
             }
 
-            // Auto slider for horizontal track
+            // Auto slider for horizontal track (non-overflowing)
             (function () {
                 const track = document.getElementById('sliderTrack');
                 if (!track) return;
                 let pos = 0;
-                const item = track.querySelector('.slider-item');
-                const gap = 16; // matches CSS gap (approx)
-                const step = (item ? item.offsetWidth : 220) + gap;
-
-                // Recompute step on resize to adapt responsive item widths
+                const gap = 16;
                 function computeStep() {
                     const first = track.querySelector('.slider-item');
-                    const width = first ? first.getBoundingClientRect().width : 220;
-                    return Math.round(width + gap);
+                    const width = first ? Math.round(first.getBoundingClientRect().width) : 220;
+                    return width + gap;
                 }
 
                 let autoInterval = setInterval(() => {
-                    const computedStep = computeStep();
-                    pos += computedStep;
-                    const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+                    const step = computeStep();
+                    pos += step;
+                    const maxScroll = Math.max(0, track.scrollWidth - track.parentElement.clientWidth);
                     if (pos > maxScroll) pos = 0;
                     track.style.transform = `translateX(-${pos}px)`;
                 }, 3000);
 
-                // Pause on hover for better UX
-                track.addEventListener('mouseenter', () => clearInterval(autoInterval));
-                track.addEventListener('mouseleave', () => {
+                // pause on hover
+                track.parentElement.addEventListener('mouseenter', () => clearInterval(autoInterval));
+                track.parentElement.addEventListener('mouseleave', () => {
                     autoInterval = setInterval(() => {
-                        const computedStep = computeStep();
-                        pos += computedStep;
-                        const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+                        const step = computeStep();
+                        pos += step;
+                        const maxScroll = Math.max(0, track.scrollWidth - track.parentElement.clientWidth);
                         if (pos > maxScroll) pos = 0;
                         track.style.transform = `translateX(-${pos}px)`;
                     }, 3000);
                 });
 
-                // Ensure the track has no inline transform on load
                 track.style.transform = 'translateX(0)';
             })();
         });
 
-        // AJAX: load showtimes into sidebar
         function loadShowtimes(movieId) {
             const url = '@Url.Action("Showtimes", "Cinema", new { area = "Client" })' + '?movieId=' + movieId;
             fetch(url)
                 .then(r => r.text())
                 .then(html => {
-                    document.getElementById('showtimesContainer').innerHTML = html;
-                    window.scrollTo({ top: 300, behavior: 'smooth' });
+                    const container = document.getElementById('showtimesContainer');
+                    if (container) container.innerHTML = html;
+                    // scroll to right panel (approx)
+                    const rightPanel = document.querySelector('.content-maxwide aside');
+                    if (rightPanel) {
+                        rightPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
                 })
                 .catch(err => console.error(err));
         }
 
-        // quick search filter client-side
         function filterMovies() {
             const q = document.getElementById('movieSearch').value.toLowerCase();
             document.querySelectorAll('.card.movie-card').forEach(card => {
