@@ -3,7 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Semester03.Models.Entities; // <-- namespace của AbcdmallContext (điều chỉnh nếu khác)
-using Semester03.Areas.Client.Repositories; // <-- namespace repo (điều chỉnh nếu khác)
+using Semester03.Areas.Client.Repositories;
+using Semester03.Services.Vnpay; // <-- namespace repo (điều chỉnh nếu khác)
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,12 @@ builder.Services.AddScoped<IShowtimeRepository, ShowtimeRepository>();
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
 builder.Services.AddScoped<ISeatRepository, SeatRepository>();
 builder.Services.AddScoped<IEventRepository, EventRepository>();
+
+
+
+
+
+builder.Services.AddScoped<IVnPayService, VnPayService>();
 
 
 var app = builder.Build();

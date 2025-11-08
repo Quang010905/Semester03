@@ -1,0 +1,138 @@
+﻿@{
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+    ViewData["Title"] = "Thanh toán thành công";
+
+    var seatLabels = ViewData["SeatLabels"] as List<string> ?? new List<string>();
+    var showtimeId = ViewData["ShowtimeId"]?.ToString();
+    var totalAmount = (decimal)(ViewData["TotalAmount"] ?? 0m);
+    var pricePerSeat = (decimal)(ViewData["PricePerSeat"] ?? 0m);
+}
+
+@section Styles {
+    <style>
+        .success-container {
+            max-width: 700px;
+            margin: 3rem auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(20, 40, 80, 0.08);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #e8f9f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem auto;
+            color: #28a745;
+            font-size: 2.5rem;
+        }
+
+        .success-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #222;
+            margin-bottom: .5rem;
+        }
+
+        .success-desc {
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+
+        .ticket-summary {
+            border-top: 1px solid #eee;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            text-align: left;
+        }
+
+        .badge-seat {
+            display: inline-block;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: .6rem;
+            padding: .35rem .65rem;
+            margin: .125rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .total-amount {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #d63384;
+        }
+
+        .actions {
+            margin-top: 2rem;
+        }
+
+            .actions .btn {
+                min-width: 160px;
+            }
+    </style>
+}
+
+<div class="success-container">
+    <div class="success-icon">
+        <i class="bi bi-check-lg"></i>
+    </div>
+
+    <div class="success-title">Thanh toán thành công!</div>
+    <div class="success-desc">
+        Cảm ơn bạn đã đặt vé. Vé điện tử của bạn đã được ghi nhận thành công.
+    </div>
+
+    <div class="ticket-summary">
+        <h6 class="fw-bold mb-3">Thông tin vé</h6>
+        <div class="mb-2"><strong>Mã suất chiếu:</strong> @showtimeId</div>
+        <div class="mb-2">
+            <strong>Ghế:</strong>
+            @if (seatLabels.Any())
+            {
+                foreach (var s in seatLabels)
+                {
+                    <span class="badge-seat">@s</span>
+                }
+            }
+            else
+            {
+                <span class="text-muted">Không xác định</span>
+            }
+        </div>
+        <div class="mb-2">
+            <strong>Giá mỗi ghế:</strong> @pricePerSeat.ToString("N0") VND
+        </div>
+        <div class="mb-2">
+            <strong>Tổng thanh toán:</strong>
+            <span class="total-amount">@totalAmount.ToString("N0") VND</span>
+        </div>
+    </div>
+
+    <div class="actions d-flex justify-content-center gap-3">
+        <a href="/Client/Home/Index" class="btn btn-primary">
+            <i class="bi bi-house-door me-2"></i>Về trang chủ
+        </a>
+        <button class="btn btn-outline-secondary" onclick="window.print()">
+            <i class="bi bi-printer me-2"></i>In vé
+        </button>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Optional: hiệu ứng hiện biểu tượng check
+        document.addEventListener("DOMContentLoaded", () => {
+            const icon = document.querySelector(".success-icon i");
+            icon.style.transform = "scale(0)";
+            icon.style.transition = "transform 0.3s ease";
+            setTimeout(() => icon.style.transform = "scale(1)", 100);
+        });
+    </script>
+}
