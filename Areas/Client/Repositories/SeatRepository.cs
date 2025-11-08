@@ -46,7 +46,7 @@ namespace Semester03.Areas.Client.Repositories
                 ShowtimeSeatId = x.ShowtimeSeatId,
                 Label = x.SeatLabel,
                 Row = x.SeatRow ?? "",
-                Col = x.SeatCol ?? 0,
+                Col = x.SeatCol, 
                 Status = string.IsNullOrEmpty(x.ShowtimeSeatStatus) ? "available" : x.ShowtimeSeatStatus,
                 ReservedByUserId = x.ShowtimeSeatReservedByUserId,
                 ReservedAt = x.ShowtimeSeatReservedAt

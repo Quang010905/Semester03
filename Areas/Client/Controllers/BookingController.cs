@@ -186,7 +186,6 @@ namespace Semester03.Areas.Client.Controllers
                 CinemaName = showtime.ShowtimeScreen?.ScreenCinema?.CinemaName ?? "",
                 ScreenName = showtime.ShowtimeScreen?.ScreenName ?? "",
                 ShowtimeStart = showtime.ShowtimeStart,
-                SeatPrice = showtime.ShowtimePrice ?? 0,
                 SelectedSeats = seatLabels
             };
 
