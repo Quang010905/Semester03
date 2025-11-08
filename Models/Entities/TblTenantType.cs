@@ -1,15 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace Semester03.Models.Entities;
 
-public partial class TblTenantType
+namespace Semester03.Models.Entities
 {
-    public int TenantTypeId { get; set; }
+    public partial class TblTenantType
+    {
+        public TblTenantType()
+        {
+            TblTenants = new HashSet<TblTenant>();
+        }
 
-    public string? TenantTypeName { get; set; }
 
-    public int? TenantTypeStatus { get; set; }
+        public int TenantTypeId { get; set; }
+        public string TenantTypeName { get; set; }
+        public int? TenantTypeStatus { get; set; }
 
-    public virtual ICollection<TblTenant> TblTenants { get; set; } = new List<TblTenant>();
+
+        public virtual ICollection<TblTenant> TblTenants { get; set; }
+    }
 }

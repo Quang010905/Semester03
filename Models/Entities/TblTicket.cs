@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace Semester03.Models.Entities
 {
@@ -7,35 +6,16 @@ namespace Semester03.Models.Entities
     {
         public int TicketId { get; set; }
 
-        // Khóa tới Tbl_Showtime (bắt buộc)
-        public int TicketShowtimeId { get; set; }
-
-        // Khóa tới Tbl_ShowtimeSeat (nullable theo schema bạn cung cấp)
-        public int? TicketShowtimeSeatId { get; set; }
-
-        // Tên/label ghế (ví dụ "C7")
-        public string? TicketSeat { get; set; }
-
-        // Người mua (nullable nếu không bắt buộc)
-        public int? TicketBuyerUserId { get; set; }
-
-        // Trạng thái ticket: sold / reserved / cancelled ...
+        // matches your Db schema / context mapping
+        public int TicketShowtimeSeatId { get; set; }     // <-- fixes TicketShowtimeSeatId missing
+        public int TicketBuyerUserId { get; set; }
         public string? TicketStatus { get; set; }
+        public decimal TicketPrice { get; set; }
+        public DateTime TicketCreatedAt { get; set; }     // <-- fixes TicketCreatedAt missing
+        public DateTime TicketUpdatedAt { get; set; }
 
-        // Giá vé
-        public decimal? TicketPrice { get; set; }
-
-        // Thời điểm mua
-        public DateTime? TicketPurchasedAt { get; set; }
-
-        // (Tùy chọn) thời điểm cập nhật record
-        public DateTime? TicketUpdatedAt { get; set; }
-
-        // Navigation properties
+        // navigation props
         public virtual TblUser? TicketBuyerUser { get; set; }
-        public virtual TblShowtime TicketShowtime { get; set; } = null!;
-
-        // Navigation tới ShowTimeSeat nếu bạn muốn tham chiếu trực tiếp
-        public virtual TblShowtimeSeat? TicketShowtimeSeat { get; set; }
+        public virtual TblShowtimeSeat? TicketShowtimeSeat { get; set; } // <-- fixes TicketShowtimeSeat missing
     }
 }

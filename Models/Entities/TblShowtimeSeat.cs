@@ -1,22 +1,28 @@
-﻿using Semester03.Models.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class TblShowtimeSeat
+namespace Semester03.Models.Entities
 {
-    public int ShowtimeSeatId { get; set; }
-    public int ShowtimeSeatShowtimeId { get; set; }
-    public int ShowtimeSeatSeatId { get; set; }
-    public string? ShowtimeSeatStatus { get; set; }
-    public int? ShowtimeSeatReservedByUserId { get; set; }
-    public DateTime? ShowtimeSeatReservedAt { get; set; }
-    public DateTime? ShowtimeSeatUpdatedAt { get; set; }
+    public partial class TblShowtimeSeat
+    {
+        public TblShowtimeSeat()
+        {
+            TblTickets = new HashSet<TblTicket>();
+        }
 
-    // NEW: movie id convenience column
-    public int? ShowtimeSeatMovieId { get; set; }
+        public int ShowtimeSeatId { get; set; }
+        public int ShowtimeSeatShowtimeId { get; set; }
+        public int ShowtimeSeatSeatId { get; set; }
+        public string? ShowtimeSeatStatus { get; set; }
+        public int ShowtimeSeatReservedByUserId { get; set; }
+        public DateTime ShowtimeSeatReservedAt { get; set; }
+        public DateTime? ShowtimeSeatUpdatedAt { get; set; }
 
-    public virtual TblSeat? ShowtimeSeatSeat { get; set; }
-    public virtual TblShowtime? ShowtimeSeatShowtime { get; set; }
-    public virtual TblUser? ShowtimeSeatReservedByUser { get; set; }
+        // navigation
+        public virtual TblShowtime? ShowtimeSeatShowtime { get; set; }
+        public virtual TblSeat? ShowtimeSeatSeat { get; set; }
+        public virtual TblUser? ShowtimeSeatReservedByUser { get; set; }
 
-    // new navigation
-    public virtual TblMovie? ShowtimeSeatMovie { get; set; }
+        public virtual ICollection<TblTicket> TblTickets { get; set; } // mapped in context .WithMany(p => p.TblTickets)
+    }
 }
