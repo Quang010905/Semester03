@@ -8,17 +8,19 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public int ShowtimeId { get; set; }
         public string MovieTitle { get; set; } = "";
         public string ScreenName { get; set; } = "";
+        public string CinemaName { get; set; } = "";
         public DateTime ShowtimeStart { get; set; }
+        public decimal Price { get; set; }
         public List<SeatVm> Seats { get; set; } = new();
         public int MaxCols { get; set; } = 10;
     }
 
     public class SeatVm
     {
-        public int ShowtimeSeatId { get; set; }   // id in Tbl_ShowtimeSeat
-        public string Label { get; set; } = "";   // e.g., A1
-        public string Row { get; set; } = "";     // e.g., A
-        public int Col { get; set; }              // numeric column
+        public int ShowtimeSeatId { get; set; }
+        public string Label { get; set; } = "";
+        public string Row { get; set; } = "";
+        public int Col { get; set; }
         public string Status { get; set; } = "available";
         public int? ReservedByUserId { get; set; }
         public DateTime? ReservedAt { get; set; }
@@ -29,4 +31,5 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public int ShowtimeId { get; set; }
         public List<int> ShowtimeSeatIds { get; set; } = new List<int>();
     }
+
 }

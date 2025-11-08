@@ -74,12 +74,12 @@
             color: #fff;
             cursor: not-allowed;
         }
-        /* reserved by others */
+
         .seat-selected {
             background: #198754;
             color: #fff;
         }
-        /* selected by me */
+
         .row-label {
             font-weight: 700;
             margin-right: .5rem;
@@ -129,14 +129,19 @@
                 </div>
 
                 <div id="seatArea">
-                    @* grid will be rendered by JS using available data in data-seats attribute *@
                     <div id="seatGrid" class="seat-grid" style="grid-template-columns: repeat(@Model.MaxCols, minmax(46px,1fr));"></div>
                 </div>
 
-                <div class="controls">
-                    <div class="me-auto small text-muted" id="selectionInfo">Chưa chọn ghế nào</div>
-                    <button id="btnReserve" class="btn btn-primary" disabled>Đặt chỗ</button>
-                </div>
+                <!-- giữ form (nếu cần) nhưng nút là button type=button để tránh submit mặc định -->
+                <form id="seatForm" method="post" action="@Url.Action("ConfirmBooking","Booking", new { area = "Client" })">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="showtimeId" value="@Model.ShowtimeId" />
+                    <input type="hidden" id="seatIds" name="seatIds" />
+                    <div class="controls">
+                        <div class="me-auto small text-muted" id="selectionInfo">Chưa chọn ghế nào</div>
+                        <button id="btnReserve" type="button" class="btn btn-primary" disabled>Đặt chỗ</button>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -156,7 +161,7 @@
                 <hr />
                 <div>
                     <strong>Ghi chú</strong>
-                    <p class="small text-muted">Những ghế màu xám là trống, bạn có thể chọn. Ghế màu đỏ đã được đặt/không thể chọn. Sau khi chọn nhấn "Đặt chỗ" để giữ ghế (sẽ đánh dấu là reserved).</p>
+                    <p class="small text-muted">Ghế xám là trống, ghế đỏ là đã đặt, ghế xanh là bạn chọn. Nhấn "Đặt chỗ" để xác nhận.</p>
                 </div>
             </div>
         </div>
@@ -166,9 +171,8 @@
 @section Scripts {
     <script>
         (function(){
-            // serialize Model to camelCase so JS keys like vm.seats, vm.showtimeId match
+            // serializing model to camelCase JSON for client
             const vm = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
-
             const seatGrid = document.getElementById('seatGrid');
             const selectionInfo = document.getElementById('selectionInfo');
             const btnReserve = document.getElementById('btnReserve');
@@ -181,23 +185,26 @@
             const seats = vm.seats || [];
             const maxCols = vm.maxCols || 10;
 
-            // build position map
+            // map by row_col for quick lookup
             const byPos = {};
             seats.forEach(s => {
-                // ensure numeric col
                 const col = Number(s.col || 0);
                 const row = (s.row || '').toString();
                 byPos[`${row}_${col}`] = s;
             });
 
-            // compute row list in order (A,B,C,...)
+            // build ordered row list (alphanumeric sort)
             const rowSet = new Set(seats.map(s => (s.row || '').toString()).filter(x => x));
-            const rowList = Array.from(rowSet).sort();
+            const rowList = Array.from(rowSet).sort((a,b) => {
+                // nếu row là ký tự như "A","B" thì sắp xếp lexicographically; nếu numeric, compare numeric
+                const na = Number(a), nb = Number(b);
+                if (!isNaN(na) && !isNaN(nb)) return na - nb;
+                return a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'});
+            });
 
             seatGrid.style.gridTemplateColumns = `repeat(${maxCols}, minmax(46px,1fr))`;
             seatGrid.innerHTML = '';
 
-            // render rows in order; if some rows empty it'll still create placeholders
             rowList.forEach(r => {
                 for (let c = 1; c <= maxCols; c++) {
                     const key = `${r}_${c}`;
@@ -205,27 +212,30 @@
                     if (s) {
                         const btn = document.createElement('button');
                         btn.className = 'seat-btn';
+                        btn.type = 'button';
+                        // data attributes use kebab-case when rendered in DOM but accessing via dataset will camelCase
                         btn.dataset.showtimeSeatId = s.showtimeSeatId;
                         btn.dataset.label = s.label;
                         btn.dataset.status = (s.status || 'available').toString();
                         btn.dataset.row = s.row || '';
                         btn.dataset.col = s.col || '';
-
                         btn.innerText = s.label;
 
                         const status = (btn.dataset.status || '').toString().trim().toLowerCase();
-                        if (status === 'available') {
+                        if (status === 'available' || status === '' || status === 'free') {
                             btn.classList.add('seat-available');
                             btn.addEventListener('click', onSeatClick);
+                        } else if (status === 'reserved') {
+                            btn.classList.add('seat-reserved');
+                            btn.disabled = true;
                         } else {
-                            // treat reserved/sold/blocked as taken
                             btn.classList.add('seat-taken');
                             btn.disabled = true;
                         }
 
                         seatGrid.appendChild(btn);
                     } else {
-                        // placeholder to maintain grid layout
+                        // placeholder để giữ lưới cân đối
                         const ph = document.createElement('div');
                         ph.style.width = '46px';
                         ph.style.height = '36px';
@@ -243,7 +253,7 @@
                 if (!id) return;
 
                 const status = (b.dataset.status || '').trim().toLowerCase();
-                if (status !== 'available') return; // double-check
+                if (status !== 'available' && status !== '') return;
 
                 if (selected.has(id)) {
                     selected.delete(id);
@@ -259,11 +269,13 @@
 
             function refreshSelectionUI() {
                 const arr = Array.from(selected);
+                // cập nhật ẩn dành cho form (nếu bạn muốn submit truyền thẳng)
+                document.getElementById('seatIds').value = arr.join(',');
+
                 if (arr.length === 0) {
                     selectionInfo.innerText = 'Chưa chọn ghế nào';
                     btnReserve.disabled = true;
                 } else {
-                    // get labels
                     const labels = arr.map(id => {
                         const el = seatGrid.querySelector('[data-showtime-seat-id="'+id+'"]');
                         return el ? el.dataset.label : id;
@@ -273,39 +285,63 @@
                 }
             }
 
+            // thêm log debug để nhanh thấy response
             btnReserve.addEventListener('click', function(){
-                if (selected.size === 0) return;
-                const payload = {
-                    showtimeId: vm.showtimeId,
-                    showtimeSeatIds: Array.from(selected).map(x => parseInt(x))
-                };
+                if (selected.size === 0) {
+                    alert('Vui lòng chọn ít nhất 1 ghế trước khi đặt.');
+                    return;
+                }
 
                 btnReserve.disabled = true;
-                btnReserve.innerText = 'Đang xử lý...';
+                const previousText = btnReserve.innerText;
+                btnReserve.innerText = 'Đang đặt...';
+
+                const payload = {
+                    showtimeId: vm.showtimeId,
+                    showtimeSeatIds: Array.from(selected).map(x => parseInt(x, 10))
+                };
+
+                console.log('Reserve payload:', payload);
 
                 fetch('@Url.Action("ReserveSeats", "Booking", new { area = "Client" })', {
                     method: 'POST',
-                    headers: { 'Content-Type':'application/json','Accept':'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify(payload)
                 })
-                .then(r => r.json())
+                .then(async res => {
+                    console.log('raw response status', res.status);
+                    if (!res.ok) {
+                        const txt = await res.text();
+                        throw new Error('Server error: ' + txt);
+                    }
+                    return res.json();
+                })
                 .then(data => {
-                    if (!data) throw new Error('No response');
-                    if (data.success) {
-                        // simplest: reload to reflect reserved seats
-                        location.reload();
+                    console.log('reserve result', data);
+                    if (!data) throw new Error('Empty response from server');
+
+                    // Nếu có ít nhất 1 ghế thành công -> redirect đến ConfirmBooking với danh sách succeeded ids
+                    if (data.success && data.succeeded && data.succeeded.length > 0) {
+                        const target = '@Url.Action("ConfirmBooking", "Booking", new { area = "Client" })';
+                        const qs = '?showtimeId=' + encodeURIComponent(vm.showtimeId) + '&seatIds=' + encodeURIComponent(data.succeeded.join(','));
+                        // redirect
+                        window.location.href = target + qs;
+                        return;
                     } else {
-                        alert('Một số ghế không thể đặt: ' + (data.failed || []).join(', '));
+                        // Không thành công: hiển thị thông báo về failed labels (nếu có), reload để lấy layout mới
+                        const failedLabels = (data.failedLabels && data.failedLabels.length) ? data.failedLabels : data.failed;
+                        alert('Không thể đặt những ghế sau: ' + (failedLabels && failedLabels.length ? failedLabels.join(', ') : 'Không xác định'));
+                        // nếu server trả layout mới, có thể render lại — hiện tại reload cho nhanh
                         location.reload();
                     }
                 })
                 .catch(err => {
-                    console.error(err);
-                    alert('Lỗi khi đặt ghế.');
+                    console.error('Lỗi khi đặt ghế:', err);
+                    alert('Lỗi khi đặt ghế: ' + (err.message || err));
                 })
-                .finally(()=> {
+                .finally(() => {
                     btnReserve.disabled = false;
-                    btnReserve.innerText = 'Đặt chỗ';
+                    btnReserve.innerText = previousText || 'Đặt chỗ';
                 });
             });
 
