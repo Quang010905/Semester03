@@ -29,7 +29,6 @@
 
     <div class="col-12">
         <h4 class="mt-4">Upcoming events</h4>
-        @* Use the strongly-typed partial and pass the model explicitly to avoid model-mismatch *@
         @await Html.PartialAsync("_EventListPartial", Model.Upcoming)
     </div>
 </div>

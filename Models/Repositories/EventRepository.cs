@@ -4,25 +4,36 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Semester03.Areas.Client.Models.ViewModels;
-using Semester03.Models.Entities; // adjust if your DbContext namespace different
+using Semester03.Models.Entities;
 
 namespace Semester03.Areas.Client.Repositories
 {
-    public class EventRepository : IEventRepository
+    /// <summary>
+    /// Singleton EventRepository.
+    /// NOTE: This repository creates a new AbcdmallContext per-call to avoid DbContext thread-safety issues.
+    /// </summary>
+    public sealed class EventRepository
     {
-        private readonly AbcdmallContext _db;
-        public EventRepository(AbcdmallContext db)
+        private static readonly Lazy<EventRepository> _lazy =
+            new Lazy<EventRepository>(() => new EventRepository());
+
+        public static EventRepository Instance => _lazy.Value;
+
+        // Private ctor to enforce singleton
+        private EventRepository()
         {
-            _db = db;
         }
 
-        // NOTE: If your scaffolded DbSet is named differently (Tbl_Event, TblEvents, etc.)
-        // adjust _db.TblEvents to the correct property name.
-
+        /// <summary>
+        /// Get featured events (future events) limited to top N.
+        /// Uses the columns from Tbl_Event: Event_ID, Event_Name, Event_Description, Event_Start, Event_End, Event_Img, Event_MaxSlot, Event_Status, Event_TenantPositionID
+        /// </summary>
         public async Task<List<EventCardVm>> GetFeaturedEventsAsync(int top = 3)
         {
             var now = DateTime.Now;
-            var q = _db.TblEvents
+
+            using var db = new AbcdmallContext();
+            var q = db.TblEvents
                 .AsNoTracking()
                 .Where(e => e.EventStart >= now && (e.EventStatus == null || e.EventStatus == 1))
                 .OrderBy(e => e.EventStart)
@@ -31,42 +42,54 @@ namespace Semester03.Areas.Client.Repositories
                 {
                     Id = e.EventId,
                     Title = e.EventName,
-                    ShortDescription = e.EventDescription ?? "",
+                    ShortDescription = (e.EventDescription ?? "").Length > 200 ? ((string)e.EventDescription).Substring(0, 197) + "..." : (e.EventDescription ?? ""),
                     StartDate = e.EventStart,
                     EndDate = e.EventEnd,
                     ImageUrl = string.IsNullOrEmpty(e.EventImg) ? "/images/event-placeholder.png" : e.EventImg,
                     MaxSlot = e.EventMaxSlot,
-                    Status = e.EventStatus ?? 1
+                    Status = e.EventStatus ?? 1,
+                    TenantPositionId = e.EventTenantPositionId
                 });
 
             return await q.ToListAsync();
         }
 
+        /// <summary>
+        /// Get all upcoming events (events whose end or start is in the future) ordered by start date.
+        /// </summary>
         public async Task<List<EventCardVm>> GetUpcomingEventsAsync()
         {
             var now = DateTime.Now;
-            var q = _db.TblEvents
+
+            using var db = new AbcdmallContext();
+            var q = db.TblEvents
                 .AsNoTracking()
-                .Where(e => (e.EventEnd == null ? e.EventStart >= now : e.EventEnd >= now) && (e.EventStatus == null || e.EventStatus == 1))
+                .Where(e => ((e.EventEnd == null && e.EventStart >= now) || (e.EventEnd != null && e.EventEnd >= now))
+                            && (e.EventStatus == null || e.EventStatus == 1))
                 .OrderBy(e => e.EventStart)
                 .Select(e => new EventCardVm
                 {
                     Id = e.EventId,
                     Title = e.EventName,
-                    ShortDescription = e.EventDescription ?? "",
+                    ShortDescription = (e.EventDescription ?? "").Length > 200 ? ((string)e.EventDescription).Substring(0, 197) + "..." : (e.EventDescription ?? ""),
                     StartDate = e.EventStart,
                     EndDate = e.EventEnd,
                     ImageUrl = string.IsNullOrEmpty(e.EventImg) ? "/images/event-placeholder.png" : e.EventImg,
                     MaxSlot = e.EventMaxSlot,
-                    Status = e.EventStatus ?? 1
+                    Status = e.EventStatus ?? 1,
+                    TenantPositionId = e.EventTenantPositionId
                 });
 
             return await q.ToListAsync();
         }
 
+        /// <summary>
+        /// Get full event details by id
+        /// </summary>
         public async Task<EventDetailsVm> GetEventByIdAsync(int eventId)
         {
-            var e = await _db.TblEvents
+            using var db = new AbcdmallContext();
+            var e = await db.TblEvents
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.EventId == eventId);
 
