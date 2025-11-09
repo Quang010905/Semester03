@@ -1,6 +1,6 @@
 ﻿@model IEnumerable<Semester03.Areas.Client.Models.ViewModels.ShowtimeVm>
 
-<div class="p-3 bg-white border rounded">
+<div class="p-3 bg-white border rounded" id="showtimesContainer">
     <h6>Showtimes (selected date)</h6>
     @if (!Model.Any())
     {
@@ -16,8 +16,8 @@
                     <div class="d-flex flex-wrap gap-2 mt-1">
                         @foreach (var s in g)
                         {
-                            <a class="btn btn-outline-secondary btn-sm" href="@Url.Action("Book","Booking", new { showtimeId = s.Id })">
-                                @s.StartTime.ToString("HH:mm") <small class="text-muted">(@s.ScreenName)</small>
+                            <a class="btn btn-outline-secondary btn-sm" href="@Url.Action("SelectSeat","Booking", new { area = "Client", showtimeId = s.Id })">
+                                @s.StartTime.ToLocalTime().ToString("HH:mm") <small class="text-muted">(@s.ScreenName)</small>
                             </a>
                         }
                     </div>
