@@ -1,18 +1,19 @@
-﻿using Semester03.Areas.Client.Models.ViewModels;
-using Semester03.Models.Entities;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Semester03.Areas.Client.Models.ViewModels;
+using Semester03.Models.Entities;
 
 namespace Semester03.Areas.Client.Repositories
 {
-    public class ShowtimeRepository : IShowtimeRepository
+    public class ShowtimeRepository
     {
         private readonly AbcdmallContext _db;
         public ShowtimeRepository(AbcdmallContext db) => _db = db;
 
-        // return showtimes for movie on a local date (interpretation: midnight..23:59 local)
         public List<ShowtimeVm> GetShowtimesForMovieOnDate(int movieId, DateTime localDate)
         {
-            // The DB stores datetimes -- treat localDate as date in server timezone or convert as needed.
             var start = localDate.Date;
             var end = start.AddDays(1);
 
@@ -49,7 +50,6 @@ namespace Semester03.Areas.Client.Repositories
                        .Distinct()
                        .OrderBy(d => d);
 
-            // ensure we always return requested number of days starting from fromDate even if no showtimes
             var result = new List<DateTime>();
             for (int i = 0; i < days; i++)
                 result.Add(fromDate.Date.AddDays(i));

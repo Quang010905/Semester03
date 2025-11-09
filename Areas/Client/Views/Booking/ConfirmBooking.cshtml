@@ -8,7 +8,6 @@
     decimal computedTotal = seatPrice * seatCount;
     decimal totalAmount = (Model != null && Model.TotalAmount > 0) ? Model.TotalAmount : computedTotal;
 
-    // try to capture seatIds param if present
     string seatIdsFromQuery = "";
     try
     {
@@ -24,12 +23,11 @@
 
 @section Styles {
     <style>
-        /* styles */
         .confirm-hero {
             background: linear-gradient(180deg, #eef7ff 0%, #ffffff 100%);
             border-radius: 12px;
             padding: 1.25rem;
-            box-shadow: 0 8px 24px rgba(20, 40, 80, 0.06);
+            box-shadow: 0 8px 24px rgba(20,40,80,0.06);
         }
 
         .movie-title {
@@ -52,33 +50,6 @@
         .price-line {
             font-weight: 600;
         }
-
-        .muted-sm {
-            color: #6c757d;
-            font-size: .95rem;
-        }
-
-        .summary-card {
-            border-radius: 10px;
-        }
-
-        .actions .btn {
-            min-width: 150px;
-        }
-
-        @@media (max-width: 576px) {
-            .actions
-
-        {
-            flex-direction: column;
-            gap: .5rem;
-        }
-
-        .actions .btn {
-            width: 100%;
-        }
-
-        }
     </style>
 }
 
@@ -88,9 +59,7 @@
             <h3 class="mb-0">Xác nhận đặt vé</h3>
             <div class="muted-sm">Kiểm tra lại thông tin trước khi thanh toán</div>
         </div>
-        <div>
-            <a class="btn btn-outline-secondary" href="javascript:history.back()">← Quay lại</a>
-        </div>
+        <div><a class="btn btn-outline-secondary" href="javascript:history.back()">← Quay lại</a></div>
     </div>
 
     <div class="row g-3">
@@ -141,11 +110,6 @@
             </div>
 
             <div class="card summary-card p-3 mb-3">
-                <div class="d-flex justify-content-between mb-2">
-                    <div class="muted-sm">Chi tiết đơn hàng</div>
-                    <div class="muted-sm">Mã suất: <strong>@Model.ShowtimeId</strong></div>
-                </div>
-
                 <div class="table-responsive">
                     <table class="table table-borderless mb-0">
                         <thead>
@@ -174,31 +138,21 @@
                 </div>
             </div>
 
-            <div class="mb-3 muted-sm">
-                <strong>Lưu ý:</strong> Ghế sẽ được giữ trong thời gian xử lý thanh toán. Sau khi thanh toán thành công, bạn sẽ nhận được vé điện tử.
-            </div>
         </div>
 
         <div class="col-lg-4">
             <div class="card p-3 mb-3">
                 <h6 class="mb-2">Thanh toán</h6>
-                <div class="mb-3 muted-sm">Phương thức nhanh</div>
 
-                <!-- Form POST tới CreatePaymentUrlVnpay -->
                 <form id="payForm" asp-controller="Booking" asp-action="CreatePaymentUrlVnpay" method="post">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="showtimeId" value='@Model.ShowtimeId' />
                     <input type="hidden" id="seatIdsInput" name="seatIds" value='@($"{seatIdsFromQuery}".Replace(" ", ""))' />
-                    <!-- Gửi amount là số nguyên (không có dấu phân cách) theo invariant culture -->
                     <input type="hidden" name="amount" value='@totalAmount.ToString("F0", CultureInfo.InvariantCulture)' />
 
                     <div class="d-grid gap-2 actions mt-2">
-                        <button id="btnPay" type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#confirmPayModal">
-                            <i class="bi bi-wallet2 me-2"></i> Thanh toán qua VNPAY
-                        </button>
-                        <button id="btnPrint" type="button" class="btn btn-outline-secondary">
-                            <i class="bi bi-printer me-2"></i> In tóm tắt
-                        </button>
+                        <button id="btnPay" type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#confirmPayModal">Thanh toán qua VNPAY</button>
+                        <button id="btnPrint" type="button" class="btn btn-outline-secondary">In tóm tắt</button>
                         <a href="javascript:history.back()" class="btn btn-light">Chỉnh sửa ghế</a>
                     </div>
                 </form>
@@ -209,13 +163,10 @@
                 <dl class="row small mb-0">
                     <dt class="col-6 text-muted">Phim</dt>
                     <dd class="col-6">@Model.MovieTitle</dd>
-
                     <dt class="col-6 text-muted">Rạp</dt>
                     <dd class="col-6">@Model.CinemaName</dd>
-
                     <dt class="col-6 text-muted">Phòng</dt>
                     <dd class="col-6">@Model.ScreenName</dd>
-
                     <dt class="col-6 text-muted">Suất</dt>
                     <dd class="col-6">@Model.ShowtimeStart.ToString("dd/MM/yyyy HH:mm")</dd>
                 </dl>
@@ -224,7 +175,7 @@
     </div>
 </div>
 
-<!-- Modal: xác nhận trước khi chuyển sang VNPAY -->
+<!-- Confirm modal -->
 <div class="modal fade" id="confirmPayModal" tabindex="-1" aria-labelledby="confirmPayModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -258,128 +209,103 @@
             const seatIdsInput = document.getElementById('seatIdsInput');
 
             if (!seatIdsInput.value) {
-            const qs = new URLSearchParams(window.location.search);
-            const qSeatIds = qs.get('seatIds') || qs.get('seatids');
-            if (qSeatIds) {
-                // loại bỏ ký tự lạ, khoảng trắng, nhiều dấu phẩy
-                seatIdsInput.value = qSeatIds.replace(/[^\d,]/g, '').replace(/,+/g, ',').replace(/(^,|,$)/g, '');
+                const qs = new URLSearchParams(window.location.search);
+                const qSeatIds = qs.get('seatIds') || qs.get('seatids');
+                if (qSeatIds) {
+                    seatIdsInput.value = qSeatIds.replace(/[^\d,]/g, '').replace(/,+/g, ',').replace(/(^,|,$)/g, '');
+                }
+            } else {
+                seatIdsInput.value = seatIdsInput.value.replace(/[^\d,]/g, '').replace(/,+/g, ',').replace(/(^,|,$)/g, '');
             }
-        } else {
-            // luôn làm sạch nếu đã có giá trị
-            seatIdsInput.value = seatIdsInput.value.replace(/[^\d,]/g, '').replace(/,+/g, ',').replace(/(^,|,$)/g, '');
-        }
 
-        function getAntiForgeryToken() {
-            const t = document.querySelector('input[name="__RequestVerificationToken"]');
-            return t ? t.value : null;
-        }
+            function getAntiForgeryToken() {
+                const t = document.querySelector('input[name="__RequestVerificationToken"]');
+                return t ? t.value : null;
+            }
 
-        btnConfirmPay.addEventListener('click', function () {
-            btnConfirmPay.disabled = true;
-            const originalBtnText = btnConfirmPay.innerText;
-            btnConfirmPay.innerText = 'Đang chuyển...';
+            btnConfirmPay.addEventListener('click', function () {
+                btnConfirmPay.disabled = true;
+                const originalBtnText = btnConfirmPay.innerText;
+                btnConfirmPay.innerText = 'Đang chuyển...';
 
-            try {
-                if (!seatIdsInput.value) {
-                    alert('Không có ghế để thanh toán. Vui lòng kiểm tra lại.');
-                    return;
-                }
-
-                const rawAmount = payForm.querySelector('input[name="amount"]').value;
-                // Chuẩn hóa amount: bỏ mọi dấu, chuyển sang Number (Invariant)
-                const numericAmount = Number(String(rawAmount).replace(/[^\d.\-]/g, ''));
-                if (!rawAmount || Number.isNaN(numericAmount) || !isFinite(numericAmount) || numericAmount <= 0) {
-                    alert('Số tiền không hợp lệ.');
-                    return;
-                }
-
-                // đảm bảo format gửi là chuỗi số nguyên/float không có dấu phân nhóm
-                const amountToSend = numericAmount.toString();
-
-                const formData = new FormData();
-                formData.append('showtimeId', payForm.querySelector('input[name="showtimeId"]').value);
-                // gửi seatIds đã được làm sạch
-                const cleanedSeatIds = seatIdsInput.value.replace(/[^\d,]/g, '').replace(/,+/g, ',').replace(/(^,|,$)/g, '');
-                formData.append('seatIds', cleanedSeatIds);
-                formData.append('amount', amountToSend);
-
-                // --- CLIENT-SIDE LOGGING (console) ---
-                console.group("VNPAY Request (client)");
-                // show key pairs
-                const pairs = Array.from(formData.entries());
-                console.table(pairs.map(p => ({ key: p[0], value: p[1] })));
-                const token = getAntiForgeryToken();
-                console.log("__RequestVerificationToken present:", !!token);
-                if (token) console.log("__RequestVerificationToken (first 40 chars):", token.substring(0, Math.min(40, token.length)));
-                console.groupEnd();
-                // --------------------------------------
-
-                // chuẩn bị headers (không set Content-Type để browser tự set multipart)
-                const headers = { 'X-Requested-With': 'XMLHttpRequest' };
-                if (token) headers['RequestVerificationToken'] = token;
-
-                fetch('@Url.Action("CreatePaymentUrlVnpay", "Booking", new { area = "Client" })', {
-                    method: 'POST',
-                    headers: headers,
-                    body: formData,
-                    credentials: 'same-origin'
-                })
-                .then(async (res) => {
-                    console.log("Fetch response status:", res.status, res.statusText);
-                    const txt = await res.text();
-                    // try parse JSON if possible
-                    try {
-                        const json = JSON.parse(txt);
-                        console.log("Server returned JSON:", json);
-                        if (res.ok) return json;
-                        throw new Error('Server error: ' + res.status + ' — ' + (json.message || JSON.stringify(json)));
-                    } catch (e) {
-                        // not JSON — log raw text and handle
-                        console.log("Server returned non-JSON body (raw):", txt);
-                        if (!res.ok) throw new Error('Server error: ' + res.status + ' — ' + txt);
-                        // if res.ok but not json, attempt to parse as json anyway
-                        try { return JSON.parse(txt); } catch { return { success: false, message: txt }; }
+                try {
+                    if (!seatIdsInput.value) {
+                        alert('Không có ghế để thanh toán. Vui lòng kiểm tra lại.');
+                        return;
                     }
-                })
-                .then(data => {
-                    console.log("Parsed server response:", data);
-                    if (data && data.success && data.url) {
-                        console.log("Redirecting to VNPAY URL (truncated):", data.url.substring(0, 300));
-                        // chuyển hướng
-                        window.location.href = data.url;
-                    } else {
-                        const msg = data && data.message ? data.message : 'Không thể tạo URL thanh toán';
-                        throw new Error(msg);
+
+                    const rawAmount = payForm.querySelector('input[name="amount"]').value;
+                    const numericAmount = Number(String(rawAmount).replace(/[^\d.\-]/g, ''));
+                    if (!rawAmount || Number.isNaN(numericAmount) || !isFinite(numericAmount) || numericAmount <= 0) {
+                        alert('Số tiền không hợp lệ.');
+                        return;
                     }
-                })
-                .catch(err => {
-                    console.error("Error when creating VNPAY request:", err);
-                    alert('Lỗi khi tạo yêu cầu thanh toán: ' + (err.message || err));
-                })
-                .finally(() => {
+
+                    const amountToSend = numericAmount.toString();
+
+                    const formData = new FormData();
+                    formData.append('showtimeId', payForm.querySelector('input[name="showtimeId"]').value);
+                    const cleanedSeatIds = seatIdsInput.value.replace(/[^\d,]/g, '').replace(/,+/g, ',').replace(/(^,|,$)/g, '');
+                    formData.append('seatIds', cleanedSeatIds);
+                    formData.append('amount', amountToSend);
+
+                    const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+                    const token = getAntiForgeryToken();
+                    if (token) headers['RequestVerificationToken'] = token;
+
+                    fetch('@Url.Action("CreatePaymentUrlVnpay", "Booking", new { area = "Client" })', {
+                        method: 'POST',
+                        headers: headers,
+                        body: formData,
+                        credentials: 'same-origin'
+                    })
+                    .then(async (res) => {
+                        const txt = await res.text();
+                        try {
+                            const json = JSON.parse(txt);
+                            if (res.ok) return json;
+                            throw new Error('Server error: ' + res.status + ' — ' + (json.message || JSON.stringify(json)));
+                        } catch (e) {
+                            if (!res.ok) throw new Error('Server error: ' + res.status + ' — ' + txt);
+                            try { return JSON.parse(txt); } catch { return { success: false, message: txt }; }
+                        }
+                    })
+                    .then(data => {
+                        if (data && data.success && data.url) {
+                            window.location.href = data.url;
+                        } else {
+                            const msg = data && data.message ? data.message : 'Không thể tạo URL thanh toán';
+                            throw new Error(msg);
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Error when creating VNPAY request:", err);
+                        alert('Lỗi khi tạo yêu cầu thanh toán: ' + (err.message || err));
+                    })
+                    .finally(() => {
+                        btnConfirmPay.disabled = false;
+                        btnConfirmPay.innerText = originalBtnText || 'Xác nhận & chuyển đến VNPAY';
+                        var modalEl = document.getElementById('confirmPayModal');
+                        if (modalEl) {
+                            var modal = bootstrap.Modal.getInstance(modalEl);
+                            if (modal) modal.hide();
+                        }
+                    });
+                } catch (exInner) {
+                    console.error("Unexpected error in btnConfirmPay handler:", exInner);
+                    alert('Có lỗi xảy ra. Vui lòng thử lại.');
                     btnConfirmPay.disabled = false;
                     btnConfirmPay.innerText = originalBtnText || 'Xác nhận & chuyển đến VNPAY';
-                    var modalEl = document.getElementById('confirmPayModal');
-                    if (modalEl) {
-                        var modal = bootstrap.Modal.getInstance(modalEl);
-                        if (modal) modal.hide();
-                    }
-                });
-            } catch (exInner) {
-                console.error("Unexpected error in btnConfirmPay handler:", exInner);
-                alert('Có lỗi xảy ra. Vui lòng thử lại.');
-                btnConfirmPay.disabled = false;
-                btnConfirmPay.innerText = originalBtnText || 'Xác nhận & chuyển đến VNPAY';
-            }
-        });
+                }
+            });
 
-        btnPrint.addEventListener('click', function () {
-            window.print();
-        });
+            btnPrint.addEventListener('click', function () {
+                window.print();
+            });
 
-        btnPay.addEventListener('click', function () {
-            // modal opened by bootstrap attribute
-        });
-    })();
-</script>
+            btnPay.addEventListener('click', function () {
+                // modal opened by bootstrap attribute
+            });
+        })();
+    </script>
 }

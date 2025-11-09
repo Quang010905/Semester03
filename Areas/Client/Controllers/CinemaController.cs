@@ -1,20 +1,16 @@
-﻿using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Semester03.Areas.Client.Repositories;
 using Semester03.Areas.Client.Models.ViewModels;
+using System;
+using System.Threading.Tasks;
 
 namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
     public class CinemaController : Controller
     {
-        private readonly ICinemaRepository _repo;
-
-        public CinemaController(ICinemaRepository repo)
-        {
-            _repo = repo;
-        }
+        private readonly CinemaRepository _repo;
+        public CinemaController(CinemaRepository repo) => _repo = repo;
 
         public async Task<IActionResult> Index()
         {
@@ -30,7 +26,6 @@ namespace Semester03.Areas.Client.Controllers
             return View(vm); // Areas/Client/Views/Cinema/Index.cshtml
         }
 
-        // AJAX partial to get showtimes for a movie on a date
         [HttpGet]
         public async Task<IActionResult> Showtimes(int movieId, string date = null)
         {
@@ -38,7 +33,12 @@ namespace Semester03.Areas.Client.Controllers
             if (!DateTime.TryParse(date, out dt))
                 dt = DateTime.Today;
 
-            var shows = await _repo.GetShowtimesByMovieAsync(movieId, dt);
+            var shows = await Task.Run(() => // repository is synchronous for showtimes; ShowtimeRepository handles date logic
+            {
+                var showRepo = HttpContext.RequestServices.GetService(typeof(ShowtimeRepository)) as ShowtimeRepository;
+                return showRepo?.GetShowtimesForMovieOnDate(movieId, dt) ?? new System.Collections.Generic.List<ShowtimeVm>();
+            });
+
             return PartialView("_ShowtimesPartial", shows);
         }
     }
