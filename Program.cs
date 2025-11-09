@@ -57,18 +57,18 @@ app.MapStaticAssets();
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Admin}/{action=Index}/{id?}");
-//app.MapControllerRoute(
-//    name: "default",
-//    pattern: "{controller=Admin}/{action=Index}/{id?}",
-//    defaults: new { area = "Admin" })
-//    .WithStaticAssets();
-
-
-
 app.MapControllerRoute(
-    name: "client_default",
-    pattern: "{controller=Cinema}/{action=Index}/{id?}",
-    defaults: new { area = "Client" }
-)
-.WithStaticAssets();
+    name: "default",
+    pattern: "{controller=Admin}/{action=Index}/{id?}",
+    defaults: new { area = "Admin" })
+    .WithStaticAssets();
+
+
+
+//app.MapControllerRoute(
+//    name: "client_default",
+//    pattern: "{controller=Cinema}/{action=Index}/{id?}",
+//    defaults: new { area = "Client" }
+//)
+//.WithStaticAssets();
 app.Run();

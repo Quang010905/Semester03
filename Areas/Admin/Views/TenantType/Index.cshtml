@@ -1,0 +1,124 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+@if (ViewBag.listTenantType != null)
+{
+    var ls = (List<Semester03.Areas.Admin.Models.TenantType>)ViewBag.listTenantType;
+    if (ls != null && ls.Count > 0)
+    {
+        int i = 0;
+        <div class="card shadow mb-4">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th scope="col">No</th>
+                                <th scope="col">Tenant Type Name</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Action</th>
+                            </tr>
+                        </thead>
+                        <tfoot>
+                            <tr>
+                                <th scope="col">No</th>
+                                <th scope="col">Tenant Type Name</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Action</th>
+                            </tr>
+                        </tfoot>
+                        <tbody>
+                            @foreach (var item in ls)
+                            {
+                                <tr>
+                                    <th scope="row">@i</th>
+                                    <td>@item.Name</td>
+                                    <td>
+                                        <input type="checkbox" value="true" @(item.Status == 1 ? "checked" : "") disabled />
+                                    </td>
+                                    <td>
+                                        <a href="@Url.Action("Edit", "TenantType", new {id = item.Id})">
+                                            <img src="@Url.Content("~/Icon/pen.png")" style="width:1vw; height:2vh;" />
+                                        </a>
+                                        <a href="@Url.Action("deleteTenantType", "TenantType", new {id = item.Id})" onclick="return confirm('Are you sure to delete this Tenant Type?')">
+                                            <img src="@Url.Content("~/Icon/delete.png")" style="width:1vw; height:2vh;" />
+                                        </a>
+                                    </td>
+                                </tr>
+                                i++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @{
+                string search = ViewBag.Search ?? "";
+            }
+            <div class="row">
+                <div class="col-sm-12 col-md-5">
+                    <div class="dataTables_info" role="status" aria-live="polite">
+                        @if (ViewBag.TotalItems > 0)
+                        {
+                            <text>
+                                Page @ViewBag.CurrentPage
+                                of @ViewBag.TotalPages
+                            </text>
+                        }
+                    </div>
+                </div>
+
+                <div class="col-sm-12 col-md-7">
+                    <div class="dataTables_paginate paging_simple_numbers">
+                        <ul class="pagination">
+                            <li class="paginate_button page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage - 1 , search = search})">Previous</a>
+                            </li>
+
+                            @for (int j = 1; j <= ViewBag.TotalPages; j++)
+                            {
+                                <li class="paginate_button page-item @(j == ViewBag.CurrentPage ? "active" : "")">
+                                    <a class="page-link" href="@Url.Action("Index", new { page = j, search = search })">@j</a>
+                                </li>
+                            }
+
+                            <li class="paginate_button page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage + 1, search = search })">Next</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+            <thead>
+                <tr>
+                    <th scope="col">No</th>
+                    <th scope="col">CateName</th>
+                    <th scope="col">Image</th>
+                    <th scope="col">Active</th>
+                    <th scope="col">Action</th>
+                </tr>
+            </thead>
+            <tfoot>
+                <tr>
+                    <th scope="col">No</th>
+                    <th scope="col">CateName</th>
+                    <th scope="col">Image</th>
+                    <th scope="col">Active</th>
+                    <th scope="col">Action</th>
+                </tr>
+            </tfoot>
+            <tbody>
+                <tr>
+                    <td colspan="4" class="text-center">No Category.</td>
+                </tr>
+            </tbody>
+        </table>
+    }
+}

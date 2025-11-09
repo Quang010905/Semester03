@@ -38,7 +38,7 @@ namespace Semester03.Models.Entities
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning Move connection string out of source for production
-            => optionsBuilder.UseSqlServer("Server=(local);Database=ABCDMall;uid=sa;pwd=123;Trusted_Connection=True;TrustServerCertificate=true;");
+            => optionsBuilder.UseSqlServer("Server=(local);Database=ABCDMall;uid=sa;pwd=123456789;Trusted_Connection=True;TrustServerCertificate=true;");
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -397,7 +397,7 @@ namespace Semester03.Models.Entities
                 entity.Property(e => e.EventBookingTenantId).HasColumnName("EventBooking_TenantID").IsRequired();
                 entity.Property(e => e.EventBookingUserId).HasColumnName("EventBooking_UserID").IsRequired();
                 entity.Property(e => e.EventBookingEventId).HasColumnName("EventBooking_EventID").IsRequired();
-                entity.Property(e => e.EventBookingTotalCost).HasColumnName("EventBooking_Total_Cost").HasColumnType("decimal(18,2)").HasDefaultValue(0);
+                entity.Property(e => e.EventBookingTotalCost).HasColumnName("EventBooking_Total_Cost").HasColumnType("decimal(18,2)");
                 entity.Property(e => e.EventBookingPaymentStatus).HasColumnName("EventBooking_Payment_Status").HasDefaultValue(0);
                 entity.Property(e => e.EventBookingNotes).HasColumnName("EventBooking_Notes");
                 entity.Property(e => e.EventBookingCreatedDate).HasColumnName("EventBooking_CreatedDate").HasDefaultValueSql("(sysutcdatetime())");
