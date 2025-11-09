@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Semester03.Areas.Client.Models.ViewModels;
 using Semester03.Areas.Client.Repositories;
@@ -8,11 +9,11 @@ namespace Semester03.Areas.Client.Controllers
     [Area("Client")]
     public class EventController : Controller
     {
-        private readonly IEventRepository _repo;
+        // NOTE: using singleton repository instance directly.
+        private readonly EventRepository _repo = EventRepository.Instance;
 
-        public EventController(IEventRepository repo)
+        public EventController()
         {
-            _repo = repo;
         }
 
         public async Task<IActionResult> Index()
