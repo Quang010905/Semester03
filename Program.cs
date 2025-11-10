@@ -6,12 +6,15 @@ using Semester03.Models.Entities;
 using Semester03.Areas.Client.Repositories;
 using Semester03.Services.Vnpay;
 using Semester03.Models.Repositories;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 
-// read connection string from appsettings.json (DefaultConnection) or fallback
+// Đọc chuỗi kết nối từ appsettings.json hoặc fallback mặc định
 var conn = builder.Configuration.GetConnectionString("DefaultConnection")
            ?? "Server=(local);Database=ABCDMall;uid=sa;pwd=123;Trusted_Connection=True;TrustServerCertificate=true;";
 
@@ -19,15 +22,36 @@ builder.Services.AddDbContext<AbcdmallContext>(options =>
     options.UseSqlServer(conn)
 );
 
-// Register repositories as Scoped (per-request) - SAFE with DbContext
+// ====== Đăng ký các repository ======
 builder.Services.AddScoped<CinemaRepository>();
 builder.Services.AddScoped<ShowtimeRepository>();
 builder.Services.AddScoped<MovieRepository>();
 builder.Services.AddScoped<SeatRepository>();
+builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<ScreenRepository>();
 builder.Services.AddScoped<TenantRepository>();
 
-
+// ====== Đăng ký dịch vụ bổ sung ======
+builder.Services.AddScoped<IPasswordHasher<TblUser>, PasswordHasher<TblUser>>();
 builder.Services.AddScoped<IVnPayService, VnPayService>();
+
+// ====== Cấu hình Authentication (Cookie) ======
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "ABCDMallAuth";
+        options.LoginPath = "/Client/Account/Login";   // redirect khi chưa đăng nhập
+        options.AccessDeniedPath = "/Client/Account/Login";
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.SlidingExpiration = true;
+        // Có thể tuỳ chỉnh thêm cookie (SecurePolicy, SameSite, v.v.)
+    });
+
+builder.Services.AddAuthorization();
+
+// ====== Nếu cần Session ======
+// builder.Services.AddDistributedMemoryCache();
+// builder.Services.AddSession(options => { options.IdleTimeout = TimeSpan.FromMinutes(30); });
 
 var app = builder.Build();
 
@@ -45,12 +69,14 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllerRoute(
-    name: "areas",
-    pattern: "{area:exists}/{controller=Admin}/{action=Index}/{id?}"
-);
+
+//app.MapControllerRoute(
+//    name: "areas",
+//    pattern: "{area:exists}/{controller=Admin}/{action=Index}/{id?}"
+//);
 //app.MapControllerRoute(
 //    name: "default",
 //    pattern: "{controller=Admin}/{action=Index}/{id?}",
@@ -65,3 +91,5 @@ app.MapControllerRoute(
 )
 .WithStaticAssets();
 app.Run();
+
+

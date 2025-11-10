@@ -1,9 +1,8 @@
-﻿@*
-  _LayoutClient.cshtml
-  Main layout for Mall website (ASP.NET Core MVC - Razor)
-  - Increased main content width (max 1600px)
-  - Left column wider (col-lg-10) and sidebar slimmer (col-lg-2)
-  - Fixed CSS media query typos and improved responsive rules
+@*
+  _LayoutClient.cshtml — fixed merge conflicts
+  - Removed git conflict markers
+  - Unified navigation and media queries
+  - Kept TenantRepository injection and featured stores carousel
 *@
 @inject Semester03.Models.Repositories.TenantRepository _tenantRepo
 
@@ -53,10 +52,10 @@
             color: #333;
         }
 
-            .mall-nav .nav-link.active {
-                font-weight: 600;
-                color: #0d6efd;
-            }
+        .mall-nav .nav-link.active {
+            font-weight: 600;
+            color: #0d6efd;
+        }
 
         .store-card img {
             object-fit: cover;
@@ -87,14 +86,11 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.06);
         }
 
-        @@media (max-width: 767px) {
-            .hero
-
-        {
-            min-height: 220px;
-            padding: 1rem 0;
-        }
-
+        @media (max-width: 767px) {
+            .hero {
+                min-height: 220px;
+                padding: 1rem 0;
+            }
         }
 
         /* Expanded centered content wrapper */
@@ -107,29 +103,23 @@
         }
 
         /* Make main content even wider on large screens: left column 83.33%, right 16.66% */
-        @@media (min-width: 1200px) {
-            .col-lg-10
+        @media (min-width: 1200px) {
+            .col-lg-10 {
+                flex: 0 0 83.333333%;
+                max-width: 83.333333%;
+            }
 
-        {
-            flex: 0 0 83.333333%;
-            max-width: 83.333333%;
-        }
-
-        .col-lg-2 {
-            flex: 0 0 16.666667%;
-            max-width: 16.666667%;
-        }
-
+            .col-lg-2 {
+                flex: 0 0 16.666667%;
+                max-width: 16.666667%;
+            }
         }
 
         /* On very large screens allow a bit more breathing room */
-        @@media (min-width: 1600px) {
-            : root
-
-        {
-            --main-max-width: 1800px;
-        }
-
+        @media (min-width: 1600px) {
+            :root {
+                --main-max-width: 1800px;
+            }
         }
 
         /* Accessibility: focus outline for keyboard users */
@@ -145,6 +135,12 @@
             z-index: 20;
         }
 
+        /* Small helper to display user name in header */
+        .user-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+        }
 
         /* Scale card on hover */
         .hover-scale:hover {
@@ -158,17 +154,16 @@
             opacity: 0.7;
         }
 
-            .carousel-indicators [data-bs-target].active {
-                opacity: 1;
-            }
+        .carousel-indicators [data-bs-target].active {
+            opacity: 1;
+        }
 
-        /* Canh giữa carousel trong container */
+        /* Center carousel inside container */
         #featuredStoresCarousel .carousel-inner {
             padding: 0 1rem;
         }
 
-
-        /* Carousel controls vị trí bên ngoài card */
+        /* Carousel controls positioned */
         #featuredStoresCarousel .carousel-control-prev,
         #featuredStoresCarousel .carousel-control-next {
             width: 3%;
@@ -177,28 +172,26 @@
             opacity: 0.7;
         }
 
-            #featuredStoresCarousel .carousel-control-prev:hover,
-            #featuredStoresCarousel .carousel-control-next:hover {
-                opacity: 1;
-            }
+        #featuredStoresCarousel .carousel-control-prev:hover,
+        #featuredStoresCarousel .carousel-control-next:hover {
+            opacity: 1;
+        }
 
         #featuredStoresCarousel .carousel-control-prev-icon,
         #featuredStoresCarousel .carousel-control-next-icon {
             background-size: 2rem 2rem;
         }
 
-        @@media (min-width: 768px) {
-            .mall-nav .dropdown:hover > .dropdown-menu
+        /* Desktop dropdown hover behavior */
+        @media (min-width: 768px) {
+            .mall-nav .dropdown:hover > .dropdown-menu {
+                display: block;
+                margin-top: 0;
+            }
 
-        {
-            display: block;
-            margin-top: 0;
-        }
-
-        .mall-nav .dropdown-menu {
-            pointer-events: auto;
-        }
-
+            .mall-nav .dropdown-menu {
+                pointer-events: auto;
+            }
         }
     </style>
 
@@ -210,7 +203,7 @@
         <div class="container">
             <div class="d-flex align-items-center justify-content-between py-2">
                 <div class="d-flex align-items-center">
-                    <a class="d-flex align-items-center text-decoration-none" href="@Url.Action("Index", "Home")">
+                    <a class="d-flex align-items-center text-decoration-none" href="@Url.Action("Index", "Home", new { area = "Client" })">
                         <img src="/images/logo.png" alt="logo" style="height:48px; width:auto;" />
                         <div class="ms-2">
                             <div style="font-weight:700; font-size:1.05rem;">@ViewData["MallName"] ?? "ABCD Mall"</div>
@@ -220,27 +213,25 @@
                 </div>
 
                 <nav class="d-none d-md-flex align-items-center gap-3 mall-nav">
-
                     <div class="nav-item dropdown">
-                        <a class="nav-link" href="@Url.Action("Index", "Stores")" id="storesDropdown" role="button">
+                        <a class="nav-link" href="@Url.Action("Index", "Stores", new { area = "Client" })" id="storesDropdown" role="button">
                             Stores
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="storesDropdown">
                             @foreach (var type in Semester03.Models.Repositories.TenantTypeRepository.Instance.GetAll())
                             {
                                 <li>
-                                    <a class="dropdown-item" href="@Url.Action("Index", "Stores", new { typeId = type.Id })">@type.Name</a>
+                                    <a class="dropdown-item" href="@Url.Action("Index", "Stores", new { area = "Client", typeId = type.Id })">@type.Name</a>
                                 </li>
                             }
                         </ul>
                     </div>
 
-
-                    <a class="nav-link" href="@Url.Action("Dining", "Mall")">Dining</a>
-                    <a class="nav-link" href="@Url.Action("Entertainment", "Mall")">Entertainment</a>
-                    <a class="nav-link" href="@Url.Action("Events", "Mall")">Events</a>
-                    <a class="nav-link" href="@Url.Action("Promotions", "Mall")">Promotions</a>
-                    <a class="nav-link" href="@Url.Action("Contact", "Home")">Contact</a>
+                    <a class="nav-link" href="@Url.Action("Dining", "Mall", new { area = "Client" })">Dining</a>
+                    <a class="nav-link" href="@Url.Action("Entertainment", "Mall", new { area = "Client" })">Entertainment</a>
+                    <a class="nav-link" href="@Url.Action("Events", "Mall", new { area = "Client" })">Events</a>
+                    <a class="nav-link" href="@Url.Action("Promotions", "Mall", new { area = "Client" })">Promotions</a>
+                    <a class="nav-link" href="@Url.Action("Contact", "Home", new { area = "Client" })">Contact</a>
                 </nav>
 
                 <div class="d-flex align-items-center gap-2">
@@ -260,12 +251,27 @@
                                 @await Html.PartialAsync("_NotificationsPartial")
                             </li>
                             <li><hr class="dropdown-divider" /></li>
-                            <li><a class="dropdown-item text-center" href="@Url.Action("Notifications", "Account")">View all</a></li>
+                            <li><a class="dropdown-item text-center" href="@Url.Action("Notifications", "Account", new { area = "Client" })">View all</a></li>
                         </ul>
                     </div>
 
                     <!-- Account -->
-                    <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Login", "Account")">Login</a>
+                    @if (User?.Identity?.IsAuthenticated == true)
+                    {
+                        var name = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? User.Identity.Name ?? "User";
+                        <div class="user-badge">
+                            <span class="small text-muted">Xin chào,</span>
+                            <strong class="me-2">@name</strong>
+                            <form method="post" asp-area="Client" asp-controller="Account" asp-action="Logout" class="m-0">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Logout</button>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Login", "Account", new { area = "Client" })">Login</a>
+                    }
                 </div>
             </div>
         </div>
@@ -273,7 +279,7 @@
         <!-- Secondary nav (search + quick filters) -->
         <nav class="bg-light border-top border-bottom">
             <div class="container d-flex align-items-center py-2 gap-3">
-                <form class="flex-grow-1" method="get" action="@Url.Action("Search", "Mall")" role="search">
+                <form class="flex-grow-1" method="get" action="@Url.Action("Search", "Mall", new { area = "Client" })" role="search">
                     <div class="input-group search-box">
                         <input type="search" name="q" class="form-control" placeholder="Search stores, food, events, movies..." aria-label="Search" value="@(ViewData["SearchQuery"] ?? "")" />
                         <select name="type" class="form-select d-none d-lg-block" style="max-width:220px;">
@@ -310,7 +316,7 @@
                     <div class="mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <h6 class="mb-0">Categories</h6>
-                            <a class="small" href="@Url.Action("Categories", "Mall")">All</a>
+                            <a class="small" href="@Url.Action("Categories", "Mall", new { area = "Client" })">All</a>
                         </div>
                         @await Html.PartialAsync("_CategoriesPartial")
                     </div>
@@ -319,7 +325,6 @@
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <h6 class="mb-0">Upcoming events</h6>
                             <a class="nav-link" href="@Url.Action("Index", "Event", new { area = "Client" })">Events</a>
-
                         </div>
                         @await Html.PartialAsync("_EventListPartial")
                     </div>
@@ -327,7 +332,7 @@
                     <div class="mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <h6 class="mb-0">Cinema</h6>
-                            <a class="small" href="@Url.Action("Cinema", "Mall")">Showtimes</a>
+                            <a class="small" href="@Url.Action("Cinema", "Mall", new { area = "Client" })">Showtimes</a>
                         </div>
                         @await Html.PartialAsync("_CinemaPartial")
                     </div>
@@ -348,67 +353,57 @@
         <section class="mt-5">
             @{
                 var featuredStores = _tenantRepo.GetFeaturedStores(6); // lấy top 6
-                int slidesCount = (int)Math.Ceiling(featuredStores.Count / 3.0);
             }
 
-            <section class="mt-5">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h4 class="mb-0">Featured stores</h4>
-                    <a href="@Url.Action("Index", "Stores")" class="small">View all stores</a>
-                </div>
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h4 class="mb-0">Featured stores</h4>
+                <a href="@Url.Action("Index", "Stores", new { area = "Client" })" class="small">View all stores</a>
+            </div>
 
-                @if (featuredStores.Any())
-                {
-                    <div id="featuredStoresCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
-
-         
-
-                        <!-- Slides -->
-                        <div class="carousel-inner">
-                            @for (int i = 0; i < featuredStores.Count; i += 3)
-                            {
-                                <div class="carousel-item @(i == 0 ? "active" : "")">
-                                    <div class="row justify-content-center g-3">
-                                        @for (int j = i; j < i + 3 && j < featuredStores.Count; j++)
-                                        {
-                                            var s = featuredStores[j];
-                                            var img = string.IsNullOrEmpty(s.TenantImg) ? "/images/store-placeholder.png" : $"/images/tenants/{s.TenantImg}";
-                                            <div class="col-12 col-md-4">
-                                                <div class="card store-card h-100 shadow-sm border-0 rounded-4 overflow-hidden hover-scale">
-                                                    <img src="@img" class="card-img-top" alt="@s.TenantName" style="height:180px; object-fit:cover;" />
-                                                    <div class="card-body p-2 text-center">
-                                                        <h6 class="card-title fw-bold mb-1">@s.TenantName</h6>
-                                                        <small class="text-muted d-block mb-1">@s.TenantTypeName</small>
-                                                        <p class="text-secondary small mb-2">@s.TenantDescription</p>
-                                                        <a href="@Url.Action("Details", "Stores", new { id = s.TenantId })" class="btn btn-outline-primary btn-sm mt-1">View</a>
-                                                    </div>
+            @if (featuredStores != null && featuredStores.Any())
+            {
+                <div id="featuredStoresCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+                    <div class="carousel-inner">
+                        @for (int i = 0; i < featuredStores.Count; i += 3)
+                        {
+                            <div class="carousel-item @(i == 0 ? "active" : "")">
+                                <div class="row justify-content-center g-3">
+                                    @for (int j = i; j < i + 3 && j < featuredStores.Count; j++)
+                                    {
+                                        var s = featuredStores[j];
+                                        var img = string.IsNullOrEmpty(s.TenantImg) ? "/images/store-placeholder.png" : $"/images/tenants/{s.TenantImg}";
+                                        <div class="col-12 col-md-4">
+                                            <div class="card store-card h-100 shadow-sm border-0 rounded-4 overflow-hidden hover-scale">
+                                                <img src="@img" class="card-img-top" alt="@s.TenantName" style="height:180px; object-fit:cover;" />
+                                                <div class="card-body p-2 text-center">
+                                                    <h6 class="card-title fw-bold mb-1">@s.TenantName</h6>
+                                                    <small class="text-muted d-block mb-1">@s.TenantTypeName</small>
+                                                    <p class="text-secondary small mb-2">@s.TenantDescription</p>
+                                                    <a href="@Url.Action("Details", "Stores", new { id = s.TenantId, area = "Client" })" class="btn btn-outline-primary btn-sm mt-1">View</a>
                                                 </div>
                                             </div>
-                                        }
-                                    </div>
+                                        </div>
+                                    }
                                 </div>
-                            }
-                        </div>
-
-                        <!-- Controls -->
-                        <button class="carousel-control-prev" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="prev">
-                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                            <span class="visually-hidden">Previous</span>
-                        </button>
-                        <button class="carousel-control-next" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="next">
-                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                            <span class="visually-hidden">Next</span>
-                        </button>
+                            </div>
+                        }
                     </div>
-                }
-                else
-                {
-                    <div class="p-3 bg-light rounded text-muted text-center">No stores to display</div>
-                }
-            </section>
 
-            </section>
-
+                    <!-- Controls -->
+                    <button class="carousel-control-prev" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="p-3 bg-light rounded text-muted text-center">No stores to display</div>
+            }
         </section>
 
         <!-- Optional additional blocks: Map, Parking status -->
@@ -419,7 +414,7 @@
                         <h5>Center map</h5>
                         <p class="small text-muted">Shows store locations, entrances & parking.</p>
                         <div class="position-relative" style="height:220px; background:#f6f9fc; display:flex; align-items:center; justify-content:center;">
-                            <a href="@Url.Action("Map", "Mall")" class="stretched-link text-decoration-none">View map</a>
+                            <a href="@Url.Action("Map", "Mall", new { area = "Client" })" class="stretched-link text-decoration-none">View map</a>
                         </div>
                     </div>
                 </div>
@@ -430,7 +425,7 @@
                         <p class="small text-muted">Current number of free spaces (data from Tbl_ParkingSpot).</p>
                         <div>
                             <strong>@(ViewBag.ParkingFreeCount ?? "--")</strong> free spaces
-                            <a class="d-block mt-2" href="@Url.Action("Parking", "Mall")">View parking details</a>
+                            <a class="d-block mt-2" href="@Url.Action("Parking", "Mall", new { area = "Client" })">View parking details</a>
                         </div>
                     </div>
                 </div>
