@@ -3,22 +3,70 @@
 @model object
 
 @{
-    IEnumerable<EventCardVm> events = null;
+    IEnumerable<EventCardVm> events = Enumerable.Empty<EventCardVm>();
 
+    // 1) If model already EventCardVm list — use it directly
     if (Model is IEnumerable<EventCardVm> evs)
     {
         events = evs;
     }
-    else if (Model is IEnumerable<dynamic> dyns)
+    // 2) If model is some enumerable of objects/dynamics — map safely via reflection
+    else if (Model is IEnumerable<object> objs)
     {
-        events = dyns.Select(d => new EventCardVm
+        events = objs.Select(o =>
         {
-            Id = (int?)(d?.Id ?? d?.EventId) ?? 0,
-            Title = (string)(d?.Title ?? d?.EventName ?? ""),
-            ShortDescription = (string)(d?.ShortDescription ?? d?.Description ?? d?.EventDescription ?? ""),
-            StartDate = (DateTime?)(d?.StartDate ?? d?.EventStart ?? d?.NextShowtime),
-            ImageUrl = (string)(d?.ImageUrl ?? d?.EventImg ?? d?.PosterUrl ?? "/images/event-placeholder.png")
-        });
+            if (o == null) return new EventCardVm { Id = 0, Title = "", ShortDescription = "", StartDate = null, ImageUrl = "/images/event-placeholder.png" };
+
+            var t = o.GetType();
+            object val;
+
+            // Id
+            int id = 0;
+            var pId = t.GetProperty("Id") ?? t.GetProperty("EventId");
+            if (pId != null && (val = pId.GetValue(o)) != null)
+            {
+                int.TryParse(val.ToString(), out id);
+            }
+
+            // Title
+            string title = "";
+            var pTitle = t.GetProperty("Title") ?? t.GetProperty("EventName");
+            if (pTitle != null && (val = pTitle.GetValue(o)) != null)
+                title = val.ToString();
+
+            // ShortDescription
+            string shortDesc = "";
+            var pShort = t.GetProperty("ShortDescription") ?? t.GetProperty("Description") ?? t.GetProperty("EventDescription");
+            if (pShort != null && (val = pShort.GetValue(o)) != null)
+                shortDesc = val.ToString();
+
+            // StartDate
+            DateTime? start = null;
+            var pStart = t.GetProperty("StartDate") ?? t.GetProperty("EventStart") ?? t.GetProperty("NextShowtime");
+            if (pStart != null && (val = pStart.GetValue(o)) != null)
+            {
+                if (val is DateTime dt) start = dt;
+                else
+                {
+                    if (DateTime.TryParse(val.ToString(), out DateTime parsed)) start = parsed;
+                }
+            }
+
+            // ImageUrl
+            string img = "/images/event-placeholder.png";
+            var pImg = t.GetProperty("ImageUrl") ?? t.GetProperty("EventImg") ?? t.GetProperty("PosterUrl");
+            if (pImg != null && (val = pImg.GetValue(o)) != null && !string.IsNullOrWhiteSpace(val.ToString()))
+                img = val.ToString();
+
+            return new EventCardVm
+                    {
+                        Id = id,
+                        Title = title,
+                        ShortDescription = shortDesc,
+                        StartDate = start,
+                        ImageUrl = img
+                    };
+        }).ToList();
     }
     else
     {

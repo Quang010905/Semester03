@@ -7,5 +7,6 @@
         public string TenantImg { get; set; } = "";
         public string TenantDescription { get; set; } = "";
         public string TenantTypeName { get; set; } = "";
+        public string Position { get; set; } = "";
     }
 }
