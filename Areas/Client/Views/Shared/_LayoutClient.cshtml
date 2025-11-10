@@ -1,8 +1,8 @@
 @*
-  _LayoutClient.cshtml
-  Main layout for Mall website (ASP.NET Core MVC - Razor)
-  - Fixed CSS typos and responsive rules
-  - Login button links to Client Area Account/Login
+  _LayoutClient.cshtml — fixed merge conflicts
+  - Removed git conflict markers
+  - Unified navigation and media queries
+  - Kept TenantRepository injection and featured stores carousel
 *@
 @inject Semester03.Models.Repositories.TenantRepository _tenantRepo
 
@@ -181,6 +181,18 @@
         #featuredStoresCarousel .carousel-control-next-icon {
             background-size: 2rem 2rem;
         }
+
+        /* Desktop dropdown hover behavior */
+        @media (min-width: 768px) {
+            .mall-nav .dropdown:hover > .dropdown-menu {
+                display: block;
+                margin-top: 0;
+            }
+
+            .mall-nav .dropdown-menu {
+                pointer-events: auto;
+            }
+        }
     </style>
 
     @RenderSection("Styles", required: false)
@@ -201,7 +213,20 @@
                 </div>
 
                 <nav class="d-none d-md-flex align-items-center gap-3 mall-nav">
-                    <a class="nav-link" href="@Url.Action("Stores", "Mall", new { area = "Client" })">Stores</a>
+                    <div class="nav-item dropdown">
+                        <a class="nav-link" href="@Url.Action("Index", "Stores", new { area = "Client" })" id="storesDropdown" role="button">
+                            Stores
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="storesDropdown">
+                            @foreach (var type in Semester03.Models.Repositories.TenantTypeRepository.Instance.GetAll())
+                            {
+                                <li>
+                                    <a class="dropdown-item" href="@Url.Action("Index", "Stores", new { area = "Client", typeId = type.Id })">@type.Name</a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+
                     <a class="nav-link" href="@Url.Action("Dining", "Mall", new { area = "Client" })">Dining</a>
                     <a class="nav-link" href="@Url.Action("Entertainment", "Mall", new { area = "Client" })">Entertainment</a>
                     <a class="nav-link" href="@Url.Action("Events", "Mall", new { area = "Client" })">Events</a>
@@ -328,12 +353,11 @@
         <section class="mt-5">
             @{
                 var featuredStores = _tenantRepo.GetFeaturedStores(6); // lấy top 6
-                // If Count == 0 the rest will render fallback
             }
 
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <h4 class="mb-0">Featured stores</h4>
-                <a href="@Url.Action("Stores", "Mall", new { area = "Client" })" class="small">View all stores</a>
+                <a href="@Url.Action("Index", "Stores", new { area = "Client" })" class="small">View all stores</a>
             </div>
 
             @if (featuredStores != null && featuredStores.Any())
