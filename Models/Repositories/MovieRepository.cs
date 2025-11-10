@@ -34,5 +34,40 @@ namespace Semester03.Areas.Client.Repositories
                 PosterUrl = string.IsNullOrWhiteSpace(m.MovieImg) ? "/images/movie-placeholder.png" : m.MovieImg
             };
         }
+
+        //============== ADMIN REPO METHODS ==============
+
+        public async Task<IEnumerable<TblMovie>> GetAllAsync()
+        {
+            return await _db.TblMovies.ToListAsync();
+        }
+
+        public async Task<TblMovie> GetByIdAsync(int id)
+        {
+            return await _db.TblMovies.FindAsync(id);
+        }
+
+        public async Task<TblMovie> AddAsync(TblMovie entity)
+        {
+            _db.TblMovies.Add(entity);
+            await _db.SaveChangesAsync();
+            return entity;
+        }
+
+        public async Task UpdateAsync(TblMovie entity)
+        {
+            _db.Entry(entity).State = EntityState.Modified;
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            var entity = await _db.TblMovies.FindAsync(id);
+            if (entity != null)
+            {
+                _db.TblMovies.Remove(entity);
+                await _db.SaveChangesAsync();
+            }
+        }
     }
 }
