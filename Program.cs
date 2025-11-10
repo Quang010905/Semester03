@@ -6,6 +6,9 @@ using Semester03.Models.Entities;
 using Semester03.Areas.Client.Repositories;
 using Semester03.Services.Vnpay;
 using Semester03.Models.Repositories;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,13 +22,32 @@ builder.Services.AddDbContext<AbcdmallContext>(options =>
     options.UseSqlServer(conn)
 );
 
-// Register repositories as Scoped (per-request) - SAFE with DbContext
+// Register repositories as Scoped (per-request)
 builder.Services.AddScoped<CinemaRepository>();
 builder.Services.AddScoped<ShowtimeRepository>();
 builder.Services.AddScoped<MovieRepository>();
 builder.Services.AddScoped<SeatRepository>();
-
+builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<IPasswordHasher<TblUser>, PasswordHasher<TblUser>>();
 builder.Services.AddScoped<IVnPayService, VnPayService>();
+
+// Add Authentication (Cookie) and Authorization
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "ABCDMallAuth";
+        options.LoginPath = "/Client/Account/Login";   // redirect when not authenticated
+        options.AccessDeniedPath = "/Client/Account/Login";
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.SlidingExpiration = true;
+        // you can customize other cookie settings (SecurePolicy, SameSite, etc.) here
+    });
+
+builder.Services.AddAuthorization();
+
+// Optional: add session if you want to use HttpContext.Session later
+// builder.Services.AddDistributedMemoryCache();
+// builder.Services.AddSession(options => { options.IdleTimeout = TimeSpan.FromMinutes(30); });
 
 var app = builder.Build();
 
@@ -43,7 +65,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
-app.UseAuthorization();
+
 
 //app.MapControllerRoute(
 //    name: "areas",
@@ -63,3 +85,5 @@ app.MapControllerRoute(
 )
 .WithStaticAssets();
 app.Run();
+
+

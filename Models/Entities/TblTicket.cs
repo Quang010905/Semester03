@@ -21,5 +21,5 @@ public partial class TblTicket
 
     public virtual TblUser TicketBuyerUser { get; set; } = null!;
 
-    public virtual TblShowtime TicketShowtimeSeat { get; set; } = null!;
+    public virtual TblShowtimeSeat TicketShowtimeSeat { get; set; } = null!;
 }

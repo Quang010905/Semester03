@@ -1,0 +1,12 @@
+﻿@{
+    ViewData["Title"] = "Thanh toán thất bại";
+}
+
+<div class="container mt-5 text-center">
+    <h2 class="text-danger mb-4">Thanh toán thất bại</h2>
+    <p>@ViewData["ErrorMessage"]</p>
+
+    <a asp-area="Client" asp-controller="Cinema" asp-action="Index" class="btn btn-primary mt-3">
+        Quay lại trang phim
+    </a>
+</div>
