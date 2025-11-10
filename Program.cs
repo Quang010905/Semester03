@@ -14,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 
-// read connection string from appsettings.json (DefaultConnection) or fallback
+// Đọc chuỗi kết nối từ appsettings.json hoặc fallback mặc định
 var conn = builder.Configuration.GetConnectionString("DefaultConnection")
            ?? "Server=(local);Database=ABCDMall;uid=sa;pwd=123;Trusted_Connection=True;TrustServerCertificate=true;";
 
@@ -22,30 +22,34 @@ builder.Services.AddDbContext<AbcdmallContext>(options =>
     options.UseSqlServer(conn)
 );
 
-// Register repositories as Scoped (per-request)
+// ====== Đăng ký các repository ======
 builder.Services.AddScoped<CinemaRepository>();
 builder.Services.AddScoped<ShowtimeRepository>();
 builder.Services.AddScoped<MovieRepository>();
 builder.Services.AddScoped<SeatRepository>();
 builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<ScreenRepository>();
+builder.Services.AddScoped<TenantRepository>();
+
+// ====== Đăng ký dịch vụ bổ sung ======
 builder.Services.AddScoped<IPasswordHasher<TblUser>, PasswordHasher<TblUser>>();
 builder.Services.AddScoped<IVnPayService, VnPayService>();
 
-// Add Authentication (Cookie) and Authorization
+// ====== Cấu hình Authentication (Cookie) ======
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.Cookie.Name = "ABCDMallAuth";
-        options.LoginPath = "/Client/Account/Login";   // redirect when not authenticated
+        options.LoginPath = "/Client/Account/Login";   // redirect khi chưa đăng nhập
         options.AccessDeniedPath = "/Client/Account/Login";
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
-        // you can customize other cookie settings (SecurePolicy, SameSite, etc.) here
+        // Có thể tuỳ chỉnh thêm cookie (SecurePolicy, SameSite, v.v.)
     });
 
 builder.Services.AddAuthorization();
 
-// Optional: add session if you want to use HttpContext.Session later
+// ====== Nếu cần Session ======
 // builder.Services.AddDistributedMemoryCache();
 // builder.Services.AddSession(options => { options.IdleTimeout = TimeSpan.FromMinutes(30); });
 
@@ -65,6 +69,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 
 
 //app.MapControllerRoute(
