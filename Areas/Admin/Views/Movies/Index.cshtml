@@ -1,0 +1,78 @@
+﻿@model IEnumerable<Semester03.Models.Entities.TblMovie>
+
+@{
+    ViewData["Title"] = "Movie Management";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<h1 class="h3 mb-2 text-gray-800">Movie Management</h1>
+<p class="mb-4">Manage all movies available in the system.</p>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Add New Movie</a>
+</p>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Movie List</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Movie Title</th>
+                        <th>Genre</th>
+                        <th>Duration (Min)</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <img src="~/Admin/img/@item.MovieImg" alt="@item.MovieTitle" style="width: 80px; height: 100px; object-fit: cover;" />
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.MovieTitle)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.MovieGenre)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.MovieDurationMin)
+                            </td>
+                            <td>
+                                @if (item.MovieStatus == 1)
+                                {
+                                    <span class="badge badge-success">Available</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-secondary">Unavailable</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="Edit" asp-route-id="@item.MovieId" class="btn btn-warning btn-sm">Edit</a>
+                                <a asp-action="Details" asp-route-id="@item.MovieId" class="btn btn-info btn-sm">Details</a>
+                                <a asp-action="Delete" asp-route-id="@item.MovieId" class="btn btn-danger btn-sm">Delete</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Call the dataTables jQuery plugin
+        $(document).ready(function() {
+          $('#dataTable').DataTable();
+        });
+    </script>
+}
