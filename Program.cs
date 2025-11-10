@@ -24,6 +24,8 @@ builder.Services.AddScoped<CinemaRepository>();
 builder.Services.AddScoped<ShowtimeRepository>();
 builder.Services.AddScoped<MovieRepository>();
 builder.Services.AddScoped<SeatRepository>();
+builder.Services.AddScoped<TenantRepository>();
+
 
 builder.Services.AddScoped<IVnPayService, VnPayService>();
 
