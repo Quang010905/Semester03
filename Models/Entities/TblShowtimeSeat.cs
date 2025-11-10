@@ -24,4 +24,6 @@ public partial class TblShowtimeSeat
     public virtual TblSeat ShowtimeSeatSeat { get; set; } = null!;
 
     public virtual TblShowtime ShowtimeSeatShowtime { get; set; } = null!;
+
+    public virtual ICollection<TblTicket> TblTickets { get; set; } = new List<TblTicket>();
 }

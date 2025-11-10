@@ -6,6 +6,7 @@
     var showtimeId = ViewData["ShowtimeId"]?.ToString();
     var totalAmount = (decimal)(ViewData["TotalAmount"] ?? 0m);
     var pricePerSeat = (decimal)(ViewData["PricePerSeat"] ?? 0m);
+    var processingError = ViewData["PaymentProcessingError"] as string;
 }
 
 @section Styles {
@@ -56,13 +57,29 @@
             font-weight: 700;
             color: #d63384;
         }
+
+        .error-box {
+            background: #fff3f2;
+            border: 1px solid #ffd6d0;
+            color: #b02a37;
+            padding: .75rem 1rem;
+            border-radius: .5rem;
+            margin-bottom: 1rem;
+        }
     </style>
 }
 
 <div class="success-container">
     <div class="success-icon"><i class="bi bi-check-lg"></i></div>
     <div class="success-title">Thanh toán thành công!</div>
-    <div class="success-desc">Cảm ơn bạn đã đặt vé. Vé điện tử của bạn đã được ghi nhận thành công.</div>
+    <div class="success-desc">Cảm ơn bạn đã đặt vé. Vé điện tử của bạn đã được ghi nhận — nếu không có lỗi.</div>
+
+    @if (!string.IsNullOrEmpty(processingError))
+    {
+        <div class="error-box">
+            <strong>Lưu ý:</strong> @processingError
+        </div>
+    }
 
     <div class="ticket-summary text-start mt-3">
         <h6 class="fw-bold mb-3">Thông tin vé</h6>
@@ -86,8 +103,7 @@
     </div>
 
     <div class="actions d-flex justify-content-center gap-3 mt-4">
-        <a href="@Url.Action("Index","Home", new { area = "Client" })" class="btn btn-primary"><i class="bi bi-house-door me-2"></i>Về trang chủ</a>
-        <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer me-2"></i>In vé</button>
+        <a href="@Url.Action("Index","Cinema", new { area = "Client" })" class="btn btn-primary"><i class="bi bi-house-door me-2"></i>Về trang chủ</a>
     </div>
 </div>
 

@@ -20,6 +20,4 @@ public partial class TblShowtime
     public virtual TblScreen ShowtimeScreen { get; set; } = null!;
 
     public virtual ICollection<TblShowtimeSeat> TblShowtimeSeats { get; set; } = new List<TblShowtimeSeat>();
-
-    public virtual ICollection<TblTicket> TblTickets { get; set; } = new List<TblTicket>();
 }
