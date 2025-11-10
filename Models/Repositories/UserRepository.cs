@@ -5,7 +5,7 @@ using Semester03.Models.Entities;
 
 namespace Semester03.Areas.Client.Repositories
 {
-    // Repository concrete (không dùng interface)
+    // Concrete repository (no interface used)
     public class UserRepository
     {
         private readonly AbcdmallContext _context;
@@ -23,13 +23,19 @@ namespace Semester03.Areas.Client.Repositories
                 .FirstOrDefaultAsync(u => u.UsersUsername == username);
         }
 
-        // Kiểm mật khẩu
+        public Task<TblUser> GetByIdAsync(int id)
+        {
+            return _context.TblUsers
+                .FirstOrDefaultAsync(u => u.UsersId == id);
+        }
+
+        // Verify password
         public PasswordVerificationResult VerifyPassword(TblUser user, string plainPassword)
         {
             return _hasher.VerifyHashedPassword(user, user.UsersPassword ?? "", plainPassword);
         }
 
-        // Dùng khi bạn muốn set/đổi password (hash rồi lưu)
+        // Set/update password hash
         public async Task SetPasswordHashAsync(TblUser user, string plainPassword)
         {
             user.UsersPassword = _hasher.HashPassword(user, plainPassword);

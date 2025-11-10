@@ -7,6 +7,8 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Http;
+using System;
 
 namespace Semester03.Areas.Client.Controllers
 {
@@ -28,8 +30,22 @@ namespace Semester03.Areas.Client.Controllers
         [HttpGet]
         public IActionResult Login(string returnUrl = null)
         {
-            // simple page; returnUrl để redirect sau login nếu cần
             ViewData["ReturnUrl"] = returnUrl;
+
+            // Optional: prefill username if you stored last user id cookie (server-side)
+            if (Request.Cookies.TryGetValue("GigaMall_LastUserId", out var lastUserIdStr))
+            {
+                if (int.TryParse(lastUserIdStr, out var lastUserId))
+                {
+                    // Avoid sync-over-async in production; this is optional convenience.
+                    var u = _userRepo.GetByIdAsync(lastUserId).GetAwaiter().GetResult();
+                    if (u != null)
+                    {
+                        ViewData["PrefillUsername"] = u.UsersUsername;
+                    }
+                }
+            }
+
             return View();
         }
 
@@ -59,14 +75,10 @@ namespace Semester03.Areas.Client.Controllers
                 return View();
             }
 
-            // Nếu cần rehash (PasswordVerificationResult.SuccessRehashNeeded) -> update hash
             if (verify == PasswordVerificationResult.SuccessRehashNeeded)
             {
-                user.UsersPassword = _hasher.HashPassword(user, password);
-                // lưu lại hash mới
                 try
                 {
-                    // We do not have a repo method to update generic fields; we can set via repository method
                     await _userRepo.SetPasswordHashAsync(user, password);
                 }
                 catch (System.Exception ex)
@@ -75,12 +87,10 @@ namespace Semester03.Areas.Client.Controllers
                 }
             }
 
-            // tạo claims: lưu UserID trong claim NameIdentifier
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.UsersId.ToString()),
                 new Claim(ClaimTypes.Name, user.UsersFullName ?? user.UsersUsername),
-                // lưu role id numeric trong Claim Role
                 new Claim(ClaimTypes.Role, user.UsersRoleId.ToString())
             };
 
@@ -90,25 +100,35 @@ namespace Semester03.Areas.Client.Controllers
             var authProperties = new AuthenticationProperties
             {
                 IsPersistent = true,
-                ExpiresUtc = System.DateTimeOffset.UtcNow.AddDays(7)
+                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
             };
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
 
+            // Store a lightweight cookie with last user id for non-greeting purposes.
+            // IMPORTANT: Do NOT use this cookie client-side to show "Xin chào" — UI greeting must rely on authentication.
+            var userIdCookieOptions = new CookieOptions
+            {
+                Expires = DateTimeOffset.UtcNow.AddDays(30),
+                HttpOnly = false, // set to false if JS needs to read it for other features; true if only server reads it
+                Secure = Request.IsHttps,
+                SameSite = SameSiteMode.Lax,
+                Path = "/"
+            };
+
+            Response.Cookies.Append("GigaMall_LastUserId", user.UsersId.ToString(), userIdCookieOptions);
+
             // redirect theo role
             if (user.UsersRoleId == 1)
             {
-                // Admin area (thay Dashboard/Index bằng controller/action bạn dùng)
                 return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
             }
             else if (user.UsersRoleId == 2)
             {
-                // Client -> cinema index
                 return RedirectToAction("Index", "Cinema", new { area = "Client" });
             }
             else
             {
-                // default fallback
                 if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
                     return Redirect(returnUrl);
 
@@ -120,7 +140,52 @@ namespace Semester03.Areas.Client.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
+            _logger?.LogInformation("Logout requested for user {User}, Authenticated={Auth}", User?.Identity?.Name, User?.Identity?.IsAuthenticated);
+
+            // Log request cookies for debugging
+            foreach (var key in Request.Cookies.Keys)
+            {
+                _logger?.LogInformation("Request cookie: {Key} = {Val}", key, Request.Cookies[key]);
+            }
+
+            // Sign out the authentication cookie
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            // Fallback sign out
+            await HttpContext.SignOutAsync();
+
+            // Delete auth cookie by name (must match cookie name in Program.cs)
+            var authCookieName = ".AspNetCore.Cookies";
+            Response.Cookies.Delete(authCookieName);
+            Response.Cookies.Append(authCookieName, "", new CookieOptions
+            {
+                Expires = DateTimeOffset.UtcNow.AddDays(-1),
+                HttpOnly = true,
+                Secure = Request.IsHttps,
+                Path = "/",
+                SameSite = SameSiteMode.Lax
+            });
+
+            // Optionally delete the helper cookie "GigaMall_LastUserId" if you want logout to remove it.
+            // If you prefer to keep it (for prefill username next time), comment these two lines out.
+            Response.Cookies.Delete("GigaMall_LastUserId");
+            Response.Cookies.Append("GigaMall_LastUserId", "", new CookieOptions
+            {
+                Expires = DateTimeOffset.UtcNow.AddDays(-1),
+                HttpOnly = false,
+                Secure = Request.IsHttps,
+                Path = "/",
+                SameSite = SameSiteMode.Lax
+            });
+
+            _logger?.LogInformation("Logout finished.");
+
+            // If AJAX request, return 200 OK so client JS can update UI without redirect
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Ok();
+            }
+
             return RedirectToAction("Index", "Home", new { area = "Client" });
         }
     }
