@@ -416,9 +416,13 @@
                             <div class="user-badge" id="userBadge">
                                 <span class="small text-muted">Xin chào,</span>
                                 <strong class="me-2">@name</strong>
-                                <form id="logoutForm" method="post" asp-area="Client" asp-controller="Account" asp-action="Logout" class="m-0 d-inline">
+
+                                <!-- NOTE: dùng id headerLogoutForm/headerLogoutBtn để tránh trùng id -->
+                                <form id="headerLogoutForm" method="post"
+                                      asp-area="Client" asp-controller="Account" asp-action="Logout"
+                                      class="m-0 d-inline">
                                     @Html.AntiForgeryToken()
-                                    <button id="logoutBtn" type="button" class="btn btn-sm btn-outline-secondary">Logout</button>
+                                    <button id="headerLogoutBtn" type="button" class="btn btn-sm btn-outline-secondary">Logout</button>
                                 </form>
                             </div>
                         }
@@ -590,32 +594,64 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // AJAX logout
         (function () {
-            var logoutBtn = document.getElementById('logoutBtn');
-            var logoutForm = document.getElementById('logoutForm');
+            // Các id phải trùng với phần HTML ở trên
+            var logoutBtn = document.getElementById('headerLogoutBtn');
+            var logoutForm = document.getElementById('headerLogoutForm');
             var accountArea = document.getElementById('accountArea');
+
             if (!logoutBtn || !logoutForm || !accountArea) return;
 
-            logoutBtn.addEventListener('click', function () {
-                var url = logoutForm.action;
-                var formData = new FormData(logoutForm);
-                var body = new URLSearchParams();
-                for (var pair of formData.entries()) body.append(pair[0], pair[1]);
+            // URL tuyệt đối tạo bởi server (an toàn hơn lấy từ form.action)
+            var logoutUrl = '@Url.Action("Logout", "Account", new { area = "Client" })';
 
-                fetch(url, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-                    body: body.toString()
-                }).then(function (resp) {
-                    if (resp.ok || resp.redirected) {
-                        accountArea.innerHTML = '<a id="loginLink" class="btn btn-sm btn-outline-primary" href="@Url.Action("Login", "Account", new { area = "Client" })">Login</a>';
-                    } else { logoutForm.submit(); }
-                }).catch(function (err) { console.error(err); logoutForm.submit(); });
+            logoutBtn.addEventListener('click', function () {
+                try {
+                    // Lấy antiforgery token input (tên mặc định: __RequestVerificationToken)
+                    var tokenInput = logoutForm.querySelector('input[name="__RequestVerificationToken"]');
+                    var tokenValue = tokenInput ? tokenInput.value : null;
+
+                    // Build body (urlencoded)
+                    var params = new URLSearchParams();
+                    if (tokenValue) params.append('__RequestVerificationToken', tokenValue);
+
+                    // ALSO send token in header (ASP.NET Core supports header approach too)
+                    var headers = {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    };
+                    if (tokenValue) headers['RequestVerificationToken'] = tokenValue;
+
+                    fetch(logoutUrl, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: headers,
+                        body: params.toString()
+                    }).then(function (resp) {
+                        // Nếu server trả 200/204 -> thành công, reload để server render header mới
+                        if (resp.ok) {
+                            // optional: clear any client-side stored user UI quickly (not required)
+                            // accountArea.innerHTML = '<a id="loginLink" class="btn btn-sm btn-outline-primary" href="@Url.Action("Login", "Account", new { area = "Client" })">Login</a>';
+                            // Sau khi sign-out server-side, reload để header reflect state
+                            window.location.reload();
+                            return;
+                        }
+
+                        // Nếu server trả lỗi (token invalid / 405 / etc) -- fallback: submit form (normal POST)
+                        console.warn('AJAX logout failed (status ' + resp.status + '), falling back to normal submit');
+                        logoutForm.submit();
+                    }).catch(function (err) {
+                        console.error('AJAX logout error:', err);
+                        logoutForm.submit();
+                    });
+                } catch (e) {
+                    console.error('Logout script exception', e);
+                    logoutForm.submit();
+                }
             });
         })();
     </script>
+
 
     @RenderSection("Scripts", required: false)
 </body>
