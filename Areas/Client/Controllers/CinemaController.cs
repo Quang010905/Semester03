@@ -2,6 +2,7 @@
 using Semester03.Areas.Client.Repositories;
 using Semester03.Areas.Client.Models.ViewModels;
 using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Semester03.Areas.Client.Controllers
@@ -27,19 +28,31 @@ namespace Semester03.Areas.Client.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Showtimes(int movieId, string date = null)
+        public async Task<IActionResult> Details(int id)
         {
-            DateTime dt;
-            if (!DateTime.TryParse(date, out dt))
-                dt = DateTime.Today;
+            var vm = await _repo.GetMovieDetailsAsync(id);
+            if (vm == null) return NotFound();
+            return View(vm); // Areas/Client/Views/Cinema/Details.cshtml
+        }
 
-            var shows = await Task.Run(() => // repository is synchronous for showtimes; ShowtimeRepository handles date logic
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddComment(int movieId, int rate, string text)
+        {
+            if (!User.Identity.IsAuthenticated)
+                return Unauthorized(new { success = false, message = "Bạn cần đăng nhập để bình luận." });
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("UserId")?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
             {
-                var showRepo = HttpContext.RequestServices.GetService(typeof(ShowtimeRepository)) as ShowtimeRepository;
-                return showRepo?.GetShowtimesForMovieOnDate(movieId, dt) ?? new System.Collections.Generic.List<ShowtimeVm>();
-            });
+                // nếu không có claim phù hợp, trả lỗi
+                return Unauthorized(new { success = false, message = "Không xác định user." });
+            }
 
-            return PartialView("_ShowtimesPartial", shows);
+            // Thêm comment (mặc định pending)
+            await _repo.AddCommentAsync(movieId, userId, rate, text);
+
+            return Json(new { success = true, message = "Cảm ơn bạn! Bình luận sẽ xuất hiện sau khi được duyệt." });
         }
     }
 }

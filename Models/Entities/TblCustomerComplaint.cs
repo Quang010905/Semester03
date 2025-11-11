@@ -19,7 +19,15 @@ public partial class TblCustomerComplaint
 
     public DateTime? CustomerComplaintCreatedAt { get; set; }
 
+    public int? CustomerComplaintMovieId { get; set; }
+
+    public int? CustomerComplaintEventId { get; set; }
+
     public virtual TblUser CustomerComplaintCustomerUser { get; set; } = null!;
+
+    public virtual TblEvent? CustomerComplaintEvent { get; set; }
+
+    public virtual TblMovie? CustomerComplaintMovie { get; set; }
 
     public virtual TblTenant? CustomerComplaintTenant { get; set; }
 }

@@ -37,14 +37,14 @@ builder.Services.AddScoped<IVnPayService, VnPayService>();
 
 // ====== Cấu hình Authentication (Cookie) ======
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
-        options.Cookie.Name = "ABCDMallAuth";
-        options.LoginPath = "/Client/Account/Login";   // redirect khi chưa đăng nhập
+        options.Cookie.Name = ".AspNetCore.Cookies"; // choose one name — dùng cùng tên khi xóa cookie
+        options.LoginPath = "/Client/Account/Login";
+        options.LogoutPath = "/Client/Account/Logout";
         options.AccessDeniedPath = "/Client/Account/Login";
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
-        // Có thể tuỳ chỉnh thêm cookie (SecurePolicy, SameSite, v.v.)
     });
 
 builder.Services.AddAuthorization();

@@ -13,7 +13,7 @@ namespace Semester03.Areas.Client.Repositories
         private readonly AbcdmallContext _db;
         public CinemaRepository(AbcdmallContext db) => _db = db;
 
-        // Get top featured (by earliest upcoming showtime) - project only required columns
+        // (các method GetFeaturedMoviesAsync / GetNowShowingAsync giữ nguyên)
         public async Task<List<MovieCardVm>> GetFeaturedMoviesAsync(int top = 3)
         {
             var now = DateTime.UtcNow;
@@ -114,6 +114,62 @@ namespace Semester03.Areas.Client.Repositories
                 NextShowtimeId = x.ShowtimeId,
                 PosterUrl = string.IsNullOrWhiteSpace(x.PosterUrl) ? "/images/movie-placeholder.png" : x.PosterUrl
             }).ToList();
+        }
+
+        // Get details + approved comments
+        public async Task<MovieDetailsVm> GetMovieDetailsAsync(int movieId)
+        {
+            var movie = await _db.TblMovies
+                .AsNoTracking()
+                .Where(m => m.MovieId == movieId)
+                .Select(m => new MovieDetailsVm
+                {
+                    Id = m.MovieId,
+                    Title = m.MovieTitle,
+                    Genre = m.MovieGenre,
+                    Director = m.MovieDirector,
+                    PosterUrl = m.MovieImg,
+                    StartDate = m.MovieStartDate,
+                    EndDate = m.MovieEndDate,
+                    Rate = m.MovieRate,
+                    DurationMin = m.MovieDurationMin,
+                    Description = m.MovieDescription
+                }).FirstOrDefaultAsync();
+
+            if (movie == null) return null;
+
+            movie.Comments = await _db.TblCustomerComplaints
+                .AsNoTracking()
+                .Where(c => c.CustomerComplaintMovieId == movieId && c.CustomerComplaintStatus == 1)
+                .OrderByDescending(c => c.CustomerComplaintCreatedAt)
+                .Select(c => new CommentVm
+                {
+                    Id = c.CustomerComplaintId,
+                    UserId = c.CustomerComplaintCustomerUserId,
+                    UserName = c.CustomerComplaintCustomerUser != null ? c.CustomerComplaintCustomerUser.UsersFullName : "Khách",
+                    Rate = c.CustomerComplaintRate,
+                    Text = c.CustomerComplaintDescription,
+                    CreatedAt = c.CustomerComplaintCreatedAt
+                }).ToListAsync();
+
+            return movie;
+        }
+
+        // Add comment (pending by default)
+        public async Task AddCommentAsync(int movieId, int userId, int rate, string text)
+        {
+            var ent = new TblCustomerComplaint
+            {
+                CustomerComplaintCustomerUserId = userId,
+                CustomerComplaintMovieId = movieId,
+                CustomerComplaintRate = rate,
+                CustomerComplaintDescription = text,
+                CustomerComplaintStatus = 0, 
+                CustomerComplaintCreatedAt = DateTime.UtcNow
+            };
+
+            _db.TblCustomerComplaints.Add(ent);
+            await _db.SaveChangesAsync();
         }
     }
 }

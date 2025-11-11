@@ -1,0 +1,354 @@
+﻿@model Semester03.Areas.Client.Models.ViewModels.MovieDetailsVm
+@{
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+    Func<string, string> Img = (raw) =>
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return Url.Content("~/images/movie-placeholder.png");
+        var s = raw.Replace("wwwroot/", "").TrimStart('~', '/').Replace(" ", "%20");
+        return Url.Content("~/" + s);
+    };
+    var poster = Img(Model.PosterUrl);
+}
+
+@section Styles {
+    <style>
+        .movie-hero {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .movie-poster {
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(2,6,23,0.12);
+        }
+
+            .movie-poster img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            }
+
+        .movie-meta {
+            padding-top: .25rem;
+        }
+
+        .movie-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: .25rem;
+            letter-spacing: -0.5px;
+        }
+
+        .movie-sub {
+            color: #6b7280;
+            margin-bottom: .5rem;
+        }
+
+        /* stars */
+        .stars {
+            display: flex;
+            gap: .25rem;
+            align-items: center;
+        }
+
+        .star {
+            font-size: 1.6rem;
+            cursor: pointer;
+            transition: transform .12s ease, color .12s ease;
+            color: #cbd5e1; /* gray for empty */
+            display: inline-flex;
+            align-items: center;
+        }
+
+            /* active or filled star */
+            .star.active,
+            .star.filled,
+            .star.bi-star-fill {
+                color: #ffc107; /* yellow */
+                transform: scale(1.08);
+            }
+
+            /* Force SVG path to use currentColor for fill so star appears solid */
+            .star > svg path,
+            .star > svg polygon,
+            .star > svg circle {
+                /* For filled star (bi-star-fill), ensure fill uses currentColor */
+                fill: none !important;
+                stroke: currentColor !important;
+            }
+
+            /* For icons with class bi-star-fill (solid), override to fill */
+            .star.bi-star-fill > svg path {
+                fill: currentColor !important;
+                stroke: none !important;
+            }
+
+            /* When star has 'active' or 'filled' we also force fill */
+            .star.active > svg path,
+            .star.filled > svg path {
+                fill: currentColor !important;
+                stroke: none !important;
+            }
+
+        .rate-badge {
+            font-weight: 700;
+            background: linear-gradient(90deg,#ffb347,#ffcc33);
+            color: #111;
+            padding: .25rem .6rem;
+            border-radius: .5rem;
+        }
+
+        .comment-box {
+            margin-top: 1rem;
+            border-radius: .75rem;
+            background: #fff;
+            padding: 1rem;
+            box-shadow: 0 6px 20px rgba(2,6,23,0.06);
+        }
+
+        .comment-item {
+            border-bottom: 1px solid #f1f5f9;
+            padding: .75rem 0;
+        }
+
+            .comment-item:last-child {
+                border-bottom: none;
+            }
+
+        .comment-user {
+            font-weight: 600;
+            margin-right: .5rem;
+        }
+
+        .comment-time {
+            color: #94a3b8;
+            font-size: .85rem;
+        }
+
+        .btn-primary-ghost {
+            background: linear-gradient(90deg,#0d6efd,#4f46e5);
+            border: none;
+            color: #fff;
+            padding: .6rem 1rem;
+            border-radius: .6rem;
+            box-shadow: 0 8px 30px rgba(13,110,253,0.12);
+        }
+        @@media (max-width: 991px) {
+            .movie-hero
+
+        {
+            grid-template-columns: 1fr;
+        }
+
+        }
+    </style>
+}
+
+<div class="py-3">
+    <a class="btn btn-outline-secondary btn-sm mb-3" href="@Url.Action("Index","Cinema", new { area = "Client" })">&larr; Back</a>
+
+    <div class="movie-hero">
+        <div class="movie-poster">
+            <img src="@poster" alt="@Model.Title" />
+        </div>
+
+        <div class="movie-meta">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="movie-title">@Model.Title</div>
+                    <div class="movie-sub">@Model.Genre &middot; @Model.Director</div>
+                    <div class="small text-muted">@Model.DurationMin ?? 0 min &middot; @((Model.StartDate.HasValue) ? Model.StartDate.Value.ToString("dd MMM yyyy") : "--")</div>
+                </div>
+
+                <div class="text-end">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rate-badge">@((Model.Rate ?? 0).ToString()) <small class="text-muted">/5</small></div>
+                        <div class="stars" aria-hidden="true">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                var isFilled = (Model.Rate.HasValue && Model.Rate.Value >= i);
+                                var cls = "star " + (isFilled ? "bi-star-fill filled" : "bi-star");
+                                <i class="@cls" data-value="@i" title="@i estrela(s)"></i>
+                            }
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <a class="btn btn-primary-ghost" href="@Url.Action("BookTicket", "Booking", new { area = "Client", movieId = Model.Id })">Book Tickets</a>
+                    </div>
+                </div>
+            </div>
+
+            <hr />
+
+            <h5>Mô tả</h5>
+            <p class="text-muted">@Model.Description</p>
+
+            <!-- Bình luận & rating -->
+            <div class="comment-box">
+                <h6>Bình luận & đánh giá</h6>
+                <div id="commentFormArea" class="mt-2">
+                    @if (User?.Identity?.IsAuthenticated == true)
+                    {
+                        @Html.AntiForgeryToken()
+                        <div class="mb-2"><strong>Đánh giá của bạn:</strong></div>
+                        <div class="mb-2">
+                            <div id="userStars" class="stars">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <i class="star bi bi-star" data-value="@i"></i>
+                                }
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <textarea id="commentText" class="form-control" rows="3" placeholder="Viết bình luận của bạn..."></textarea>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button id="submitComment" class="btn btn-primary">Gửi bình luận</button>
+                            <small class="text-muted align-self-center">Bình luận sẽ xuất hiện sau khi được duyệt (status = 1).</small>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info py-2">Bạn cần <a href="@Url.Action("Login","Account", new { area = "Client" })">đăng nhập</a> để bình luận.</div>
+                    }
+                </div>
+
+                <hr />
+
+                <div id="commentsList">
+                    @* Hiển thị bình luận đã duyệt (repository đã lọc status = 1). *@
+                    @if (Model.Comments != null && Model.Comments.Any())
+                    {
+                        foreach (var c in Model.Comments)
+                        {
+                            <div class="comment-item">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <span class="comment-user">@c.UserName</span>
+                                        <span class="small text-muted">•</span>
+                                        <span class="comment-time">@((c.CreatedAt.HasValue) ? c.CreatedAt.Value.ToString("dd MMM yyyy HH:mm") : "")</span>
+                                    </div>
+                                    <div class="stars" aria-hidden="true">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            var filledClass = c.Rate >= i ? "bi-star-fill filled" : "bi-star";
+                                            <i class="star @filledClass"></i>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="mt-1">@Html.Raw(System.Net.WebUtility.HtmlEncode(c.Text))</div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-muted">Chưa có bình luận nào — bạn có thể là người đầu tiên!</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            // Tương tác ngôi sao cho user's rating
+            const stars = document.querySelectorAll('#userStars .star');
+            let selected = 0;
+
+            // helper toggles classes bi-star <-> bi-star-fill and active/filled
+            function setStarState(el, filled) {
+                if (filled) {
+                    el.classList.remove('bi-star');
+                    el.classList.add('bi-star-fill', 'filled', 'active');
+                } else {
+                    el.classList.remove('bi-star-fill', 'filled', 'active');
+                    el.classList.add('bi-star');
+                }
+            }
+
+            function highlight(v) {
+                stars.forEach(st => {
+                    const val = +st.dataset.value;
+                    setStarState(st, val <= v);
+                });
+            }
+
+            stars.forEach(s => {
+                s.addEventListener('mouseenter', () => {
+                    const v = +s.dataset.value;
+                    highlight(v);
+                });
+                s.addEventListener('mouseleave', () => {
+                    highlight(selected);
+                });
+                s.addEventListener('click', () => {
+                    selected = +s.dataset.value;
+                    highlight(selected);
+                });
+
+                // ensure initial empty state
+                setStarState(s, false);
+            });
+
+            // submit comment via AJAX (fetch)
+            const submitBtn = document.getElementById('submitComment');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', async function () {
+                    const text = document.getElementById('commentText').value.trim();
+                    if (selected <= 0) { alert('Vui lòng chọn số sao (rating).'); return; }
+                    if (!text) { alert('Vui lòng nhập nội dung bình luận.'); return; }
+
+                    const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                    const token = tokenInput ? tokenInput.value : '';
+
+                    submitBtn.disabled = true;
+                    submitBtn.innerText = 'Đang gửi...';
+
+                    try {
+                        const resp = await fetch('@Url.Action("AddComment", "Cinema", new { area = "Client" })', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'RequestVerificationToken': token,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: new URLSearchParams({
+                                movieId: '@Model.Id',
+                                rate: selected,
+                                text: text
+                            })
+                        });
+
+                        if (resp.status === 401) {
+                            alert('Bạn cần đăng nhập để bình luận.');
+                            location.href = '@Url.Action("Login", "Account", new { area = "Client" })';
+                            return;
+                        }
+
+                        const data = await resp.json();
+                        if (data && data.success) {
+                            alert(data.message || 'Gửi thành công.');
+                            document.getElementById('commentText').value = '';
+                            selected = 0;
+                            highlight(0);
+                        } else {
+                            alert(data?.message || 'Lỗi khi gửi bình luận.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Có lỗi xảy ra. Vui lòng thử lại.');
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = 'Gửi bình luận';
+                    }
+                });
+            }
+        })();
+    </script>
+}
