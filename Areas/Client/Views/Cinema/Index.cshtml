@@ -215,6 +215,7 @@
         </div>
     </div>
 
+
     <!-- Grid of movies -->
     <div class="row g-3">
         @foreach (var m in Model?.NowShowing ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.MovieCardVm>())
@@ -248,6 +249,48 @@
         }
     </div>
 </div>
+@using Semester03.Areas.Client.Repositories
+@using Semester03.Areas.Client.Models.ViewModels
+@{
+    var _eventRepo = EventRepository.Instance;
+    var topEvents = await _eventRepo.GetUpcomingEventsAsync();
+    topEvents = topEvents.Take(6).ToList();
+}
+
+<h4 class="mb-3">Upcoming Events</h4>
+<div class="slider-wrapper mb-3">
+    <div id="eventsSliderTrack" class="slider-track">
+        @foreach (var e in topEvents)
+        {
+            <div class="slider-item">
+                <div class="card movie-card event-card position-relative h-100">
+                    <img src="@(!string.IsNullOrEmpty(e.ImageUrl)
+                                                        ? (e.ImageUrl.StartsWith("/") ? e.ImageUrl : $"/images/events/{e.ImageUrl}")
+                                                        : "/images/event-placeholder.png")"
+                     class="movie-poster card-img-top" alt="@e.Title" />
+                <div class="movie-overlay">
+                    <div class="w-100 text-center">
+                        <div class="movie-title">@e.Title</div>
+                        <div class="small">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
+                        <div class="mt-2">
+                            <a class="btn btn-sm btn-light" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">View</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-2">
+                    <div class="fw-semibold">@e.Title</div>
+                    <div class="small text-muted">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
+                    @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
+                        {
+                            <p class="small text-truncate" title="@e.ShortDescription">@e.ShortDescription</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
 
 @section Scripts {
     <script>
