@@ -35,7 +35,9 @@
             color: #212529;
         }
 
-        a, a:hover, a:focus { text-decoration: none; }
+        a, a:hover, a:focus {
+            text-decoration: none;
+        }
 
         .hero {
             background: linear-gradient(90deg, rgba(2,0,36,0.6), rgba(9,9,121,0.2)), url('/images/hero-default.jpg') center/cover no-repeat;
@@ -58,7 +60,9 @@
             transition: var(--transition);
         }
 
-        .search-box:hover { box-shadow: 0 6px 25px rgba(0,0,0,0.12); }
+            .search-box:hover {
+                box-shadow: 0 6px 25px rgba(0,0,0,0.12);
+            }
 
         .mall-nav .nav-link {
             color: #333;
@@ -66,11 +70,11 @@
             transition: var(--transition);
         }
 
-        .mall-nav .nav-link:hover,
-        .mall-nav .nav-link.active {
-            color: var(--primary-color);
-            font-weight: 600;
-        }
+            .mall-nav .nav-link:hover,
+            .mall-nav .nav-link.active {
+                color: var(--primary-color);
+                font-weight: 600;
+            }
 
         .store-card {
             border-radius: var(--card-radius);
@@ -78,15 +82,20 @@
             transition: var(--transition);
         }
 
-        .store-card img {
-            object-fit: cover;
-            height: 160px;
-            width: 100%;
-            transition: var(--transition);
-        }
+            .store-card img {
+                object-fit: cover;
+                height: 160px;
+                width: 100%;
+                transition: var(--transition);
+            }
 
-        .store-card:hover img { transform: scale(1.05); }
-        .store-card:hover { box-shadow: var(--shadow-lg); }
+            .store-card:hover img {
+                transform: scale(1.05);
+            }
+
+            .store-card:hover {
+                box-shadow: var(--shadow-lg);
+            }
 
         .category-icon {
             width: 56px;
@@ -96,9 +105,14 @@
             transition: var(--transition);
         }
 
-        .category-icon:hover { transform: scale(1.1); }
+            .category-icon:hover {
+                transform: scale(1.1);
+            }
 
-        .badge-promo { background: var(--accent-gradient); color: #fff; }
+        .badge-promo {
+            background: var(--accent-gradient);
+            color: #fff;
+        }
 
         footer {
             background: #0b1221;
@@ -107,42 +121,94 @@
             font-size: 0.9rem;
         }
 
-        .sticky-top-shadow { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        .sticky-top-shadow {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
 
-        .content-maxwide { max-width: var(--main-max-width); margin: auto; padding: 0 1rem; }
+        .content-maxwide {
+            max-width: var(--main-max-width);
+            margin: auto;
+            padding: 0 1rem;
+        }
 
-        .user-badge { display: inline-flex; align-items: center; gap: .5rem; }
+        .user-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+        }
 
-        .hover-scale:hover { transform: scale(1.03); transition: var(--transition); }
+        .hover-scale:hover {
+            transform: scale(1.03);
+            transition: var(--transition);
+        }
 
-        .carousel-indicators [data-bs-target] { background-color: var(--primary-color); opacity: 0.7; }
-        .carousel-indicators [data-bs-target].active { opacity: 1; }
+        .carousel-indicators [data-bs-target] {
+            background-color: var(--primary-color);
+            opacity: 0.7;
+        }
 
-        #featuredStoresCarousel .carousel-inner { padding: 0 1rem; }
+            .carousel-indicators [data-bs-target].active {
+                opacity: 1;
+            }
+
+        #featuredStoresCarousel .carousel-inner {
+            padding: 0 1rem;
+        }
+
         #featuredStoresCarousel .carousel-control-prev,
         #featuredStoresCarousel .carousel-control-next {
-            width: 3%; top: 50%; transform: translateY(-50%); opacity: 0.7;
+            width: 3%;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.7;
         }
-        #featuredStoresCarousel .carousel-control-prev:hover,
-        #featuredStoresCarousel .carousel-control-next:hover { opacity: 1; }
-        #featuredStoresCarousel .carousel-control-prev-icon,
-        #featuredStoresCarousel .carousel-control-next-icon { background-size: 2rem 2rem; }
 
-        input, select, button { transition: var(--transition); }
-        button:hover { transform: scale(1.02); }
+            #featuredStoresCarousel .carousel-control-prev:hover,
+            #featuredStoresCarousel .carousel-control-next:hover {
+                opacity: 1;
+            }
+
+        #featuredStoresCarousel .carousel-control-prev-icon,
+        #featuredStoresCarousel .carousel-control-next-icon {
+            background-size: 2rem 2rem;
+        }
+
+        input, select, button {
+            transition: var(--transition);
+        }
+
+            button:hover {
+                transform: scale(1.02);
+            }
 
         @@media (max-width: 767px) {
-            .hero { min-height: 220px; padding: 1rem 0; }
-            .mall-nav { flex-direction: column; gap: .25rem; }
+            .hero {
+                min-height: 220px;
+                padding: 1rem 0;
+            }
+
+            .mall-nav {
+                flex-direction: column;
+                gap: .25rem;
+            }
         }
 
         @@media (min-width: 1200px) {
-            .col-lg-10 { flex: 0 0 83.333333%; max-width: 83.333333%; }
-            .col-lg-2 { flex: 0 0 16.666667%; max-width: 16.666667%; }
+            .col-lg-10 {
+                flex: 0 0 83.333333%;
+                max-width: 83.333333%;
+            }
+
+            .col-lg-2 {
+                flex: 0 0 16.666667%;
+                max-width: 16.666667%;
+            }
         }
 
         @@media (min-width: 1600px) {
-            :root { --main-max-width: 1800px; }
+            :root {
+                --main-max-width: 1800px;
+            }
         }
 
         @@media (min-width: 768px) {
@@ -150,7 +216,141 @@
                 display: block;
                 margin-top: 0;
             }
-            .mall-nav .dropdown-menu { pointer-events: auto; }
+
+            .mall-nav .dropdown-menu {
+                pointer-events: auto;
+            }
+        }
+
+        /* layout grid: main + sidebar */
+        .layout-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 340px;
+            gap: 1.25rem;
+            align-items: start;
+        }
+
+            .layout-grid .main-col {
+                align-self: start;
+            }
+
+            .layout-grid .sidebar-col {
+                width: 340px;
+            }
+
+        @@media (max-width: 991px) {
+            .layout-grid
+
+        {
+            grid-template-columns: 1fr;
+        }
+
+        .layout-grid .sidebar-col {
+            width: auto;
+        }
+
+        }
+
+        /* ===== Upcoming events: vertical scroll inside box ===== */
+        .small-event-slider {
+            height: 520px; /* fixed height so inner scroll is visible */
+            max-height: 520px;
+            overflow-y: auto; /* vertical scroll inside the box */
+            -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
+            padding: .6rem;
+            background: #fff;
+            border-radius: .75rem;
+            box-shadow: 0 8px 28px rgba(2,6,23,0.06);
+        }
+
+            .small-event-slider .slider-track {
+                display: block;
+            }
+
+            .small-event-slider .slider-item {
+                display: block;
+                margin-bottom: .75rem;
+            }
+
+            .small-event-slider .small-card {
+                display: flex;
+                gap: .75rem;
+                align-items: flex-start;
+                padding: .5rem;
+                border-radius: .5rem;
+                transition: transform .12s ease, box-shadow .12s ease;
+                background: transparent;
+            }
+
+                .small-event-slider .small-card:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 10px 26px rgba(2,6,23,0.06);
+                    background: #fff;
+                }
+
+            .small-event-slider .small-poster {
+                width: 120px;
+                height: 90px;
+                object-fit: cover;
+                border-radius: .5rem;
+                flex-shrink: 0;
+            }
+
+            .small-event-slider .small-card-body {
+                flex: 1;
+            }
+
+            .small-event-slider .small-title {
+                font-size: .95rem;
+                font-weight: 700;
+                margin-bottom: .25rem;
+            }
+
+            .small-event-slider .small-meta {
+                color: #6b7280;
+                font-size: .85rem;
+                margin-bottom: .5rem;
+            }
+
+        /* Desktop scrollbar style to provide visual affordance */
+        @@media (min-width: 768px) {
+            .small-event-slider::-webkit-scrollbar
+
+        {
+            width: 10px;
+        }
+
+        .small-event-slider::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.08);
+            border-radius: 8px;
+        }
+
+        .small-event-slider {
+            scrollbar-gutter: stable;
+        }
+
+        }
+
+        /* On small screens, let slider auto height (no fixed height) to avoid taking too much space */
+        @@media (max-width: 767px) {
+            .small-event-slider
+
+        {
+            height: auto;
+            max-height: none;
+            overflow-y: visible;
+            padding: .5rem 0;
+            box-shadow: none;
+        }
+
+        .small-event-slider .small-card {
+            padding: .35rem;
+        }
+
+        .layout-grid .sidebar-col {
+            order: 2;
+        }
+        /* keep sidebar below main on small screens */
         }
     </style>
 
@@ -165,7 +365,7 @@
                     <a class="d-flex align-items-center text-decoration-none" href="@Url.Action("Index", "Cinema", new { area = "Client" })">
                         <img src="/images/logo.png" alt="logo" style="height:48px; width:auto;" />
                         <div class="ms-2">
-                            <div style="font-weight:700; font-size:1.05rem;">@ViewData["MallName"] "ABCD Mall"</div>
+                            <div style="font-weight:700; font-size:1.05rem;">@ViewData["MallName"]</div>
                             <small class="text-muted">@ViewData["MallAddress"] "123 Main Street"</small>
                         </div>
                     </a>
@@ -258,9 +458,12 @@
     <!-- Main content -->
     <main class="container-fluid my-4">
         <div class="content-maxwide">
-            <div class="row">
-                <div class="col-lg-10">@RenderBody()</div>
-                <aside class="col-lg-2">
+            <div class="layout-grid">
+                <div class="main-col">
+                    @RenderBody()
+                </div>
+
+                <aside class="sidebar-col">
                     <div class="mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <h6 class="mb-0">Categories</h6>
@@ -271,7 +474,7 @@
 
                     @{
                         var _eventRepo = Semester03.Areas.Client.Repositories.EventRepository.Instance;
-                        var topEvents = await _eventRepo.GetUpcomingEventsAsync(6);
+                        var topEvents = await _eventRepo.GetUpcomingEventsAsync(12);
                     }
 
                     <div class="mb-4">
@@ -280,6 +483,7 @@
                             <a class="nav-link" href="@Url.Action("Index", "Event", new { area = "Client" })">Events</a>
                         </div>
 
+                        <!-- vertical scroll box -->
                         <div class="slider-wrapper small-event-slider mb-2">
                             <div class="slider-track">
                                 @foreach (var e in topEvents)
@@ -287,73 +491,22 @@
                                     <div class="slider-item">
                                         <div class="card movie-card event-card position-relative h-100 small-card">
                                             <img src="@(!string.IsNullOrEmpty(e.ImageUrl)
-                                                                                    ? (e.ImageUrl.StartsWith("/") ? e.ImageUrl : $"/images/events/{e.ImageUrl}")
-                                                                                    : "/images/event-placeholder.png")"
-                                             class="movie-poster card-img-top small-poster" alt="@e.Title" />
-                                        <div class="movie-overlay">
-                                            <div class="w-100 text-center">
-                                                <div class="movie-title">@e.Title</div>
-                                                <div class="small">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
-                                                <div class="mt-1">
+                                                            ? (e.ImageUrl.StartsWith("/") ? e.ImageUrl.TrimStart('/') : $"/images/events/{e.ImageUrl}")
+                                                            : "/images/event-placeholder.png")"
+                                                 class="movie-poster card-img-top small-poster" alt="@e.Title" />
+                                            <div class="small-card-body" style="flex:1">
+                                                <div class="small-title">@e.Title</div>
+                                                <div class="small-meta">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
+                                                <div class="mt-2">
                                                     <a class="btn btn-sm btn-light" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">View</a>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="card-body p-1">
-                                            <div class="fw-semibold small-title">@e.Title</div>
-                                            <div class="small text-muted">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
-                                        </div>
                                     </div>
-                                </div>
-                                                                }
+                                }
                             </div>
                         </div>
                     </div>
-
-                    @section Styles {
-                        <style>
-                            /* Slider wrapper nhỏ gọn, horizontal scroll */
-                            .small-event-slider {
-                                overflow-x: auto;
-                                white-space: nowrap;
-                                padding-bottom: 0.5rem;
-                            }
-
-                                .small-event-slider .slider-track {
-                                    display: flex;
-                                    gap: 0.5rem;
-                                }
-
-                                .small-event-slider .slider-item {
-                                    flex: 0 0 160px; /* mỗi card rộng 160px */
-                                    display: inline-block;
-                                }
-
-                                .small-event-slider .small-card {
-                                    font-size: 0.85rem;
-                                }
-
-                                .small-event-slider .small-poster {
-                                    height: 120px;
-                                    object-fit: cover;
-                                }
-
-                                .small-event-slider .small-title {
-                                    font-size: 0.9rem;
-                                }
-                                /* Optional: hide scrollbar but still scrollable */
-                                .small-event-slider::-webkit-scrollbar {
-                                    display: none;
-                                }
-
-                            .small-event-slider {
-                                -ms-overflow-style: none;
-                                scrollbar-width: none;
-                            }
-                        </style>
-                    }
-
-
 
                     <div class="mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-2">
@@ -372,7 +525,7 @@
                 </aside>
             </div>
         </div>
-     
+
         <!-- Featured stores -->
         <section class="mt-5">
             @{

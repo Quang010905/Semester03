@@ -27,5 +27,7 @@ public partial class TblMovie
 
     public int? MovieStatus { get; set; }
 
+    public virtual ICollection<TblCustomerComplaint> TblCustomerComplaints { get; set; } = new List<TblCustomerComplaint>();
+
     public virtual ICollection<TblShowtime> TblShowtimes { get; set; } = new List<TblShowtime>();
 }

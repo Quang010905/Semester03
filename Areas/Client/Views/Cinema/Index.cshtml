@@ -1,6 +1,24 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.CinemaHomeVm
 @{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+
+    // helper để chuẩn hóa đường dẫn ảnh (loại bỏ 'wwwroot/' nếu có, encode khoảng trắng)
+    Func<string, string> Img = (raw) =>
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return Url.Content("~/images/movie-placeholder.png");
+        }
+
+        // Nếu người lưu trong DB có chứa 'wwwroot/' hoặc bắt đầu bằng '/', loại bỏ
+        var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
+
+        // Encode spaces and ensure parentheses are kept (spaces -> %20)
+        s = s.Replace(" ", "%20");
+
+        // Nếu đường dẫn đã chứa "Admin/img" hay "images/..." thì Url.Content sẽ tìm từ webroot (~)
+        return Url.Content("~/" + s);
+    };
 }
 
 @section Styles {
@@ -18,6 +36,7 @@
             cursor: pointer;
             z-index: 1;
             background: #fff;
+            position: relative;
         }
 
             .movie-card:hover {
@@ -30,6 +49,7 @@
             object-fit: cover;
             width: 100%;
             border-radius: .25rem;
+            display: block;
         }
 
         .movie-overlay {
@@ -44,12 +64,22 @@
             opacity: 0;
             transition: opacity .18s ease;
             border-radius: .25rem;
+            /* IMPORTANT: overlay shows but doesn't block clicks by default */
             pointer-events: none;
         }
 
+        /* show visual hover (opacity) but keep pointer-events none so clicks pass through to underlying link */
         .movie-card:hover .movie-overlay {
             opacity: 1;
+            /* keep pointer-events: none; so the overlay won't intercept clicks */
+            pointer-events: none;
+        }
+
+        /* Make sure overlay buttons (if any) remain clickable */
+        .movie-overlay .btn {
             pointer-events: auto;
+            position: relative;
+            z-index: 5;
         }
 
         .movie-title {
@@ -121,8 +151,9 @@
                     <div class="carousel-item @active">
                         <div class="row align-items-center">
                             <div class="col-lg-7">
-                                <img src="@Url.Content(f.PosterUrl ?? "~/wwwroot/Admin/img/download (2).jpg")"
-                                     class="d-block w-100 carousel-poster rounded" alt="@f.Title" />
+                                <a href="@Url.Action("Details", "Cinema", new { area = "Client", id = f.Id })" class="d-block">
+                                    <img src="@Img(f.PosterUrl)" class="d-block w-100 carousel-poster rounded" alt="@f.Title" />
+                                </a>
                             </div>
                             <div class="col-lg-5">
                                 <h2>@f.Title</h2>
@@ -176,7 +207,9 @@
             {
                 <div class="slider-item">
                     <div class="card movie-card position-relative h-100">
-                        <img src="@Url.Content(m.PosterUrl ?? "~/wwwroot/Admin/img/download (2).jpg")" class="movie-poster card-img-top" alt="@m.Title" />
+                        <a href="@Url.Action("Details", "Cinema", new { area = "Client", id = m.Id })" class="d-block">
+                            <img src="@Img(m.PosterUrl)" class="movie-poster card-img-top" alt="@m.Title" />
+                        </a>
                         <div class="movie-overlay">
                             <div class="w-100 text-center">
                                 <div class="movie-title">@m.Title</div>
@@ -202,14 +235,15 @@
         </div>
     </div>
 
-
     <!-- Grid of movies -->
     <div class="row g-3">
         @foreach (var m in Model?.NowShowing ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.MovieCardVm>())
         {
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="card movie-card h-100 position-relative">
-                    <img src="@Url.Content(m.PosterUrl ?? "~/wwwroot/Admin/img/download (2).jpg")" class="card-img-top movie-poster" alt="@m.Title" />
+                    <a href="@Url.Action("Details", "Cinema", new { area = "Client", id = m.Id })" class="d-block">
+                        <img src="@Img(m.PosterUrl)" class="movie-poster card-img-top" alt="@m.Title" />
+                    </a>
                     <div class="card-body">
                         <h6 class="card-title mb-1">@m.Title</h6>
                         <small class="text-muted">@((m.DurationMin.HasValue) ? (m.DurationMin.Value + " min") : "--")</small>
@@ -235,6 +269,7 @@
         }
     </div>
 </div>
+
 @using Semester03.Areas.Client.Repositories
 @using Semester03.Areas.Client.Models.ViewModels
 @{
@@ -250,23 +285,23 @@
         {
             <div class="slider-item">
                 <div class="card movie-card event-card position-relative h-100">
-                    <img src="@(!string.IsNullOrEmpty(e.ImageUrl)
-                                                        ? (e.ImageUrl.StartsWith("/") ? e.ImageUrl : $"/images/events/{e.ImageUrl}")
-                                                        : "/images/event-placeholder.png")"
-                     class="movie-poster card-img-top" alt="@e.Title" />
-                <div class="movie-overlay">
-                    <div class="w-100 text-center">
-                        <div class="movie-title">@e.Title</div>
-                        <div class="small">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
-                        <div class="mt-2">
-                            <a class="btn btn-sm btn-light" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">View</a>
+                    <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })" class="d-block">
+                        <img src="@Img(!string.IsNullOrEmpty(e.ImageUrl) ? (e.ImageUrl.StartsWith("/") ? e.ImageUrl.TrimStart('/') : e.ImageUrl) : "/images/event-placeholder.png")"
+                             class="movie-poster card-img-top" alt="@e.Title" />
+                    </a>
+                    <div class="movie-overlay">
+                        <div class="w-100 text-center">
+                            <div class="movie-title">@e.Title</div>
+                            <div class="small">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
+                            <div class="mt-2">
+                                <a class="btn btn-sm btn-light" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">View</a>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="card-body p-2">
-                    <div class="fw-semibold">@e.Title</div>
-                    <div class="small text-muted">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
-                    @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
+                    <div class="card-body p-2">
+                        <div class="fw-semibold">@e.Title</div>
+                        <div class="small text-muted">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
+                        @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
                         {
                             <p class="small text-truncate" title="@e.ShortDescription">@e.ShortDescription</p>
                         }
@@ -276,7 +311,6 @@
         }
     </div>
 </div>
-
 
 @section Scripts {
     <script>
