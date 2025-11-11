@@ -185,7 +185,7 @@
                     </div>
                     <a class="nav-link" href="@Url.Action("Dining", "Mall", new { area = "Client" })">Dining</a>
                     <a class="nav-link" href="@Url.Action("Entertainment", "Mall", new { area = "Client" })">Entertainment</a>
-                    <a class="nav-link" href="@Url.Action("Events", "Mall", new { area = "Client" })">Events</a>
+                    <a class="nav-link" href="@Url.Action("Index", "Event", new { area = "Client" })">Events</a>
                     <a class="nav-link" href="@Url.Action("Promotions", "Mall", new { area = "Client" })">Promotions</a>
                     <a class="nav-link" href="@Url.Action("Contact", "Home", new { area = "Client" })">Contact</a>
                 </nav>
@@ -269,13 +269,91 @@
                         @await Html.PartialAsync("_CategoriesPartial")
                     </div>
 
+                    @{
+                        var _eventRepo = Semester03.Areas.Client.Repositories.EventRepository.Instance;
+                        var topEvents = await _eventRepo.GetUpcomingEventsAsync(6);
+                    }
+
                     <div class="mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <h6 class="mb-0">Upcoming events</h6>
                             <a class="nav-link" href="@Url.Action("Index", "Event", new { area = "Client" })">Events</a>
                         </div>
-                        @await Html.PartialAsync("_EventListPartial")
+
+                        <div class="slider-wrapper small-event-slider mb-2">
+                            <div class="slider-track">
+                                @foreach (var e in topEvents)
+                                {
+                                    <div class="slider-item">
+                                        <div class="card movie-card event-card position-relative h-100 small-card">
+                                            <img src="@(!string.IsNullOrEmpty(e.ImageUrl)
+                                                                                    ? (e.ImageUrl.StartsWith("/") ? e.ImageUrl : $"/images/events/{e.ImageUrl}")
+                                                                                    : "/images/event-placeholder.png")"
+                                             class="movie-poster card-img-top small-poster" alt="@e.Title" />
+                                        <div class="movie-overlay">
+                                            <div class="w-100 text-center">
+                                                <div class="movie-title">@e.Title</div>
+                                                <div class="small">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
+                                                <div class="mt-1">
+                                                    <a class="btn btn-sm btn-light" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">View</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-body p-1">
+                                            <div class="fw-semibold small-title">@e.Title</div>
+                                            <div class="small text-muted">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                                                }
+                            </div>
+                        </div>
                     </div>
+
+                    @section Styles {
+                        <style>
+                            /* Slider wrapper nhỏ gọn, horizontal scroll */
+                            .small-event-slider {
+                                overflow-x: auto;
+                                white-space: nowrap;
+                                padding-bottom: 0.5rem;
+                            }
+
+                                .small-event-slider .slider-track {
+                                    display: flex;
+                                    gap: 0.5rem;
+                                }
+
+                                .small-event-slider .slider-item {
+                                    flex: 0 0 160px; /* mỗi card rộng 160px */
+                                    display: inline-block;
+                                }
+
+                                .small-event-slider .small-card {
+                                    font-size: 0.85rem;
+                                }
+
+                                .small-event-slider .small-poster {
+                                    height: 120px;
+                                    object-fit: cover;
+                                }
+
+                                .small-event-slider .small-title {
+                                    font-size: 0.9rem;
+                                }
+                                /* Optional: hide scrollbar but still scrollable */
+                                .small-event-slider::-webkit-scrollbar {
+                                    display: none;
+                                }
+
+                            .small-event-slider {
+                                -ms-overflow-style: none;
+                                scrollbar-width: none;
+                            }
+                        </style>
+                    }
+
+
 
                     <div class="mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-2">
@@ -294,7 +372,7 @@
                 </aside>
             </div>
         </div>
-
+     
         <!-- Featured stores -->
         <section class="mt-5">
             @{
