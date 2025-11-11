@@ -65,5 +65,78 @@ namespace Semester03.Models.Repositories
                         })
                         .ToList();
         }
+
+        public TenantDetailsViewModel? GetTenantDetails(int tenantId)
+        {
+            var tenant = _context.TblTenants
+                .Include(t => t.TenantType)
+                .Include(t => t.TblTenantPositions)
+                .FirstOrDefault(t => t.TenantId == tenantId);
+
+            if (tenant == null) return null;
+
+            // Lấy bình luận tenant (status = 1) – Movie/Event để null
+            var comments = _context.TblCustomerComplaints
+                .Include(c => c.CustomerComplaintCustomerUser)
+                .Where(c => c.CustomerComplaintTenantId == tenantId && c.CustomerComplaintStatus == 1)
+                .Select(c => new CustomerCommentVm
+                {
+                    UserName = c.CustomerComplaintCustomerUser.UsersFullName,
+                    Text = c.CustomerComplaintDescription ?? "",
+                    Rate = c.CustomerComplaintRate,
+                    CreatedAt = c.CustomerComplaintCreatedAt
+                })
+                .OrderByDescending(c => c.CreatedAt)
+                .ToList();
+
+            double? avgRate = comments.Any() ? comments.Average(c => c.Rate) : null;
+
+            return new TenantDetailsViewModel
+            {
+                TenantId = tenant.TenantId,
+                TenantName = tenant.TenantName,
+                TenantImg = tenant.TenantImg,
+                TenantDescription = tenant.TenantDescription ?? "",
+                TenantTypeName = tenant.TenantType.TenantTypeName,
+                Position = tenant.TblTenantPositions.FirstOrDefault() != null
+                    ? $"{tenant.TblTenantPositions.First().TenantPositionLocation}, Floor {tenant.TblTenantPositions.First().TenantPositionFloor}"
+                    : "",
+                AvgRate = avgRate,
+                Comments = comments
+            };
+        }
+
+
+
+        public bool AddTenantComment(int tenantId, int userId, int rate, string text)
+        {
+            try
+            {
+                var comment = new TblCustomerComplaint
+                {
+                    CustomerComplaintTenantId = tenantId,
+                    CustomerComplaintCustomerUserId = userId,
+                    CustomerComplaintRate = rate,
+                    CustomerComplaintDescription = text,
+                    CustomerComplaintStatus = 0, // chờ duyệt
+                    CustomerComplaintCreatedAt = DateTime.Now,
+                    CustomerComplaintMovieId = null,
+                    CustomerComplaintEventId = null
+                };
+
+                _context.TblCustomerComplaints.Add(comment);
+                _context.SaveChanges();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+
+
+
+
     }
 }

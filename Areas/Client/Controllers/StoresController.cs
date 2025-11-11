@@ -2,6 +2,7 @@
 using Semester03.Models.Repositories;
 using Semester03.Models.ViewModels;
 using System.Collections.Generic;
+using System.Security.Claims;
 
 namespace Semester03.Areas.Client.Controllers
 {
@@ -15,6 +16,7 @@ namespace Semester03.Areas.Client.Controllers
             _tenantRepo = tenantRepo;
         }
 
+        // Trang danh sách stores
         public IActionResult Index(int? typeId, string search)
         {
             var stores = _tenantRepo.GetStores(typeId, search);
@@ -32,6 +34,33 @@ namespace Semester03.Areas.Client.Controllers
             ViewBag.SearchQuery = search ?? "";
 
             return View(stores);
+        }
+
+        // Trang chi tiết store
+        [HttpGet]
+        public IActionResult Details(int id)
+        {
+            var tenant = _tenantRepo.GetTenantDetails(id);
+            if (tenant == null) return NotFound();
+            return View(tenant);
+        }
+
+        // Thêm bình luận tenant (AJAX)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult AddComment(int tenantId, int rate, string text)
+        {
+            if (!User.Identity.IsAuthenticated)
+                return Unauthorized(new { success = false, message = "Bạn cần đăng nhập." });
+
+            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            bool success = _tenantRepo.AddTenantComment(tenantId, userId, rate, text);
+
+            return Json(new
+            {
+                success,
+                message = success ? "Bình luận đã gửi, chờ duyệt." : "Có lỗi xảy ra."
+            });
         }
     }
 }
