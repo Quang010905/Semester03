@@ -531,58 +531,66 @@
         </div>
 
         <!-- Featured stores -->
-        <section class="mt-5">
-            @{
-                var featuredStores = _tenantRepo.GetFeaturedStores(6); // lấy top 6
-            }
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <h4 class="mb-0">Featured stores</h4>
-                <a href="@Url.Action("Index", "Stores", new { area = "Client" })" class="small">View all stores</a>
-            </div>
+        @if (ViewContext.RouteData.Values["controller"]?.ToString() == "Cinema"
+        && ViewContext.RouteData.Values["action"]?.ToString() == "Index")
+        {
+            <!-- Featured stores -->
+            <section class="mt-5">
+                @{
+                    var featuredStores = _tenantRepo.GetFeaturedStores(6); // lấy top 6
+                }
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h4 class="mb-0">Featured stores</h4>
+                    <a href="@Url.Action("Index", "Stores", new { area = "Client" })" class="small">View all stores</a>
+                </div>
 
-            @if (featuredStores != null && featuredStores.Any())
-            {
-                <div id="featuredStoresCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
-                    <div class="carousel-inner">
-                        @for (int i = 0; i < featuredStores.Count; i += 3)
-                        {
-                            <div class="carousel-item @(i == 0 ? "active" : "")">
-                                <div class="row justify-content-center g-3">
-                                    @for (int j = i; j < i + 3 && j < featuredStores.Count; j++)
-                                    {
-                                        var s = featuredStores[j];
-                                        var img = string.IsNullOrEmpty(s.TenantImg) ? "/images/store-placeholder.png" : $"/images/tenants/{s.TenantImg}";
-                                        <div class="col-12 col-md-4">
-                                            <div class="card store-card h-100 shadow-sm border-0 rounded-4 overflow-hidden hover-scale">
-                                                <img src="@img" class="card-img-top" alt="@s.TenantName" style="height:180px; object-fit:cover;" />
-                                                <div class="card-body p-2 text-center">
-                                                    <h6 class="card-title fw-bold mb-1">@s.TenantName</h6>
-                                                    <small class="text-muted d-block mb-1">@s.TenantTypeName</small>
-                                                    <p class="text-secondary small mb-2">@s.TenantDescription</p>
-                                                    <a href="@Url.Action("Details", "Stores", new { id = s.TenantId, area = "Client" })" class="btn btn-outline-primary btn-sm mt-1">View</a>
+                @if (featuredStores != null && featuredStores.Any())
+                {
+                    <div id="featuredStoresCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+                        <div class="carousel-inner">
+                            @for (int i = 0; i < featuredStores.Count; i += 3)
+                            {
+                                <div class="carousel-item @(i == 0 ? "active" : "")">
+                                    <div class="row justify-content-center g-3">
+                                        @for (int j = i; j < i + 3 && j < featuredStores.Count; j++)
+                                        {
+                                            var s = featuredStores[j];
+                                            var img = string.IsNullOrEmpty(s.TenantImg)
+                                            ? "/Admin/img/store-placeholder.png"
+                                            : $"/Admin/img/{s.TenantImg}";
+                                            <div class="col-12 col-md-4">
+                                                <div class="card store-card h-100 shadow-sm border-0 rounded-4 overflow-hidden hover-scale">
+                                                    <img src="@img" class="card-img-top" alt="@s.TenantName" style="height:180px; object-fit:cover;" />
+                                                    <div class="card-body p-2 text-center">
+                                                        <h6 class="card-title fw-bold mb-1">@s.TenantName</h6>
+                                                        <small class="text-muted d-block mb-1">@s.TenantTypeName</small>
+                                                        <p class="text-secondary small mb-2">@s.TenantDescription</p>
+                                                        <a href="@Url.Action("Details", "Stores", new { id = s.TenantId, area = "Client" })" class="btn btn-outline-primary btn-sm mt-1">View</a>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    }
+                                        }
+                                    </div>
                                 </div>
-                            </div>
-                        }
+                            }
+                        </div>
+                        <button class="carousel-control-prev" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Previous</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Next</span>
+                        </button>
                     </div>
-                    <button class="carousel-control-prev" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="prev">
-                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Previous</span>
-                    </button>
-                    <button class="carousel-control-next" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="next">
-                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Next</span>
-                    </button>
-                </div>
-            }
-            else
-            {
-                <div class="p-3 bg-light rounded text-muted text-center">No stores to display</div>
-            }
-        </section>
+                }
+                else
+                {
+                    <div class="p-3 bg-light rounded text-muted text-center">No stores to display</div>
+                }
+            </section>
+        }
+
     </main>
 
     <!-- Footer -->
