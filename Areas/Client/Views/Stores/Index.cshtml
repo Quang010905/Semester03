@@ -11,7 +11,7 @@
             <input type="text" name="search" value="@ViewBag.SearchQuery" class="form-control form-control-sm" placeholder="Search stores..." />
             <select name="typeId" class="form-select form-select-sm">
                 <option value="">All Types</option>
-                @foreach (var t in ViewBag.TenantTypes as List<Semester03.Models.Repositories.TenantType>)
+                @foreach (var t in ViewBag.TenantTypes as List<Semester03.Areas.Admin.Models.TenantType>)
                 {
                     <option value="@t.Id" @(t.Name == (string)ViewBag.CurrentTypeName ? "selected" : "")>@t.Name</option>
                 }
