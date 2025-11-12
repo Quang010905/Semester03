@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Semester03.Models.Entities; // ✅ thêm để nhận diện DbContext + Entities
 using Semester03.Models.Repositories;
 using Semester03.Models.ViewModels;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 
 namespace Semester03.Areas.Client.Controllers
@@ -10,13 +13,17 @@ namespace Semester03.Areas.Client.Controllers
     public class StoresController : Controller
     {
         private readonly TenantRepository _tenantRepo;
+        private readonly AbcdmallContext _context; // ✅ thêm context
 
-        public StoresController(TenantRepository tenantRepo)
+        public StoresController(TenantRepository tenantRepo, AbcdmallContext context)
         {
             _tenantRepo = tenantRepo;
+            _context = context;
         }
 
-        // Trang danh sách stores
+        // =======================
+        // 1️⃣ Trang danh sách stores
+        // =======================
         public IActionResult Index(int? typeId, string search)
         {
             var stores = _tenantRepo.GetStores(typeId, search);
@@ -36,16 +43,26 @@ namespace Semester03.Areas.Client.Controllers
             return View(stores);
         }
 
-        // Trang chi tiết store
+        // =======================
+        // 2️⃣ Trang chi tiết store
+        // =======================
+        [HttpGet]
         [HttpGet]
         public IActionResult Details(int id)
         {
-            var tenant = _tenantRepo.GetTenantDetails(id);
-            if (tenant == null) return NotFound();
-            return View(tenant);
+            var model = _tenantRepo.GetTenantDetails(id);
+            if (model == null) return NotFound();
+
+            // Gán luôn danh mục sản phẩm
+            model.ProductCategories = _tenantRepo.GetProductCategoriesByTenant(id);
+
+            return View(model);
         }
 
-        // Thêm bình luận tenant (AJAX)
+
+        // =======================
+        // 3️⃣ Thêm bình luận tenant (AJAX)
+        // =======================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult AddComment(int tenantId, int rate, string text)
@@ -61,6 +78,25 @@ namespace Semester03.Areas.Client.Controllers
                 success,
                 message = success ? "Bình luận đã gửi, chờ duyệt." : "Có lỗi xảy ra."
             });
+        }
+
+        // =======================
+        // 4️⃣ Lấy sản phẩm theo danh mục (AJAX)
+        // =======================
+        [HttpGet]
+        public IActionResult GetProductsByCategory(int categoryId)
+        {
+            var products = _context.TblProducts
+                .Where(p => p.ProductCategoryId == categoryId && (p.ProductStatus == 1 || p.ProductStatus == null))
+                .Select(p => new ProductVm
+                {
+                    Id = p.ProductId,
+                    Name = p.ProductName,
+                    Img = p.ProductImg,
+                    Price = p.ProductPrice
+                }).ToList();
+
+            return Json(products);
         }
     }
 }
