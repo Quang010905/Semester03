@@ -210,11 +210,4 @@ namespace Semester03.Models.Repositories
             }
         }
     }
-
-    public class TenantType
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public int Status { get; set; }
-    }
 }
