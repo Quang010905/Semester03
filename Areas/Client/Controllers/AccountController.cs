@@ -123,7 +123,7 @@ namespace Semester03.Areas.Client.Controllers
             }
             else if (user.UsersRoleId == 2)
             {
-                return RedirectToAction("Index", "Cinema", new { area = "Client" });
+                return RedirectToAction("Index", "Home", new { area = "Client" });
             }
             else
             {
@@ -306,7 +306,7 @@ namespace Semester03.Areas.Client.Controllers
                 return Ok();
             }
 
-            return RedirectToAction("Index", "Cinema", new { area = "Client" });
+            return RedirectToAction("Index", "Home", new { area = "Client" });
         }
     }
 }

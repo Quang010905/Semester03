@@ -1,6 +1,7 @@
 ﻿@using System.Net
 @model Semester03.Areas.Client.Models.ViewModels.CinemaHomeVm
 @{
+    ViewData["HideCenterMain"] = false;
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
 
     // helper để chuẩn hóa đường dẫn ảnh (loại bỏ 'wwwroot/' nếu có, encode khoảng trắng)
@@ -154,7 +155,7 @@
         }
     </style>
 }
-
+<h4 class="mb-3">Cinema</h4>
 <div class="py-2">
     <!-- Featured carousel -->
     @if (Model?.Featured?.Any() == true)
@@ -287,47 +288,6 @@
     </div>
 </div>
 
-@using Semester03.Areas.Client.Repositories
-@using Semester03.Areas.Client.Models.ViewModels
-@{
-    var _eventRepo = EventRepository.Instance;
-    var topEvents = await _eventRepo.GetUpcomingEventsAsync();
-    topEvents = topEvents.Take(6).ToList();
-}
-
-<h4 class="mb-3">Upcoming Events</h4>
-<div class="slider-wrapper mb-3">
-    <div id="eventsSliderTrack" class="slider-track">
-        @foreach (var e in topEvents)
-        {
-            <div class="slider-item">
-                <div class="card movie-card event-card position-relative h-100">
-                    <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })" class="d-block">
-                        <img src="@Img(!string.IsNullOrEmpty(e.ImageUrl) ? (e.ImageUrl.StartsWith("/") ? e.ImageUrl.TrimStart('/') : e.ImageUrl) : "/images/event-placeholder.png")"
-                             class="movie-poster card-img-top" alt="@e.Title" />
-                    </a>
-                    <div class="movie-overlay">
-                        <div class="w-100 text-center">
-                            <div class="movie-title">@e.Title</div>
-                            <div class="small">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
-                            <div class="mt-2">
-                                <a class="btn btn-sm btn-light" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">View</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body p-2">
-                        <div class="fw-semibold">@e.Title</div>
-                        <div class="small text-muted">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
-                        @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
-                        {
-                            <p class="small text-truncate" title="@e.ShortDescription">@e.ShortDescription</p>
-                        }
-                    </div>
-                </div>
-            </div>
-        }
-    </div>
-</div>
 
 @section Scripts {
     <script>
