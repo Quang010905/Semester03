@@ -135,6 +135,19 @@ namespace Semester03.Models.Repositories
         }
 
 
+        public List<ProductCategoryVm> GetProductCategoriesByTenant(int tenantId)
+        {
+            return _context.TblProductCategories
+                .Where(pc => pc.ProductCategoryTenantId == tenantId && (pc.ProductCategoryStatus == 1 || pc.ProductCategoryStatus == null))
+                .Select(pc => new ProductCategoryVm
+                {
+                    Id = pc.ProductCategoryId,
+                    Name = pc.ProductCategoryName,
+                    Img = pc.ProductCategoryImg
+                })
+                .ToList();
+        }
+
 
 
 
