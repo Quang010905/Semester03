@@ -1,0 +1,58 @@
+﻿@{
+    ViewData["Title"] = "Home";
+    ViewData["MallName"] = "ABCD Mall";
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+}
+
+@using Semester03.Areas.Client.Repositories
+@using Semester03.Areas.Client.Models.ViewModels
+
+@{
+    var _eventRepo = EventRepository.Instance;
+    var topEvents = await _eventRepo.GetUpcomingEventsAsync();
+    topEvents = topEvents.Take(6).ToList();
+}
+
+<div class="container py-5">
+    <h1 class="mb-4 text-center">EVENTS</h1>
+
+    <div class="row g-4">
+        @foreach (var e in topEvents)
+        {
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden">
+                    <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">
+                        <img src="@( !string.IsNullOrEmpty(e.ImageUrl) ? (e.ImageUrl.StartsWith("/") ? e.ImageUrl.TrimStart('/') : e.ImageUrl) : "/images/event-placeholder.png" )"
+                             class="card-img-top" alt="@e.Title" style="height:200px; object-fit:cover;" />
+                    </a>
+                    <div class="card-body p-3 text-center">
+                        <h6 class="card-title fw-bold">@e.Title</h6>
+                        <small class="text-muted d-block mb-1">GIGAMALL</small>
+                        @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
+                        {
+                            <p class="text-secondary small text-truncate" title="@e.ShortDescription">@e.ShortDescription</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .card:hover {
+        transform: scale(1.02);
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .card-title {
+        font-size: 0.95rem;
+    }
+
+    .text-truncate {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+</style>

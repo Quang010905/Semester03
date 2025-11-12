@@ -86,7 +86,7 @@ app.MapControllerRoute(
 
 app.MapControllerRoute(
     name: "client_default",
-    pattern: "{controller=Cinema}/{action=Index}/{id?}",
+    pattern: "{controller=Home}/{action=Index}/{id?}",
     defaults: new { area = "Client" }
 )
 .WithStaticAssets();
