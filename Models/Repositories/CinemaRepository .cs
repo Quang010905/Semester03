@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Semester03.Areas.Client.Models.ViewModels;
 using Semester03.Models.Entities;
 
-namespace Semester03.Areas.Client.Repositories
+namespace Semester03.Models.Repositories
 {
     public class CinemaRepository
     {

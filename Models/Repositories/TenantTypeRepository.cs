@@ -1,165 +1,106 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
-using System.Globalization;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Semester03.Areas.Admin.Models;
 using Semester03.Models.Entities;
 
 namespace Semester03.Models.Repositories
 {
+    /// <summary>
+    /// Repository quản lý loại Tenant (TenantType) — dùng DI thay vì singleton.
+    /// </summary>
     public class TenantTypeRepository
     {
-        private static TenantTypeRepository _instance = null;
-        private TenantTypeRepository() { }
+        private readonly AbcdmallContext _context;
 
-        public static TenantTypeRepository Instance
+        // ✅ Inject DbContext qua constructor
+        public TenantTypeRepository(AbcdmallContext context)
         {
-            get
-            {
-                _instance = _instance ?? new TenantTypeRepository();
-                return _instance;
-            }
+            _context = context;
         }
 
-        public TenantType FindById(int Id)
+        public async Task<TenantType?> FindByIdAsync(int id)
         {
-            var tenantType = new TenantType();
-            try
-            {
-                using var db = new AbcdmallContext();
-                int idItem = Id;
-                var q = db.TblTenantTypes
-                          .Where(t => t.TenantTypeId == idItem)
-                          .Select(t => new TenantType
-                          {
-                              Id = idItem,
-                              Name = t.TenantTypeName,
-                              Status = t.TenantTypeStatus ?? 0
-                          })
-                          .FirstOrDefault();
-                if (q != null)
+            return await _context.TblTenantTypes
+                .Where(t => t.TenantTypeId == id)
+                .Select(t => new TenantType
                 {
-                    tenantType = q;
-                }
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-
-            return tenantType;
+                    Id = t.TenantTypeId,
+                    Name = t.TenantTypeName,
+                    Status = t.TenantTypeStatus ?? 0
+                })
+                .FirstOrDefaultAsync();
         }
 
-        public List<TenantType> GetAll()
+        public async Task<List<TenantType>> GetAllAsync()
         {
-            var ls = new List<TenantType>();
-            try
-            {
-                using var ct = new AbcdmallContext();
-                ls = ct.TblTenantTypes.Select(x => new TenantType
+            return await _context.TblTenantTypes
+                .Select(x => new TenantType
                 {
                     Id = x.TenantTypeId,
                     Name = x.TenantTypeName,
                     Status = x.TenantTypeStatus ?? 0
-                }).ToList();
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-
-            return ls;
+                })
+                .ToListAsync();
         }
 
-        public void Add(TenantType entity)
+        public async Task AddAsync(TenantType entity)
         {
-            try
+            var item = new TblTenantType
             {
-                using var db = new AbcdmallContext();
-                var item = new TblTenantType
-                {
-                    TenantTypeName = entity.Name,
-                    TenantTypeStatus = entity.Status
-                };
-                db.TblTenantTypes.Add(item);
-                db.SaveChanges();
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+                TenantTypeName = entity.Name,
+                TenantTypeStatus = entity.Status
+            };
+
+            _context.TblTenantTypes.Add(item);
+            await _context.SaveChangesAsync();
         }
 
-        public bool Delete(int Id)
+        public async Task<bool> DeleteAsync(int id)
         {
-            try
+            var item = await _context.TblTenantTypes.FirstOrDefaultAsync(t => t.TenantTypeId == id);
+            if (item != null)
             {
-                using var db = new AbcdmallContext();
-                var item = db.TblTenantTypes.SingleOrDefault(t => t.TenantTypeId == Id);
-                if (item != null)
-                {
-                    db.TblTenantTypes.Remove(item);
-                    var res = db.SaveChanges();
-                    if (res > 0)
-                    {
-                        return true;
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                throw;
+                _context.TblTenantTypes.Remove(item);
+                return await _context.SaveChangesAsync() > 0;
             }
             return false;
         }
 
-        public bool Update(TenantType entity)
+        public async Task<bool> UpdateAsync(TenantType entity)
         {
-            try
+            var q = await _context.TblTenantTypes.FirstOrDefaultAsync(t => t.TenantTypeId == entity.Id);
+            if (q != null)
             {
-                using var db = new AbcdmallContext();
-                var q = db.TblTenantTypes.SingleOrDefault(t => t.TenantTypeId == entity.Id);
-                if (q != null)
-                {
-                    q.TenantTypeName = entity.Name;
-                    q.TenantTypeStatus = entity.Status;
-                    int res = db.SaveChanges();
-                    return res > 0;
-                }
-            }
-            catch (Exception)
-            {
-                throw;
+                q.TenantTypeName = entity.Name;
+                q.TenantTypeStatus = entity.Status;
+                return await _context.SaveChangesAsync() > 0;
             }
             return false;
         }
 
-        public bool checkTenantTypeName(string Name, int? excludeId = null)
+        public async Task<bool> CheckTenantTypeNameAsync(string name, int? excludeId = null)
         {
-            try
-            {
-                using var db = new AbcdmallContext();
-                string normalizedInput = NormalizeName(Name);
-                var allTenantTypeNames = db.TblTenantTypes
-                                           .Where(t => !excludeId.HasValue || t.TenantTypeId != excludeId.Value)
-                                           .Select(c => c.TenantTypeName)
-                                           .ToList();
+            string normalizedInput = NormalizeName(name);
 
-                return allTenantTypeNames.Any(dbName => NormalizeName(dbName) == normalizedInput);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            var allTenantTypeNames = await _context.TblTenantTypes
+                .Where(t => !excludeId.HasValue || t.TenantTypeId != excludeId.Value)
+                .Select(t => t.TenantTypeName)
+                .ToListAsync();
+
+            return allTenantTypeNames.Any(dbName => NormalizeName(dbName) == normalizedInput);
         }
 
-        public string NormalizeName(string input)
+        private string NormalizeName(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
                 return string.Empty;
 
-            // Bỏ khoảng trắng và chuyển về thường
+            // Bỏ khoảng trắng và chuyển về chữ thường
             return new string(input.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToLowerInvariant();
         }
 
@@ -186,28 +127,19 @@ namespace Semester03.Models.Repositories
                 .ToArray());
         }
 
-        // Lấy TenantType theo tên
-        public TenantType? GetTenantTypeByName(string name)
+        public async Task<TenantType?> GetTenantTypeByNameAsync(string name)
         {
             if (string.IsNullOrWhiteSpace(name)) return null;
 
-            try
-            {
-                using var ct = new AbcdmallContext();
-                return ct.TblTenantTypes
-                         .Where(t => t.TenantTypeName == name)
-                         .Select(x => new TenantType
-                         {
-                             Id = x.TenantTypeId,
-                             Name = x.TenantTypeName,
-                             Status = x.TenantTypeStatus ?? 0
-                         })
-                         .FirstOrDefault();
-            }
-            catch
-            {
-                return null;
-            }
+            return await _context.TblTenantTypes
+                .Where(t => t.TenantTypeName == name)
+                .Select(x => new TenantType
+                {
+                    Id = x.TenantTypeId,
+                    Name = x.TenantTypeName,
+                    Status = x.TenantTypeStatus ?? 0
+                })
+                .FirstOrDefaultAsync();
         }
     }
 }

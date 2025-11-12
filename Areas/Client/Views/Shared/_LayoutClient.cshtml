@@ -5,7 +5,7 @@
   - AJAX logout
 *@
 @inject Semester03.Models.Repositories.TenantRepository _tenantRepo
-
+@inject Semester03.Models.Repositories.EventRepository _eventRepo
 @{
 	var hideCenterMainFlag = (ViewData["HideCenterMain"] as bool?) ?? false;
 	var routeController = (ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty);
@@ -193,7 +193,7 @@
 				transform: scale(1.02);
 			}
 
-		@@media (max-width: 767px) {
+		@media (max-width: 767px) {
 			.hero {
 				min-height: 220px;
 				padding: 1rem 0;
@@ -205,7 +205,7 @@
 			}
 		}
 
-		@@media (min-width: 1200px) {
+		@media (min-width: 1200px) {
 			.col-lg-10 {
 				flex: 0 0 83.333333%;
 				max-width: 83.333333%;
@@ -217,13 +217,13 @@
 			}
 		}
 
-		@@media (min-width: 1600px) {
+		@media (min-width: 1600px) {
 			:root {
 				--main-max-width: 1800px;
 			}
 		}
 
-		@@media (min-width: 768px) {
+		@media (min-width: 768px) {
 			.mall-nav .dropdown:hover > .dropdown-menu {
 				display: block;
 				margin-top: 0;
@@ -250,7 +250,7 @@
 				width: 340px;
 			}
 
-		@@media (max-width: 991px) {
+		@media (max-width: 991px) {
 			.layout-grid {
 				grid-template-columns: 1fr;
 			}
@@ -322,7 +322,7 @@
 			}
 
 		/* Desktop scrollbar style to provide visual affordance */
-		@@media (min-width: 768px) {
+		@media (min-width: 768px) {
 			.small-event-slider::-webkit-scrollbar {
 				width: 10px;
 			}
@@ -338,7 +338,7 @@
 		}
 
 		/* On small screens, let slider auto height (no fixed height) to avoid taking too much space */
-		@@media (max-width: 767px) {
+		@media (max-width: 767px) {
 			.small-event-slider {
 				height: auto;
 				max-height: none;
@@ -379,7 +379,7 @@
 					<div class="nav-item dropdown">
 						<a class="nav-link" href="@Url.Action("Index", "Stores", new { area = "Client" })" id="storesDropdown" role="button">Stores</a>
 						<ul class="dropdown-menu" aria-labelledby="storesDropdown">
-							@foreach (var type in Semester03.Models.Repositories.TenantTypeRepository.Instance.GetAll())
+							@foreach (var type in ViewBag.StoreTypes as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>())
 							{
 								<li>
 									<a class="dropdown-item" href="@Url.Action("Index", "Stores", new { area = "Client", typeId = type.Id })">@type.Name</a>
@@ -485,7 +485,7 @@
 						</div>
 
 						@{
-							var _eventRepo = Semester03.Areas.Client.Repositories.EventRepository.Instance;
+							// Lấy top upcoming events để hiển thị trong sidebar (non-blocking)
 							var topEvents = await _eventRepo.GetUpcomingEventsAsync(12);
 						}
 
