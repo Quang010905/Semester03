@@ -1,20 +1,17 @@
-﻿using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Semester03.Areas.Client.Repositories;
 using Semester03.Areas.Client.Models.ViewModels;
+using System;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
     public class CinemaController : Controller
     {
-        private readonly ICinemaRepository _repo;
-
-        public CinemaController(ICinemaRepository repo)
-        {
-            _repo = repo;
-        }
+        private readonly CinemaRepository _repo;
+        public CinemaController(CinemaRepository repo) => _repo = repo;
 
         public async Task<IActionResult> Index()
         {
@@ -30,16 +27,32 @@ namespace Semester03.Areas.Client.Controllers
             return View(vm); // Areas/Client/Views/Cinema/Index.cshtml
         }
 
-        // AJAX partial to get showtimes for a movie on a date
         [HttpGet]
-        public async Task<IActionResult> Showtimes(int movieId, string date = null)
+        public async Task<IActionResult> Details(int id)
         {
-            DateTime dt;
-            if (!DateTime.TryParse(date, out dt))
-                dt = DateTime.Today;
+            var vm = await _repo.GetMovieDetailsAsync(id);
+            if (vm == null) return NotFound();
+            return View(vm); // Areas/Client/Views/Cinema/Details.cshtml
+        }
 
-            var shows = await _repo.GetShowtimesByMovieAsync(movieId, dt);
-            return PartialView("_ShowtimesPartial", shows);
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddComment(int movieId, int rate, string text)
+        {
+            if (!User.Identity.IsAuthenticated)
+                return Unauthorized(new { success = false, message = "Bạn cần đăng nhập để bình luận." });
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("UserId")?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+            {
+                // nếu không có claim phù hợp, trả lỗi
+                return Unauthorized(new { success = false, message = "Không xác định user." });
+            }
+
+            // Thêm comment (mặc định pending)
+            await _repo.AddCommentAsync(movieId, userId, rate, text);
+
+            return Json(new { success = true, message = "Cảm ơn bạn! Bình luận sẽ xuất hiện sau khi được duyệt." });
         }
     }
 }

@@ -1,21 +1,25 @@
 ﻿using System;
+using System.Collections.Generic;
 
-namespace Semester03.Models.Entities
+namespace Semester03.Models.Entities;
+
+public partial class TblTicket
 {
-    public partial class TblTicket
-    {
-        public int TicketId { get; set; }
+    public int TicketId { get; set; }
 
-        // matches your Db schema / context mapping
-        public int TicketShowtimeSeatId { get; set; }     // <-- fixes TicketShowtimeSeatId missing
-        public int TicketBuyerUserId { get; set; }
-        public string? TicketStatus { get; set; }
-        public decimal TicketPrice { get; set; }
-        public DateTime TicketCreatedAt { get; set; }     // <-- fixes TicketCreatedAt missing
-        public DateTime TicketUpdatedAt { get; set; }
+    public int TicketShowtimeSeatId { get; set; }
 
-        // navigation props
-        public virtual TblUser? TicketBuyerUser { get; set; }
-        public virtual TblShowtimeSeat? TicketShowtimeSeat { get; set; } // <-- fixes TicketShowtimeSeat missing
-    }
+    public int TicketBuyerUserId { get; set; }
+
+    public string? TicketStatus { get; set; }
+
+    public decimal TicketPrice { get; set; }
+
+    public DateTime? TicketCreatedAt { get; set; }
+
+    public DateTime? TicketUpdatedAt { get; set; }
+
+    public virtual TblUser TicketBuyerUser { get; set; } = null!;
+
+    public virtual TblShowtimeSeat TicketShowtimeSeat { get; set; } = null!;
 }

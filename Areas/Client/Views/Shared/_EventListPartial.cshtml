@@ -1,71 +1,53 @@
 ﻿@using System.Linq
 @using Semester03.Areas.Client.Models.ViewModels
-@model object
-
-@{
-    // Normalize: try to get IEnumerable<EventCardVm> first, else try IEnumerable<MovieCardVm>, else try dynamic list
-    IEnumerable<EventCardVm> events = null;
-
-    if (Model is IEnumerable<EventCardVm> evs)
-    {
-        events = evs;
-    }
-    else if (Model is IEnumerable<MovieCardVm> movies)
-    {
-        events = movies.Select(m => new EventCardVm
-        {
-            Id = m.Id,
-            Title = m.Title,
-            ShortDescription = (m.Description?.Length > 120) ? m.Description.Substring(0, 117).TrimEnd() + "..." : m.Description,
-            StartDate = m.NextShowtime,
-            ImageUrl = string.IsNullOrEmpty(m.PosterUrl) ? "/images/event-placeholder.png" : m.PosterUrl
-        });
-    }
-    else if (Model is IEnumerable<dynamic> dyns)
-    {
-        // try map dynamic to EventCardVm defensively
-        events = dyns.Select(d => new EventCardVm
-        {
-            Id = (int?)(d?.Id ?? d?.EventId) ?? 0,
-            Title = (string)(d?.Title ?? d?.EventName ?? ""),
-            ShortDescription = (string)(d?.ShortDescription ?? d?.ShortDescription ?? d?.Description ?? d?.EventDescription ?? ""),
-            StartDate = (DateTime?)(d?.StartDate ?? d?.EventStart ?? d?.NextShowtime),
-            ImageUrl = (string)(d?.ImageUrl ?? d?.EventImg ?? d?.PosterUrl ?? "/images/event-placeholder.png")
-        });
-    }
-    else
-    {
-        events = Enumerable.Empty<EventCardVm>();
-    }
-}
+@model IEnumerable<EventCardVm>
 
 <div class="list-group small">
-    @if (events.Any())
+    @{
+        // Lấy 6 sự kiện sắp tới mới nhất
+        var upcoming = Model?.Where(e => e.StartDate.HasValue && e.StartDate.Value >= DateTime.Now)
+        .OrderBy(e => e.StartDate)
+        .Take(6)
+        .ToList() ?? new List<EventCardVm>();
+    }
+
+    @if (upcoming.Any())
     {
-        foreach (var e in events)
+        @foreach (var e in upcoming)
         {
             var title = e?.Title ?? "Event";
             var start = e?.StartDate.HasValue == true ? e.StartDate.Value.ToString("dd MMM yyyy HH:mm") : "";
-            <a href="@Url.Action("Details", "Event", new { area = "Client", id = e?.Id })" class="list-group-item list-group-item-action">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="text-truncate" style="max-width:180px;">@title</div>
-                    <small class="text-muted">@start</small>
+            var img = string.IsNullOrWhiteSpace(e?.ImageUrl) ? "/images/event-placeholder.png" : (e.ImageUrl.StartsWith("/") ? e.ImageUrl : $"/images/events/{e.ImageUrl}");
+            var detailUrl = Url.Action("Details", "Event", new { area = "Client", id = e.Id });
+
+            <a href="@detailUrl" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
+                <img src="@img" alt="@title" style="width:84px; height:84px; object-fit:cover; border-radius:8px;" />
+                <div class="d-flex flex-column w-100">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="me-2" style="min-width:0;">
+                            <div class="fw-semibold text-truncate" style="max-width: calc(100% - 90px);">@title</div>
+                        </div>
+                        <small class="text-muted ms-2 text-nowrap">@start</small>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(e?.ShortDescription))
+                    {
+                        <div class="small text-muted mt-1 text-truncate" style="max-width:100%;">@e.ShortDescription</div>
+                    }
                 </div>
-                @if (!string.IsNullOrWhiteSpace(e?.ShortDescription))
-                {
-                    <div class="small text-muted ps-2 pe-2">@e.ShortDescription</div>
-                }
             </a>
         }
     }
     else
     {
-
         <div class="text-center text-muted small p-3">
-            <div>No upcoming items 🔕</div>
-            <div class="mt-2">
-                <a href="@Url.Action("Index", "Event", new { area = "Client" })" class="btn btn-sm btn-outline-primary">See all events</a>
-            </div>
+            No upcoming events 🔕
         </div>
     }
+
+    <div class="text-center mt-3">
+        <a href="@Url.Action("Index", "Event", new { area = "Client" })" class="btn btn-outline-secondary btn-sm">
+            View all events
+        </a>
+    </div>
 </div>

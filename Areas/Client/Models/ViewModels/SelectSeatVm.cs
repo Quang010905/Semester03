@@ -8,9 +8,7 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public int ShowtimeId { get; set; }
         public string MovieTitle { get; set; } = "";
         public string ScreenName { get; set; } = "";
-        public string CinemaName { get; set; } = "";
         public DateTime ShowtimeStart { get; set; }
-        public decimal Price { get; set; }
         public List<SeatVm> Seats { get; set; } = new();
         public int MaxCols { get; set; } = 10;
     }
@@ -26,10 +24,10 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public DateTime? ReservedAt { get; set; }
     }
 
+
     public class ReserveRequestVm
     {
         public int ShowtimeId { get; set; }
-        public List<int> ShowtimeSeatIds { get; set; } = new List<int>();
+        public List<int> ShowtimeSeatIds { get; set; } = new();
     }
-
 }

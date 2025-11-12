@@ -1,0 +1,49 @@
+﻿@model Semester03.Models.Entities.TblMovie
+
+@{
+    ViewData["Title"] = "Delete Movie";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<h1 class="h3 mb-2 text-gray-800">Delete Movie</h1>
+<h3 class="text-danger">Are you sure you want to delete this?</h3>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">@Model.MovieTitle</h6>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-2">
+                Movie Title
+            </dt>
+            <dd class="col-sm-10">
+                @Html.DisplayFor(model => model.MovieTitle)
+            </dd>
+            <dt class="col-sm-2">
+                Genre
+            </dt>
+            <dd class="col-sm-10">
+                @Html.DisplayFor(model => model.MovieGenre)
+            </dd>
+            <dt class="col-sm-2">
+                Director
+            </dt>
+            <dd class="col-sm-10">
+                @Html.DisplayFor(model => model.MovieDirector)
+            </dd>
+            <dt class="col-sm-2">
+                Duration (Min)
+            </dt>
+            <dd class="col-sm-10">
+                @Html.DisplayFor(model => model.MovieDurationMin)
+            </dd>
+        </dl>
+
+        <form asp-action="Delete">
+            <input type="hidden" asp-for="MovieId" />
+            <input type="submit" value="Delete" class="btn btn-danger" />
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>

@@ -1,6 +1,41 @@
-﻿@model Semester03.Areas.Client.Models.ViewModels.CinemaHomeVm
+﻿@using System.Net
+@model Semester03.Areas.Client.Models.ViewModels.CinemaHomeVm
 @{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+
+    // helper để chuẩn hóa đường dẫn ảnh (loại bỏ 'wwwroot/' nếu có, encode khoảng trắng)
+    Func<string, string> Img = (raw) =>
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return Url.Content("~/images/movie-placeholder.png");
+        }
+
+        // Nếu người lưu trong DB có chứa 'wwwroot/' hoặc bắt đầu bằng '/', loại bỏ
+        var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
+
+        // Encode spaces and ensure parentheses are kept (spaces -> %20)
+        s = s.Replace(" ", "%20");
+
+        // Nếu đường dẫn đã chứa "Admin/img" hay "images/..." thì Url.Content sẽ tìm từ webroot (~)
+        return Url.Content("~/" + s);
+    };
+
+    // helper để tạo href cho nút Book: nếu đã đăng nhập -> BookTicket, ngược lại -> Login?returnUrl=...
+    Func<int, string> BookHref = (movieId) =>
+    {
+        if (User?.Identity?.IsAuthenticated == true)
+        {
+            return Url.Action("BookTicket", "Booking", new { area = "Client", movieId = movieId });
+        }
+        else
+        {
+            // returnUrl sẽ là đường dẫn tới BookTicket (server sẽ kiểm tra Url.IsLocalUrl trong controller)
+            var target = Url.Action("BookTicket", "Booking", new { area = "Client", movieId = movieId });
+            // Url.Action sẽ trả về relative path; để an toàn encode vào query string
+            return Url.Action("Login", "Account", new { area = "Client", returnUrl = target });
+        }
+    };
 }
 
 @section Styles {
@@ -18,6 +53,7 @@
             cursor: pointer;
             z-index: 1;
             background: #fff;
+            position: relative;
         }
 
             .movie-card:hover {
@@ -30,6 +66,7 @@
             object-fit: cover;
             width: 100%;
             border-radius: .25rem;
+            display: block;
         }
 
         .movie-overlay {
@@ -44,12 +81,22 @@
             opacity: 0;
             transition: opacity .18s ease;
             border-radius: .25rem;
-            pointer-events: none; /* prevent overlay from blocking clicks */
+            /* IMPORTANT: overlay shows but doesn't block clicks by default */
+            pointer-events: none;
         }
 
+        /* show visual hover (opacity) but keep pointer-events none so clicks pass through to underlying link */
         .movie-card:hover .movie-overlay {
             opacity: 1;
+            /* keep pointer-events: none; so the overlay won't intercept clicks */
+            pointer-events: none;
+        }
+
+        /* Make sure overlay buttons (if any) remain clickable */
+        .movie-overlay .btn {
             pointer-events: auto;
+            position: relative;
+            z-index: 5;
         }
 
         .movie-title {
@@ -83,21 +130,18 @@
         }
 
         @@media (max-width:767px) {
-            .movie-poster
+            .movie-poster {
+                height: 200px;
+            }
 
-        {
-            height: 200px;
-        }
+            .carousel-poster {
+                height: 240px;
+            }
 
-        .carousel-poster {
-            height: 240px;
-        }
-
-        .slider-item {
-            min-width: 160px;
-            flex: 0 0 160px;
-        }
-
+            .slider-item {
+                min-width: 160px;
+                flex: 0 0 160px;
+            }
         }
 
         /* clamp description lines */
@@ -112,9 +156,8 @@
 }
 
 <div class="py-2">
-    <!-- page content (no separate aside here) -->
     <!-- Featured carousel -->
-    @if (Model.Featured?.Any() == true)
+    @if (Model?.Featured?.Any() == true)
     {
         <div id="featuredCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
             <div class="carousel-inner">
@@ -125,7 +168,9 @@
                     <div class="carousel-item @active">
                         <div class="row align-items-center">
                             <div class="col-lg-7">
-                                <img src="~/Admin/img/download (5).jpg" class="d-block w-100 carousel-poster rounded" alt="@f.Title" />
+                                <a href="@Url.Action("Details", "Cinema", new { area = "Client", id = f.Id })" class="d-block">
+                                    <img src="@Img(f.PosterUrl)" class="d-block w-100 carousel-poster rounded" alt="@f.Title" />
+                                </a>
                             </div>
                             <div class="col-lg-5">
                                 <h2>@f.Title</h2>
@@ -135,7 +180,7 @@
                                     @if (f.NextShowtime.HasValue)
                                     {
                                         <span>@f.NextShowtime.Value.ToString("dd MMM yyyy HH:mm")</span>
-                                        <span class="ms-2 text-muted">(@String.Format("{0:N0}", f.NextPrice) VND)</span>
+                                        <span class="ms-2 text-muted">(@(f.NextPrice.HasValue ? String.Format("{0:N0}", f.NextPrice.Value) : "—") VND)</span>
                                     }
                                     else
                                     {
@@ -143,10 +188,10 @@
                                     }
                                 </p>
                                 <div class="mt-3">
-                                    @if (f.NextShowtimeId.HasValue)
-                                    {
-                                        <a class="btn btn-primary" href="@Url.Action("BookTicket","Booking", new { area = "Client", movieId = f.Id })">Book ticket</a>
-                                    }
+                                    <a class="btn btn-primary"
+                                       href="@BookHref(f.Id)">
+                                        Book ticket
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -175,25 +220,31 @@
 
     <div class="slider-wrapper mb-3">
         <div id="sliderTrack" class="slider-track">
-            @foreach (var m in Model.NowShowing)
+            @foreach (var m in Model?.NowShowing ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.MovieCardVm>())
             {
                 <div class="slider-item">
                     <div class="card movie-card position-relative h-100">
-                        <img src="~/Admin/img/images (2).jpg" class="movie-poster card-img-top" alt="@m.Title" />
+                        <a href="@Url.Action("Details", "Cinema", new { area = "Client", id = m.Id })" class="d-block">
+                            <img src="@Img(m.PosterUrl)" class="movie-poster card-img-top" alt="@m.Title" />
+                        </a>
                         <div class="movie-overlay">
                             <div class="w-100 text-center">
                                 <div class="movie-title">@m.Title</div>
-                                <div class="small">@((m.DurationMin?.ToString() ?? "--") + " min")</div>
+                                <div class="small">@((m.DurationMin.HasValue ? m.DurationMin.Value.ToString() : "--") + " min")</div>
                                 <div class="mt-2">
-                                    <a class="btn btn-sm btn-light" href="javascript:void(0)" onclick="loadShowtimes(@m.Id)">Showtimes</a>
-                                    <a class="btn btn-sm btn-primary ms-1" href="@Url.Action("BookTicket","Booking", new { area = "Client", movieId = m.Id })">Book</a>
+                                    <a class="btn btn-sm btn-primary ms-1" href="@BookHref(m.Id)">Book</a>
                                 </div>
                             </div>
                         </div>
                         <div class="card-body p-2">
-                            <div class="small text-muted">@m.NextShowtime?.ToString("dd MMM HH:mm")</div>
+                            <div class="small text-muted">@((m.NextShowtime.HasValue) ? m.NextShowtime.Value.ToString("dd MMM HH:mm") : "--")</div>
                             <div class="fw-semibold">@m.Title</div>
                             <p class="small text-truncate" title="@m.Description">@m.Description</p>
+                        </div>
+                        <div class="card-footer bg-white border-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">@((m.NextShowtime.HasValue) ? m.NextShowtime.Value.ToString("dd MMM HH:mm") : "--")</small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -203,24 +254,74 @@
 
     <!-- Grid of movies -->
     <div class="row g-3">
-        @foreach (var m in Model.NowShowing)
+        @foreach (var m in Model?.NowShowing ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.MovieCardVm>())
         {
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="card movie-card h-100 position-relative">
-                    <img src="~/Admin/img/download (2).jpg" class="card-img-top movie-poster" alt="@m.Title" />
+                    <a href="@Url.Action("Details", "Cinema", new { area = "Client", id = m.Id })" class="d-block">
+                        <img src="@Img(m.PosterUrl)" class="movie-poster card-img-top" alt="@m.Title" />
+                    </a>
                     <div class="card-body">
                         <h6 class="card-title mb-1">@m.Title</h6>
-                        <small class="text-muted">@m.DurationMin min</small>
+                        <small class="text-muted">@((m.DurationMin.HasValue) ? (m.DurationMin.Value + " min") : "--")</small>
                         <p class="small text-truncate mt-2" title="@m.Description">@m.Description</p>
                     </div>
                     <div class="card-footer bg-white border-0">
                         <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">@m.NextShowtime?.ToString("dd MMM HH:mm")</small>
+                            <small class="text-muted">@((m.NextShowtime.HasValue) ? m.NextShowtime.Value.ToString("dd MMM HH:mm") : "--")</small>
                             <div>
-                                <a class="btn btn-sm btn-outline-primary" href="javascript:void(0)" onclick="loadShowtimes(@m.Id)">Showtimes</a>
-                                <a class="btn btn-sm btn-primary ms-1" href="@Url.Action("Book","Booking", new { showtimeId = m.NextShowtimeId })">Book</a>
+                                @if (m.NextShowtimeId.HasValue)
+                                {
+                                    <a class="btn btn-sm btn-primary ms-1" href="@BookHref(m.Id)">Book</a>
+                                }
+                                else
+                                {
+                                    <a class="btn btn-sm btn-secondary ms-1 disabled">Book</a>
+                                }
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@using Semester03.Areas.Client.Repositories
+@using Semester03.Areas.Client.Models.ViewModels
+@{
+    var _eventRepo = EventRepository.Instance;
+    var topEvents = await _eventRepo.GetUpcomingEventsAsync();
+    topEvents = topEvents.Take(6).ToList();
+}
+
+<h4 class="mb-3">Upcoming Events</h4>
+<div class="slider-wrapper mb-3">
+    <div id="eventsSliderTrack" class="slider-track">
+        @foreach (var e in topEvents)
+        {
+            <div class="slider-item">
+                <div class="card movie-card event-card position-relative h-100">
+                    <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })" class="d-block">
+                        <img src="@Img(!string.IsNullOrEmpty(e.ImageUrl) ? (e.ImageUrl.StartsWith("/") ? e.ImageUrl.TrimStart('/') : e.ImageUrl) : "/images/event-placeholder.png")"
+                             class="movie-poster card-img-top" alt="@e.Title" />
+                    </a>
+                    <div class="movie-overlay">
+                        <div class="w-100 text-center">
+                            <div class="movie-title">@e.Title</div>
+                            <div class="small">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
+                            <div class="mt-2">
+                                <a class="btn btn-sm btn-light" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">View</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="fw-semibold">@e.Title</div>
+                        <div class="small text-muted">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
+                        @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
+                        {
+                            <p class="small text-truncate" title="@e.ShortDescription">@e.ShortDescription</p>
+                        }
                     </div>
                 </div>
             </div>
@@ -236,7 +337,7 @@
                 var carousel = new bootstrap.Carousel(featured, { interval: 5000, ride: 'carousel' });
             }
 
-            // Auto slider for horizontal track (non-overflowing)
+            // Auto slider for horizontal track
             (function () {
                 const track = document.getElementById('sliderTrack');
                 if (!track) return;
@@ -256,7 +357,6 @@
                     track.style.transform = `translateX(-${pos}px)`;
                 }, 3000);
 
-                // pause on hover
                 track.parentElement.addEventListener('mouseenter', () => clearInterval(autoInterval));
                 track.parentElement.addEventListener('mouseleave', () => {
                     autoInterval = setInterval(() => {
@@ -272,21 +372,6 @@
             })();
         });
 
-        function loadShowtimes(movieId) {
-            const url = '@Url.Action("Showtimes", "Cinema", new { area = "Client" })' + '?movieId=' + movieId;
-            fetch(url)
-                .then(r => r.text())
-                .then(html => {
-                    const container = document.getElementById('showtimesContainer');
-                    if (container) container.innerHTML = html;
-                    // scroll to right panel (approx)
-                    const rightPanel = document.querySelector('.content-maxwide aside');
-                    if (rightPanel) {
-                        rightPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                })
-                .catch(err => console.error(err));
-        }
 
         function filterMovies() {
             const q = document.getElementById('movieSearch').value.toLowerCase();

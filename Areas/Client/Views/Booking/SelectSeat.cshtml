@@ -46,17 +46,11 @@
             border-radius: 6px;
             border: 1px solid #d0d5d9;
             cursor: pointer;
-            transition: transform .08s ease, box-shadow .08s ease;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
         }
-
-            .seat-btn:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-            }
 
         .seat-available {
             background: #f8f9fa;
@@ -102,15 +96,13 @@
 }
 
 <div class="container py-4">
-    <div class="mb-3">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h4 class="mb-0">@Model.MovieTitle</h4>
-                <div class="small text-muted">@Model.ScreenName • @Model.ShowtimeStart.ToString("dd MMM yyyy HH:mm")</div>
-            </div>
-            <div>
-                <a class="btn btn-outline-secondary" href="javascript:history.back()">← Back</a>
-            </div>
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-0">@Model.MovieTitle</h4>
+            <div class="small text-muted">@Model.ScreenName • @Model.ShowtimeStart.ToString("dd MMM yyyy HH:mm")</div>
+        </div>
+        <div>
+            <a class="btn btn-outline-secondary" href="javascript:history.back()">← Back</a>
         </div>
     </div>
 
@@ -132,12 +124,11 @@
                     <div id="seatGrid" class="seat-grid" style="grid-template-columns: repeat(@Model.MaxCols, minmax(46px,1fr));"></div>
                 </div>
 
-                <!-- giữ form (nếu cần) nhưng nút là button type=button để tránh submit mặc định -->
                 <form id="seatForm" method="post" action="@Url.Action("ConfirmBooking","Booking", new { area = "Client" })">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="showtimeId" value="@Model.ShowtimeId" />
                     <input type="hidden" id="seatIds" name="seatIds" />
-                    <div class="controls">
+                    <div class="controls mt-3">
                         <div class="me-auto small text-muted" id="selectionInfo">Chưa chọn ghế nào</div>
                         <button id="btnReserve" type="button" class="btn btn-primary" disabled>Đặt chỗ</button>
                     </div>
@@ -158,11 +149,6 @@
                     <dt class="col-5">Tổng ghế</dt>
                     <dd class="col-7">@Model.Seats.Count</dd>
                 </dl>
-                <hr />
-                <div>
-                    <strong>Ghi chú</strong>
-                    <p class="small text-muted">Ghế xám là trống, ghế đỏ là đã đặt, ghế xanh là bạn chọn. Nhấn "Đặt chỗ" để xác nhận.</p>
-                </div>
             </div>
         </div>
     </div>
@@ -171,21 +157,15 @@
 @section Scripts {
     <script>
         (function(){
-            // serializing model to camelCase JSON for client
             const vm = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
             const seatGrid = document.getElementById('seatGrid');
             const selectionInfo = document.getElementById('selectionInfo');
             const btnReserve = document.getElementById('btnReserve');
 
-            if (!vm || !seatGrid) {
-                console.error('No model or seatGrid element found', vm);
-                return;
-            }
+            if (!vm || !seatGrid) { console.error('No model or seatGrid element found', vm); return; }
 
             const seats = vm.seats || [];
             const maxCols = vm.maxCols || 10;
-
-            // map by row_col for quick lookup
             const byPos = {};
             seats.forEach(s => {
                 const col = Number(s.col || 0);
@@ -193,10 +173,8 @@
                 byPos[`${row}_${col}`] = s;
             });
 
-            // build ordered row list (alphanumeric sort)
             const rowSet = new Set(seats.map(s => (s.row || '').toString()).filter(x => x));
             const rowList = Array.from(rowSet).sort((a,b) => {
-                // nếu row là ký tự như "A","B" thì sắp xếp lexicographically; nếu numeric, compare numeric
                 const na = Number(a), nb = Number(b);
                 if (!isNaN(na) && !isNaN(nb)) return na - nb;
                 return a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'});
@@ -213,7 +191,6 @@
                         const btn = document.createElement('button');
                         btn.className = 'seat-btn';
                         btn.type = 'button';
-                        // data attributes use kebab-case when rendered in DOM but accessing via dataset will camelCase
                         btn.dataset.showtimeSeatId = s.showtimeSeatId;
                         btn.dataset.label = s.label;
                         btn.dataset.status = (s.status || 'available').toString();
@@ -235,7 +212,6 @@
 
                         seatGrid.appendChild(btn);
                     } else {
-                        // placeholder để giữ lưới cân đối
                         const ph = document.createElement('div');
                         ph.style.width = '46px';
                         ph.style.height = '36px';
@@ -251,7 +227,6 @@
                 const b = e.currentTarget;
                 const id = b.dataset.showtimeSeatId;
                 if (!id) return;
-
                 const status = (b.dataset.status || '').trim().toLowerCase();
                 if (status !== 'available' && status !== '') return;
 
@@ -269,9 +244,7 @@
 
             function refreshSelectionUI() {
                 const arr = Array.from(selected);
-                // cập nhật ẩn dành cho form (nếu bạn muốn submit truyền thẳng)
                 document.getElementById('seatIds').value = arr.join(',');
-
                 if (arr.length === 0) {
                     selectionInfo.innerText = 'Chưa chọn ghế nào';
                     btnReserve.disabled = true;
@@ -285,64 +258,33 @@
                 }
             }
 
-            // thêm log debug để nhanh thấy response
             btnReserve.addEventListener('click', function(){
-                if (selected.size === 0) {
-                    alert('Vui lòng chọn ít nhất 1 ghế trước khi đặt.');
-                    return;
-                }
-
+                if (selected.size === 0) { alert('Vui lòng chọn ít nhất 1 ghế.'); return; }
                 btnReserve.disabled = true;
-                const previousText = btnReserve.innerText;
-                btnReserve.innerText = 'Đang đặt...';
+                const prev = btnReserve.innerText; btnReserve.innerText = 'Đang đặt...';
 
-                const payload = {
-                    showtimeId: vm.showtimeId,
-                    showtimeSeatIds: Array.from(selected).map(x => parseInt(x, 10))
-                };
-
-                console.log('Reserve payload:', payload);
+                const payload = { showtimeId: vm.showtimeId, showtimeSeatIds: Array.from(selected).map(x => parseInt(x,10)) };
 
                 fetch('@Url.Action("ReserveSeats", "Booking", new { area = "Client" })', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify(payload)
                 })
-                .then(async res => {
-                    console.log('raw response status', res.status);
-                    if (!res.ok) {
-                        const txt = await res.text();
-                        throw new Error('Server error: ' + txt);
-                    }
-                    return res.json();
-                })
+                .then(async res => { if (!res.ok) { const t = await res.text(); throw new Error(t); } return res.json(); })
                 .then(data => {
-                    console.log('reserve result', data);
-                    if (!data) throw new Error('Empty response from server');
-
-                    // Nếu có ít nhất 1 ghế thành công -> redirect đến ConfirmBooking với danh sách succeeded ids
-                    if (data.success && data.succeeded && data.succeeded.length > 0) {
+                    if (data && data.success && data.succeeded && data.succeeded.length > 0) {
                         const target = '@Url.Action("ConfirmBooking", "Booking", new { area = "Client" })';
                         const qs = '?showtimeId=' + encodeURIComponent(vm.showtimeId) + '&seatIds=' + encodeURIComponent(data.succeeded.join(','));
-                        // redirect
                         window.location.href = target + qs;
                         return;
                     } else {
-                        // Không thành công: hiển thị thông báo về failed labels (nếu có), reload để lấy layout mới
                         const failedLabels = (data.failedLabels && data.failedLabels.length) ? data.failedLabels : data.failed;
-                        alert('Không thể đặt những ghế sau: ' + (failedLabels && failedLabels.length ? failedLabels.join(', ') : 'Không xác định'));
-                        // nếu server trả layout mới, có thể render lại — hiện tại reload cho nhanh
+                        alert('Không thể đặt: ' + (failedLabels && failedLabels.length ? failedLabels.join(', ') : 'Không xác định'));
                         location.reload();
                     }
                 })
-                .catch(err => {
-                    console.error('Lỗi khi đặt ghế:', err);
-                    alert('Lỗi khi đặt ghế: ' + (err.message || err));
-                })
-                .finally(() => {
-                    btnReserve.disabled = false;
-                    btnReserve.innerText = previousText || 'Đặt chỗ';
-                });
+                .catch(err => { console.error(err); alert('Lỗi khi đặt ghế: ' + (err.message || err)); })
+                .finally(() => { btnReserve.disabled = false; btnReserve.innerText = prev; });
             });
 
         })();

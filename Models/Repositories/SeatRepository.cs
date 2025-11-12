@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Semester03.Areas.Client.Models.ViewModels;
@@ -9,7 +8,7 @@ using Semester03.Models.Entities;
 
 namespace Semester03.Areas.Client.Repositories
 {
-    public class SeatRepository : ISeatRepository
+    public class SeatRepository
     {
         private readonly AbcdmallContext _db;
         public SeatRepository(AbcdmallContext db) => _db = db;
@@ -24,7 +23,6 @@ namespace Semester03.Areas.Client.Repositories
 
             if (st == null) return new SelectSeatVm { ShowtimeId = showtimeId, Seats = new List<SeatVm>() };
 
-            // get seat statuses for that showtime, join seat definition
             var q = from ss in _db.TblShowtimeSeats.AsNoTracking()
                     join s in _db.TblSeats.AsNoTracking() on ss.ShowtimeSeatSeatId equals s.SeatId
                     where ss.ShowtimeSeatShowtimeId == showtimeId
@@ -44,15 +42,14 @@ namespace Semester03.Areas.Client.Repositories
             var seats = list.Select(x => new SeatVm
             {
                 ShowtimeSeatId = x.ShowtimeSeatId,
-                Label = x.SeatLabel,
+                Label = x.SeatLabel ?? "",
                 Row = x.SeatRow ?? "",
-                Col = x.SeatCol, 
+                Col = x.SeatCol,
                 Status = string.IsNullOrEmpty(x.ShowtimeSeatStatus) ? "available" : x.ShowtimeSeatStatus,
                 ReservedByUserId = x.ShowtimeSeatReservedByUserId,
                 ReservedAt = x.ShowtimeSeatReservedAt
             }).ToList();
 
-            // compute max columns to help layout
             var maxCol = seats.Any() ? seats.Max(s => s.Col) : 10;
 
             return new SelectSeatVm
@@ -62,16 +59,12 @@ namespace Semester03.Areas.Client.Repositories
                 ScreenName = st.ShowtimeScreen?.ScreenName ?? "",
                 ShowtimeStart = st.ShowtimeStart,
                 Seats = seats,
-                MaxCols = maxCol
+                MaxCols = Math.Max(10, maxCol)
             };
         }
 
         public SelectSeatVm RefreshSeatLayout(int showtimeId) => GetSeatLayoutForShowtime(showtimeId);
 
-        /// <summary>
-        /// Check availability for given showtimeSeatIds. This method DOES NOT update database.
-        /// It returns succeeded = ids that are available, failed = ids that are not available or not found.
-        /// </summary>
         public (List<int> succeeded, List<int> failed) ReserveSeats(int showtimeId, List<int> showtimeSeatIds, int? userId)
         {
             var succeeded = new List<int>();
@@ -80,7 +73,6 @@ namespace Semester03.Areas.Client.Repositories
             if (showtimeSeatIds == null || !showtimeSeatIds.Any())
                 return (succeeded, failed);
 
-            // Find existing showtime-seat rows that are considered available
             var available = _db.TblShowtimeSeats
                 .AsNoTracking()
                 .Where(ss => ss.ShowtimeSeatShowtimeId == showtimeId
@@ -98,12 +90,6 @@ namespace Semester03.Areas.Client.Repositories
             return (succeeded, failed);
         }
 
-        /// <summary>
-        /// Finalize seats AFTER successful payment. This method will atomically:
-        ///  - update Tbl_ShowtimeSeat status -> 'sold'
-        ///  - insert corresponding Tbl_Ticket rows for each updated seat
-        /// Returns (succeededIds, failedIds).
-        /// </summary>
         public (List<int> succeeded, List<int> failed) FinalizeSeatsAtomic(int showtimeId, List<int> showtimeSeatIds, int? userId, decimal pricePerSeat)
         {
             var succeeded = new List<int>();
@@ -112,7 +98,6 @@ namespace Semester03.Areas.Client.Repositories
             if (showtimeSeatIds == null || !showtimeSeatIds.Any())
                 return (succeeded, showtimeSeatIds ?? new List<int>());
 
-            // Build parameter placeholders
             var paramNames = new List<string>();
             for (int i = 0; i < showtimeSeatIds.Count; i++)
                 paramNames.Add($"@p{i}");
@@ -134,13 +119,11 @@ WHERE ShowtimeSeat_ShowtimeID = @showtimeId
         OR LOWER(LTRIM(RTRIM(ShowtimeSeat_Status))) = 'free'
       );
 
--- Insert tickets for successfully updated showtime seats
 INSERT INTO dbo.Tbl_Ticket (Ticket_ShowtimeID, Ticket_ShowtimeSeatID, Ticket_BuyerUserID, Ticket_Status, Ticket_Price, Ticket_PurchasedAt)
 SELECT ss.ShowtimeSeat_ShowtimeID, ss.ShowtimeSeat_ID, @userId, 'sold', @price, SYSUTCDATETIME()
 FROM dbo.Tbl_ShowtimeSeat ss
 JOIN @Updated u ON u.Id = ss.ShowtimeSeat_ID;
 
--- return updated ids
 SELECT Id FROM @Updated;
 ";
 
@@ -152,7 +135,6 @@ SELECT Id FROM @Updated;
             cmd.Transaction = tx;
             cmd.CommandText = sql;
 
-            // parameters
             var pShowtime = cmd.CreateParameter();
             pShowtime.ParameterName = "@showtimeId";
             pShowtime.Value = showtimeId;
@@ -190,7 +172,7 @@ SELECT Id FROM @Updated;
             }
             catch
             {
-                try { tx.Rollback(); } catch { /* ignore rollback error */ }
+                try { tx.Rollback(); } catch { }
                 throw;
             }
             finally
@@ -201,7 +183,5 @@ SELECT Id FROM @Updated;
             failed = showtimeSeatIds.Except(succeeded).ToList();
             return (succeeded, failed);
         }
-
-
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace Semester03.Areas.Client.Models.ViewModels
+﻿using System.Collections.Generic;
+
+namespace Semester03.Areas.Client.Models.ViewModels
 {
     public class CinemaHomeVm
     {
