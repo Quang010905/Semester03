@@ -193,7 +193,7 @@
 				transform: scale(1.02);
 			}
 
-		@@media (max-width: 767px) {
+		@media (max-width: 767px) {
 			.hero {
 				min-height: 220px;
 				padding: 1rem 0;
@@ -205,7 +205,7 @@
 			}
 		}
 
-		@@media (min-width: 1200px) {
+		@media (min-width: 1200px) {
 			.col-lg-10 {
 				flex: 0 0 83.333333%;
 				max-width: 83.333333%;
@@ -217,13 +217,13 @@
 			}
 		}
 
-		@@media (min-width: 1600px) {
+		@media (min-width: 1600px) {
 			:root {
 				--main-max-width: 1800px;
 			}
 		}
 
-		@@media (min-width: 768px) {
+		@media (min-width: 768px) {
 			.mall-nav .dropdown:hover > .dropdown-menu {
 				display: block;
 				margin-top: 0;
@@ -250,7 +250,7 @@
 				width: 340px;
 			}
 
-		@@media (max-width: 991px) {
+		@media (max-width: 991px) {
 			.layout-grid {
 				grid-template-columns: 1fr;
 			}
@@ -322,7 +322,7 @@
 			}
 
 		/* Desktop scrollbar style to provide visual affordance */
-		@@media (min-width: 768px) {
+		@media (min-width: 768px) {
 			.small-event-slider::-webkit-scrollbar {
 				width: 10px;
 			}
@@ -338,7 +338,7 @@
 		}
 
 		/* On small screens, let slider auto height (no fixed height) to avoid taking too much space */
-		@@media (max-width: 767px) {
+		@media (max-width: 767px) {
 			.small-event-slider {
 				height: auto;
 				max-height: none;
@@ -370,7 +370,7 @@
 						<img src="/images/logo.png" alt="logo" style="height:48px; width:auto;" />
 						<div class="ms-2">
 							<div style="font-weight:700; font-size:1.05rem;">@ViewData["MallName"]</div>
-							<small class="text-muted">@ViewData["MallAddress"] "123 Main Street"</small>
+							<small class="text-muted">@(ViewData["MallAddress"] ?? "123 Main Street")</small>
 						</div>
 					</a>
 				</div>
@@ -388,6 +388,7 @@
 						</ul>
 					</div>
 					<a class="nav-link" href="@Url.Action("Index", "Cinema", new { area = "Client" })">Cinema</a>
+					<a class="nav-link" href="@Url.Action("Dining", "Mall", new { area = "Client" })">Dining</a>
 					<a class="nav-link" href="@Url.Action("Entertainment", "Mall", new { area = "Client" })">Entertainment</a>
 					<a class="nav-link" href="@Url.Action("Index", "Event", new { area = "Client" })">Events</a>
 					<a class="nav-link" href="@Url.Action("Promotions", "Mall", new { area = "Client" })">Promotions</a>
@@ -483,9 +484,10 @@
 							@await Html.PartialAsync("_CategoriesPartial")
 						</div>
 
-						@* @{ *@
-						@* 	var topEvents = await _eventRepo.GetUpcomingEventsAsync(12); *@
-						@* } *@
+						@{
+							// Lấy top upcoming events để hiển thị trong sidebar (non-blocking)
+							var topEvents = await _eventRepo.GetUpcomingEventsAsync(12);
+						}
 
 						<div class="mb-4">
 							<div class="d-flex align-items-center justify-content-between mb-2">
@@ -494,27 +496,27 @@
 							</div>
 
 							<!-- vertical scroll box -->
-							@* <div class="slider-wrapper small-event-slider mb-2"> *@
-							@* 	<div class="slider-track"> *@
-							@* 		@foreach (var e in topEvents) *@
-							@* 		{ *@
-							@* 			<div class="slider-item"> *@
-							@* 				<div class="card movie-card event-card position-relative h-100 small-card"> *@
-							@* 					<img src="@(!string.IsNullOrEmpty(e.ImageUrl) *@
-       @*                                                          ? (e.ImageUrl.StartsWith("/") ? e.ImageUrl.TrimStart('/') : $"/images/events/{e.ImageUrl}") *@
-       @*                                                          : "/images/event-placeholder.png")" *@
-							@* 						 class="movie-poster card-img-top small-poster" alt="@e.Title" /> *@
-							@* 					<div class="small-card-body" style="flex:1"> *@
-							@* 						<div class="small-title">@e.Title</div> *@
-							@* 						<div class="small-meta">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div> *@
-							@* 						<div class="mt-2"> *@
-							@* 							<a class="btn btn-sm btn-light" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">View</a> *@
-							@* 						</div> *@
-							@* 					</div> *@
-							@* 				</div> *@
-							@* 			</div> *@
-							@* 		} *@
-							@* 	</div> *@
+							<div class="slider-wrapper small-event-slider mb-2">
+								<div class="slider-track">
+									@foreach (var e in topEvents)
+									{
+										<div class="slider-item">
+											<div class="card movie-card event-card position-relative h-100 small-card">
+												<img src="@( !string.IsNullOrEmpty(e.ImageUrl)
+													? Url.Content(e.ImageUrl.StartsWith("/") ? e.ImageUrl : $"~/images/events/{e.ImageUrl}")
+													: Url.Content("~/images/event-placeholder.png") )"
+													 class="movie-poster card-img-top small-poster" alt="@e.Title" />
+												<div class="small-card-body" style="flex:1">
+													<div class="small-title">@e.Title</div>
+													<div class="small-meta">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
+													<div class="mt-2">
+														<a class="btn btn-sm btn-light" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">View</a>
+													</div>
+												</div>
+											</div>
+										</div>
+									}
+								</div>
 							</div>
 						</div>
 
@@ -536,6 +538,72 @@
 				</div>
 			</div>
 		</main>
+	}
+
+	<!-- Featured stores (only show on Cinema/Index route to match original intent) -->
+	@{
+		var showFeatured = string.Equals(ViewContext.RouteData.Values["controller"]?.ToString(), "Cinema", System.StringComparison.OrdinalIgnoreCase)
+							&& string.Equals(ViewContext.RouteData.Values["action"]?.ToString(), "Index", System.StringComparison.OrdinalIgnoreCase);
+	}
+	@if (showFeatured)
+	{
+		<section class="container-fluid my-4">
+			<div class="content-maxwide">
+				<div class="d-flex align-items-center justify-content-between mb-3">
+					<h4 class="mb-0">Featured stores</h4>
+					<a href="@Url.Action("Index", "Stores", new { area = "Client" })" class="small">View all stores</a>
+				</div>
+
+				@{
+					var featuredStores = _tenantRepo?.GetFeaturedStores(6) ?? new List<dynamic>();
+				}
+
+				@if (featuredStores != null && featuredStores.Any())
+				{
+					<div id="featuredStoresCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+						<div class="carousel-inner">
+							@for (int i = 0; i < featuredStores.Count; i += 3)
+							{
+								<div class="carousel-item @(i == 0 ? "active" : "")">
+									<div class="row justify-content-center g-3">
+										@for (int j = i; j < i + 3 && j < featuredStores.Count; j++)
+										{
+											var s = featuredStores[j];
+											var img = string.IsNullOrEmpty(s.TenantImg)
+												? "/Admin/img/store-placeholder.png"
+												: $"/Admin/img/{s.TenantImg}";
+											<div class="col-12 col-md-4">
+												<div class="card store-card h-100 shadow-sm border-0 rounded-4 overflow-hidden hover-scale">
+													<img src="@img" class="card-img-top" alt="@s.TenantName" style="height:180px; object-fit:cover;" />
+													<div class="card-body p-2 text-center">
+														<h6 class="card-title fw-bold mb-1">@s.TenantName</h6>
+														<small class="text-muted d-block mb-1">@s.TenantTypeName</small>
+														<p class="text-secondary small mb-2">@s.TenantDescription</p>
+														<a href="@Url.Action("Details", "Stores", new { id = s.TenantId, area = "Client" })" class="btn btn-outline-primary btn-sm mt-1">View</a>
+													</div>
+												</div>
+											</div>
+										}
+									</div>
+								</div>
+							}
+						</div>
+						<button class="carousel-control-prev" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="prev">
+							<span class="carousel-control-prev-icon" aria-hidden="true"></span>
+							<span class="visually-hidden">Previous</span>
+						</button>
+						<button class="carousel-control-next" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="next">
+							<span class="carousel-control-next-icon" aria-hidden="true"></span>
+							<span class="visually-hidden">Next</span>
+						</button>
+					</div>
+				}
+				else
+				{
+					<div class="p-3 bg-light rounded text-muted text-center">No stores to display</div>
+				}
+			</div>
+		</section>
 	}
 
 	<!-- Footer -->
@@ -604,7 +672,6 @@
 			});
 		})();
 	</script>
-
 
 	@RenderSection("Scripts", required: false)
 </body>
