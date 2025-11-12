@@ -5,7 +5,7 @@
   - AJAX logout
 *@
 @inject Semester03.Models.Repositories.TenantRepository _tenantRepo
-
+@inject Semester03.Models.Repositories.EventRepository _eventRepo
 @{
 	var hideCenterMainFlag = (ViewData["HideCenterMain"] as bool?) ?? false;
 	var routeController = (ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty);
@@ -379,7 +379,7 @@
 					<div class="nav-item dropdown">
 						<a class="nav-link" href="@Url.Action("Index", "Stores", new { area = "Client" })" id="storesDropdown" role="button">Stores</a>
 						<ul class="dropdown-menu" aria-labelledby="storesDropdown">
-							@foreach (var type in Semester03.Models.Repositories.TenantTypeRepository.Instance.GetAll())
+							@foreach (var type in ViewBag.StoreTypes as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>())
 							{
 								<li>
 									<a class="dropdown-item" href="@Url.Action("Index", "Stores", new { area = "Client", typeId = type.Id })">@type.Name</a>
@@ -483,10 +483,9 @@
 							@await Html.PartialAsync("_CategoriesPartial")
 						</div>
 
-						@{
-							var _eventRepo = Semester03.Areas.Client.Repositories.EventRepository.Instance;
-							var topEvents = await _eventRepo.GetUpcomingEventsAsync(12);
-						}
+						@* @{ *@
+						@* 	var topEvents = await _eventRepo.GetUpcomingEventsAsync(12); *@
+						@* } *@
 
 						<div class="mb-4">
 							<div class="d-flex align-items-center justify-content-between mb-2">
@@ -495,27 +494,27 @@
 							</div>
 
 							<!-- vertical scroll box -->
-							<div class="slider-wrapper small-event-slider mb-2">
-								<div class="slider-track">
-									@foreach (var e in topEvents)
-									{
-										<div class="slider-item">
-											<div class="card movie-card event-card position-relative h-100 small-card">
-												<img src="@(!string.IsNullOrEmpty(e.ImageUrl)
-                                                                ? (e.ImageUrl.StartsWith("/") ? e.ImageUrl.TrimStart('/') : $"/images/events/{e.ImageUrl}")
-                                                                : "/images/event-placeholder.png")"
-													 class="movie-poster card-img-top small-poster" alt="@e.Title" />
-												<div class="small-card-body" style="flex:1">
-													<div class="small-title">@e.Title</div>
-													<div class="small-meta">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div>
-													<div class="mt-2">
-														<a class="btn btn-sm btn-light" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">View</a>
-													</div>
-												</div>
-											</div>
-										</div>
-									}
-								</div>
+							@* <div class="slider-wrapper small-event-slider mb-2"> *@
+							@* 	<div class="slider-track"> *@
+							@* 		@foreach (var e in topEvents) *@
+							@* 		{ *@
+							@* 			<div class="slider-item"> *@
+							@* 				<div class="card movie-card event-card position-relative h-100 small-card"> *@
+							@* 					<img src="@(!string.IsNullOrEmpty(e.ImageUrl) *@
+       @*                                                          ? (e.ImageUrl.StartsWith("/") ? e.ImageUrl.TrimStart('/') : $"/images/events/{e.ImageUrl}") *@
+       @*                                                          : "/images/event-placeholder.png")" *@
+							@* 						 class="movie-poster card-img-top small-poster" alt="@e.Title" /> *@
+							@* 					<div class="small-card-body" style="flex:1"> *@
+							@* 						<div class="small-title">@e.Title</div> *@
+							@* 						<div class="small-meta">@((e.StartDate.HasValue) ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--")</div> *@
+							@* 						<div class="mt-2"> *@
+							@* 							<a class="btn btn-sm btn-light" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">View</a> *@
+							@* 						</div> *@
+							@* 					</div> *@
+							@* 				</div> *@
+							@* 			</div> *@
+							@* 		} *@
+							@* 	</div> *@
 							</div>
 						</div>
 

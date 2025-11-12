@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Semester03.Areas.Client.Repositories;
+using Semester03.Models.Repositories;
 using Semester03.Models.Entities;
 
 // Add these 'using' statements for file upload

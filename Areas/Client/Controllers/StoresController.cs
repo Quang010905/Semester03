@@ -3,6 +3,7 @@ using Semester03.Models.Repositories;
 using Semester03.Models.ViewModels;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Semester03.Areas.Client.Controllers
 {
@@ -10,17 +11,23 @@ namespace Semester03.Areas.Client.Controllers
     public class StoresController : Controller
     {
         private readonly TenantRepository _tenantRepo;
+        private readonly TenantTypeRepository _tenantTypeRepo;
 
-        public StoresController(TenantRepository tenantRepo)
+        // Inject cả TenantRepository và TenantTypeRepository qua DI
+        public StoresController(TenantRepository tenantRepo, TenantTypeRepository tenantTypeRepo)
         {
             _tenantRepo = tenantRepo;
+            _tenantTypeRepo = tenantTypeRepo;
         }
 
-        // Trang danh sách stores
-        public IActionResult Index(int? typeId, string search)
+        // Trang danh sách stores (async để await tenantTypeRepo)
+        public async Task<IActionResult> Index(int? typeId, string search)
         {
+            // Lấy stores (giữ nguyên phương thức hiện tại của bạn)
             var stores = _tenantRepo.GetStores(typeId, search);
-            var tenantTypes = TenantTypeRepository.Instance.GetAll();
+
+            // Lấy tenant types bằng repository (async)
+            var tenantTypes = await _tenantTypeRepo.GetAllAsync();
 
             string currentTypeName = "Stores";
             if (typeId.HasValue)
@@ -53,7 +60,12 @@ namespace Semester03.Areas.Client.Controllers
             if (!User.Identity.IsAuthenticated)
                 return Unauthorized(new { success = false, message = "Bạn cần đăng nhập." });
 
-            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            // lấy userId từ claim
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out int userId))
+            {
+                return BadRequest(new { success = false, message = "Không xác định được user." });
+            }
+
             bool success = _tenantRepo.AddTenantComment(tenantId, userId, rate, text);
 
             return Json(new

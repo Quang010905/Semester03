@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Semester03.Areas.Client.Repositories;
+using Semester03.Models.Repositories;
 using Semester03.Areas.Client.Models.ViewModels;
 using System;
 using System.Security.Claims;
