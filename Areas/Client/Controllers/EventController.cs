@@ -11,7 +11,6 @@ namespace Semester03.Areas.Client.Controllers
     {
         private readonly EventRepository _repo;
 
-        // ✅ Dùng constructor injection thay vì singleton Instance
         public EventController(EventRepository repo)
         {
             _repo = repo;

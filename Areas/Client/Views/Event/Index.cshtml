@@ -6,6 +6,7 @@
     ViewData["Title"] = "Events";
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
 }
+
 @functions {
     public string ImgPath(string image)
     {
@@ -38,7 +39,6 @@
 
         foreach (var f in folders)
         {
-            // gọi Path.Combine bằng tên đầy đủ để tránh shadowing:
             string physPath = string.IsNullOrEmpty(f)
                 ? System.IO.Path.Combine(webRoot, candidate)
                 : System.IO.Path.Combine(webRoot, f, candidate);
@@ -54,7 +54,6 @@
     }
 }
 
-
 <div class="row g-4">
     <div class="col-12">
         <h2>Featured events</h2>
@@ -67,7 +66,7 @@
                         <div class="card-body">
                             <h5 class="card-title text-truncate">@e.Title</h5>
                             <p class="card-text small text-muted">@e.ShortDescription</p>
-                            <p class="small text-muted mb-0">@((e.StartDate.HasValue ? e.StartDate.Value.ToString("dd MMM yyyy HH:mm") : ""))</p>
+                            <p class="small text-muted mb-0">@e.StartDate?.ToString("dd MMM yyyy HH:mm") ?? "--"</p>
                         </div>
                         <div class="card-footer bg-transparent border-top-0">
                             <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">Details</a>

@@ -18,24 +18,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 
-// ===== DB Connection string (validate) =====
-var configuredConn = builder.Configuration.GetConnectionString("DefaultConnection");
+// Đọc chuỗi kết nối từ appsettings.json hoặc fallback mặc định
+var conn = builder.Configuration.GetConnectionString("DefaultConnection")
+           ?? "Server=(local);Database=ABCDMall;User Id=sa;Password=123;Encrypt=True;TrustServerCertificate=True;MultipleActiveResultSets=True;";
 
-if (string.IsNullOrWhiteSpace(configuredConn))
-{
-    // fallback - chỉ dùng làm DEV; nếu production thì tốt nhất THROW để bạn biết thiếu config
-    configuredConn = "Server=.;Database=ABCDMall;User Id=sa;Password=123;TrustServerCertificate=True;";
-   
-}
-// IMPORTANT: if the connection string is still empty, fail early so DbContext is never created with empty connection string.
-if (string.IsNullOrWhiteSpace(configuredConn))
-{
-    throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured. Please set it in appsettings.json or environment variables.");
-}
-
-// ===== Configure DbContext =====
 builder.Services.AddDbContext<AbcdmallContext>(options =>
-    options.UseSqlServer(configuredConn)
+    options.UseSqlServer(conn)
 );
 
 // ===== Optional: register HttpContextAccessor (many services expect this) =====
