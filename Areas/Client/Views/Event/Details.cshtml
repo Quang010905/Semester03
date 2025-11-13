@@ -11,13 +11,10 @@
             <div class="card-body">
                 <h3>@Model.Title</h3>
                 <p class="text-muted small">
-                    @if (Model.StartDate.HasValue)
+                    <span>@Model.StartDate.ToString("dd MMM yyyy HH:mm")</span>
+                    @if (Model.EndDate.HasValue)
                     {
-                        <span>@Model.StartDate.Value.ToString("dd MMM yyyy HH:mm")</span>
-                        @if (Model.EndDate.HasValue)
-                        {
-                            <span> — @Model.EndDate.Value.ToString("dd MMM yyyy HH:mm")</span>
-                        }
+                        <span> — @Model.EndDate.Value.ToString("dd MMM yyyy HH:mm")</span>
                     }
                 </p>
                 <div class="mb-3">@Html.Raw(Model.Description)</div>
@@ -33,9 +30,9 @@
     <aside class="col-md-4">
         <div class="p-3 bg-light rounded">
             <h6>Event info</h6>
-            <p class="small mb-1"><strong>Slots:</strong> @(Model.MaxSlot?.ToString() ?? "—")</p>
+            <p class="small mb-1"><strong>Slots:</strong> @Model.MaxSlot</p>
             <p class="small mb-1"><strong>Status:</strong> @(Model.Status == 1 ? "Active" : "Inactive")</p>
-            <p class="small mb-1"><strong>Tenant:</strong> @(Model.TenantPositionId?.ToString() ?? "—")</p>
+            <p class="small mb-1"><strong>Tenant:</strong> @Model.TenantPositionId</p>
             <a href="@Url.Action("Index", "Event", new { area = "Client" })" class="d-block mt-3">Back to events</a>
         </div>
     </aside>

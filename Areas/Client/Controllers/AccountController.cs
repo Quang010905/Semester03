@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Semester03.Models.Repositories;
 using Semester03.Models.Entities;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
@@ -11,7 +12,6 @@ using System;
 using Semester03.Areas.Client.Models.ViewModels;
 using System.Linq;
 using System.Collections.Generic;
-using Semester03.Models.Repositories;
 
 namespace Semester03.Areas.Client.Controllers
 {
@@ -124,7 +124,7 @@ namespace Semester03.Areas.Client.Controllers
             }
             else if (user.UsersRoleId == 2)
             {
-                return RedirectToAction("Index", "Cinema", new { area = "Client" });
+                return RedirectToAction("Index", "Home", new { area = "Client" });
             }
             else
             {
@@ -307,7 +307,7 @@ namespace Semester03.Areas.Client.Controllers
                 return Ok();
             }
 
-            return RedirectToAction("Index", "Cinema", new { area = "Client" });
+            return RedirectToAction("Index", "Home", new { area = "Client" });
         }
     }
 }

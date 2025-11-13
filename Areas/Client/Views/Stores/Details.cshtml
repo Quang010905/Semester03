@@ -1,0 +1,544 @@
+﻿@model Semester03.Models.ViewModels.TenantDetailsViewModel
+@{
+    Layout = "_LayoutClient";
+
+    Func<string, string> Img = raw =>
+        {
+    if (string.IsNullOrWhiteSpace(raw))
+        return Url.Content("~/Admin/img/store-placeholder.png");
+    return Url.Content("~/Admin/img/" + raw);
+        };
+    var poster = Img(Model.TenantImg);
+
+}
+
+@section Styles {
+    <style>
+        .store-hero {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .store-poster {
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(2,6,23,0.12);
+        }
+
+            .store-poster img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            }
+
+        .store-meta {
+            padding-top: .25rem;
+        }
+
+        .store-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: .25rem;
+        }
+
+        .store-sub {
+            color: #6b7280;
+            margin-bottom: .5rem;
+        }
+
+        .stars {
+            display: flex;
+            gap: .25rem;
+            align-items: center;
+        }
+
+        .star {
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: #cbd5e1;
+            display: inline-flex;
+            align-items: center;
+        }
+
+            .star.active, .star.filled, .star.bi-star-fill {
+                color: #ffc107;
+                transform: scale(1.08);
+            }
+
+        .rate-badge {
+            font-weight: 700;
+            background: linear-gradient(90deg,#ffb347,#ffcc33);
+            color: #111;
+            padding: .25rem .6rem;
+            border-radius: .5rem;
+        }
+
+        .comment-box {
+            margin-top: 1rem;
+            border-radius: .75rem;
+            background: #fff;
+            padding: 1rem;
+            box-shadow: 0 6px 20px rgba(2,6,23,0.06);
+        }
+
+        .comment-item {
+            border-bottom: 1px solid #f1f5f9;
+            padding: .75rem 0;
+        }
+
+            .comment-item:last-child {
+                border-bottom: none;
+            }
+
+        .comment-user {
+            font-weight: 600;
+            margin-right: .5rem;
+        }
+
+        .comment-time {
+            color: #94a3b8;
+            font-size: .85rem;
+        }
+
+        .btn-primary-ghost {
+            background: linear-gradient(90deg,#0d6efd,#4f46e5);
+            border: none;
+            color: #fff;
+            padding: .6rem 1rem;
+            border-radius: .6rem;
+            box-shadow: 0 8px 30px rgba(13,110,253,0.12);
+        }
+
+        .cat-card {
+            transition: transform .3s ease, box-shadow .3s ease;
+        }
+
+            .cat-card:hover {
+                transform: scale(1.05);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            }
+
+        @@media (max-width: 991px) {
+            .store-hero
+
+        {
+            grid-template-columns: 1fr;
+        }
+
+        }
+
+        
+        .category-item {
+            background: #fff;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            box-shadow: 0 6px 20px rgba(2,6,23,0.06);
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .category-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .category-item img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+        }
+
+        .category-item span {
+            font-weight: 600;
+            display: block;
+            font-size: 0.9rem;
+        }
+
+        .swiper-button-next, .swiper-button-prev {
+            color: #0d6efd;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr); /* 5 cột */
+            gap: 1rem;
+        }
+
+       @@media (max-width: 1200px) {
+            .category-grid
+
+        {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        }
+        @@media (max-width: 992px) {
+            .category-grid
+
+        {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        }
+        @@media (max-width: 768px) {
+            .category-grid
+
+        {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        }
+        @@media (max-width: 576px) {
+            .category-grid
+
+        {
+            grid-template-columns: 1fr;
+        }
+
+        }
+
+        .card.text-primary {
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+            .card.text-primary:hover {
+                background: #f8fafc;
+                transform: scale(1.03);
+            }
+
+
+
+        .see-more-btn {
+            background: #ff7f32;
+            border: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #fff;
+            padding: 10px 26px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 6px rgba(255,127,50,0.3);
+        }
+
+        .see-more-btn:hover {
+            background: #e96b1d;
+        }
+
+
+
+    </style>
+}
+
+<div class="py-3">
+    <a class="btn btn-outline-secondary btn-sm mb-3" href="@Url.Action("Index","Stores", new { area = "Client" })">&larr; Back</a>
+
+    <div class="store-hero">
+        <div class="store-poster">
+            <img src="@poster" alt="@Model.TenantName" />
+        </div>
+
+        <div class="store-meta">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="store-title">@Model.TenantName</div>
+                    <div class="store-sub">@Model.TenantTypeName &middot; @Model.Position</div>
+                    <p class="text-muted">@Model.TenantDescription</p>
+                </div>
+
+                <div class="text-end">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rate-badge">@((Model.AvgRate ?? 0).ToString("0.0")) <small class="text-muted">/5</small></div>
+                        <div class="stars" aria-hidden="true">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                var filledClass = (Model.AvgRate ?? 0) >= i ? "bi-star-fill filled" : "bi-star";
+                                <i class="star @filledClass"></i>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr />
+
+
+            <!--danh mục-->
+            <h5 class="mb-3">Product Categories</h5>
+
+            <div class="category-grid d-grid">
+                @foreach (var cat in Model.ProductCategories)
+                {
+                    <div class="category-item text-center" data-category-id="@cat.Id">
+                        <img src="@Url.Content("~/Admin/img/" + cat.Img)" alt="@cat.Name" />
+                        <span>@cat.Name</span>
+                    </div>
+                }
+            </div>
+
+            <!-- Các sản phẩm theo categorye -->
+            <div id="category-products-container" class="mt-3">
+                @foreach (var cat in Model.ProductCategories)
+                {
+                    <div class="category-products mt-3" data-category-id="@cat.Id" style="display:none;">
+                        <div class="loading text-center py-3 text-muted">Loading products...</div>
+                        <div class="products row g-3"></div>
+                        <div class="text-center mt-3">
+                            <button class="btn btn-sm btn-secondary btn-close-products">
+                                <i class="bi bi-x-circle"></i> Hide products
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Comments & rating -->
+            <div class="comment-box mt-4">
+                <h6>Comments & Ratings</h6>
+                <div id="commentFormArea" class="mt-2">
+                    @if (User?.Identity?.IsAuthenticated == true)
+                    {
+                        @Html.AntiForgeryToken()
+                        <div class="mb-2"><strong>Your rating:</strong></div>
+                        <div class="mb-2">
+                            <div id="userStars" class="stars">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <i class="star bi bi-star" data-value="@i"></i>
+                                }
+                            </div>
+                        </div>
+                        <textarea id="commentText" class="form-control mb-2" rows="3" placeholder="Write your comment..."></textarea>
+                        <div class="d-flex gap-2">
+                            <button id="submitComment" class="btn btn-primary">Submit</button>
+                            <small class="text-muted align-self-center">Comments will appear after approval.</small>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info py-2">
+                            You need to <a href="@Url.Action("Login","Account", new { area = "Client" })">log in</a> to comment.
+                        </div>
+                    }
+                </div>
+
+                <hr />
+
+                <div id="commentsList">
+                    @if (Model.Comments.Any())
+                    {
+                        foreach (var c in Model.Comments)
+                        {
+                            <div class="comment-item">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <span class="comment-user">@c.UserName</span>
+                                        <span class="small text-muted">•</span>
+                                        <span class="comment-time">@c.CreatedAt?.ToString("dd MMM yyyy HH:mm")</span>
+                                    </div>
+                                    <div class="stars" aria-hidden="true">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            var filledClass = c.Rate >= i ? "bi-star-fill filled" : "bi-star";
+                                            <i class="star @filledClass"></i>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="mt-1">@Html.Raw(System.Net.WebUtility.HtmlEncode(c.Text))</div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-muted">No comments yet — you could be the first!</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // 1️⃣ Click category -> show products
+            document.querySelectorAll('.category-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const categoryId = item.dataset.categoryId;
+                    const wrapper = document.querySelector(`.category-products[data-category-id='${categoryId}']`);
+                    if (!wrapper) return;
+
+                    // Ẩn tất cả category-products khác
+                    document.querySelectorAll('.category-products').forEach(el => {
+                        if (el !== wrapper) el.style.display = 'none';
+                    });
+
+                    const productsContainer = wrapper.querySelector('.products');
+                    const loading = wrapper.querySelector('.loading');
+
+                    wrapper.style.display = 'block';
+                    loading.style.display = 'block';
+                    productsContainer.innerHTML = '';
+
+
+
+
+
+
+
+                          fetch(`/Client/Stores/GetProductsByCategory?categoryId=${categoryId}`)
+        .then(res => res.json())
+        .then(data => {
+            loading.style.display = 'none';
+
+            if (data.length === 0) {
+                productsContainer.innerHTML = '<div class="col-12 text-center text-muted">There are no products.</div>';
+                return;
+            }
+
+            const catName = item.querySelector('span').innerText;
+            productsContainer.insertAdjacentHTML('beforeend', `<h6 class="mb-3 fw-bold">Products: ${catName}</h6>`);
+
+            const displayCount = 2; // số sản phẩm hiển thị ban đầu
+            let showingAll = false;
+
+            // Hàm render sản phẩm
+            function renderProducts(list) {
+                productsContainer.innerHTML = `<h6 class="mb-3 fw-bold">Products: ${catName}</h6>`;
+                list.forEach(p => {
+                    const card = `
+                        <div class="col-6 col-md-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <img src="/Admin/img/${p.img}" class="card-img-top" style="height:160px;object-fit:cover;" />
+                                <div class="card-body p-2 text-center">
+                                    <h6 class="card-title small fw-semibold mb-1">${p.name}</h6>
+                                    <div class="text-danger fw-bold">${p.price.toLocaleString()} ₫</div>
+                                </div>
+                            </div>
+                        </div>`;
+                    productsContainer.insertAdjacentHTML('beforeend', card);
+                });
+            }
+
+            // Render sp đầu tiên
+            renderProducts(data.slice(0, displayCount));
+
+            // Nếu có nhiều hơn → thêm nút See More
+            if (data.length > displayCount) {
+                const seeMoreCard = document.createElement('div');
+                seeMoreCard.className = 'col-12 d-flex justify-content-center align-items-center mt-3';
+                seeMoreCard.innerHTML = `
+                    <button class="see-more-btn">
+                        <span class="see-more-text fw-bold">+ See more</span>
+                    </button>
+                `;
+                productsContainer.appendChild(seeMoreCard);
+
+                // Sự kiện click See more / Hide
+                seeMoreCard.addEventListener('click', () => {
+                    const btnText = seeMoreCard.querySelector('.see-more-text');
+                    if (!showingAll) {
+                        renderProducts(data);
+                        productsContainer.appendChild(seeMoreCard);
+                        btnText.textContent = '– Hide products';
+                        showingAll = true;
+                    } else {
+                        renderProducts(data.slice(0, displayCount));
+                        productsContainer.appendChild(seeMoreCard);
+                        btnText.textContent = '+ See more';
+                        showingAll = false;
+                    }
+                });
+            }
+        })
+        .catch(() => {
+            loading.style.display = 'none';
+            productsContainer.innerHTML = '<div class="col-12 text-center text-danger">Product loading error!</div>';
+        });
+
+
+
+
+
+                });
+            });
+
+            // 2️⃣ Ẩn sản phẩm khi click nút close
+            document.addEventListener('click', e => {
+                if (e.target.closest('.btn-close-products')) {
+                    e.target.closest('.category-products').style.display = 'none';
+                }
+            });
+
+            // 3️⃣ Star rating
+            const stars = document.querySelectorAll('#userStars .star');
+            let selected = 0;
+            stars.forEach(s => {
+                s.addEventListener('mouseenter', () => highlight(+s.dataset.value));
+                s.addEventListener('mouseleave', () => highlight(selected));
+                s.addEventListener('click', () => { selected = +s.dataset.value; highlight(selected); });
+            });
+            function setStarState(el, filled) {
+                if (filled) {
+                    el.classList.remove('bi-star');
+                    el.classList.add('bi-star-fill', 'filled', 'active');
+                } else {
+                    el.classList.remove('bi-star-fill', 'filled', 'active');
+                    el.classList.add('bi-star');
+                }
+            }
+            function highlight(v) { stars.forEach(st => setStarState(st, +st.dataset.value <= v)); }
+
+            // 4️⃣ Submit comment
+            const submitBtn = document.getElementById('submitComment');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', async function () {
+                    const text = document.getElementById('commentText').value.trim();
+                    if (selected <= 0) { alert('Please select number of stars.'); return; }
+                    if (!text) { alert('Please enter comment content.'); return; }
+
+                    const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                    const token = tokenInput ? tokenInput.value : '';
+
+                    submitBtn.disabled = true;
+                    submitBtn.innerText = 'Sending...';
+
+                    try {
+                        const resp = await fetch('@Url.Action("AddComment", "Stores", new { area = "Client" })', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type':'application/x-www-form-urlencoded',
+                                'RequestVerificationToken': token,
+                                'X-Requested-With':'XMLHttpRequest'
+                            },
+                            body: new URLSearchParams({
+                                tenantId: '@Model.TenantId',
+                                rate: selected,
+                                text: text
+                            })
+                        });
+                        const data = await resp.json();
+                        if (data?.success) {
+                            alert(data.message || 'Sent successfully');
+                            document.getElementById('commentText').value='';
+                            selected=0; highlight(0);
+                        } else alert(data?.message || 'Error sending comment');
+                    } catch { alert('An error occurred. Please try again.'); }
+                    finally { submitBtn.disabled=false; submitBtn.innerText='Submit a comment'; }
+                });
+            }
+        });
+    </script>
+}
+
+

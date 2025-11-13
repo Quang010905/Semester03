@@ -1,74 +1,145 @@
-﻿using Semester03.Areas.Admin.Models;
-using Semester03.Models.Entities;
-using System.ComponentModel;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Semester03.Areas.Admin.Models;
+using Semester03.Models.Entities;
 
 namespace Semester03.Models.Repositories
 {
+    /// <summary>
+    /// Repository quản lý loại Tenant (TenantType) — dùng DI thay vì singleton.
+    /// </summary>
     public class TenantTypeRepository
     {
-        private static TenantTypeRepository _instance = null;
-        private TenantTypeRepository() { }
+        private readonly AbcdmallContext _context;
 
-        public static TenantTypeRepository Instance
+        // ✅ Inject DbContext qua constructor
+        public TenantTypeRepository(AbcdmallContext context)
         {
-            get
-            {
-                _instance = _instance ?? new TenantTypeRepository();
-                return _instance;
-            }
+            _context = context;
         }
 
-        public List<TenantType> GetAll()
+        public async Task<TenantType?> FindByIdAsync(int id)
         {
-            var ls = new List<TenantType>();
-            try
-            {
-                var ct = new AbcdmallContext();
-                ls = ct.TblTenantTypes.Select(x => new TenantType
+            return await _context.TblTenantTypes
+                .Where(t => t.TenantTypeId == id)
+                .Select(t => new TenantType
+                {
+                    Id = t.TenantTypeId,
+                    Name = t.TenantTypeName,
+                    Status = t.TenantTypeStatus ?? 0
+                })
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<List<TenantType>> GetAllAsync()
+        {
+            return await _context.TblTenantTypes
+                .Select(x => new TenantType
                 {
                     Id = x.TenantTypeId,
                     Name = x.TenantTypeName,
                     Status = x.TenantTypeStatus ?? 0
-                }).ToList();
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-
-            return ls;
+                })
+                .ToListAsync();
         }
 
-        // Lấy TenantType theo tên
-        public TenantType? GetTenantTypeByName(string name)
+        public async Task AddAsync(TenantType entity)
+        {
+            var item = new TblTenantType
+            {
+                TenantTypeName = entity.Name,
+                TenantTypeStatus = entity.Status
+            };
+
+            _context.TblTenantTypes.Add(item);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var item = await _context.TblTenantTypes.FirstOrDefaultAsync(t => t.TenantTypeId == id);
+            if (item != null)
+            {
+                _context.TblTenantTypes.Remove(item);
+                return await _context.SaveChangesAsync() > 0;
+            }
+            return false;
+        }
+
+        public async Task<bool> UpdateAsync(TenantType entity)
+        {
+            var q = await _context.TblTenantTypes.FirstOrDefaultAsync(t => t.TenantTypeId == entity.Id);
+            if (q != null)
+            {
+                q.TenantTypeName = entity.Name;
+                q.TenantTypeStatus = entity.Status;
+                return await _context.SaveChangesAsync() > 0;
+            }
+            return false;
+        }
+
+        public async Task<bool> CheckTenantTypeNameAsync(string name, int? excludeId = null)
+        {
+            string normalizedInput = NormalizeName(name);
+
+            var allTenantTypeNames = await _context.TblTenantTypes
+                .Where(t => !excludeId.HasValue || t.TenantTypeId != excludeId.Value)
+                .Select(t => t.TenantTypeName)
+                .ToListAsync();
+
+            return allTenantTypeNames.Any(dbName => NormalizeName(dbName) == normalizedInput);
+        }
+
+        private string NormalizeName(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            // Bỏ khoảng trắng và chuyển về chữ thường
+            return new string(input.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToLowerInvariant();
+        }
+
+        public string NormalizeSearch(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            string lower = input.ToLowerInvariant();
+            string normalized = lower.Normalize(NormalizationForm.FormD);
+
+            StringBuilder sb = new StringBuilder();
+            foreach (char c in normalized)
+            {
+                UnicodeCategory uc = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (uc != UnicodeCategory.NonSpacingMark)
+                {
+                    sb.Append(c);
+                }
+            }
+
+            return new string(sb.ToString()
+                .Where(c => !char.IsWhiteSpace(c))
+                .ToArray());
+        }
+
+        public async Task<TenantType?> GetTenantTypeByNameAsync(string name)
         {
             if (string.IsNullOrWhiteSpace(name)) return null;
 
-            try
-            {
-                using var ct = new AbcdmallContext();
-                return ct.TblTenantTypes
-                         .Where(t => t.TenantTypeName == name)
-                         .Select(x => new TenantType
-                         {
-                             Id = x.TenantTypeId,
-                             Name = x.TenantTypeName,
-                             Status = x.TenantTypeStatus ?? 0
-                         })
-                         .FirstOrDefault();
-            }
-            catch
-            {
-                return null;
-            }
+            return await _context.TblTenantTypes
+                .Where(t => t.TenantTypeName == name)
+                .Select(x => new TenantType
+                {
+                    Id = x.TenantTypeId,
+                    Name = x.TenantTypeName,
+                    Status = x.TenantTypeStatus ?? 0
+                })
+                .FirstOrDefaultAsync();
         }
-    }
-
-    public class TenantType
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = "";
-        public int Status { get; set; }
     }
 }

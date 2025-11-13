@@ -8,6 +8,20 @@
         return Url.Content("~/" + s);
     };
     var poster = Img(Model.PosterUrl);
+
+    // Helper để tạo href cho nút Book: nếu đã đăng nhập -> BookTicket, ngược lại -> Login với returnUrl
+    Func<int, string> BookHref = (movieId) =>
+    {
+        if (User?.Identity?.IsAuthenticated == true)
+        {
+            return Url.Action("BookTicket", "Booking", new { area = "Client", movieId = movieId });
+        }
+        else
+        {
+            var target = Url.Action("BookTicket", "Booking", new { area = "Client", movieId = movieId });
+            return Url.Action("Login", "Account", new { area = "Client", returnUrl = target });
+        }
+    };
 }
 
 @section Styles {
@@ -137,13 +151,11 @@
             border-radius: .6rem;
             box-shadow: 0 8px 30px rgba(13,110,253,0.12);
         }
+
         @@media (max-width: 991px) {
-            .movie-hero
-
-        {
-            grid-template-columns: 1fr;
-        }
-
+            .movie-hero {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 }
@@ -161,7 +173,7 @@
                 <div>
                     <div class="movie-title">@Model.Title</div>
                     <div class="movie-sub">@Model.Genre &middot; @Model.Director</div>
-                    <div class="small text-muted">@Model.DurationMin ?? 0 min &middot; @((Model.StartDate.HasValue) ? Model.StartDate.Value.ToString("dd MMM yyyy") : "--")</div>
+                    <div class="small text-muted">@Model.DurationMin min &middot; @((Model.StartDate.HasValue) ? Model.StartDate.Value.ToString("dd MMM yyyy") : "--")</div>
                 </div>
 
                 <div class="text-end">
@@ -177,7 +189,7 @@
                         </div>
                     </div>
                     <div class="mt-2">
-                        <a class="btn btn-primary-ghost" href="@Url.Action("BookTicket", "Booking", new { area = "Client", movieId = Model.Id })">Book Tickets</a>
+                        <a class="btn btn-primary-ghost" href="@BookHref(Model.Id)">Book Tickets</a>
                     </div>
                 </div>
             </div>
@@ -213,7 +225,7 @@
                     }
                     else
                     {
-                        <div class="alert alert-info py-2">Bạn cần <a href="@Url.Action("Login","Account", new { area = "Client" })">đăng nhập</a> để bình luận.</div>
+                        <div class="alert alert-info py-2">Bạn cần <a href="@Url.Action("Login","Account", new { area = "Client", returnUrl = Url.Action("Details", "Cinema", new { area = "Client", id = Model.Id }) })">đăng nhập</a> để bình luận.</div>
                     }
                 </div>
 

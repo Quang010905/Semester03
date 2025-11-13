@@ -5,7 +5,7 @@
 <div class="list-group small">
     @{
         // Lấy 6 sự kiện sắp tới mới nhất
-        var upcoming = Model?.Where(e => e.StartDate.HasValue && e.StartDate.Value >= DateTime.Now)
+        var upcoming = Model?.Where(e => e.StartDate >= DateTime.Now)
         .OrderBy(e => e.StartDate)
         .Take(6)
         .ToList() ?? new List<EventCardVm>();
@@ -15,9 +15,11 @@
     {
         @foreach (var e in upcoming)
         {
-            var title = e?.Title ?? "Event";
-            var start = e?.StartDate.HasValue == true ? e.StartDate.Value.ToString("dd MMM yyyy HH:mm") : "";
-            var img = string.IsNullOrWhiteSpace(e?.ImageUrl) ? "/images/event-placeholder.png" : (e.ImageUrl.StartsWith("/") ? e.ImageUrl : $"/images/events/{e.ImageUrl}");
+            var title = e.Title ?? "Event";
+            var start = e.StartDate.ToString("dd MMM yyyy HH:mm");
+            var img = string.IsNullOrWhiteSpace(e.ImageUrl)
+            ? "/images/event-placeholder.png"
+            : (e.ImageUrl.StartsWith("/") ? e.ImageUrl : $"/images/events/{e.ImageUrl}");
             var detailUrl = Url.Action("Details", "Event", new { area = "Client", id = e.Id });
 
             <a href="@detailUrl" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
@@ -30,7 +32,7 @@
                         <small class="text-muted ms-2 text-nowrap">@start</small>
                     </div>
 
-                    @if (!string.IsNullOrWhiteSpace(e?.ShortDescription))
+                    @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
                     {
                         <div class="small text-muted mt-1 text-truncate" style="max-width:100%;">@e.ShortDescription</div>
                     }

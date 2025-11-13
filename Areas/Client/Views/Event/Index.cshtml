@@ -1,7 +1,57 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.EventHomeVm
+@using System.IO
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
+
 @{
     ViewData["Title"] = "Events";
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+}
+
+@functions {
+    public string ImgPath(string image)
+    {
+        var placeholderRel = "Content/Uploads/download (2).jpg";
+        var webRoot = Env?.WebRootPath ?? "";
+
+        if (string.IsNullOrWhiteSpace(image))
+        {
+            return Url.Content("~/" + placeholderRel).Replace(" ", "%20");
+        }
+
+        var trimmed = image.Trim();
+
+        if (trimmed.StartsWith("http", StringComparison.OrdinalIgnoreCase) || trimmed.StartsWith("/"))
+        {
+            return trimmed.Replace(" ", "%20");
+        }
+
+        var candidate = trimmed.TrimStart('~', '/');
+
+        var folders = new[]
+        {
+            "Content/Uploads",
+            "Uploads",
+            "Admin/img",
+            "Content/img",
+            "images",
+            "" // trực tiếp trong wwwroot
+        };
+
+        foreach (var f in folders)
+        {
+            string physPath = string.IsNullOrEmpty(f)
+                ? System.IO.Path.Combine(webRoot, candidate)
+                : System.IO.Path.Combine(webRoot, f, candidate);
+
+            if (System.IO.File.Exists(physPath))
+            {
+                var rel = string.IsNullOrEmpty(f) ? candidate : (f + "/" + candidate);
+                return Url.Content("~/" + rel).Replace(" ", "%20");
+            }
+        }
+
+        return Url.Content("~/" + placeholderRel).Replace(" ", "%20");
+    }
 }
 
 <div class="row g-4">
@@ -12,11 +62,11 @@
             {
                 <div class="col">
                     <div class="card h-100 shadow-sm">
-                        <img src="@e.ImageUrl" class="card-img-top" alt="@e.Title" style="height:160px; object-fit:cover;">
+                        <img src="@ImgPath(e.ImageUrl)" class="card-img-top" alt="@e.Title" style="height:160px; object-fit:cover;">
                         <div class="card-body">
                             <h5 class="card-title text-truncate">@e.Title</h5>
                             <p class="card-text small text-muted">@e.ShortDescription</p>
-                            <p class="small text-muted mb-0">@((e.StartDate.HasValue ? e.StartDate.Value.ToString("dd MMM yyyy HH:mm") : ""))</p>
+                            <p class="small text-muted mb-0">@e.StartDate?.ToString("dd MMM yyyy HH:mm") ?? "--"</p>
                         </div>
                         <div class="card-footer bg-transparent border-top-0">
                             <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">Details</a>
