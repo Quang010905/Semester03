@@ -97,7 +97,7 @@ app.MapControllerRoute(
 
 app.MapControllerRoute(
     name: "client_default",
-    pattern: "{controller=Event}/{action=Index}/{id?}",
+    pattern: "{controller=Home}/{action=Index}/{id?}",
     defaults: new { area = "Client" }
 )
 

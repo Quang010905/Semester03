@@ -131,7 +131,7 @@ namespace Semester03.Areas.Client.Controllers
                 if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
                     return Redirect(returnUrl);
 
-                return RedirectToAction("Index", "Cinema", new { area = "Client" });
+                return RedirectToAction("Index", "Home", new { area = "Client" });
             }
         }
 
