@@ -1,25 +1,26 @@
 ﻿@using System.Linq
 @using Semester03.Areas.Client.Models.ViewModels
-@model IEnumerable<EventCardVm>
+@model IEnumerable<Semester03.Areas.Client.Models.ViewModels.EventCardVm>
 
 <div class="list-group small">
     @{
-        // Lấy 6 sự kiện sắp tới mới nhất
-        var upcoming = Model?.Where(e => e.StartDate >= DateTime.Now)
-        .OrderBy(e => e.StartDate)
+        var now = DateTime.Now;
+        var items = (Model ?? Enumerable.Empty<EventCardVm>())
+        .Where(e => e.StartDate == null || e.StartDate >= now) // cho an toàn nếu StartDate null
+        .OrderBy(e => e.StartDate ?? DateTime.MaxValue)
         .Take(6)
-        .ToList() ?? new List<EventCardVm>();
+        .ToList();
     }
 
-    @if (upcoming.Any())
+    @if (items.Any())
     {
-        @foreach (var e in upcoming)
+        @foreach (var e in items)
         {
-            var title = e.Title ?? "Event";
-            var start = e.StartDate.ToString("dd MMM yyyy HH:mm");
+            var title = string.IsNullOrWhiteSpace(e.Title) ? "Event" : e.Title;
+            var start = e.StartDate.HasValue ? e.StartDate.Value.ToString("dd MMM yyyy HH:mm") : "--";
             var img = string.IsNullOrWhiteSpace(e.ImageUrl)
-            ? "/images/event-placeholder.png"
-            : (e.ImageUrl.StartsWith("/") ? e.ImageUrl : $"/images/events/{e.ImageUrl}");
+            ? Url.Content("~/images/event-placeholder.png")
+            : (e.ImageUrl.StartsWith("/") ? Url.Content("~" + e.ImageUrl) : Url.Content("~/images/events/" + e.ImageUrl));
             var detailUrl = Url.Action("Details", "Event", new { area = "Client", id = e.Id });
 
             <a href="@detailUrl" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
