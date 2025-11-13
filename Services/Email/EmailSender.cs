@@ -45,7 +45,11 @@ namespace Semester03.Services.Email
             }
             finally
             {
-                await client.DisconnectAsync(true, cancellationToken);
+                try
+                {
+                    await client.DisconnectAsync(true, cancellationToken);
+                }
+                catch { /* ignore */ }
             }
         }
 
@@ -76,7 +80,11 @@ namespace Semester03.Services.Email
             }
             finally
             {
-                await client.DisconnectAsync(true, cancellationToken);
+                try
+                {
+                    await client.DisconnectAsync(true, cancellationToken);
+                }
+                catch { /* ignore */ }
             }
         }
     }

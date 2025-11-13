@@ -58,8 +58,47 @@ public partial class AbcdmallContext : DbContext
     public virtual DbSet<TblUser> TblUsers { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=(local);Database=ABCDMall;uid=sa;pwd=123;Trusted_Connection=True;TrustServerCertificate=true;");
+    {
+        // Nếu đã cấu hình qua DI thì không làm gì
+        if (optionsBuilder.IsConfigured) return;
+
+        // 1) thử đọc từ biến môi trường (dotnet config uses __ to indicate nesting)
+        var conn = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+
+        // 2) nếu không có, cố gắng load appsettings.{ENV}.json rồi appsettings.json (nếu ứng dụng chạy từ folder khác, dùng Directory.GetCurrentDirectory())
+        if (string.IsNullOrWhiteSpace(conn))
+        {
+            try
+            {
+                var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+                var basePath = Directory.GetCurrentDirectory();
+
+                var config = new ConfigurationBuilder()
+                    .SetBasePath(basePath)
+                    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+                    .AddJsonFile($"appsettings.{env}.json", optional: true, reloadOnChange: false)
+                    .AddEnvironmentVariables()
+                    .Build();
+
+                conn = config.GetConnectionString("DefaultConnection");
+            }
+            catch
+            {
+                // ignore parsing errors here, we'll throw below if still null
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(conn))
+        {
+            // Thông báo lỗi rõ ràng để dễ debug
+            throw new InvalidOperationException("AbcdmallContext is not configured. No connection string 'DefaultConnection' found. " +
+                "Please set ConnectionStrings:DefaultConnection in appsettings.json or set environment variable ConnectionStrings__DefaultConnection, " +
+                "and ensure Program.cs registers AddDbContext<AbcdmallContext>(...) with that connection string.");
+        }
+
+        // Nếu có connection string, cấu hình provider
+        optionsBuilder.UseSqlServer(conn);
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

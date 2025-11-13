@@ -16,11 +16,18 @@ using Semester03.Areas.Client.Models.ViewModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews();
+// Add services to the container.
+builder.Services.AddControllersWithViews()
+    // Optional: mở cho debug view thay đổi mà không cần rebuild
+    //.AddRazorRuntimeCompilation()
+    ;
 
-// Đọc chuỗi kết nối từ appsettings.json hoặc fallback mặc định
-var conn = builder.Configuration.GetConnectionString("DefaultConnection")
-           ?? "Server=(local);Database=ABCDMall;User Id=sa;Password=123;Encrypt=True;TrustServerCertificate=True;MultipleActiveResultSets=True;";
+// Đọc chuỗi kết nối từ appsettings.json (BẮT BUỘC có key "ConnectionStrings:DefaultConnection")
+var conn = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(conn))
+{
+    throw new InvalidOperationException("Missing connection string 'DefaultConnection' in appsettings.json or environment variables. Please add it to appsettings.json under ConnectionStrings.");
+}
 
 builder.Services.AddDbContext<AbcdmallContext>(options =>
     options.UseSqlServer(conn)
@@ -47,6 +54,8 @@ builder.Services.AddScoped<IEmailSender, EmailSender>();
 builder.Services.AddScoped<TicketEmailService>();
 builder.Services.AddScoped<IVnPayService, VnPayService>();
 builder.Services.AddScoped<IPasswordHasher<TblUser>, PasswordHasher<TblUser>>();
+
+// RazorViewToStringRenderer needs IRazorViewEngine, ITempDataProvider, IServiceProvider -> scoped is fine
 builder.Services.AddScoped<RazorViewToStringRenderer>();
 
 // ===== Authentication =====
