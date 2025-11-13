@@ -6,11 +6,11 @@ namespace Semester03.Areas.Client.Models.ViewModels
     public class EventCardVm
     {
         public int Id { get; set; }
-        public string Title { get; set; } = "";
-        public string ShortDescription { get; set; } = "";
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
-        public string ImageUrl { get; set; } = "/images/event-placeholder.png";
+        public string Title { get; set; }
+        public string ShortDescription { get; set; }
+        public DateTime? StartDate { get; set; } // <- nullable
+        public DateTime? EndDate { get; set; }   // <- nullable
+        public string ImageUrl { get; set; }
         public int? MaxSlot { get; set; }
         public int Status { get; set; }
         public int? TenantPositionId { get; set; }
@@ -25,13 +25,13 @@ namespace Semester03.Areas.Client.Models.ViewModels
     public class EventDetailsVm
     {
         public int Id { get; set; }
-        public string Title { get; set; } = "";
-        public string Description { get; set; } = "";
-        public DateTime? StartDate { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public DateTime StartDate { get; set; }
         public DateTime? EndDate { get; set; }
-        public string ImageUrl { get; set; } = "/images/event-placeholder.png";
-        public int? MaxSlot { get; set; }
+        public string ImageUrl { get; set; }
+        public int MaxSlot { get; set; }
         public int Status { get; set; }
-        public int? TenantPositionId { get; set; }
+        public int TenantPositionId { get; set; }
     }
 }

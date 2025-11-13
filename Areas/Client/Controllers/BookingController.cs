@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Semester03.Areas.Client.Models.ViewModels;
-using Semester03.Areas.Client.Repositories;
+using Semester03.Models.Repositories;
 using Semester03.Models.Entities;
 using Semester03.Services.Vnpay;
 using System;
@@ -11,6 +11,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Semester03.Services;
 
 namespace Semester03.Areas.Client.Controllers
 {
@@ -24,6 +25,7 @@ namespace Semester03.Areas.Client.Controllers
         private readonly AbcdmallContext _context;
         private readonly IVnPayService _vnPayService;
         private readonly ILogger<BookingController> _logger;
+        private readonly TicketEmailService _ticketEmailService;
 
         public BookingController(
             ShowtimeRepository showRepo,
@@ -31,7 +33,8 @@ namespace Semester03.Areas.Client.Controllers
             SeatRepository seatRepo,
             IVnPayService vnPayService,
             AbcdmallContext context,
-            ILogger<BookingController> logger)
+            ILogger<BookingController> logger,
+            TicketEmailService ticketEmailService)
         {
             _showRepo = showRepo;
             _movieRepo = movieRepo;
@@ -39,6 +42,7 @@ namespace Semester03.Areas.Client.Controllers
             _vnPayService = vnPayService;
             _context = context;
             _logger = logger;
+            _ticketEmailService = ticketEmailService;
         }
 
         [HttpGet]
@@ -274,7 +278,6 @@ namespace Semester03.Areas.Client.Controllers
                 }
                 else if (rawParts.Any())
                 {
-                    // raw parts may be seat labels (e.g., "C7,C8")
                     var seatEntities = await _context.TblSeats
                         .Where(s => rawParts.Contains(s.SeatLabel))
                         .Select(s => new { s.SeatId })
@@ -298,10 +301,10 @@ namespace Semester03.Areas.Client.Controllers
                     ViewData["ShowtimeId"] = showtimeId;
                     ViewData["TotalAmount"] = 0m;
                     ViewData["PricePerSeat"] = 0m;
+                    ViewData["ShowtimeSeatIds"] = "";
                     return View();
                 }
 
-                // If showtimeId not provided, attempt to discover it
                 if (showtimeId <= 0)
                 {
                     var possibleShowtimeIds = await _context.TblShowtimeSeats
@@ -325,7 +328,6 @@ namespace Semester03.Areas.Client.Controllers
 
                 var seatMappingsResult = new List<(int ShowtimeSeatId, string SeatLabel)>();
 
-                // Use raw DB connection and transaction (keeps compatibility with your schema)
                 var conn = _context.Database.GetDbConnection();
                 await using (conn)
                 {
@@ -335,7 +337,6 @@ namespace Semester03.Areas.Client.Controllers
                     {
                         try
                         {
-                            // build IN clause safely because we validated ints earlier
                             string inClause = string.Join(",", showtimeSeatIds);
 
                             // 1) Read showtime seat rows
@@ -367,6 +368,7 @@ namespace Semester03.Areas.Client.Controllers
                                 ViewData["ShowtimeId"] = showtimeId;
                                 ViewData["TotalAmount"] = 0m;
                                 ViewData["PricePerSeat"] = pricePerSeat;
+                                ViewData["ShowtimeSeatIds"] = "";
                                 return View();
                             }
 
@@ -402,7 +404,7 @@ namespace Semester03.Areas.Client.Controllers
 
                             seatMappingsResult = seatMappings.Select(m => (m.ShowtimeSeatId, m.Label)).ToList();
 
-                            // --- NEW: check existing tickets to avoid double-insert ---
+                            // existing tickets
                             var existingTicketSeatIds = new HashSet<int>();
                             using (var cmd = conn.CreateCommand())
                             {
@@ -424,8 +426,7 @@ namespace Semester03.Areas.Client.Controllers
                                 reader.Close();
                             }
 
-                            // 3) Update showtime seats -> set status sold, updated at, reserved by (if provided)
-                            // Use COALESCE to avoid assigning NULL if @reservedBy is null and DB doesn't accept nulls
+                            // update showtime seats
                             using (var cmd = conn.CreateCommand())
                             {
                                 cmd.Transaction = dbTx;
@@ -448,7 +449,7 @@ namespace Semester03.Areas.Client.Controllers
                                 await cmd.ExecuteNonQueryAsync();
                             }
 
-                            // 4) Insert tickets only for showtimeSeatIds that don't already have tickets
+                            // insert tickets if not exist
                             var toInsert = seatMappings.Where(m => !existingTicketSeatIds.Contains(m.ShowtimeSeatId)).ToList();
 
                             if (toInsert.Any())
@@ -483,19 +484,63 @@ namespace Semester03.Areas.Client.Controllers
                                 _logger.LogInformation("No new tickets to insert for showtime {ShowtimeId}: tickets already exist for provided seats.", showtimeId);
                             }
 
+                            // award points to user (if buyerId)
+                            if (buyerId.HasValue)
+                            {
+                                var points = (int)Math.Floor(totalAmount / 100m);
+                                if (points > 0)
+                                {
+                                    using var cmd = conn.CreateCommand();
+                                    cmd.Transaction = dbTx;
+                                    cmd.CommandType = CommandType.Text;
+                                    cmd.CommandText = @"
+                                        UPDATE dbo.Tbl_Users
+                                        SET Users_Points = ISNULL(Users_Points, 0) + @points,
+                                            Users_UpdatedAt = @now
+                                        WHERE Users_ID = @userId
+                                    ";
+                                    var pPoints = cmd.CreateParameter(); pPoints.ParameterName = "@points"; pPoints.Value = points; cmd.Parameters.Add(pPoints);
+                                    var pNow2 = cmd.CreateParameter(); pNow2.ParameterName = "@now"; pNow2.Value = DateTime.UtcNow; cmd.Parameters.Add(pNow2);
+                                    var pUserId = cmd.CreateParameter(); pUserId.ParameterName = "@userId"; pUserId.Value = buyerId.Value; cmd.Parameters.Add(pUserId);
+
+                                    var updated = await cmd.ExecuteNonQueryAsync();
+                                    if (updated > 0)
+                                    {
+                                        _logger.LogInformation("Awarded {Points} points to user {UserId}", points, buyerId.Value);
+                                    }
+                                    else
+                                    {
+                                        _logger.LogWarning("Failed to award points: user {UserId} not found.", buyerId.Value);
+                                    }
+                                }
+                            }
+
                             await dbTx.CommitAsync();
+
+                            // --- SAU KHI COMMIT: gửi mail (await để log lỗi nếu có) ---
+                            try
+                            {
+                                if (buyerId.HasValue)
+                                {
+                                    await _ticketEmailService.SendTicketsEmailAsync(buyerId.Value, showtimeSeatIds);
+                                }
+                            }
+                            catch (Exception exEmail)
+                            {
+                                _logger.LogError(exEmail, "Error sending ticket email after successful commit for user {UserId}", buyerId);
+                            }
                         }
                         catch (Exception ex)
                         {
                             _logger.LogError(ex, "Error while finalizing payment and writing seats/tickets - rolling back.");
                             try { await dbTx.RollbackAsync(); } catch (Exception rbEx) { _logger.LogError(rbEx, "Error while rolling back transaction."); }
 
-                            // surface the error to the view so we know why seats not updated
                             ViewData["PaymentProcessingError"] = ex.Message;
                             ViewData["SeatLabels"] = new List<string>();
                             ViewData["ShowtimeId"] = showtimeId;
                             ViewData["TotalAmount"] = 0m;
                             ViewData["PricePerSeat"] = pricePerSeat;
+                            ViewData["ShowtimeSeatIds"] = "";
                             return View();
                         }
                         finally
@@ -511,6 +556,7 @@ namespace Semester03.Areas.Client.Controllers
                 ViewData["ShowtimeId"] = showtimeId;
                 ViewData["TotalAmount"] = pricePerSeat * seatLabelList.Count;
                 ViewData["PricePerSeat"] = pricePerSeat;
+                ViewData["ShowtimeSeatIds"] = string.Join(",", showtimeSeatIds);
 
                 return View();
             }
@@ -522,9 +568,44 @@ namespace Semester03.Areas.Client.Controllers
                 ViewData["ShowtimeId"] = showtimeId;
                 ViewData["TotalAmount"] = 0m;
                 ViewData["PricePerSeat"] = 0m;
+                ViewData["ShowtimeSeatIds"] = "";
                 return View();
             }
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendTicketEmailAjax([FromForm] string showtimeSeatIds)
+        {
+            if (string.IsNullOrWhiteSpace(showtimeSeatIds))
+                return BadRequest(new { success = false, message = "No seat ids provided." });
+
+            var ids = showtimeSeatIds
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => int.TryParse(s.Trim(), out var v) ? v : 0)
+                .Where(v => v > 0)
+                .Distinct()
+                .ToList();
+
+            if (!ids.Any())
+                return BadRequest(new { success = false, message = "Invalid seat ids." });
+
+            var claim = User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrWhiteSpace(claim) || !int.TryParse(claim, out var userId))
+                return Unauthorized(new { success = false, message = "User not authenticated." });
+
+            try
+            {
+                await _ticketEmailService.SendTicketsEmailAsync(userId, ids);
+                return Ok(new { success = true, message = "Email sent (or queued) to user." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending ticket email via AJAX for user {UserId}", userId);
+                return StatusCode(500, new { success = false, message = "Server error sending email." });
+            }
+        }
+
 
         [HttpGet]
         public async Task<IActionResult> PaymentFailed(int showtimeId, string seatIds, string message = "")

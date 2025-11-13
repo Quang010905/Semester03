@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Semester03.Models.Entities;
 
-namespace Semester03.Areas.Client.Repositories
+namespace Semester03.Models.Repositories
 {
     // Concrete repository (no interface used)
     public class UserRepository

@@ -2,14 +2,14 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Semester03.Areas.Client.Repositories;
 using Semester03.Models.Entities;
 
 // Add these 'using' statements for file upload
 using Microsoft.AspNetCore.Http; // For IFormFile
 using System.IO; // For Path
 using System; // For Guid
-using System.Threading.Tasks; // For Task
+using System.Threading.Tasks;
+using Semester03.Models.Repositories; // For Task
 
 namespace Semester03.Areas.Admin.Controllers
 {
@@ -18,16 +18,17 @@ namespace Semester03.Areas.Admin.Controllers
     public class MoviesController : Controller
     {
         private readonly MovieRepository _movieRepo;
-        // 1. Add IWebHostEnvironment
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly AbcdmallContext _context;
 
-        // 2. Inject it in the constructor
-        public MoviesController(MovieRepository movieRepo, IWebHostEnvironment webHostEnvironment)
+        public MoviesController(MovieRepository movieRepo,
+                                        IWebHostEnvironment webHostEnvironment,
+                                        AbcdmallContext context) 
         {
             _movieRepo = movieRepo;
             _webHostEnvironment = webHostEnvironment;
+            _context = context; 
         }
-
         // GET: Admin/Movies
         public async Task<IActionResult> Index()
         {
@@ -151,8 +152,8 @@ namespace Semester03.Areas.Admin.Controllers
             // 1. Get the wwwroot path
             string wwwRootPath = _webHostEnvironment.WebRootPath;
 
-            // 2. Define the save path (wwwroot/Admin/img)
-            string savePath = Path.Combine(wwwRootPath, "Admin", "img");
+            // 2. Define the save path (wwwroot/Content/Uploads/Movies)
+            string savePath = Path.Combine(wwwRootPath, "Content", "Uploads", "Movies");
 
             // 3. Create the directory if it doesn't exist
             if (!Directory.Exists(savePath))
@@ -182,6 +183,23 @@ namespace Semester03.Areas.Admin.Controllers
             if (id == null) return NotFound();
             var movie = await _movieRepo.GetByIdAsync(id.Value);
             if (movie == null) return NotFound();
+            
+            // --- ADDED: Dependency Check ---
+            // Check if any Showtimes are linked to this Movie
+            bool hasShowtimes = await _context.TblShowtimes.AnyAsync(s => s.ShowtimeMovieId == id.Value);
+
+            if (hasShowtimes)
+            {
+                // If dependencies exist, pass an error message to the View
+                ViewData["HasDependencies"] = true;
+                ViewData["ErrorMessage"] = "This movie cannot be deleted. It is linked to one or more Showtimes. Please delete those showtimes first.";
+            }
+            else
+            {
+                ViewData["HasDependencies"] = false;
+            }
+            // --- END OF CHECK ---
+
             return View(movie);
         }
 
@@ -190,11 +208,20 @@ namespace Semester03.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            // --- Final Dependency Check (Safety Net) ---
+            bool hasShowtimes = await _context.TblShowtimes.AnyAsync(s => s.ShowtimeMovieId == id);
+
+            if (hasShowtimes)
+            {
+                TempData["Error"] = "This movie cannot be deleted because it is linked to Showtimes.";
+                return RedirectToAction(nameof(Index));
+            }
+            // --- END OF CHECK ---
+
             // 1. Get the movie object first to find the filename
             var movie = await _movieRepo.GetByIdAsync(id);
             if (movie == null)
             {
-                // This shouldn't happen if the GET Delete page worked
                 return RedirectToAction(nameof(Index));
             }
 
@@ -210,6 +237,7 @@ namespace Semester03.Areas.Admin.Controllers
                 DeleteImageFile(oldImageFileName);
             }
 
+            TempData["Success"] = "Movie deleted successfully.";
             return RedirectToAction(nameof(Index));
         }
         private void DeleteImageFile(string fileName)
@@ -220,7 +248,7 @@ namespace Semester03.Areas.Admin.Controllers
                 string wwwRootPath = _webHostEnvironment.WebRootPath;
 
                 // 2. Define the full file path
-                string filePath = Path.Combine(wwwRootPath, "Admin", "img", fileName);
+                string filePath = Path.Combine(wwwRootPath, "Content", "Uploads", "Movies", fileName);
 
                 // 3. Check if the file exists and delete it
                 if (System.IO.File.Exists(filePath))

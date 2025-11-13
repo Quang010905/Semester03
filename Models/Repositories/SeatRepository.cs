@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Semester03.Areas.Client.Models.ViewModels;
 using Semester03.Models.Entities;
 
-namespace Semester03.Areas.Client.Repositories
+namespace Semester03.Models.Repositories
 {
     public class SeatRepository
     {
@@ -182,6 +182,65 @@ SELECT Id FROM @Updated;
 
             failed = showtimeSeatIds.Except(succeeded).ToList();
             return (succeeded, failed);
+        }
+
+        // ADMIN CRUD METHODS 
+        // ==========================================================
+
+        public async Task<IEnumerable<TblSeat>> GetAllAsync()
+        {
+            // We Include() the Screen to show its name in the Admin list
+            return await _db.TblSeats
+                .Include(s => s.SeatScreen) //
+                .ToListAsync();
+        }
+
+        public async Task<TblSeat> GetByIdAsync(int id)
+        {
+            return await _db.TblSeats.FindAsync(id);
+        }
+
+        public async Task BatchAddAsync(List<TblSeat> seats)
+        {
+            // AddRange is much faster than Add() in a loop
+            await _db.TblSeats.AddRangeAsync(seats);
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task<TblSeat> AddAsync(TblSeat entity)
+        {
+            _db.TblSeats.Add(entity);
+            await _db.SaveChangesAsync();
+            return entity;
+        }
+
+        public async Task UpdateAsync(TblSeat entity)
+        {
+            _db.Entry(entity).State = EntityState.Modified;
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            var entity = await _db.TblSeats.FindAsync(id);
+            if (entity != null)
+            {
+                _db.TblSeats.Remove(entity);
+                await _db.SaveChangesAsync();
+            }
+        }
+
+        public async Task<bool> CheckCollisionAsync(int screenId, string row, int col, int currentSeatId = 0)
+        {
+            // Check if any *other* seat (Id != currentSeatId) 
+            // in *this* screen
+            // already has the same Row and Col
+            return await _db.TblSeats.AnyAsync(s =>
+                s.SeatScreenId == screenId &&
+                s.SeatRow == row &&
+                s.SeatCol == col &&
+                s.SeatId != currentSeatId // Ignore itself when editing
+            );
         }
     }
 }
