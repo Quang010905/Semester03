@@ -7,62 +7,15 @@
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
 }
 
-@functions {
-    public string ImgPath(string image)
-    {
-        var placeholderRel = "Content/Uploads/download (2).jpg";
-        var webRoot = Env?.WebRootPath ?? "";
-
-        if (string.IsNullOrWhiteSpace(image))
-        {
-            return Url.Content("~/" + placeholderRel).Replace(" ", "%20");
-        }
-
-        var trimmed = image.Trim();
-
-        if (trimmed.StartsWith("http", StringComparison.OrdinalIgnoreCase) || trimmed.StartsWith("/"))
-        {
-            return trimmed.Replace(" ", "%20");
-        }
-
-        var candidate = trimmed.TrimStart('~', '/');
-
-        var folders = new[]
-        {
-            "Content/Uploads",
-            "Uploads",
-            "Admin/img",
-            "Content/img",
-            "images",
-            "" // trực tiếp trong wwwroot
-        };
-
-        foreach (var f in folders)
-        {
-            string physPath = string.IsNullOrEmpty(f)
-                ? System.IO.Path.Combine(webRoot, candidate)
-                : System.IO.Path.Combine(webRoot, f, candidate);
-
-            if (System.IO.File.Exists(physPath))
-            {
-                var rel = string.IsNullOrEmpty(f) ? candidate : (f + "/" + candidate);
-                return Url.Content("~/" + rel).Replace(" ", "%20");
-            }
-        }
-
-        return Url.Content("~/" + placeholderRel).Replace(" ", "%20");
-    }
-}
-
 <div class="row g-4">
     <div class="col-12">
         <h2>Featured events</h2>
         <div class="row row-cols-1 row-cols-md-3 g-3">
-            @foreach (var e in Model.Featured)
+            @foreach (var e in Model.Featured ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.EventCardVm>())
             {
                 <div class="col">
                     <div class="card h-100 shadow-sm">
-                        <img src="@ImgPath(e.ImageUrl)" class="card-img-top" alt="@e.Title" style="height:160px; object-fit:cover;">
+                        <img src="@(!string.IsNullOrWhiteSpace(e.ImageUrl) ? (e.ImageUrl.StartsWith("/") ? Url.Content("~" + e.ImageUrl) : Url.Content("~/images/events/" + e.ImageUrl)) : Url.Content("~/images/event-placeholder.png"))" class="card-img-top" alt="@e.Title" style="height:160px; object-fit:cover;">
                         <div class="card-body">
                             <h5 class="card-title text-truncate">@e.Title</h5>
                             <p class="card-text small text-muted">@e.ShortDescription</p>
@@ -79,6 +32,7 @@
 
     <div class="col-12">
         <h4 class="mt-4">Upcoming events</h4>
-        @await Html.PartialAsync("_EventListPartial", Model.Upcoming)
+        @* Truyền đúng danh sách EventCardVm vào partial *@
+        @await Html.PartialAsync("_EventListPartial", Model.Upcoming ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.EventCardVm>())
     </div>
 </div>

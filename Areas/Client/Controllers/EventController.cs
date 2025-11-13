@@ -1,6 +1,4 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Semester03.Areas.Client.Models.ViewModels;
 using Semester03.Models.Repositories;
 
@@ -23,12 +21,12 @@ namespace Semester03.Areas.Client.Controllers
 
             var vm = new EventHomeVm
             {
-                Featured = await _repo.GetFeaturedEventsAsync(3),
+                Featured = await _repo.GetFeaturedEventsAsync(6),
                 Upcoming = await _repo.GetUpcomingEventsAsync()
             };
 
-            // expose upcoming events cho layout (ví dụ phần sidebar)
-            ViewBag.Events = vm.Upcoming;
+            // expose upcoming events cho layout (kiểu IList<EventCardVm>)
+            ViewBag.Events = vm.Upcoming ?? new List<EventCardVm>();
 
             return View(vm);
         }
@@ -40,16 +38,9 @@ namespace Semester03.Areas.Client.Controllers
                 return NotFound();
 
             ViewData["Title"] = ev.Title;
-            ViewBag.Events = await _repo.GetUpcomingEventsAsync();
+            ViewBag.Events = await _repo.GetUpcomingEventsAsync() ?? new List<EventCardVm>();
 
             return View(ev);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> ListPartial(int top = 5)
-        {
-            var events = await _repo.GetUpcomingEventsAsync(top);
-            return PartialView("_EventListPartial", events);
         }
     }
 }
