@@ -40,7 +40,12 @@
                     <div class="form-group">
                         <label class="control-label">New Poster Image (Optional)</label>
                         <br />
-                        <img id="imagePreview" src="~/Content/Uploads/Movies/@Model.MovieImg" alt="Current Poster" style="max-width: 200px; border-radius: 5px; margin-bottom: 10px;" />
+
+                        <img id="imagePreview"
+                             src="@(string.IsNullOrEmpty(Model.MovieImg) ? "~/Content/Uploads/noimage.png" : "~/Content/Uploads/Movies/" + Model.MovieImg)"
+                             alt="Current Poster"
+                             style="max-width: 200px; border-radius: 5px; margin-bottom: 10px;" />
+
                         <input type="file" name="imageFile" id="imageFile" class="form-control" accept="image/*" />
                     </div>
 

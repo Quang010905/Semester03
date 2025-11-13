@@ -1,0 +1,94 @@
+﻿@model Semester03.Models.Entities.TblEventBooking
+
+@{
+    ViewData["Title"] = "Booking Details";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<h1 class="h3 mb-2 text-gray-800">Booking Details: #@Model.EventBookingId</h1>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Booking Information</h6>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Event</dt>
+                    <dd class="col-sm-9">@Model.EventBookingEvent?.EventName</dd>
+
+                    <dt class="col-sm-3">Tenant</dt>
+                    <dd class="col-sm-9">@Model.EventBookingTenant?.TenantName</dd>
+
+                    <dt class="col-sm-3">Date Booked</dt>
+                    <dd class="col-sm-9">
+                        @if (Model.EventBookingCreatedDate.HasValue)
+                        {
+                            @Model.EventBookingCreatedDate.Value.ToString("yyyy-MM-dd HH:mm")
+                        }
+                    </dd>
+
+                    <dt class="col-sm-3">Total Cost</dt>
+                    <dd class="col-sm-9">
+                        @if (Model.EventBookingTotalCost.HasValue)
+                        {
+                            @Model.EventBookingTotalCost.Value.ToString("C", new System.Globalization.CultureInfo("en-US"))
+                        }
+                    </dd>
+
+                    <dt class="col-sm-3">Notes</dt>
+                    <dd class="col-sm-9">@Html.DisplayFor(model => model.EventBookingNotes)</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Customer Details</h6>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">Full Name</dt>
+                    <dd class="col-sm-8">@Model.EventBookingUser?.UsersFullName</dd>
+
+                    <dt class="col-sm-4">Email</dt>
+                    <dd class="col-sm-8">@Model.EventBookingUser?.UsersEmail</dd>
+
+                    <dt class="col-sm-4">Phone</dt>
+                    <dd class="col-sm-8">@Model.EventBookingUser?.UsersPhone</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Manage Payment Status</h6>
+    </div>
+    <div class="card-body">
+        <form asp-action="UpdateStatus" asp-route-id="@Model.EventBookingId" method="post">
+            <div class="form-group">
+                <label for="paymentStatus">Set Payment Status:</label>
+                <select name="paymentStatus" id="paymentStatus" class="form-control" style="max-width: 300px;">
+                    <option value="0" selected="@(Model.EventBookingPaymentStatus == 0)">Unpaid</option>
+                    <option value="1" selected="@(Model.EventBookingPaymentStatus == 1)">Paid</option>
+                    <option value="2" selected="@(Model.EventBookingPaymentStatus == 2)">Free</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Status</button>
+            <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+        </form>
+    </div>
+</div>

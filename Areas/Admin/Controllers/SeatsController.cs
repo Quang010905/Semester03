@@ -1,14 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering; 
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Semester03.Areas.Admin.Models; 
-using Semester03.Models; 
 using Semester03.Models.Entities;
 using Semester03.Models.Repositories;
 
 namespace Semester03.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = "1")]
     public class SeatsController : Controller
     {
         private readonly SeatRepository _seatRepo;

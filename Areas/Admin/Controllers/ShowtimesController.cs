@@ -1,16 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Semester03.Models.Entities;
 using Semester03.Models.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Semester03.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = "1")]
     public class ShowtimesController : Controller
     {
         private readonly ShowtimeRepository _showtimeRepo;
@@ -71,6 +69,17 @@ namespace Semester03.Areas.Admin.Controllers
             ModelState.Remove("ShowtimeScreen");
             ModelState.Remove("ShowtimeMovie");
 
+            // --- Business Logic Validation ---
+            if (tblShowtime.ShowtimePrice <= 0)
+            {
+                ModelState.AddModelError("ShowtimePrice", "Price must be greater than 0.");
+            }
+            if (tblShowtime.ShowtimeStart < DateTime.Now)
+            {
+                ModelState.AddModelError("ShowtimeStart", "Start Time cannot be in the past.");
+            }
+            // --- END VALIDATION ---
+
             if (ModelState.IsValid)
             {
                 await _showtimeRepo.AddAsync(tblShowtime);
@@ -105,6 +114,17 @@ namespace Semester03.Areas.Admin.Controllers
 
             ModelState.Remove("ShowtimeScreen");
             ModelState.Remove("ShowtimeMovie");
+
+            // --- Business Logic Validation ---
+            if (tblShowtime.ShowtimePrice <= 0)
+            {
+                ModelState.AddModelError("ShowtimePrice", "Price must be greater than 0.");
+            }
+            if (tblShowtime.ShowtimeStart < DateTime.Now)
+            {
+                ModelState.AddModelError("ShowtimeStart", "Start Time cannot be in the past.");
+            }
+            // --- END VALIDATION ---
 
             if (ModelState.IsValid)
             {

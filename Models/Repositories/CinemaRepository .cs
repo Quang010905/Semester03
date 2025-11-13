@@ -171,5 +171,41 @@ namespace Semester03.Models.Repositories
             _db.TblCustomerComplaints.Add(ent);
             await _db.SaveChangesAsync();
         }
+
+        // ==========================================================
+        // === ADMIN SETTINGS METHODS ===
+        // === These methods *actually* operate on Tbl_Cinema ===
+        // ==========================================================
+
+        private const int FIXED_CINEMA_ID = 1; //
+
+        public async Task<TblCinema> GetSettingsAsync()
+        {
+            var cinema = await _db.TblCinemas.FindAsync(FIXED_CINEMA_ID);
+
+            if (cinema == null)
+            {
+                // If ID=1 doesn't exist (e.g., empty DB), create it
+                // We use the first record from the seed data as default
+                cinema = new TblCinema
+                {
+                    CinemaId = FIXED_CINEMA_ID,
+                    CinemaName = "Galaxy ABCD Mall" //
+                };
+                _db.TblCinemas.Add(cinema);
+                await _db.SaveChangesAsync();
+            }
+            return cinema;
+        }
+
+        public async Task UpdateSettingsAsync(TblCinema cinemaSettings)
+        {
+            // Ensure the ID is correct
+            cinemaSettings.CinemaId = FIXED_CINEMA_ID;
+            _db.Entry(cinemaSettings).State = EntityState.Modified;
+            await _db.SaveChangesAsync();
+        }
+
+
     }
 }

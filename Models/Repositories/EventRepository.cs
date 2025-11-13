@@ -83,4 +83,64 @@ public class EventRepository
             TenantPositionId = e.EventTenantPositionId
         };
     }
+
+    // ==========================================================
+    // ADMIN CRUD METHODS 
+    // ==========================================================
+
+    public async Task<IEnumerable<TblEvent>> GetAllAsync()
+    {
+        // Include related position data
+        return await _context.TblEvents
+            .Include(e => e.EventTenantPosition)
+            .OrderByDescending(e => e.EventStart)
+            .ToListAsync();
+    }
+
+    public async Task<TblEvent> GetByIdAdminAsync(int id)
+    {
+        // Use this one for Admin (GetEventByIdAsync is already used by Client)
+        return await _context.TblEvents
+            .Include(e => e.EventTenantPosition)
+            .Include(e => e.TblEventBookings)
+            .FirstOrDefaultAsync(e => e.EventId == id);
+    }
+
+    public async Task<TblEvent> AddAsync(TblEvent entity)
+    {
+        _context.TblEvents.Add(entity);
+        await _context.SaveChangesAsync();
+        return entity;
+    }
+
+    public async Task UpdateAsync(TblEvent entity)
+    {
+        _context.Entry(entity).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteAsync(int id)
+    {
+        var entity = await _context.TblEvents.FindAsync(id);
+        if (entity != null)
+        {
+            _context.TblEvents.Remove(entity);
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public async Task<bool> UpdateStatusAsync(int eventId, int status)
+    {
+        var evt = await _context.TblEvents.FindAsync(eventId);
+        if (evt == null)
+        {
+            return false;
+        }
+
+        evt.EventStatus = status;
+        _context.TblEvents.Update(evt);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
 }
