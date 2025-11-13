@@ -1,0 +1,152 @@
+﻿@model Semester03.Models.Entities.TblEvent
+
+@{
+    ViewData["Title"] = "Event Details";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+    int totalSlots = Model.EventMaxSlot;
+    int soldSlots = Model.TblEventBookings.Count(b => b.EventBookingPaymentStatus == 1);
+    int availableSlots = totalSlots - soldSlots;
+    decimal occupancy = (totalSlots > 0) ? ((decimal)soldSlots / totalSlots) * 100 : 0;
+}
+
+<h1 class="h3 mb-2 text-gray-800">Event Details</h1>
+
+<div class="row">
+    <div class="col-xl-4 col-md-6 mb-4">
+        <a asp-controller="EventBookings" asp-action="Index" asp-route-eventId="@Model.EventId"
+           class="card border-left-danger shadow h-100 py-2"
+           style="text-decoration: none;">
+
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            Bookings Sold (Click to view)
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@soldSlots / @totalSlots</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-ticket-alt fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Slots Available
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@availableSlots</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chair fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Occupancy
+                        </div>
+                        <div class="row no-gutters align-items-center">
+                            <div class="col-auto">
+                                <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">@occupancy.ToString("F0")%</div>
+                            </div>
+                            <div class="col">
+                                <div class="progress progress-sm mr-2">
+                                    <div class="progress-bar bg-info" role="progressbar"
+                                         style="width: @occupancy.ToString("F0")%" aria-valuenow="@occupancy.ToString("F0")" aria-valuemin="0"
+                                         aria-valuemax="100"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chart-pie fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">@Model.EventName</h6>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-2">
+                Event Image
+            </dt>
+            <dd class="col-sm-10 mb-3">
+                <img src="@(string.IsNullOrEmpty(Model.EventImg) ? "~/Content/Uploads/noimage.png" : "/Content/Uploads/Events/" + Model.EventImg)"
+                     alt="@Model.EventName" style="max-width: 300px; border-radius: 5px;" />
+            </dd>
+            <dt class="col-sm-2">
+                Event Name
+            </dt>
+            <dd class="col-sm-10">
+                @Html.DisplayFor(model => model.EventName)
+            </dd>
+            <dt class="col-sm-2">
+                Location
+            </dt>
+            <dd class="col-sm-10">
+                @Html.DisplayFor(model => model.EventTenantPosition.TenantPositionLocation)
+            </dd>
+            <dt class="col-sm-2">
+                Start Time
+            </dt>
+            <dd class="col-sm-10">
+                @Model.EventStart.ToString("F")
+            </dd>
+            <dt class="col-sm-2">
+                End Time
+            </dt>
+            <dd class="col-sm-10">
+                @Model.EventEnd.ToString("F")
+            </dd>
+            <dt class="col-sm-2">
+                Max Slots
+            </dt>
+            <dd class="col-sm-10">
+                @Html.DisplayFor(model => model.EventMaxSlot)
+            </dd>
+            <dt class="col-sm-2">
+                Status
+            </dt>
+            <dd class="col-sm-10">
+                @if (Model.EventStatus == 1)
+                {
+                    <span class="badge badge-success">Active</span>
+                }
+                else
+                {
+                    <span class="badge badge-secondary">Inactive</span>
+                }
+            </dd>
+            <dt class="col-sm-2">
+                Description
+            </dt>
+            <dd class="col-sm-10">
+                @Html.DisplayFor(model => model.EventDescription)
+            </dd>
+        </dl>
+    </div>
+    <div classs="card-footer" style="padding: 1.25rem;">
+        <a asp-action="Edit" asp-route-id="@Model.EventId" class="btn btn-warning">Edit</a>
+        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+    </div>
+</div>

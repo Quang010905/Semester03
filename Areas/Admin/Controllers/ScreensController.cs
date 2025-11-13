@@ -1,17 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Semester03.Areas.Admin.Models;
 using Semester03.Models.Entities;
 using Semester03.Models.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Semester03.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = "1")]
     public class ScreensController : Controller
     {
 
@@ -77,6 +74,13 @@ namespace Semester03.Areas.Admin.Controllers
             ModelState.Remove("ScreenCinemaId");
             ModelState.Remove("ScreenCinema");
 
+            // --- Business Logic Validation ---
+            if (tblScreen.ScreenSeats <= 0)
+            {
+                ModelState.AddModelError("ScreenSeats", "Total Seats must be greater than 0.");
+            }
+            // --- END VALIDATION ---
+
             // Re-check model state after adding the ID
             if (ModelState.IsValid)
             {
@@ -111,7 +115,19 @@ namespace Semester03.Areas.Admin.Controllers
             ModelState.Remove("ScreenCinema");
             if (id != tblScreen.ScreenId) return NotFound();
 
-            
+            // --- Business Logic Validation ---
+            if (tblScreen.ScreenSeats <= 0)
+            {
+                ModelState.AddModelError("ScreenSeats", "Total Seats must be greater than 0.");
+            }
+
+            // ADVANCED CHECK: Prevent reducing capacity below current defined seats
+            var currentSeatCount = await _context.TblSeats.CountAsync(s => s.SeatScreenId == id);
+            if (tblScreen.ScreenSeats < currentSeatCount)
+            {
+                ModelState.AddModelError("ScreenSeats", $"Cannot set capacity to {tblScreen.ScreenSeats}. This screen already has {currentSeatCount} seats defined.");
+            }
+            // --- END VALIDATION ---
 
             if (ModelState.IsValid)
             {

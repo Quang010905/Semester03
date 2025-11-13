@@ -1,0 +1,86 @@
+﻿@model IEnumerable<Semester03.Models.Entities.TblCoupon>
+
+@{
+    ViewData["Title"] = "Coupon Management";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<h1 class="h3 mb-2 text-gray-800">Coupon Management</h1>
+<p class="mb-4">Create and manage discount coupons for customers.</p>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Create New Coupon</a>
+</p>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Coupon List</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Name/Code</th>
+                        <th>Discount</th>
+                        <th>Valid From</th>
+                        <th>Valid To</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.CouponName)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.CouponDiscountPercent)%
+                            </td>
+                            <td>
+                                @item.CouponValidFrom.ToString("g")
+                            </td>
+                            <td>
+                                @item.CouponValidTo.ToString("g")
+                            </td>
+                            <td>
+                                @if (item.CouponIsActive == true)
+                                {
+                                    <span class="badge badge-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="Edit" asp-route-id="@item.CouponId" class="btn btn-warning btn-sm">Edit</a>
+                                <a asp-action="Details" asp-route-id="@item.CouponId" class="btn btn-info btn-sm">Details</a>
+                                <a asp-action="Delete" asp-route-id="@item.CouponId" class="btn btn-danger btn-sm">Delete</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+          $('#dataTable').DataTable({"order": [[ 3, "desc" ]]});
+        });
+    </script>
+}

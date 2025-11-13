@@ -1,19 +1,14 @@
 ﻿// File: Areas/Admin/Controllers/MoviesController.cs
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Semester03.Models.Entities;
-
-// Add these 'using' statements for file upload
-using Microsoft.AspNetCore.Http; // For IFormFile
-using System.IO; // For Path
-using System; // For Guid
-using System.Threading.Tasks;
-using Semester03.Models.Repositories; // For Task
+using Semester03.Models.Repositories;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Semester03.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = "1")]
     // [Authorize(Roles = "Super Admin, Mall Manager")]
     public class MoviesController : Controller
     {
@@ -76,6 +71,21 @@ namespace Semester03.Areas.Admin.Controllers
                 ModelState.AddModelError("MovieImg", "A poster image is required.");
             }
 
+            // --- Business Logic Validation ---
+            if (tblMovie.MovieDurationMin <= 0)
+            {
+                ModelState.AddModelError("MovieDurationMin", "Duration must be greater than 0 minutes.");
+            }
+            if (tblMovie.MovieStartDate.Date < DateTime.Now.Date)
+            {
+                ModelState.AddModelError("MovieStartDate", "Start Date cannot be in the past.");
+            }
+            if (tblMovie.MovieEndDate <= tblMovie.MovieStartDate)
+            {
+                ModelState.AddModelError("MovieEndDate", "End Date must be after the Start Date.");
+            }
+            // --- END VALIDATION ---
+
             // 4. Now, check ModelState
             if (ModelState.IsValid)
             {
@@ -114,6 +124,21 @@ namespace Semester03.Areas.Admin.Controllers
             IFormFile? imageFile)
         {
             if (id != tblMovie.MovieId) return NotFound();
+
+            // --- Business Logic Validation ---
+            if (tblMovie.MovieDurationMin <= 0)
+            {
+                ModelState.AddModelError("MovieDurationMin", "Duration must be greater than 0 minutes.");
+            }
+            if (tblMovie.MovieEndDate <= tblMovie.MovieStartDate)
+            {
+                ModelState.AddModelError("MovieEndDate", "End Date must be after the Start Date.");
+            }
+            if (tblMovie.MovieRate < 0 || tblMovie.MovieRate > 5)
+            {
+                ModelState.AddModelError("MovieRate", "Rating must be between 0 and 5.");
+            }
+            // --- END VALIDATION ---
 
             if (ModelState.IsValid)
             {

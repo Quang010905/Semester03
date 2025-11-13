@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Semester03.Areas.Admin.Models;
 using Semester03.Models.Entities;
@@ -7,6 +8,7 @@ namespace Semester03.Areas.Admin.Controllers
 {
     [Area("Admin")]
     // [Authorize(Roles = "Super Admin, Mall Manager")] // Sẽ thêm khi làm Login
+    [Authorize(Roles = "1")]
     public class AdminController : Controller
     {
         private readonly AbcdmallContext _context;

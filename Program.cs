@@ -46,7 +46,9 @@ builder.Services.AddScoped<CinemaRepository>();
 builder.Services.AddScoped<ScreenRepository>();
 builder.Services.AddScoped<TenantRepository>();
 builder.Services.AddScoped<EventRepository>();
+builder.Services.AddScoped<EventBookingRepository>();
 builder.Services.AddScoped<TenantTypeRepository>();
+builder.Services.AddScoped<CouponRepository>();
 
 // ===== Register other services =====
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));

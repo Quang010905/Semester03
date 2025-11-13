@@ -18,14 +18,9 @@
                 Poster Image
             </dt>
             <dd class="col-sm-10 mb-3">
-                @if (!string.IsNullOrEmpty(Model.MovieImg))
-                {
-                    <img src="~/Content/Uploads/Movies/@Model.MovieImg" alt="@Model.MovieTitle" style="max-width: 200px; border-radius: 5px;" />
-                }
-                else
-                {
-                    <span>No image</span>
-                }
+                <img src="@(string.IsNullOrEmpty(Model.MovieImg) ? "~/Content/Uploads/noimage.png" : "~/Content/Uploads/Movies/" + Model.MovieImg)"
+                     alt="@Model.MovieTitle"
+                     style="max-width: 200px; border-radius: 5px;" />
             </dd>
             <dt class="col-sm-2">
                 Movie Title
