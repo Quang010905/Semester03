@@ -28,6 +28,15 @@ namespace Semester03.Models.Repositories
             return await _db.TblScreens.FindAsync(id);
         }
 
+        public async Task<TblScreen> GetByIdWithDetailsAsync(int id)
+        {
+            // This specific method loads the related data needed for the Details page
+            return await _db.TblScreens
+                .Include(s => s.ScreenCinema) // Load the Cinema Name
+                .Include(s => s.TblSeats)     // Load the list of Seats
+                .FirstOrDefaultAsync(m => m.ScreenId == id);
+        }
+
         public async Task<TblScreen> AddAsync(TblScreen entity)
         {
             _db.TblScreens.Add(entity);

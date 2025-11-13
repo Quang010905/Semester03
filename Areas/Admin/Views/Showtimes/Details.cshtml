@@ -1,0 +1,132 @@
+﻿@model Semester03.Models.Entities.TblShowtime
+
+@{
+    ViewData["Title"] = "Showtime Details";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+    int totalSeats = Model.ShowtimeScreen?.ScreenSeats ?? 0;
+    int soldSeats = Model.TblShowtimeSeats.Count(s => s.ShowtimeSeatStatus.ToLower() == "sold");
+    int availableSeats = Model.TblShowtimeSeats.Count(s => s.ShowtimeSeatStatus.ToLower() == "available");
+    decimal occupancy = (totalSeats > 0) ? ((decimal)soldSeats / totalSeats) * 100 : 0;
+}
+
+<h1 class="h3 mb-2 text-gray-800">Showtime Details</h1>
+<div class="row">
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-danger shadow h-100 py-2">
+            <div class="card-body">
+
+                <a asp-controller="Tickets" asp-action="Index" asp-route-showtimeId="@Model.ShowtimeId"
+                   style="text-decoration: none; color: inherit; display: block;">
+
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Seats Sold (Click to view)
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@soldSeats / @totalSeats</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-ticket-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </a>
+
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Seats Available
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@availableSeats</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chair fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Occupancy
+                        </div>
+                        <div class="row no-gutters align-items-center">
+                            <div class="col-auto">
+                                <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">@occupancy.ToString("F0")%</div>
+                            </div>
+                            <div class="col">
+                                <div class="progress progress-sm mr-2">
+                                    <div class="progress-bar bg-info" role="progressbar"
+                                         style="width: @occupancy.ToString("F0")%" aria-valuenow="@occupancy.ToString("F0")" aria-valuemin="0"
+                                         aria-valuemax="100"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chart-pie fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">@Model.ShowtimeMovie.MovieTitle</h6>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-2">
+                Movie
+            </dt>
+            <dd class="col-sm-10">
+                @Html.DisplayFor(model => model.ShowtimeMovie.MovieTitle)
+            </dd>
+            <dt class="col-sm-2">
+                Screen
+            </dt>
+            <dd class="col-sm-10">
+                @Html.DisplayFor(model => model.ShowtimeScreen.ScreenName)
+            </dd>
+            <dt class="col-sm-2">
+                Start Time
+            </dt>
+            <dd class="col-sm-10">
+                @Model.ShowtimeStart.ToString("F")
+            </dd>
+            <dt class="col-sm-2">
+                Price
+            </dt>
+            <dd class="col-sm-10">
+                @Model.ShowtimePrice.ToString("N0") VND
+            </dd>
+        </dl>
+    </div>
+    <div class="card-footer" style="padding: 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+
+        <div>
+            <a asp-action="Edit" asp-route-id="@Model.ShowtimeId" class="btn btn-warning">Edit</a>
+            <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+        </div>
+
+        <div>
+            <form asp-action="CancelAllTickets" asp-route-id="@Model.ShowtimeId" method="post" style="margin-bottom: 0;">
+                <button type="submit" class="btn btn-danger"
+                        onclick="return confirm('DANGER: This will cancel ALL sold tickets for this showtime and make their seats available again. This action cannot be undone. Are you sure?')">
+                    <i class="fas fa-exclamation-triangle"></i> Cancel All Tickets
+                </button>
+            </form>
+        </div>
+
+    </div>
+</div>
