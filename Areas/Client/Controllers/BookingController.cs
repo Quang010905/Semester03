@@ -11,7 +11,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Semester03.Services;
+using Semester03.Services.Email;
 
 namespace Semester03.Areas.Client.Controllers
 {
@@ -324,7 +324,37 @@ namespace Semester03.Areas.Client.Controllers
 
                 int? buyerId = null;
                 var claim = User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (!string.IsNullOrWhiteSpace(claim) && int.TryParse(claim, out var parsedBuyer)) buyerId = parsedBuyer;
+                if (!string.IsNullOrWhiteSpace(claim) && int.TryParse(claim, out var parsedBuyer))
+                {
+                    buyerId = parsedBuyer;
+                    _logger.LogInformation("PaymentSuccess: buyerId from claim = {BuyerId}", buyerId);
+                }
+                else
+                {
+                    // Fallback 1: pending cookie (best when using external payment gateway)
+                    if (Request.Cookies.TryGetValue("GigaMall_PendingBuyerId", out var pendingIdStr) && int.TryParse(pendingIdStr, out var pendingId))
+                    {
+                        buyerId = pendingId;
+                        _logger.LogInformation("PaymentSuccess: buyerId from GigaMall_PendingBuyerId cookie = {BuyerId}", buyerId);
+
+                        // remove the pending cookie immediately
+                        Response.Cookies.Append("GigaMall_PendingBuyerId", "", new Microsoft.AspNetCore.Http.CookieOptions
+                        {
+                            Expires = DateTimeOffset.UtcNow.AddDays(-1),
+                            Path = "/"
+                        });
+                    }
+                    else if (Request.Cookies.TryGetValue("GigaMall_LastUserId", out var lastUserIdStr) && int.TryParse(lastUserIdStr, out var lastUserId))
+                    {
+                        // Fallback 2: last user id cookie set at login/register
+                        buyerId = lastUserId;
+                        _logger.LogInformation("PaymentSuccess: buyerId from GigaMall_LastUserId cookie = {BuyerId}", buyerId);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("PaymentSuccess: No buyerId found via claim or cookies. Email will not be sent automatically.");
+                    }
+                }
 
                 var seatMappingsResult = new List<(int ShowtimeSeatId, string SeatLabel)>();
 
@@ -522,7 +552,12 @@ namespace Semester03.Areas.Client.Controllers
                             {
                                 if (buyerId.HasValue)
                                 {
+                                    _logger.LogInformation("PaymentSuccess: Calling SendTicketsEmailAsync for user {UserId}", buyerId.Value);
                                     await _ticketEmailService.SendTicketsEmailAsync(buyerId.Value, showtimeSeatIds);
+                                }
+                                else
+                                {
+                                    _logger.LogWarning("PaymentSuccess: buyerId is null, skipping SendTicketsEmailAsync. Consider storing buyer info or passing email in return.");
                                 }
                             }
                             catch (Exception exEmail)
