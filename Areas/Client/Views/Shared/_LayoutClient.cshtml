@@ -473,7 +473,7 @@
                     </div>
 
                     @{
-                        var _eventRepo = Semester03.Areas.Client.Repositories.EventRepository.Instance;
+                        var _eventRepo = Semester03.Models.Repositories.EventRepository.Instance;
                         var topEvents = await _eventRepo.GetUpcomingEventsAsync(12);
                     }
 

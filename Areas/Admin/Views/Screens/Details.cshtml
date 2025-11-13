@@ -1,34 +1,335 @@
-﻿@model Semester03.Models.Entities.TblScreen
+﻿@model Semester03.Areas.Admin.Models.ScreenDetailViewModel
 
 @{
-    ViewData["Title"] = "Screen Details";
+    ViewData["Title"] = "Screen Details & Seat Management";
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
 }
 
-<h1 class="h3 mb-2 text-gray-800">Screen Details</h1>
+<style>
+    .seat-grid {
+        display: grid;
+        /* Using auto-fit for responsiveness */
+        grid-template-columns: repeat(auto-fit, minmax(45px, 1fr));
+        gap: 5px;
+        margin-top: 15px;
+    }
+    .seat-button {
+        display: inline-block;
+        width: 45px; /* Slightly smaller for more density */
+        height: 35px;
+        line-height: 35px;
+        text-align: center;
+        border-radius: 5px;
+        font-weight: bold;
+        text-decoration: none;
+        color: #fff;
+        transition: transform 0.1s ease;
+        font-size: 0.85rem; /* Smaller font */
+        cursor: pointer; /* Make it look clickable */
+    }
+    .seat-button:hover {
+        transform: scale(1.1);
+        color: #fff;
+    }
+    .seat-active {
+        background-color: #1cc88a; /* SB Admin Green */
+        border: 1px solid #169b6b;
+    }
+    .seat-inactive {
+        background-color: #e74a3b; /* SB Admin Red */
+        border: 1px solid #be2617;
+    }
+    /* This creates an empty, invisible box to hold the grid slot */
+    .seat-placeholder {
+        width: 45px;
+        height: 35px;
+        visibility: hidden;
+    }
+</style>
 
-<div class="card shadow mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">@Model.ScreenName</h6>
+<h1 class="h3 mb-2 text-gray-800">Screen Details: @Model.Screen.ScreenName</h1>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<div class="row">
+
+    <div class="col-lg-8">
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Seat Management & Preview</h6>
+                @if (Model.Screen.TblSeats.Any())
+                {
+                    <button id="showCreateFormButton" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus fa-sm"></i> Add Individual Seat
+                    </button>
+                }
+            </div>
+            <div class="card-body">
+                @if (!Model.Screen.TblSeats.Any())
+                {
+                    <h5 class="text-center">This screen has no seats defined.</h5>
+                    <p class="text-center">Use the generator to create seats in bulk (e.g., 6 Rows, 10 Columns).</p>
+                    <hr>
+                    <form asp-controller="Seats" asp-action="BatchCreate" method="post" class="form-inline justify-content-center">
+                        <input type="hidden" name="ScreenId" value="@Model.Screen.ScreenId" />
+                        <label class="sr-only" for="NumRows">Rows</label>
+                        <input type="number" name="NumRows" class="form-control mb-2 mr-sm-2" placeholder="Number of Rows (e.g., 6)">
+                        <label class="sr-only" for="NumCols">Columns</label>
+                        <input type="number" name="NumCols" class="form-control mb-2 mr-sm-2" placeholder="Seats per Row (e.g., 10)">
+                        <button type="submit" class="btn btn-success mb-2">Generate Seats</button>
+                    </form>
+                }
+                else
+                {
+                    <p>Click a seat to select it for editing.</p>
+                    <p>
+                        <span class="badge badge-success">Active</span> = Usable seat
+                        <span class="badge badge-danger">Inactive</span> = Broken/Disabled seat
+                    </p>
+                    
+                    
+                        // 1. Find the maximum column number to build the grid
+                        var maxCol = Model.Screen.TblSeats.Any() ? Model.Screen.TblSeats.Max(s => s.SeatCol) : 10;
+                    
+                    
+                    @foreach (var rowGroup in Model.Screen.TblSeats.GroupBy(s => s.SeatRow).OrderBy(g => g.Key))
+                    {
+                        <div class="d-flex align-items-center mb-2">
+                            <strong class="mr-3" style="width: 20px;">@rowGroup.Key:</strong>
+                            
+                            <div class="seat-grid" style="grid-template-columns: repeat(@maxCol, minmax(45px, 1fr));">
+                                
+                                @for (int c = 1; c <= maxCol; c++)
+                                {
+                                    // 4. Find the seat that *belongs* in this column
+                                    var seat = rowGroup.FirstOrDefault(s => s.SeatCol == c);
+                                    
+                                    @if (seat != null)
+                                    {
+                                        // 5. IF SEAT EXISTS: Render the button
+                                        string seatClass = (seat.SeatIsActive ?? false) ? "seat-active" : "seat-inactive";
+                                        <a class="seat-button @seatClass edit-seat-btn"
+                                           title="Edit Seat @seat.SeatLabel"
+                                           data-seat-id="@seat.SeatId"
+                                           data-seat-label="@seat.SeatLabel"
+                                           data-seat-row="@seat.SeatRow"
+                                           data-seat-col="@seat.SeatCol"
+                                           data-seat-active="@(seat.SeatIsActive ?? false ? "true" : "false")">
+                                            @seat.SeatLabel
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        // 6. IF SEAT IS NULL: Render a placeholder
+                                        <div class="seat-placeholder"></div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="card shadow mb-4" id="seatFormCard" style="display:none;">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary" id="seatFormTitle">Seat Details</h6>
+            </div>
+            <div class="card-body">
+                <form id="seatForm" method="post">
+                    <div asp-validation-summary="All" class="text-danger"></div>
+                    
+                    <input type="hidden" id="Form_SeatId" name="SeatId" />
+                    <input type="hidden" id="Form_ScreenId" name="SeatScreenId" value="@Model.Screen.ScreenId" />
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="Form_SeatRow">Row</label>
+                                <input id="Form_SeatRow" name="SeatRow" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="Form_SeatCol">Column</label>
+                                <input id="Form_SeatCol" name="SeatCol" class="form-control" type="number" />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="Form_SeatLabel">Seat Label</label>
+                                <input id="Form_SeatLabel" name="SeatLabel" class="form-control" />
+                                <small id="labelHelp" class="form-text text-muted">Auto-filled, but can be edited.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="control-label">Status</label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="SeatIsActive" id="statusActive" value="true">
+                                <label class="form-check-label" for="statusActive">Active (Usable)</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="SeatIsActive" id="statusInactive" value="false">
+                                <label class="form-check-label" for="statusInactive">Inactive (Broken)</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="submit" id="formSubmitButton" value="Save" class="btn btn-primary" />
+                        <button type="button" id="cancelFormButton" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
     </div>
-    <div class="card-body">
-        <dl class="row">
-            <dt class="col-sm-2">
-                Screen Name
-            </dt>
-            <dd class="col-sm-10">
-                @Html.DisplayFor(model => model.ScreenName)
-            </dd>
-            <dt class="col-sm-2">
-                Total Seats
-            </dt>
-            <dd class="col-sm-10">
-                @Html.DisplayFor(model => model.ScreenSeats)
-            </dd>
-        </dl>
+
+    <div class="col-lg-4">
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Screen Properties</h6>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class = "col-sm-5">Screen Name</dt>
+                    <dd class = "col-sm-7">@Html.DisplayFor(model => model.Screen.ScreenName)</dd>
+                    
+                    <dt class = "col-sm-5">Cinema</dt>
+                    <dd class = "col-sm-7">@Html.DisplayFor(model => model.Screen.ScreenCinema.CinemaName)</dd>
+
+                    <dt class = "col-sm-5">Capacity</dt>
+                    <dd class = "col-sm-7">@Html.DisplayFor(model => model.Screen.ScreenSeats) seats</dd>
+                    
+                    <dt class = "col-sm-5">Defined Seats</dt>
+                    <dd class = "col-sm-7">@Model.Screen.TblSeats.Count()</dd>
+                </dl>
+            </div>
+            <div classs="card-footer" style="padding: 1.25rem;">
+                <a asp-action="Edit" asp-route-id="@Model.Screen.ScreenId" asp-route-returnUrl="@Url.Action("Details", "Screens", new { id = Model.Screen.ScreenId })" class="btn btn-warning btn-block">Edit Screen Properties</a>
+                <a asp-action="Index" class="btn btn-secondary btn-block mt-2">Back to Screen List</a>
+            </div>
+        </div>
+
     </div>
-    <div classs="card-footer" style="padding: 1.25rem;">
-        <a asp-action="Edit" asp-route-id="@Model.ScreenId" class="btn btn-warning">Edit</a>
-        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
-    </div>
+
 </div>
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+
+            var formCard = $('#seatFormCard');
+            var form = $('#seatForm');
+            var formTitle = $('#seatFormTitle');
+            var formSubmit = $('#formSubmitButton');
+
+            var inputId = $('#Form_SeatId');
+            var inputLabel = $('#Form_SeatLabel');
+            var inputRow = $('#Form_SeatRow');
+            var inputCol = $('#Form_SeatCol');
+
+            // This flag tracks if the user is typing in the Label box
+            var isLabelManual = false;
+
+            // === MODIFIED: Auto-label logic (works in both modes) ===
+            function updateLabel() {
+                // Only update if user has NOT typed in the label box manually
+                if (!isLabelManual) {
+                    var row = inputRow.val().trim().toUpperCase();
+                    var col = inputCol.val().trim();
+
+                    if (row && col) {
+                        inputLabel.val(row + col);
+                    } else {
+                        inputLabel.val('');
+                    }
+                }
+            }
+
+            // Add event listeners to Row and Col inputs
+            inputRow.on('input', updateLabel);
+            inputCol.on('input', updateLabel);
+
+            // If user types in Label, set manual flag
+            inputLabel.on('input', function() {
+                isLabelManual = true; // User is typing manually
+            });
+
+            // --- Click handler for "Add New Seat" button ---
+            $('#showCreateFormButton').on('click', function() {
+                formTitle.text('Add Individual Seat');
+                formTitle.removeClass('text-warning').addClass('text-primary');
+                formSubmit.val('Create Seat').removeClass('btn-warning').addClass('btn-primary');
+                form.attr('action', '@Url.Action("Create", "Seats")');
+
+                // Clear all fields
+                inputId.val('0'); // Set ID to 0 for creation
+                inputLabel.val('');
+                inputRow.val('');
+                inputCol.val('');
+                $('#statusActive').prop('checked', true);
+
+                inputLabel.prop('readonly', false);
+                isLabelManual = false; // Reset manual flag
+
+                formCard.slideDown();
+            });
+
+            // --- Click handler for any Seat on the Grid ---
+            $('.edit-seat-btn').on('click', function() {
+                var button = $(this);
+
+                // Get data from the clicked button
+                var id = button.data('seat-id');
+                var label = button.data('seat-label');
+                var row = button.data('seat-row');
+                var col = button.data('seat-col');
+                var isActive = button.data('seat-active').toString().toLowerCase() === 'true';
+
+                // ... (Set form title, button text)
+                formTitle.text('Edit Seat: ' + label);
+                formTitle.removeClass('text-primary').addClass('text-warning');
+                formSubmit.val('Save Changes').removeClass('btn-primary').addClass('btn-warning');
+
+                // Set form action to EDIT
+                form.attr('action', '@Url.Action("Edit", "Seats")/' + id);
+
+                inputLabel.prop('readonly', false);
+
+                // === MODIFIED: Reset manual flag for Edit mode ===
+                isLabelManual = false;
+
+                // Populate the form fields
+                inputId.val(id);
+                inputLabel.val(label);
+                inputRow.val(row);
+                inputCol.val(col);
+                if (isActive) {
+                    $('#statusActive').prop('checked', true);
+                } else {
+                    $('#statusInactive').prop('checked', true);
+                }
+
+                formCard.slideDown();
+            });
+
+            // --- Click handler for "Cancel" button ---
+            $('#cancelFormButton').on('click', function() {
+                formCard.slideUp();
+            });
+
+        });
+    </script>
+}

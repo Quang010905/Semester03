@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Semester03.Areas.Client.Models.ViewModels;
-using Semester03.Areas.Client.Repositories;
 using Semester03.Models.Entities;
 using Semester03.Services.Vnpay;
 using System;
@@ -11,6 +10,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Semester03.Models.Repositories;
 
 namespace Semester03.Areas.Client.Controllers
 {

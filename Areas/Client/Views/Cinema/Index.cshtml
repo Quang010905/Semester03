@@ -270,8 +270,8 @@
     </div>
 </div>
 
-@using Semester03.Areas.Client.Repositories
 @using Semester03.Areas.Client.Models.ViewModels
+@using Semester03.Models.Repositories
 @{
     var _eventRepo = EventRepository.Instance;
     var topEvents = await _eventRepo.GetUpcomingEventsAsync();

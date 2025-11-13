@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Semester03.Areas.Client.Models.ViewModels;
-using Semester03.Areas.Client.Repositories;
+using Semester03.Models.Repositories;
 
 namespace Semester03.Areas.Client.Controllers
 {

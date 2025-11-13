@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Semester03.Models.Entities;
-using Semester03.Areas.Client.Repositories;
 using Semester03.Services.Vnpay;
 using Semester03.Models.Repositories;
 using Microsoft.AspNetCore.Identity;
@@ -30,6 +29,7 @@ builder.Services.AddScoped<SeatRepository>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<ScreenRepository>();
 builder.Services.AddScoped<TenantRepository>();
+builder.Services.AddScoped<TicketRepository>();
 
 // ====== Đăng ký dịch vụ bổ sung ======
 builder.Services.AddScoped<IPasswordHasher<TblUser>, PasswordHasher<TblUser>>();
