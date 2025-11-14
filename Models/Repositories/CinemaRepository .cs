@@ -13,7 +13,6 @@ namespace Semester03.Models.Repositories
         private readonly AbcdmallContext _db;
         public CinemaRepository(AbcdmallContext db) => _db = db;
 
-        // (các method GetFeaturedMoviesAsync / GetNowShowingAsync giữ nguyên)
         public async Task<List<MovieCardVm>> GetFeaturedMoviesAsync(int top = 3)
         {
             var now = DateTime.UtcNow;
