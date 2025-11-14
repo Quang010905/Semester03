@@ -147,9 +147,5 @@ namespace Semester03.Models.Repositories
                 })
                 .ToList();
         }
-
-
-
-
     }
 }
