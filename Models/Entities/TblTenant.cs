@@ -21,8 +21,6 @@ public partial class TblTenant
 
     public virtual ICollection<TblCustomerComplaint> TblCustomerComplaints { get; set; } = new List<TblCustomerComplaint>();
 
-    public virtual ICollection<TblEventBooking> TblEventBookings { get; set; } = new List<TblEventBooking>();
-
     public virtual ICollection<TblProductCategory> TblProductCategories { get; set; } = new List<TblProductCategory>();
 
     public virtual ICollection<TblTenantPosition> TblTenantPositions { get; set; } = new List<TblTenantPosition>();
