@@ -149,6 +149,7 @@ namespace Semester03.Models.Repositories
                 .ToList();
         }
 
+
         //Thêm tenant 
         public async Task AddAsync(Tenant entity)
         {
@@ -207,6 +208,5 @@ namespace Semester03.Models.Repositories
             }
             return false;
         }
-
     }
 }
