@@ -8,7 +8,7 @@ namespace Semester03.Areas.Admin.Controllers
 {
     [Area("Admin")]
     // [Authorize(Roles = "Super Admin, Mall Manager")] // Sẽ thêm khi làm Login
-    [Authorize(Roles = "1")]
+    //[Authorize(Roles = "1")]
     public class AdminController : Controller
     {
         private readonly AbcdmallContext _context;

@@ -3,6 +3,9 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Semester03.Models.Entities;
+using Semester03.Areas.Admin.Models;
+using System.Globalization;
+using System.Text;
 
 namespace Semester03.Models.Repositories
 {
@@ -96,6 +99,47 @@ namespace Semester03.Models.Repositories
 
             return user;
         }
+        public string NormalizeSearch(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
 
+            string lower = input.ToLowerInvariant();
+            string normalized = lower.Normalize(NormalizationForm.FormD);
+
+            StringBuilder sb = new StringBuilder();
+            foreach (char c in normalized)
+            {
+                UnicodeCategory uc = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (uc != UnicodeCategory.NonSpacingMark)
+                {
+                    sb.Append(c);
+                }
+            }
+
+            return new string(sb.ToString()
+                .Where(c => !char.IsWhiteSpace(c))
+                .ToArray());
+        }
+
+        //Lay danh sach chu shop loc theo trang thai va ngay tao
+        public async Task<List<User>> GetAllUserFilterByStatus()
+        {
+            return await _context.TblUsers
+                .Select(x => new User
+                {
+                    Id = x.UsersId,
+                    Username = x.UsersUsername,
+                    Password = x.UsersPassword,
+                    FullName = x.UsersFullName,
+                    Email = x.UsersEmail,
+                    Phone = x.UsersPhone,
+                    Role = x.UsersRoleId,
+                    Point = x.UsersPoints ?? 0,
+                    CreatedAt = (DateTime)x.UsersCreatedAt,
+                    UpdatedAt = (DateTime)x.UsersUpdatedAt,
+                }).Where(x => x.Role == 3).OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
+        }
     }
 }
