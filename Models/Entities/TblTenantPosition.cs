@@ -19,6 +19,10 @@ public partial class TblTenantPosition
 
     public int? TenantPositionAssignedTenantId { get; set; }
 
+    public decimal? TenantPositionLeftPct { get; set; }
+
+    public decimal? TenantPositionTopPct { get; set; }
+
     public virtual ICollection<TblEvent> TblEvents { get; set; } = new List<TblEvent>();
 
     public virtual TblTenant? TenantPositionAssignedTenant { get; set; }
