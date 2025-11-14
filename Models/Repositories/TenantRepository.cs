@@ -3,6 +3,7 @@ using Semester03.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
+using Semester03.Areas.Admin.Models;
 
 namespace Semester03.Models.Repositories
 {
@@ -148,8 +149,64 @@ namespace Semester03.Models.Repositories
                 .ToList();
         }
 
+        //Thêm tenant 
+        public async Task AddAsync(Tenant entity)
+        {
+            try
+            {
+                var item = new TblTenant
+                {
+                    TenantName = entity.Name,
+                    TenantImg = entity.Image,
+                    TenantTypeId = entity.TypeId,
+                    TenantUserId = entity.UserId,
+                    TenantDescription = entity.Description,
+                    TenantCreatedAt = DateTime.Now
+                };
+                _context.TblTenants.Add(item);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
 
+                throw;
+            }
+        }
+        //Xóa tenant
+        public async Task<bool> Delete(int Id)
+        {
+            try
+            {
+                var item = await _context.TblTenants.FirstOrDefaultAsync(t => t.TenantId == Id);
+                if (item != null)
+                {
+                    _context.TblTenants.Remove(item);
+                    return await _context.SaveChangesAsync() > 0;
+                }
+                return false;
+            }
+            catch (Exception)
+            {
 
+                throw;
+            }
+        }
+        //Update tenant
+        public async Task<bool> Update(Tenant entity)
+        {
+            var q = await _context.TblTenants.FirstOrDefaultAsync(t => t.TenantId == entity.Id);
+            if (q != null)
+            {
+                q.TenantName = entity.Name;
+                q.TenantImg = entity.Image;
+                q.TenantTypeId = entity.TypeId;
+                q.TenantUserId = entity.UserId;
+                q.TenantDescription = entity.Description;
+                q.TenantCreatedAt = DateTime.Now;
+                return await _context.SaveChangesAsync() > 0;
+            }
+            return false;
+        }
 
     }
 }

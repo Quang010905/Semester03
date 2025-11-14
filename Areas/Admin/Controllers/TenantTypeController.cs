@@ -68,7 +68,6 @@ namespace Semester03.Areas.Admin.Controllers
 
         // AddTenantType - async
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<ActionResult> AddTenantType()
         {
             string? name = Request.Form["TenantTypeName"];
@@ -97,12 +96,11 @@ namespace Semester03.Areas.Admin.Controllers
 
             await _tenantTypeRepo.AddAsync(item);
             TempData["SuccessMessage"] = "Add tenant type success";
-            return RedirectToAction("Index");
+            return RedirectToAction("Index","TenantType");
         }
 
         // DeleteTenantType - async
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpGet]
         public async Task<ActionResult> DeleteTenantType(int id)
         {
             bool res = await _tenantTypeRepo.DeleteAsync(id);
@@ -119,7 +117,6 @@ namespace Semester03.Areas.Admin.Controllers
 
         // UpdateTenantType - async
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<ActionResult> UpdateTenantType()
         {
             string? tenantTypeIdRaw = Request.Form["TenantTypeId"];
@@ -165,7 +162,7 @@ namespace Semester03.Areas.Admin.Controllers
                 TempData["ErrorMessage"] = "Update failed";
             }
 
-            return RedirectToAction("Edit", new { id = tenantTypeId });
+            return RedirectToAction("Index", "TenantType");
         }
     }
 }

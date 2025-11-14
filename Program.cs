@@ -22,12 +22,18 @@ builder.Services.AddControllersWithViews()
     //.AddRazorRuntimeCompilation()
     ;
 
+<<<<<<< Updated upstream
 // Đọc chuỗi kết nối từ appsettings.json (BẮT BUỘC có key "ConnectionStrings:DefaultConnection")
 var conn = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(conn))
 {
     throw new InvalidOperationException("Missing connection string 'DefaultConnection' in appsettings.json or environment variables. Please add it to appsettings.json under ConnectionStrings.");
 }
+=======
+// Đọc chuỗi kết nối từ appsettings.json hoặc fallback mặc định
+var conn = builder.Configuration.GetConnectionString("DefaultConnection")
+           ?? "Server=(local);Database=ABCDMall;User Id=sa;Password=123456789;Encrypt=True;TrustServerCertificate=True;MultipleActiveResultSets=True;";
+>>>>>>> Stashed changes
 
 builder.Services.AddDbContext<AbcdmallContext>(options =>
     options.UseSqlServer(conn)
@@ -99,18 +105,24 @@ app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Admin}/{action=Index}/{id?}"
 );
-//app.MapControllerRoute(
-//    name: "default",
-//    pattern: "{controller=Admin}/{action=Index}/{id?}",
-//    defaults: new { area = "Admin" }
-//)
-
-
 app.MapControllerRoute(
+<<<<<<< Updated upstream
     name: "client_default",
     pattern: "{controller=Home}/{action=Index}/{id?}",
     defaults: new { area = "Client" }
+=======
+    name: "default",
+    pattern: "{controller=Admin}/{action=Index}/{id?}",
+    defaults: new { area = "Admin" }
+>>>>>>> Stashed changes
 )
+
+
+//app.MapControllerRoute(
+//    name: "client_default",
+//    pattern: "{controller=Event}/{action=Index}/{id?}",
+//    defaults: new { area = "Client" }
+//)
 
 .WithStaticAssets();
 

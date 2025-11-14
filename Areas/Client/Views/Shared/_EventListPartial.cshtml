@@ -16,8 +16,15 @@
     {
         @foreach (var e in items)
         {
+<<<<<<< Updated upstream
             var title = string.IsNullOrWhiteSpace(e.Title) ? "Event" : e.Title;
             var start = e.StartDate.HasValue ? e.StartDate.Value.ToString("dd MMM yyyy HH:mm") : "--";
+=======
+            var title = e.Title ?? "Event";
+            var start = e.StartDate.HasValue
+            ? e.StartDate.Value.ToString("dd MMM yyyy HH:mm")
+            : "N/A";
+>>>>>>> Stashed changes
             var img = string.IsNullOrWhiteSpace(e.ImageUrl)
             ? Url.Content("~/images/event-placeholder.png")
             : (e.ImageUrl.StartsWith("/") ? Url.Content("~" + e.ImageUrl) : Url.Content("~/images/events/" + e.ImageUrl));
