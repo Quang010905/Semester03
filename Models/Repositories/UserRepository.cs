@@ -97,7 +97,5 @@ namespace Semester03.Models.Repositories
             return user;
         }
 
-        //Lay danh sach chu shop sap xep theo ten va status 
-        public async Task<List>
     }
 }

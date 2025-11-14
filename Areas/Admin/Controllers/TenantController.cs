@@ -13,10 +13,6 @@ namespace Semester03.Areas.Admin.Controllers
             _userRepo = userRepo ?? throw new ArgumentNullException(nameof(userRepo));
         }
 
-        public IActionResult Index()
-        {
-            var listUser = _userRepo.
-            return View();
-        }
+        
     }
 }

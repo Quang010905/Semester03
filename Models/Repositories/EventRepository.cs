@@ -67,15 +67,11 @@ public class EventRepository
 
             if (list != null && list.Any())
                 return list;
-            // nếu danh sách rỗng thì tiếp tục để trả về default phía dưới
         }
         catch (Exception)
         {
-            // Không ném tiếp để tránh crash view — có thể log ở đây nếu repository có ILogger injected.
-            // Ví dụ: _logger?.LogError(ex, "Error fetching upcoming events");
         }
 
-        // --- Trả về danh sách mặc định nếu DB rỗng hoặc có lỗi ---
         var defaults = new List<EventCardVm>(top);
         for (int i = 1; i <= top; i++)
         {
