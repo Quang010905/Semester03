@@ -1,0 +1,196 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+<div style="margin-left:20px; margin-right: 50px">
+    <h2>Create Tenant</h2>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+    @if (ViewBag.itemUser != null)
+    {
+        Semester03.Areas.Admin.Models.User user =
+        (Semester03.Areas.Admin.Models.User)ViewBag.itemUser;
+        <form action="@Url.Action("AddTenant", "Tenant")" method="post">
+            <div class="form-group mb-3">
+                <label>Partner Name</label>
+                <input type="text" class="form-control" name="UserName" value="@user.FullName" style="width: 300px;" required />
+            </div>
+            <input type="text" value="@user.Id" name="UserId"/>
+            <div class="form-group mb-3">
+                <label>Tenant Name</label>
+                <input type="text" class="form-control" name="TenantName" placeholder="Tenant name" style="width: 300px;" required />
+            </div>
+
+            <div class="form-group mb-3">
+                <label>Status</label><br />
+                <input type="hidden" name="IsActiveHidden" value="false" />
+                <input type="checkbox" name="TenantTypeStatus" value="true" id="Active" />
+                <label class="form-check-label" for="Active">Enable</label>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    }
+        <form method="get" action="@Url.Action("Index", "TenantType")">
+            <div>
+                <strong>Search</strong>
+            </div>
+            <div class="input-group mb-3" style="width: 300px;">
+                <input type="text" name="search" value="@ViewBag.Search" placeholder="Enter tenant type name..." class="form-control" />
+                <div class="input-group-append">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+            </div>
+
+            @if (ViewBag.listTenantType != null)
+            {
+                var ls = (List<Semester03.Areas.Admin.Models.TenantType>)ViewBag.listTenantType;
+                if (ls != null && ls.Count > 0)
+                {
+                    int i = ViewBag.StartIndex;
+                    <div class="card shadow mb-4">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered" width="100%" cellspacing="0">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">No</th>
+                                            <th scope="col">Tenant Type Name</th>
+                                            <th scope="col">Status</th>
+                                            <th scope="col">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tfoot>
+                                        <tr>
+                                            <th scope="col">No</th>
+                                            <th scope="col">Tenant Type Name</th>
+                                            <th scope="col">Status</th>
+                                            <th scope="col">Action</th>
+                                        </tr>
+                                    </tfoot>
+                                    <tbody>
+                                        @foreach (var item in ls)
+                                        {
+                                            <tr>
+                                                <th scope="row">@i</th>
+                                                <td>@item.Name</td>
+                                                <td>
+                                                    @if (item.Status == 1)
+                                                    {
+                                                        <span style="color:green">Active</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span style="color:red">InActive</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <a href="@Url.Action("Edit", "TenantType", new {id = item.Id})">
+                                                        <img src="@Url.Content("~/Icon/pen.png")" style="width:1vw; height:2vh;" />
+                                                    </a>
+                                                    <a href="@Url.Action("deleteTenantType", "TenantType", new {id = item.Id})" onclick="return confirm('Are you sure to delete this Tenant Type?')">
+                                                        <img src="@Url.Content("~/Icon/delete.png")" style="width:1vw; height:2vh;" />
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            i++;
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        @{
+                            string search = ViewBag.Search ?? "";
+                        }
+                        <div class="row">
+                            <div class="col-sm-12 col-md-5">
+                                <div class="dataTables_info" role="status" aria-live="polite" style="margin-left:20px">
+                                    @if (ViewBag.TotalItems > 0)
+                                    {
+                                        <text>
+                                            Page @ViewBag.CurrentPage
+                                            of @ViewBag.TotalPages
+                                        </text>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="col-sm-12 col-md-7">
+                                <div class="dataTables_paginate paging_simple_numbers">
+                                    <ul class="pagination">
+                                        <li class="paginate_button page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                                            <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage - 1 , search = search})">Previous</a>
+                                        </li>
+
+                                        @for (int j = 1; j <= ViewBag.TotalPages; j++)
+                                        {
+                                            <li class="paginate_button page-item @(j == ViewBag.CurrentPage ? "active" : "")">
+                                                <a class="page-link" href="@Url.Action("Index", new { page = j, search = search })">@j</a>
+                                            </li>
+                                        }
+
+                                        <li class="paginate_button page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                                            <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage + 1, search = search })">Next</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th scope="col">No</th>
+                                <th scope="col">CateName</th>
+                                <th scope="col">Image</th>
+                                <th scope="col">Active</th>
+                                <th scope="col">Action</th>
+                            </tr>
+                        </thead>
+                        <tfoot>
+                            <tr>
+                                <th scope="col">No</th>
+                                <th scope="col">CateName</th>
+                                <th scope="col">Image</th>
+                                <th scope="col">Active</th>
+                                <th scope="col">Action</th>
+                            </tr>
+                        </tfoot>
+                        <tbody>
+                            <tr>
+                                <td colspan="4" class="text-center">No Category.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                }
+            }
+        </form>
+    </div>
