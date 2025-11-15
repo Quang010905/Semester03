@@ -119,7 +119,7 @@ namespace Semester03.Areas.Client.Controllers
 
             if (user.UsersRoleId == 1)
             {
-                return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
+                return RedirectToAction("Index", "Admin", new { area = "Admin" });
             }
             else if (user.UsersRoleId == 2)
             {
