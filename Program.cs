@@ -101,18 +101,19 @@ app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Admin}/{action=Index}/{id?}"
 );
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Admin}/{action=Index}/{id?}",
-    defaults: new { area = "Admin" }
-)
-
 
 //app.MapControllerRoute(
-//    name: "client_default",
-//    pattern: "{controller=Event}/{action=Index}/{id?}",
-//    defaults: new { area = "Client" }
+//    name: "default",
+//    pattern: "{controller=Admin}/{action=Index}/{id?}",
+//    defaults: new { area = "Admin" }
 //)
+
+
+app.MapControllerRoute(
+    name: "client_default",
+    pattern: "{controller=Home}/{action=Index}/{id?}",
+    defaults: new { area = "Client" }
+)
 
 .WithStaticAssets();
 
