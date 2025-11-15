@@ -1,0 +1,20 @@
+﻿@{
+    ViewData["Title"] = "Đăng ký thất bại";
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="alert alert-danger">
+            <h5>Đăng ký không thành công</h5>
+            <p>@(ViewData["Message"] ?? "Có lỗi xảy ra trong quá trình thanh toán hoặc xử lý đặt chỗ.")</p>
+
+            @if (ViewData["BookingId"] != null && (int)ViewData["BookingId"] > 0)
+            {
+                <p>Mã đặt chỗ: <strong>@ViewData["BookingId"]</strong></p>
+            }
+
+            <a class="btn btn-outline-secondary" href="@Url.Action("Index", "Event", new { area = "Client" })">Quay lại</a>
+        </div>
+    </div>
+</div>

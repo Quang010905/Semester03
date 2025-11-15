@@ -1,10 +1,53 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.EventHomeVm
-@using System.IO
+@using System
+@using System.Linq
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
 
 @{
     ViewData["Title"] = "Events";
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+
+    // helper để chuẩn hóa đường dẫn ảnh (loại bỏ 'wwwroot/' nếu có, encode khoảng trắng)
+    Func<string, string> Img = (raw) =>
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return Url.Content("~/images/event-placeholder.png");
+        }
+
+        // Nếu là URL tuyệt đối (http/https) -> trả thẳng
+        if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        {
+            return raw;
+        }
+
+        // Loại bỏ wwwroot/ nếu có và bỏ ~ hoặc / ở đầu
+        var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
+
+        // Chỉ encode khoảng trắng (không encode dấu '/')
+        s = s.Replace(" ", "%20");
+
+        // Nếu đã bắt đầu bằng "Content/..." (DB lưu đường dẫn tương đối từ wwwroot)
+        if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase))
+        {
+            return Url.Content("~/" + s);
+        }
+
+        // Nếu bắt đầu với "images/..." (ví dụ bạn đặt trong wwwroot/images/...)
+        if (s.StartsWith("images", StringComparison.OrdinalIgnoreCase) || s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
+        {
+            return Url.Content("~/" + s);
+        }
+
+        // Nếu đã là đường dẫn bắt đầu bằng slash
+        if (raw.StartsWith("/"))
+        {
+            return Url.Content("~" + raw);
+        }
+
+        // Mặc định: coi như filename lưu trong wwwroot/Content/Uploads/Events/
+        return Url.Content("~/Content/Uploads/Events/" + s);
+    };
 }
 
 <div class="row g-4">
@@ -15,7 +58,7 @@
             {
                 <div class="col">
                     <div class="card h-100 shadow-sm">
-                        <img src="@(!string.IsNullOrWhiteSpace(e.ImageUrl) ? (e.ImageUrl.StartsWith("/") ? Url.Content("~" + e.ImageUrl) : Url.Content("~/images/events/" + e.ImageUrl)) : Url.Content("~/images/event-placeholder.png"))" class="card-img-top" alt="@e.Title" style="height:160px; object-fit:cover;">
+                        <img src="@Img(e.ImageUrl)" class="card-img-top" alt="@e.Title" style="height:160px; object-fit:cover;">
                         <div class="card-body">
                             <h5 class="card-title text-truncate">@e.Title</h5>
                             <p class="card-text small text-muted">@e.ShortDescription</p>
