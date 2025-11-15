@@ -1,0 +1,546 @@
+﻿@model Semester03.Areas.Client.Models.ViewModels.MapViewModel
+@{
+    Layout = "_LayoutClient";
+    var floor = Model.FloorNumber;
+}
+
+<div class="container py-3">
+    <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+            <h4 class="mb-0">Sơ đồ tầng — Tầng @Model.FloorNumber</h4>
+            <small class="text-muted">Diện tích tầng: @Model.FloorAreaM2 m² · Dành riêng: @Model.ReservedAreaM2 m² · Diện tích ô: @Model.PositionAreaM2 m²</small>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <form id="floorSelectForm" method="get" action="@Url.Action("Index","Map")" class="d-flex align-items-center gap-2 m-0 p-0">
+                <label class="small text-muted mb-0 me-1">Chọn tầng</label>
+                <select id="floorSelect" name="floor" class="form-select form-select-sm" style="min-width:110px;">
+                    @{
+                        var floors = Model.AvailableFloors;
+                        if (floors == null || !floors.Any())
+                        {
+                            floors = new List<int> { 0, 1, 2, 3 };
+                        }
+                    }
+                    @foreach (var f in floors)
+                    {
+                        <option value="@f" @(f == Model.FloorNumber ? "selected" : "")>@(f == 0 ? "G (0)" : "Tầng " + f)</option>
+                    }
+                </select>
+            </form>
+
+            <div>
+                <a class="btn btn-sm btn-outline-secondary" href="@Url.Action("Index","Map", new { floor = Model.FloorNumber })">Làm mới</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card p-3">
+        @* SVG map (read-only customer view) *@
+        <div class="map-frame svg-map-wrapper">
+            @{
+                // canonical viewBox and shop rect size
+                var vbW = 1200m;
+                var vbH = 800m;
+                var defaultRectW = 100m;
+                var defaultRectH = 60m;
+
+                var positions = Model.Positions ?? new List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto>();
+                var withCoords = positions.Where(p => p.TenantPosition_LeftPct.HasValue && p.TenantPosition_TopPct.HasValue).ToList();
+                var withoutCoords = positions.Where(p => !p.TenantPosition_LeftPct.HasValue || !p.TenantPosition_TopPct.HasValue).ToList();
+
+                // elevator visual params & labels by current floor
+                string elev1Fill = "#2b6cb0";
+                string elev2Fill = "#2b6cb0";
+                string elev1Label = "";
+                string elev2Label = "";
+                // show entrance only on ground by default
+                bool showEntrance = (floor == 0);
+
+                switch (floor)
+                {
+                    case 0:
+                        elev1Fill = elev2Fill = "#2b6cb0";
+                        elev1Label = elev2Label = "Thang tầng 0 lên tầng 1";
+                        break;
+                    case 1:
+                        elev1Fill = "#f39c12"; // down
+                        elev2Fill = "#16a34a"; // up
+                        elev1Label = "Tầng 1 xuống tầng 0 (G)";
+                        elev2Label = "Tầng 1 lên tầng 2";
+                        showEntrance = false;
+                        break;
+                    case 2:
+                        elev1Fill = "#f39c12";
+                        elev2Fill = "#16a34a";
+                        elev1Label = "Tầng 2 xuống tầng 1";
+                        elev2Label = "Tầng 2 lên tầng 3";
+                        showEntrance = true;
+                        break;
+                    case 3:
+                        elev1Fill = elev2Fill = "#f39c12";
+                        elev1Label = elev2Label = "Tầng 3 xuống tầng 2";
+                        showEntrance = true;
+                        break;
+                    default:
+                        elev1Fill = elev2Fill = "#2b6cb0";
+                        elev1Label = elev2Label = "";
+                        showEntrance = true;
+                        break;
+                }
+
+                // --------- fixed layout regions (must be declared BEFORE overlap checks) ----------
+                var atrX = 460m; var atrY = 260m; var atrW = 280m; var atrH = 180m;
+                var elevW = 48m;
+                var elevH = atrH - 20m;
+                var elevY = atrY + 10m;
+                var elev1X = atrX + 20m;
+                var elev2X = atrX + atrW - 20m - elevW;
+                var wcX = 1020m; var wcY = 320m;
+                // -------------------------------------------------------------------------------
+
+                // prepare render items with small nudge to avoid overlapping visually (unchanged DB)
+                var placedBoxes = new List<dynamic>();
+                var offsets = new List<(decimal dx, decimal dy)> {
+            (0,0),(8,0),(-8,0),(0,8),(0,-8),(12,12),(-12,12),(12,-12),(-12,-12)
+            };
+
+                // forbidden rectangles — include atrium & elevators & WC so shops won't be placed over them
+                var forbiddenRects = new List<(decimal x, decimal y, decimal w, decimal h, string name)> {
+            (atrX, atrY, atrW, atrH, "atrium"),
+            (elev1X, elevY, elevW, elevH, "elev1"),
+            (elev2X, elevY, elevW, elevH, "elev2"),
+            (wcX, wcY, 44m, 44m, "wc")
+            };
+
+                Func<decimal, decimal, decimal, decimal, bool> isOverlap = (ax, ay, aw, ah) =>
+                {
+                    // check overlap with already placed shops
+                    foreach (var bb in placedBoxes)
+                    {
+                        var bx = (decimal)bb.x;
+                        var by = (decimal)bb.y;
+                        var bw = (decimal)bb.w;
+                        var bh = (decimal)bb.h;
+                        if (!(ax + aw <= bx || bx + bw <= ax || ay + ah <= by || by + bh <= ay))
+                        {
+                            return true;
+                        }
+                    }
+                    // check overlap with forbidden zones (atrium, elevators, wc)
+                    foreach (var fr in forbiddenRects)
+                    {
+                        var bx = fr.x; var by = fr.y; var bw = fr.w; var bh = fr.h;
+                        if (!(ax + aw <= bx || bx + bw <= ax || ay + ah <= by || by + bh <= ay))
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+
+                var renderItems = new List<dynamic>();
+                foreach (var dto in withCoords)
+                {
+                    var leftPct = Math.Max(0m, Math.Min(100m, dto.TenantPosition_LeftPct ?? 0m));
+                    var topPct = Math.Max(0m, Math.Min(100m, dto.TenantPosition_TopPct ?? 0m));
+                    var cx = leftPct / 100m * vbW;
+                    var cy = topPct / 100m * vbH;
+                    var w = defaultRectW;
+                    var h = defaultRectH;
+                    var rx = cx - w / 2m;
+                    var ry = cy - h / 2m;
+                    var minX = 8m; var minY = 8m;
+                    var maxX = vbW - w - 8m; var maxY = vbH - h - 8m;
+                    rx = Math.Max(minX, Math.Min(maxX, rx));
+                    ry = Math.Max(minY, Math.Min(maxY, ry));
+
+                    bool placed = false;
+                    foreach (var off in offsets)
+                    {
+                        var candX = rx + off.dx;
+                        var candY = ry + off.dy;
+                        candX = Math.Max(minX, Math.Min(maxX, candX));
+                        candY = Math.Max(minY, Math.Min(maxY, candY));
+                        if (!isOverlap(candX, candY, w, h))
+                        {
+                            placedBoxes.Add(new { x = candX, y = candY, w = w, h = h, id = dto.TenantPosition_ID });
+                            renderItems.Add(new { dto = dto, x = candX, y = candY, w = w, h = h, leftPct = leftPct, topPct = topPct, nudged = (off.dx != 0 || off.dy != 0) });
+                            placed = true;
+                            break;
+                        }
+                    }
+                    if (!placed)
+                    {
+                        // last resort: place at original cx/ cy but ensure not overlapping forbidden — if overlaps, try shift along Y downward until fit
+                        var tryX = Math.Max(minX, Math.Min(maxX, rx));
+                        var tryY = Math.Max(minY, Math.Min(maxY, ry));
+                        int attempts = 0;
+                        while (isOverlap(tryX, tryY, w, h) && attempts < 40)
+                        {
+                            tryY += 8m;
+                            if (tryY > maxY) tryY = minY;
+                            attempts++;
+                        }
+                        placedBoxes.Add(new { x = tryX, y = tryY, w = w, h = h, id = dto.TenantPosition_ID });
+                        renderItems.Add(new { dto = dto, x = tryX, y = tryY, w = w, h = h, leftPct = leftPct, topPct = topPct, nudged = false });
+                    }
+                }
+            }
+
+            <svg id="mallSvg" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;border-radius:6px;">
+                <defs>
+                    <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#0b1724" flood-opacity="0.06" />
+                    </filter>
+                    <linearGradient id="shopGrad" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stop-color="#ffffff" />
+                        <stop offset="100%" stop-color="#f3f7fb" />
+                    </linearGradient>
+                    <linearGradient id="occupiedGrad" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stop-color="#2b6cb0" />
+                        <stop offset="100%" stop-color="#1e4b7a" />
+                    </linearGradient>
+                    <pattern id="pathPattern" patternUnits="userSpaceOnUse" width="12" height="12">
+                        <rect width="12" height="12" fill="#f3f4f6"></rect>
+                        <path d="M0 8 L8 0" stroke="#e9eef3" stroke-width="1"></path>
+                    </pattern>
+
+                    @* Icons *@
+                    <symbol id="icon-wc" viewBox="0 0 24 24">
+                        <rect x="2" y="2" width="20" height="20" rx="3" fill="#ffecec"></rect>
+                        <path d="M8 9a2 2 0 100 4 2 2 0 000-4z" fill="#8b2b2b"></path>
+                        <rect x="14" y="9" width="3" height="6" rx="1.2" fill="#8b2b2b"></rect>
+                    </symbol>
+
+                    <symbol id="icon-entrance" viewBox="0 0 24 24">
+                        <path d="M6 3v18" stroke="#6b7280" stroke-width="1.4" stroke-linecap="round" fill="none" />
+                        <path d="M18 3v18" stroke="#6b7280" stroke-width="1.4" stroke-linecap="round" fill="none" />
+                        <path d="M6 12h12" stroke="#6b7280" stroke-width="1.4" stroke-linecap="round" fill="none" />
+                    </symbol>
+
+                    @* Arrow symbols (triangles) for elevators (increased size able to scale) *@
+                    <symbol id="arrow-up" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet">
+                        <path d="M12 6 L6 14 H18 L12 6 Z" />
+                    </symbol>
+                    <symbol id="arrow-down" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet">
+                        <path d="M12 18 L6 10 H18 L12 18 Z" />
+                    </symbol>
+                </defs>
+
+                <!-- base -->
+                <rect x="6" y="6" width="1188" height="788" rx="10" ry="10" fill="url(#shopGrad)" stroke="#e6e9ee" stroke-width="2"></rect>
+
+                <!-- pedestrian corridors (highlighted) -->
+                <rect x="60" y="120" width="1080" height="100" rx="8" fill="url(#pathPattern)"></rect>
+                <rect x="60" y="340" width="1080" height="80" rx="8" fill="url(#pathPattern)"></rect>
+                <rect x="60" y="520" width="1080" height="110" rx="8" fill="url(#pathPattern)"></rect>
+
+                @* Entrance icons: show only on floor 0 (G) or as controlled by showEntrance *@
+                @if (showEntrance)
+                {
+                    <use href="#icon-entrance" x="84" y="100" width="24" height="24"></use>
+                    <svg:text x="112" y="118" font-size="11" fill="#6b7280">Cổng vào</svg:text>
+                    <svg:text x="1048" y="658" font-size="11" fill="#6b7280">Lối ra</svg:text>
+                }
+
+                <!-- central atrium -->
+                <g id="atrium">
+                    <rect x="@atrX" y="@atrY" width="@atrW" height="@atrH" rx="12" ry="12" fill="#fffaf0" stroke="#f5c06e" stroke-width="2" filter="url(#softShadow)"></rect>
+                    <text x="@(atrX + atrW/2m)" y="@(atrY + atrH/2m + 6)" text-anchor="middle" font-size="16" font-weight="700" fill="#9a5a0f">Giếng trời</text>
+                </g>
+
+                <!-- elevators: arrows & short badge INSIDE elevator rectangles ("▲1"/"▼1", "▲2"/"▼2") -->
+                <g id="elevators" aria-label="Elevators">
+                    <g class="elev-1" transform="translate(0,0)" role="group" aria-label="Elevator 1">
+                        <rect x="@elev1X" y="@elevY" width="@elevW" height="@elevH" rx="6" ry="6" fill="@elev1Fill" stroke="#12385a" stroke-opacity="0.12" filter="url(#softShadow)"></rect>
+                        @{
+                            // short badge text and arrow direction for elevator 1
+                            string a1 = "neutral";
+                            string badgeText1 = "•1";
+                            if (!string.IsNullOrEmpty(elev1Label))
+                            {
+                                if (elev1Label.Contains("lên")) { a1 = "up"; badgeText1 = "▲1"; }
+                                else if (elev1Label.Contains("xuống")) { a1 = "down"; badgeText1 = "▼1"; }
+                            }
+                        }
+                        @* larger center arrow inside elevator 1 (bigger than before) *@
+                        @if (a1 == "up")
+                        {
+                            <g title="@elev1Label" transform="translate(@(elev1X + elevW/2m - 14), @(elevY + elevH/2m - 16))" class="elevator-arrow" aria-hidden="false">
+                                <use href="#arrow-up" width="28" height="28" fill="#ffffff" stroke="#08304b" stroke-width="0.6" />
+                            </g>
+                        }
+                        else if (a1 == "down")
+                        {
+                            <g title="@elev1Label" transform="translate(@(elev1X + elevW/2m - 14), @(elevY + elevH/2m - 16))" class="elevator-arrow" aria-hidden="false">
+                                <use href="#arrow-down" width="28" height="28" fill="#ffffff" stroke="#08304b" stroke-width="0.6" />
+                            </g>
+                        }
+                        else
+                        {
+                            <g title="@elev1Label" transform="translate(@(elev1X + elevW/2m - 14), @(elevY + elevH/2m - 16))" class="elevator-arrow" aria-hidden="false">
+                                <circle cx="14" cy="14" r="10" fill="#ffffff" stroke="#08304b" stroke-width="0.6" />
+                            </g>
+                        }
+
+                        @* badge with short text (black on white) near bottom inside elevator *@
+                        @{
+                            var badgeW = elevW - 8m;
+                            var badgeX = elev1X + 4m;
+                            var badgeY = elevY + elevH - 22m;
+                        }
+                        <rect x="@badgeX" y="@badgeY" width="@badgeW" height="18" rx="6" fill="#ffffff" opacity="0.98" stroke="#000" stroke-opacity="0.06"></rect>
+                        <text x="@(badgeX + badgeW/2m)" y="@(badgeY + 13)" text-anchor="middle" font-size="12" fill="#0b1724" font-weight="800" dominant-baseline="middle">@badgeText1</text>
+                    </g>
+
+                    <g class="elev-2" transform="translate(0,0)" role="group" aria-label="Elevator 2">
+                        <rect x="@elev2X" y="@elevY" width="@elevW" height="@elevH" rx="6" ry="6" fill="@elev2Fill" stroke="#12385a" stroke-opacity="0.12" filter="url(#softShadow)"></rect>
+                        @{
+                            string a2 = "neutral";
+                            string badgeText2 = "•2";
+                            if (!string.IsNullOrEmpty(elev2Label))
+                            {
+                                if (elev2Label.Contains("lên")) { a2 = "up"; badgeText2 = "▲2"; }
+                                else if (elev2Label.Contains("xuống")) { a2 = "down"; badgeText2 = "▼2"; }
+                            }
+                        }
+                        @* larger center arrow inside elevator 2 *@
+                        @if (a2 == "up")
+                        {
+                            <g title="@elev2Label" transform="translate(@(elev2X + elevW/2m - 14), @(elevY + elevH/2m - 16))" class="elevator-arrow" aria-hidden="false">
+                                <use href="#arrow-up" width="28" height="28" fill="#ffffff" stroke="#08304b" stroke-width="0.6" />
+                            </g>
+                        }
+                        else if (a2 == "down")
+                        {
+                            <g title="@elev2Label" transform="translate(@(elev2X + elevW/2m - 14), @(elevY + elevH/2m - 16))" class="elevator-arrow" aria-hidden="false">
+                                <use href="#arrow-down" width="28" height="28" fill="#ffffff" stroke="#08304b" stroke-width="0.6" />
+                            </g>
+                        }
+                        else
+                        {
+                            <g title="@elev2Label" transform="translate(@(elev2X + elevW/2m - 14), @(elevY + elevH/2m - 16))" class="elevator-arrow" aria-hidden="false">
+                                <circle cx="14" cy="14" r="10" fill="#ffffff" stroke="#08304b" stroke-width="0.6" />
+                            </g>
+                        }
+
+                        @* badge with short text (black on white) near bottom inside elevator *@
+                        @{
+                            var badgeW2 = elevW - 8m;
+                            var badgeX2 = elev2X + 4m;
+                            var badgeY2 = elevY + elevH - 22m;
+                        }
+                        <rect x="@badgeX2" y="@badgeY2" width="@badgeW2" height="18" rx="6" fill="#ffffff" opacity="0.98" stroke="#000" stroke-opacity="0.06"></rect>
+                        <text x="@(badgeX2 + badgeW2/2m)" y="@(badgeY2 + 13)" text-anchor="middle" font-size="12" fill="#0b1724" font-weight="800" dominant-baseline="middle">@badgeText2</text>
+                    </g>
+                </g>
+
+                <!-- WC (placed off-center, not inside atrium) -->
+                <g transform="translate(@wcX,@wcY)">
+                    <use href="#icon-wc" width="44" height="44"></use>
+                    <text x="22" y="58" text-anchor="middle" font-size="10" fill="#8b2b2b">WC</text>
+                </g>
+
+                @* Render shops (from DB coords), with small nudges shown by dashed connector if nudged *@
+                @foreach (var item in renderItems)
+                {
+                    var dto = (Semester03.Areas.Client.Models.ViewModels.TenantPositionDto)item.dto;
+                    var x = (decimal)item.x;
+                    var y = (decimal)item.y;
+                    var w = (decimal)item.w;
+                    var h = (decimal)item.h;
+                    var assigned = dto.TenantPosition_AssignedTenantID.HasValue && dto.TenantPosition_AssignedTenantID.Value > 0;
+                    var cssClass = assigned ? "occupied-shop" : "empty-shop";
+                    var label = !string.IsNullOrEmpty(dto.TenantPosition_Location) ? dto.TenantPosition_Location : "Trống";
+                    var idAttr = dto.TenantPosition_ID.ToString();
+                    var nudged = (bool)item.nudged;
+                    var trueCenterX = (decimal)item.leftPct / 100m * vbW;
+                    var trueCenterY = (decimal)item.topPct / 100m * vbH;
+
+                    if (nudged)
+                    {
+                        <line x1="@(trueCenterX)" y1="@(trueCenterY)" x2="@(x + w/2m)" y2="@(y + h/2m)" stroke="#e2a85f" stroke-dasharray="4 4" stroke-width="1"></line>
+                    }
+
+                    <g class="svg-shop-group" data-id="@idAttr" data-left="@((decimal)item.leftPct)" data-top="@((decimal)item.topPct)" title="@label">
+                        <rect class="@cssClass" x="@x" y="@y" width="@w" height="@h" rx="8" ry="8" filter="url(#softShadow)"></rect>
+
+                        @* ID badge removed per request *@
+
+                        <text x="@(x + w/2m)" y="@(y + 22)" text-anchor="middle" font-size="12" font-weight="700" class="shop-label">@label</text>
+                        <text x="@(x + w/2m)" y="@(y + h - 8)" text-anchor="middle" font-size="10" fill="#6b7280">@((assigned) ? "Có tenant" : "Trống")</text>
+                    </g>
+                }
+
+            </svg>
+        </div>
+
+        <div class="map-legend mt-2">
+            <g transform="translate(70,748)">
+                <rect x="-12" y="-6" width="520" height="74" rx="8" fill="#ffffff" opacity="0.98" stroke="#e9eef3"></rect>
+
+                <g transform="translate(8,8)">
+                    <rect x="0" y="0" width="14" height="14" rx="3" fill="#dbeafe" stroke="#93c0ff"></rect>
+                    <text x="22" y="12" font-size="12" fill="#2b6cb0">Có tenant</text>
+
+                    <rect x="0" y="20" width="14" height="14" rx="3" fill="#ffffff" stroke="#e6e9ee"></rect>
+                    <text x="22" y="32" font-size="12" fill="#6b7280">Trống</text>
+
+                    <rect x="0" y="40" width="14" height="14" rx="3" fill="#fffaf0" stroke="#f5c06e"></rect>
+                    <text x="22" y="52" font-size="12" fill="#9a5a0f">Giếng trời</text>
+                </g>
+            </g>
+        </div>
+    </div>
+
+    @* show list of positions without coords for admin awareness (unchanged) *@
+    @if (withoutCoords.Any())
+    {
+        <div class="card mt-3 p-3">
+            <h6>Ô chưa có toạ độ (không hiển thị trên map)</h6>
+            <ul>
+                @foreach (var nc in withoutCoords)
+                {
+                    <li><strong>@nc.TenantPosition_Location</strong> — @nc.TenantPosition_Area_M2 m² — ID: @nc.TenantPosition_ID</li>
+                }
+            </ul>
+            <small class="text-muted">Để hiển thị chính xác, admin cần cập nhật TenantPosition_LeftPct / TenantPosition_TopPct (theo viewBox 1200×800).</small>
+        </div>
+    }
+</div>
+
+<!-- modal for read-only view -->
+<div class="modal fade" id="posModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thông tin ô</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="posModalBody">
+                <div class="text-center py-3 text-muted">Đang tải...</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .svg-map-wrapper {
+            background: linear-gradient(180deg,#fff,#fbfdff);
+            padding: 12px;
+            border-radius: .6rem;
+            box-shadow: 0 6px 20px rgba(20,30,40,0.05);
+            overflow: visible;
+        }
+
+        .occupied-shop {
+            fill: url(#occupiedGrad);
+            stroke: rgba(0,0,0,0.08);
+        }
+
+        .empty-shop {
+            fill: url(#shopGrad);
+            stroke: rgba(10,20,40,0.06);
+        }
+
+        .svg-shop-group {
+            cursor: pointer;
+        }
+
+            .svg-shop-group:hover rect {
+                stroke-width: 2.4;
+                filter: drop-shadow(0 10px 24px rgba(10,20,40,0.12));
+                transform: translateY(-3px);
+                transition: all .12s ease;
+            }
+
+        .shop-label {
+            pointer-events: none;
+            fill: #0b1724;
+        }
+
+        /* elevator arrow group (no pointer events) */
+        .elevator-arrow {
+            pointer-events: none;
+        }
+
+        @@media (max-width: 767px) {
+            svg #mallSvg
+
+        {
+            height: 520px !important;
+        }
+
+        .shop-label {
+            font-size: 11px !important;
+        }
+
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        (function(){
+            // floor select
+            var floorSelect = document.getElementById('floorSelect');
+            if (floorSelect) floorSelect.addEventListener('change', function(){ document.getElementById('floorSelectForm').submit(); });
+
+            // modal / click to show info (read-only)
+            var svg = document.getElementById('mallSvg');
+            if (!svg) return;
+            var bsModal = new bootstrap.Modal(document.getElementById('posModal'));
+            var modalBody = document.getElementById('posModalBody');
+
+            function onShopClick(e) {
+                e.stopPropagation();
+                var g = e.currentTarget;
+                var id = parseInt(g.getAttribute('data-id') || '0', 10);
+                if (!id || id <= 0) return;
+                modalBody.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary" role="status"></div><div class="mt-2 text-muted">Đang tải...</div></div>';
+                bsModal.show();
+                fetch('@Url.Action("GetPositionJson", "Map", new { area = "Client" })?id=' + id)
+                .then(function(r){ if (!r.ok) throw new Error('notfound'); return r.json(); })
+                .then(function(data){
+                    var html = '<div class="d-flex gap-3">';
+                    if (data.Tenant && data.Tenant.Tenant_Img) {
+                        html += '<div style="flex:0 0 96px"><img src="' + data.Tenant.Tenant_Img + '" class="img-fluid rounded" alt="tenant img" /></div>';
+                        html += '<div style="flex:1">';
+                        html += '<h5 class="mb-1">' + (data.Tenant.Tenant_Name || data.TenantPosition_Location || 'Tenant') + '</h5>';
+                    } else {
+                        html += '<div style="flex:1">';
+                        html += '<h5 class="mb-1">' + (data.Tenant && data.Tenant.Tenant_Name ? data.Tenant.Tenant_Name : (data.TenantPosition_Location || 'Vị trí')) + '</h5>';
+                    }
+                    if (data.Tenant && data.Tenant.Tenant_Description) {
+                        html += '<div class="text-muted small mb-2">' + data.Tenant.Tenant_Description + '</div>';
+                    }
+                    if (data.Tenant && data.Tenant.TenantType_Name) html += '<div class="small text-secondary">Loại: ' + data.Tenant.TenantType_Name + '</div>';
+                    html += '<div class="small text-muted mt-2">Diện tích: ' + (data.TenantPosition_Area_M2 || '--') + ' m²</div>';
+                    html += '<div class="small text-muted">Toạ độ: ' + (data.TenantPosition_LeftPct || '--') + ' %, ' + (data.TenantPosition_TopPct || '--') + ' %</div>';
+                    html += '</div></div>';
+                    modalBody.innerHTML = html;
+                })
+                .catch(function(err){
+                    console.error(err);
+                    modalBody.innerHTML = '<div class="p-3 text-danger">Không tải được dữ liệu. Vui lòng thử lại.</div>';
+                });
+            }
+
+            function bindShopClicks() {
+                var groups = svg.querySelectorAll('.svg-shop-group');
+                groups.forEach(function(g){
+                    g.removeEventListener('click', onShopClick);
+                    g.addEventListener('click', onShopClick);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', bindShopClicks);
+            window.addEventListener('resize', function(){ setTimeout(bindShopClicks, 120); });
+        })();
+    </script>
+}

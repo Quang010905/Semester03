@@ -13,13 +13,13 @@ public partial class TblShowtimeSeat
 
     public string? ShowtimeSeatStatus { get; set; }
 
-    public int ShowtimeSeatReservedByUserId { get; set; }
+    public int? ShowtimeSeatReservedByUserId { get; set; }
 
-    public DateTime ShowtimeSeatReservedAt { get; set; }
+    public DateTime? ShowtimeSeatReservedAt { get; set; }
 
     public DateTime? ShowtimeSeatUpdatedAt { get; set; }
 
-    public virtual TblUser ShowtimeSeatReservedByUser { get; set; } = null!;
+    public virtual TblUser? ShowtimeSeatReservedByUser { get; set; }
 
     public virtual TblSeat ShowtimeSeatSeat { get; set; } = null!;
 

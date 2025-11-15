@@ -17,6 +17,8 @@ public partial class TblTenant
 
     public string? TenantDescription { get; set; }
 
+    public int? TenantStatus { get; set; }
+
     public DateTime? TenantCreatedAt { get; set; }
 
     public virtual ICollection<TblCustomerComplaint> TblCustomerComplaints { get; set; } = new List<TblCustomerComplaint>();
