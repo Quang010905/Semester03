@@ -48,5 +48,15 @@ namespace Semester03.Areas.Admin.Controllers
             return View();
         }
 
+        public async Task<ActionResult> CreateTenant(int id)
+        {
+            var item  = await _userRepo.CreateTenantByUserId(id);
+            if (item == null)
+            {
+                return NotFound();
+            }
+            ViewBag.itemUser = item;
+            return View();
+        } 
     }
 }

@@ -86,7 +86,7 @@
                                             </td>
                                             <td>@item.CreatedAt</td>
                                             <td>
-                                                <a href="@Url.Action("Edit", "TenantType", new {id = item.Id})">
+                                                <a href="@Url.Action("CreateTenant", "Tenant", new {id = item.Id})">
                                                     <img src="@Url.Content("~/Icon/pen.png")" style="width:1vw; height:2vh;" />
                                                 </a>
                                                 <a href="@Url.Action("deleteTenantType", "TenantType", new {id = item.Id})" onclick="return confirm('Are you sure to delete this Tenant Type?')">

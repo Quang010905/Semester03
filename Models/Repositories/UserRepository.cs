@@ -141,5 +141,24 @@ namespace Semester03.Models.Repositories
                 }).Where(x => x.Role == 3).OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
         }
+        public async Task<User?> CreateTenantByUserId(int id)
+        {
+            return await _context.TblUsers
+                .Where(t => t.UsersId == id)
+                .Select(x => new User
+                {
+                    Id = x.UsersId,
+                    Username = x.UsersUsername,
+                    Password = x.UsersPassword,
+                    FullName = x.UsersFullName,
+                    Email = x.UsersEmail,
+                    Phone = x.UsersPhone,
+                    Role = x.UsersRoleId,
+                    Point = x.UsersPoints ?? 0,
+                    CreatedAt = (DateTime)x.UsersCreatedAt,
+                    UpdatedAt = (DateTime)x.UsersUpdatedAt,
+                })
+                .FirstOrDefaultAsync();
+        }
     }
 }
