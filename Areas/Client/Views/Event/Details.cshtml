@@ -1,13 +1,38 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.EventDetailsVm
+@using System
+
 @{
     ViewData["Title"] = Model.Title;
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+
+    Func<string, string> Img = (raw) =>
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return Url.Content("~/images/event-placeholder.png");
+        }
+        if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        {
+            return raw;
+        }
+        var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
+        s = s.Replace(" ", "%20");
+        if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase) || s.StartsWith("images", StringComparison.OrdinalIgnoreCase) || s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
+        {
+            return Url.Content("~/" + s);
+        }
+        if (raw.StartsWith("/"))
+        {
+            return Url.Content("~" + raw);
+        }
+        return Url.Content("~/Content/Uploads/Events/" + s);
+    };
 }
 
 <div class="row">
     <div class="col-md-8">
         <div class="card">
-            <img src="@Model.ImageUrl" class="card-img-top" alt="@Model.Title" style="height:320px; object-fit:cover;">
+            <img src="@Img(Model.ImageUrl)" class="card-img-top" alt="@Model.Title" style="height:320px; object-fit:cover;">
             <div class="card-body">
                 <h3>@Model.Title</h3>
                 <p class="text-muted small">
@@ -21,7 +46,11 @@
 
                 <div class="mt-3">
                     <a href="@Url.Action("Index", "Event", new { area = "Client" })" class="btn btn-outline-secondary btn-sm me-2">Back</a>
-                    <a href="#" class="btn btn-primary">Register / Booking</a>
+
+                    <a class="btn btn-primary"
+                       href="@Url.Action("Register", "EventBooking", new { area = "Client", id = Model.Id })">
+                        Register / Booking
+                    </a>
                 </div>
             </div>
         </div>

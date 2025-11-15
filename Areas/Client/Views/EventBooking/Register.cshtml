@@ -1,0 +1,77 @@
+﻿@model Semester03.Areas.Client.Models.ViewModels.EventRegisterVm
+@{
+    ViewData["Title"] = "Đăng ký sự kiện";
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <img src="@Model.Event.ImageUrl" class="card-img-top" style="height:320px;object-fit:cover;" alt="@Model.Event.Title" />
+            <div class="card-body">
+                <h3>@Model.Event.Title</h3>
+                <p class="text-muted small mb-2">
+                    <span>@Model.Event.StartDate.ToString("dd MMM yyyy HH:mm")</span>
+                    @if (Model.Event.EndDate.HasValue)
+                    {
+                        <span> — @Model.Event.EndDate.Value.ToString("dd MMM yyyy HH:mm")</span>
+                    }
+                </p>
+
+                <div class="mb-4">@Html.Raw(Model.Event.Description)</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h5>Đăng ký tham dự</h5>
+                <p class="small text-muted">Còn trống: <strong>@Model.AvailableSlots</strong></p>
+
+                @if (Model.AvailableSlots <= 0)
+                {
+                    <div class="alert alert-warning">Số lượng tham dự đã đầy — vui lòng chọn sự kiện khác.</div>
+                }
+                else
+                {
+                    <form asp-action="CreateBooking" method="post" class="row g-3">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="eventId" value="@Model.Event.Id" />
+
+                        <div class="col-12">
+                            <label class="form-label">Họ và tên</label>
+                            <input type="text" name="contactName" class="form-control" required />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="contactEmail" class="form-control" required />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Số lượng</label>
+                            <input type="number" name="quantity" class="form-control" min="1" max="@Model.AvailableSlots" value="1" required />
+                        </div>
+
+                        @* Field name phải khớp với parameter controller: "totalAmount" *@
+                        <input type="hidden" name="totalAmount" id="eventAmount" value="0" />
+
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">Đăng ký</button>
+                            <a href="@Url.Action("Index", "Event", new { area = "Client" })" class="btn btn-outline-secondary ms-2">Quay lại</a>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+
+    <aside class="col-md-4">
+        <div class="p-3 bg-light rounded">
+            <h6>Thông tin sự kiện</h6>
+            <p class="small mb-1"><strong>Slots:</strong> @Model.Event.MaxSlot</p>
+            <p class="small mb-1"><strong>Trạng thái:</strong> @(Model.Event.Status == 1 ? "Active" : "Inactive")</p>
+            <p class="small mb-1"><strong>Bắt đầu:</strong> @Model.Event.StartDate.ToString("dd MMM yyyy HH:mm")</p>
+            <a href="@Url.Action("Index", "Event", new { area = "Client" })" class="d-block mt-3">Về trang sự kiện</a>
+        </div>
+    </aside>
+</div>
