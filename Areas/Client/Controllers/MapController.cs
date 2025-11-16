@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Semester03.Models.Repositories;
 using Semester03.Areas.Client.Models.ViewModels;
+using System.Collections.Generic;
 
 namespace Semester03.Areas.Client.Controllers
 {
@@ -47,6 +48,44 @@ namespace Semester03.Areas.Client.Controllers
             vm.PositionAreaM2 = positions.FirstOrDefault()?.TenantPosition_Area_M2 ?? 150;
 
             return View(vm);
+        }
+
+        // GET /Client/Map/Index3D?floor=1
+        [HttpGet]
+        public async Task<IActionResult> Index3D(int floor = 1)
+        {
+            // create vm (reuse MapViewModel)
+            var vm = new MapViewModel();
+            vm.FloorNumber = floor;
+            vm.Columns = 8;
+
+            var rel = $"/Content/Uploads/FloorImg/floor{floor}.png";
+            var physical = Path.Combine(_env.WebRootPath ?? "wwwroot", "Content", "Uploads", "FloorImg", $"floor{floor}.png");
+            vm.FloorImagePath = System.IO.File.Exists(physical) ? rel : null;
+
+            // Load positions for all floors (0..3)
+            var allPositions = new List<TenantPositionDto>();
+            // You can change this to dynamic floor list if needed
+            var floorsToLoad = new[] { 0, 1, 2, 3 };
+            foreach (var f in floorsToLoad)
+            {
+                var list = await _posRepo.GetPositionsByFloorAsync(f);
+                if (list != null && list.Count > 0)
+                {
+                    allPositions.AddRange(list);
+                }
+            }
+
+            vm.Positions = allPositions;
+
+            vm.MaxPositionsComputed = vm.Positions.Count;
+            vm.RenderedCellCount = vm.Positions.Count;
+            vm.FloorAreaM2 = (decimal)(vm.Positions.Sum(p => (double?)p.TenantPosition_Area_M2 ?? 0) == 0 ? 7000 : vm.Positions.Sum(p => (double?)p.TenantPosition_Area_M2 ?? 0));
+            vm.ReservedAreaM2 = 1500;
+            vm.PositionAreaM2 = vm.Positions.FirstOrDefault()?.TenantPosition_Area_M2 ?? 150;
+
+            // return specialized view Index3D
+            return View("Index3D", vm);
         }
 
         // GET: /Client/Map/GetPositionJson?id=123
