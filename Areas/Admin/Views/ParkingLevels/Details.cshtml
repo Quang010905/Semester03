@@ -1,0 +1,291 @@
+﻿@model Semester03.Areas.Admin.Models.ParkingLevelDetailViewModel
+
+@{
+    ViewData["Title"] = "Spot Management";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<style>
+    .seat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(45px, 1fr));
+        gap: 5px;
+        margin-top: 15px;
+    }
+    .seat-button {
+        display: inline-block;
+        width: 45px; height: 35px; line-height: 35px;
+        text-align: center; border-radius: 5px; font-weight: bold;
+        text-decoration: none; color: #fff;
+        transition: transform 0.1s ease; font-size: 0.85rem;
+        cursor: pointer; 
+    }
+    .seat-button:hover { transform: scale(1.1); color: #fff; }
+    .spot-available { background-color: #1cc88a; border: 1px solid #169b6b; } /* 0 */
+    .spot-occupied { background-color: #e74a3b; border: 1px solid #be2617; } /* 1 */
+    .spot-maintenance { background-color: #f6c23e; border: 1px solid #dda20a; } /* 2 */
+    
+    .seat-placeholder {
+        width: 45px;
+        height: 35px;
+        visibility: hidden;
+    }
+</style>
+
+<h1 class="h3 mb-2 text-gray-800">Spot Management: @Model.ParkingLevel.LevelName</h1>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<div class="row">
+
+    <div class="col-lg-8">
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Parking Spot Preview</h6>
+                @if (Model.ParkingLevel.TblParkingSpots.Any())
+                {
+                    <button id="showCreateFormButton" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus fa-sm"></i> Add Individual Spot
+                    </button>
+                }
+            </div>
+            <div class="card-body">
+                @if (!Model.ParkingLevel.TblParkingSpots.Any())
+                {
+                    <h5 class="text-center">This level has no spots defined.</h5>
+                    <p class="text-center">Use the generator to create spots (e.g., 10 Rows, 15 Columns).</p>
+                    <hr>
+                    <form asp-controller="ParkingSpots" asp-action="BatchCreate" method="post" class="form-inline justify-content-center">
+                        <input type="hidden" name="LevelId" value="@Model.ParkingLevel.LevelId" />
+                        <input type="number" name="NumRows" class="form-control mb-2 mr-sm-2" placeholder="Number of Rows (e.g., 10)">
+                        <input type="number" name="NumCols" class="form-control mb-2 mr-sm-2" placeholder="Spots per Row (e.g., 15)">
+                        <button type="submit" class="btn btn-success mb-2">Generate Spots</button>
+                    </form>
+                }
+                else
+                {
+                    <p>Click a spot to select it for editing.</p>
+                    <p>
+                        <span class="badge badge-success">Available</span>
+                        <span class="badge badge-danger">Occupied</span>
+                        <span class="badge badge-warning">Maintenance</span>
+                    </p>
+                    
+                     var maxCol = Model.ParkingLevel.TblParkingSpots.Any() ? Model.ParkingLevel.TblParkingSpots.Max(s => s.SpotCol) : 10; 
+                    
+                    @foreach (var rowGroup in Model.ParkingLevel.TblParkingSpots.GroupBy(s => s.SpotRow).OrderBy(g => g.Key))
+                    {
+                        <div class="d-flex align-items-center mb-2">
+                            <strong class="mr-3" style="width: 20px;">@rowGroup.Key:</strong>
+                            <div class="seat-grid" style="grid-template-columns: repeat(@maxCol, minmax(45px, 1fr));">
+                                @for (int c = 1; c <= maxCol; c++)
+                                {
+                                    var spot = rowGroup.FirstOrDefault(s => s.SpotCol == c);
+                                    @if (spot != null)
+                                    {
+                                        string spotClass = "spot-available"; // Default 0
+                                        if (spot.SpotStatus == 1) spotClass = "spot-occupied";
+                                        else if (spot.SpotStatus == 2) spotClass = "spot-maintenance";
+
+                                        <a class="seat-button @spotClass edit-spot-btn"
+                                           title="Edit Spot @spot.SpotCode"
+                                           data-spot-id="@spot.ParkingSpotId"
+                                           data-spot-code="@spot.SpotCode"
+                                           data-spot-row="@spot.SpotRow"
+                                           data-spot-col="@spot.SpotCol"
+                                           data-spot-status="@spot.SpotStatus">
+                                            @spot.SpotCode
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <div class="seat-placeholder"></div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="card shadow mb-4" id="spotFormCard" style="display:none;">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary" id="spotFormTitle">Spot Details</h6>
+            </div>
+            <div class="card-body">
+                <form id="spotForm" method="post">
+                    <div asp-validation-summary="All" class="text-danger"></div>
+                    <input type="hidden" id="Form_SpotId" name="ParkingSpotId" />
+                    <input type="hidden" id="Form_LevelId" name="SpotLevelId" value="@Model.ParkingLevel.LevelId" />
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="Form_SpotRow">Row</label>
+                                <input id="Form_SpotRow" name="SpotRow" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="Form_SpotCol">Column</label>
+                                <input id="Form_SpotCol" name="SpotCol" class="form-control" type="number" />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="Form_SpotCode">Spot Code</label>
+                                <input id="Form_SpotCode" name="SpotCode" class="form-control" />
+                                <small id="labelHelp" class="form-text text-muted">Auto-filled, but can be edited.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="control-label">Status</label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="SpotStatus" id="statusAvailable" value="0">
+                                <label class="form-check-label" for="statusAvailable">Available</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="SpotStatus" id="statusOccupied" value="1">
+                                <label class="form-check-label" for="statusOccupied">Occupied</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="SpotStatus" id="statusMaintenance" value="2">
+                                <label class="form-check-label" for="statusMaintenance">Maintenance</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="submit" id="formSubmitButton" value="Save" class="btn btn-primary" />
+                        <button type="button" id="cancelFormButton" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Level Properties</h6>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class = "col-sm-5">Level Name</dt>
+                    <dd class = "col-sm-7">@Html.DisplayFor(model => model.ParkingLevel.LevelName)</dd>
+                    
+                    <dt class = "col-sm-5">Capacity</dt>
+                    <dd class = "col-sm-7">@Html.DisplayFor(model => model.ParkingLevel.LevelCapacity) spots</dd>
+                    
+                    <dt class = "col-sm-5">Defined Spots</dt>
+                    <dd class = "col-sm-7">@Model.ParkingLevel.TblParkingSpots.Count()</dd>
+                </dl>
+            </div>
+            <div classs="card-footer" style="padding: 1.25rem;">
+                <a asp-controller="ParkingLevels" asp-action="Edit" asp-route-id="@Model.ParkingLevel.LevelId" class="btn btn-warning btn-block">Edit Level Properties</a>
+                <a asp-controller="ParkingLevels" asp-action="Index" class="btn btn-secondary btn-block mt-2">Back to Level List</a>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            
+            var formCard = $('#spotFormCard');
+            var form = $('#spotForm');
+            var formTitle = $('#spotFormTitle');
+            var formSubmit = $('#formSubmitButton');
+            
+            var inputId = $('#Form_SpotId');
+            var inputCode = $('#Form_SpotCode');
+            var inputRow = $('#Form_SpotRow');
+            var inputCol = $('#Form_SpotCol');
+            
+            var isCodeManual = false; 
+
+            // Auto-fill logic
+            function updateCode() {
+                if (!isCodeManual) { 
+                    var row = inputRow.val().trim().toUpperCase();
+                    var col = inputCol.val().trim();
+                    
+                    if (row && col) {
+                        inputCode.val(row + col.padStart(2, '0')); // A01, A02...
+                    } else {
+                        inputCode.val('');
+                    }
+                }
+            }
+            inputRow.on('input', updateCode);
+            inputCol.on('input', updateCode);
+            inputCode.on('input', function() {
+                isCodeManual = true; 
+            });
+
+            // Show CREATE form
+            $('#showCreateFormButton').on('click', function() {
+                formTitle.text('Add Individual Spot');
+                formSubmit.val('Create Spot');
+                form.attr('action', '@Url.Action("Create", "ParkingSpots")');
+
+                inputId.val('0'); 
+                inputCode.val('');
+                inputRow.val('');
+                inputCol.val('');
+                $('#statusAvailable').prop('checked', true); 
+
+                inputCode.prop('readonly', false);
+                isCodeManual = false; 
+
+                formCard.slideDown();
+            });
+
+            // Show EDIT form
+            $('.edit-spot-btn').on('click', function() {
+                var button = $(this);
+                
+                var id = button.data('spot-id');
+                var code = button.data('spot-code');
+                var row = button.data('spot-row');
+                var col = button.data('spot-col');
+                var status = button.data('spot-status');
+
+                formTitle.text('Edit Spot: ' + code);
+                formSubmit.val('Save Changes');
+                form.attr('action', '@Url.Action("Edit", "ParkingSpots")/' + id);
+
+                inputCode.prop('readonly', false);
+                isCodeManual = true; 
+                
+                inputId.val(id);
+                inputCode.val(code);
+                inputRow.val(row);
+                inputCol.val(col);
+                
+                // Set the correct radio button
+                $('input[name="SpotStatus"][value="' + status + '"]').prop('checked', true);
+
+                formCard.slideDown();
+            });
+
+            // "Cancel" button
+            $('#cancelFormButton').on('click', function() {
+                formCard.slideUp();
+            });
+
+        });
+    </script>
+}

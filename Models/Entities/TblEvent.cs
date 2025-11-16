@@ -24,7 +24,6 @@ public partial class TblEvent
     public int EventTenantPositionId { get; set; }
 
     public virtual TblTenantPosition EventTenantPosition { get; set; } = null!;
-
     public virtual ICollection<TblCustomerComplaint> TblCustomerComplaints { get; set; } = new List<TblCustomerComplaint>();
 
     public virtual ICollection<TblEventBooking> TblEventBookings { get; set; } = new List<TblEventBooking>();

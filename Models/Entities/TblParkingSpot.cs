@@ -7,9 +7,15 @@ public partial class TblParkingSpot
 {
     public int ParkingSpotId { get; set; }
 
-    public string ParkingSpotCode { get; set; } = null!;
+    public int SpotLevelId { get; set; }
 
-    public int? ParkingSpotStatus { get; set; }
+    public string SpotCode { get; set; } = null!;
 
-    public string ParkingSpotFloor { get; set; } = null!;
+    public string SpotRow { get; set; } = null!;
+
+    public int SpotCol { get; set; }
+
+    public int SpotStatus { get; set; }
+
+    public virtual TblParkingLevel SpotLevel { get; set; } = null!;
 }

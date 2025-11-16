@@ -148,7 +148,8 @@ namespace Semester03.Models.Repositories
                     _db.TblTickets.Update(ticket);
 
                     showtimeSeat.ShowtimeSeatStatus = "available";
-                    showtimeSeat.ShowtimeSeatReservedByUserId = 1; // admin/system
+                    showtimeSeat.ShowtimeSeatReservedByUserId = null;
+                    showtimeSeat.ShowtimeSeatReservedAt = null;
                     _db.TblShowtimeSeats.Update(showtimeSeat);
 
                     await _db.SaveChangesAsync();

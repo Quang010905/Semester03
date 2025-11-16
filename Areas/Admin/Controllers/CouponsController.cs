@@ -38,12 +38,18 @@ namespace Semester03.Areas.Admin.Controllers
         // GET: Admin/Coupons/Create
         public IActionResult Create()
         {
-            // Set defaults
+            
+            // We must round the time to avoid the browser step validation error.
+            var now = DateTime.Now;
+
+            // Round down to the current minute (e.g., 4:31:53 -> 4:31:00)
+            var defaultStart = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0);
+
             var model = new TblCoupon
             {
                 CouponIsActive = true,
-                CouponValidFrom = DateTime.Now,
-                CouponValidTo = DateTime.Now.AddDays(30)
+                CouponValidFrom = defaultStart, // Use the "clean" value
+                CouponValidTo = defaultStart.AddDays(30) // Use the "clean" value
             };
             return View(model);
         }

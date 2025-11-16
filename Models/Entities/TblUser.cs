@@ -27,6 +27,8 @@ public partial class TblUser
 
     public DateTime? UsersUpdatedAt { get; set; }
 
+    public string? UsersRoleChangeReason { get; set; }
+
     public virtual ICollection<TblCouponUser> TblCouponUsers { get; set; } = new List<TblCouponUser>();
 
     public virtual ICollection<TblCustomerComplaint> TblCustomerComplaints { get; set; } = new List<TblCustomerComplaint>();
