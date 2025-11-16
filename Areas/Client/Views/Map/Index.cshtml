@@ -31,6 +31,7 @@
 
             <div>
                 <a class="btn btn-sm btn-outline-secondary" href="@Url.Action("Index","Map", new { floor = Model.FloorNumber })">Làm mới</a>
+                <a class="btn btn-sm btn-outline-primary ms-1" href="@Url.Action("Index3D","Map", new { floor = Model.FloorNumber })">3D View</a>
             </div>
         </div>
     </div>
@@ -99,7 +100,7 @@
                 var wcX = 1020m; var wcY = 320m;
                 // -------------------------------------------------------------------------------
 
-                // prepare render items with small nudge to avoid overlapping visually (unchanged DB)
+                // prepare render items with small nudges to avoid overlapping visually
                 var placedBoxes = new List<dynamic>();
                 var offsets = new List<(decimal dx, decimal dy)> {
             (0,0),(8,0),(-8,0),(0,8),(0,-8),(12,12),(-12,12),(12,-12),(-12,-12)
@@ -172,7 +173,7 @@
                     }
                     if (!placed)
                     {
-                        // last resort: place at original cx/ cy but ensure not overlapping forbidden — if overlaps, try shift along Y downward until fit
+                        // last resort: place at original cx/ cy but try shifting along Y until fit
                         var tryX = Math.Max(minX, Math.Min(maxX, rx));
                         var tryY = Math.Max(minY, Math.Min(maxY, ry));
                         int attempts = 0;
@@ -219,7 +220,7 @@
                         <path d="M6 12h12" stroke="#6b7280" stroke-width="1.4" stroke-linecap="round" fill="none" />
                     </symbol>
 
-                    @* Arrow symbols (triangles) for elevators (increased size able to scale) *@
+                    @* Arrow symbols (triangles) for elevators *@
                     <symbol id="arrow-up" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet">
                         <path d="M12 6 L6 14 H18 L12 6 Z" />
                     </symbol>
@@ -250,12 +251,11 @@
                     <text x="@(atrX + atrW/2m)" y="@(atrY + atrH/2m + 6)" text-anchor="middle" font-size="16" font-weight="700" fill="#9a5a0f">Giếng trời</text>
                 </g>
 
-                <!-- elevators: arrows & short badge INSIDE elevator rectangles ("▲1"/"▼1", "▲2"/"▼2") -->
+                <!-- elevators with arrows inside -->
                 <g id="elevators" aria-label="Elevators">
                     <g class="elev-1" transform="translate(0,0)" role="group" aria-label="Elevator 1">
                         <rect x="@elev1X" y="@elevY" width="@elevW" height="@elevH" rx="6" ry="6" fill="@elev1Fill" stroke="#12385a" stroke-opacity="0.12" filter="url(#softShadow)"></rect>
                         @{
-                            // short badge text and arrow direction for elevator 1
                             string a1 = "neutral";
                             string badgeText1 = "•1";
                             if (!string.IsNullOrEmpty(elev1Label))
@@ -264,7 +264,6 @@
                                 else if (elev1Label.Contains("xuống")) { a1 = "down"; badgeText1 = "▼1"; }
                             }
                         }
-                        @* larger center arrow inside elevator 1 (bigger than before) *@
                         @if (a1 == "up")
                         {
                             <g title="@elev1Label" transform="translate(@(elev1X + elevW/2m - 14), @(elevY + elevH/2m - 16))" class="elevator-arrow" aria-hidden="false">
@@ -284,7 +283,6 @@
                             </g>
                         }
 
-                        @* badge with short text (black on white) near bottom inside elevator *@
                         @{
                             var badgeW = elevW - 8m;
                             var badgeX = elev1X + 4m;
@@ -305,7 +303,6 @@
                                 else if (elev2Label.Contains("xuống")) { a2 = "down"; badgeText2 = "▼2"; }
                             }
                         }
-                        @* larger center arrow inside elevator 2 *@
                         @if (a2 == "up")
                         {
                             <g title="@elev2Label" transform="translate(@(elev2X + elevW/2m - 14), @(elevY + elevH/2m - 16))" class="elevator-arrow" aria-hidden="false">
@@ -325,7 +322,6 @@
                             </g>
                         }
 
-                        @* badge with short text (black on white) near bottom inside elevator *@
                         @{
                             var badgeW2 = elevW - 8m;
                             var badgeX2 = elev2X + 4m;
@@ -394,7 +390,7 @@
         </div>
     </div>
 
-    @* show list of positions without coords for admin awareness (unchanged) *@
+    @* show list of positions without coords for admin awareness *@
     @if (withoutCoords.Any())
     {
         <div class="card mt-3 p-3">
@@ -464,7 +460,6 @@
             fill: #0b1724;
         }
 
-        /* elevator arrow group (no pointer events) */
         .elevator-arrow {
             pointer-events: none;
         }
