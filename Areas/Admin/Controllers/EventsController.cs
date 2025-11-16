@@ -256,12 +256,17 @@ namespace Semester03.Areas.Admin.Controllers
             var evt = await _eventRepo.GetByIdAdminAsync(id.Value);
             if (evt == null) return NotFound();
 
-            // Check for dependencies (Tbl_EventBooking)
+            // Check for dependencies 
             bool hasBookings = await _context.TblEventBookings.AnyAsync(b => b.EventBookingEventId == id);
-            if (hasBookings)
+            bool hasComplaints = await _context.TblCustomerComplaints.AnyAsync(c => c.CustomerComplaintEventId == id.Value);
+
+            if (hasBookings || hasComplaints)
             {
                 ViewData["HasDependencies"] = true;
-                ViewData["ErrorMessage"] = "This event has active bookings and cannot be deleted.";
+                string error = "This event cannot be deleted. It is linked to:";
+                if (hasBookings) error += " one or more Bookings.";
+                if (hasComplaints) error += " one or more Customer Reviews.";
+                ViewData["ErrorMessage"] = error;
             }
 
             return View(evt);
@@ -273,9 +278,11 @@ namespace Semester03.Areas.Admin.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             bool hasBookings = await _context.TblEventBookings.AnyAsync(b => b.EventBookingEventId == id);
-            if (hasBookings)
+            bool hasComplaints = await _context.TblCustomerComplaints.AnyAsync(c => c.CustomerComplaintEventId == id);
+
+            if (hasBookings || hasComplaints)
             {
-                TempData["Error"] = "This event cannot be deleted (it has bookings).";
+                TempData["Error"] = "This event cannot be deleted (it has dependencies).";
                 return RedirectToAction(nameof(Index));
             }
 

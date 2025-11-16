@@ -1,0 +1,71 @@
+﻿@model IEnumerable<Semester03.Models.Entities.TblParkingLevel>
+
+@{
+    ViewData["Title"] = "Parking Level Management";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<h1 class="h3 mb-2 text-gray-800">Parking Level Management</h1>
+[cite_start]<p class="mb-4">Define the 7 parking levels [cite: 1, 1-2] and their capacity.</p>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Add New Level</a>
+</p>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Level List</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Level Name</th>
+                        <th>Capacity</th>
+                        <th>Spots Defined</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.LevelName)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.LevelCapacity)
+                            </td>
+                            <td>
+                                @item.TblParkingSpots.Count()
+                            </td>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@item.LevelId" class="btn btn-info btn-sm">Manage Spots</a>
+                                <a asp-action="Edit" asp-route-id="@item.LevelId" class="btn btn-warning btn-sm">Edit Level</a>
+                                <a asp-action="Delete" asp-route-id="@item.LevelId" class="btn btn-danger btn-sm">Delete</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+          $('#dataTable').DataTable({"order": [[ 0, "asc" ]]});
+        });
+    </script>
+}

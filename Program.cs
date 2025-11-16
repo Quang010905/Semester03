@@ -52,6 +52,8 @@ builder.Services.AddScoped<EventBookingRepository>();
 builder.Services.AddScoped<TenantTypeRepository>();
 builder.Services.AddScoped<CouponRepository>();
 builder.Services.AddScoped<TenantPositionRepository>();
+builder.Services.AddScoped<ParkingLevelRepository>();
+builder.Services.AddScoped<ParkingSpotRepository>();
 // ===== Register other services =====
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
 builder.Services.AddScoped<IEmailSender, EmailSender>();

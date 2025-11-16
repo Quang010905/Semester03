@@ -1,0 +1,31 @@
+﻿@model Semester03.Models.Entities.TblParkingSpot
+
+@{
+    ViewData["Title"] = "Delete Parking Spot";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<h1 class="h3 mb-2 text-gray-800">Delete Parking Spot</h1>
+<h3 class="text-danger">Are you sure you want to delete spot @Model.SpotCode?</h3>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">@Model.SpotCode</h6>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-2">Code</dt>
+            <dd class="col-sm-10">@Html.DisplayFor(model => model.SpotCode)</dd>
+            <dt class="col-sm-2">Row</dt>
+            <dd class="col-sm-10">@Html.DisplayFor(model => model.SpotRow)</dd>
+            <dt class="col-sm-2">Column</dt>
+            <dd class="col-sm-10">@Html.DisplayFor(model => model.SpotCol)</dd>
+        </dl>
+
+        <form asp-action="Delete">
+            <input type="hidden" asp-for="ParkingSpotId" />
+            <input type="submit" value="Delete" class="btn btn-danger" />
+            <a asp-controller="ParkingLevels" asp-action="Details" asp-route-id="@Model.SpotLevelId" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>

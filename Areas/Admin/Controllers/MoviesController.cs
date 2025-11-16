@@ -43,11 +43,20 @@ namespace Semester03.Areas.Admin.Controllers
         // GET: Admin/Movies/Create
         public IActionResult Create()
         {
+            
+            // We must round the time to avoid the browser step validation error.
+            var now = DateTime.Now;
+
+            // Round down to the current minute (e.g., 4:31:53 -> 4:31:00)
+            var defaultStart = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0);
+
             var model = new TblMovie
             {
                 MovieStatus = 1, // Default to 'Available'
-                MovieStartDate = DateTime.Now,
-                MovieEndDate = DateTime.Now.AddDays(14)
+
+                // Use the "clean" (rounded) values
+                MovieStartDate = defaultStart,
+                MovieEndDate = defaultStart.AddDays(14)
             };
             return View(model);
         }
@@ -212,12 +221,15 @@ namespace Semester03.Areas.Admin.Controllers
             // --- ADDED: Dependency Check ---
             // Check if any Showtimes are linked to this Movie
             bool hasShowtimes = await _context.TblShowtimes.AnyAsync(s => s.ShowtimeMovieId == id.Value);
+            bool hasComplaints = await _context.TblCustomerComplaints.AnyAsync(c => c.CustomerComplaintMovieId == id.Value);
 
-            if (hasShowtimes)
+            if (hasShowtimes || hasComplaints)
             {
-                // If dependencies exist, pass an error message to the View
                 ViewData["HasDependencies"] = true;
-                ViewData["ErrorMessage"] = "This movie cannot be deleted. It is linked to one or more Showtimes. Please delete those showtimes first.";
+                string error = "This movie cannot be deleted. It is linked to:";
+                if (hasShowtimes) error += " one or more Showtimes.";
+                if (hasComplaints) error += " one or more Customer Reviews.";
+                ViewData["ErrorMessage"] = error;
             }
             else
             {
@@ -235,10 +247,11 @@ namespace Semester03.Areas.Admin.Controllers
         {
             // --- Final Dependency Check (Safety Net) ---
             bool hasShowtimes = await _context.TblShowtimes.AnyAsync(s => s.ShowtimeMovieId == id);
+            bool hasComplaints = await _context.TblCustomerComplaints.AnyAsync(c => c.CustomerComplaintMovieId == id); //
 
-            if (hasShowtimes)
+            if (hasShowtimes || hasComplaints)
             {
-                TempData["Error"] = "This movie cannot be deleted because it is linked to Showtimes.";
+                TempData["Error"] = "This movie cannot be deleted (it has dependencies).";
                 return RedirectToAction(nameof(Index));
             }
             // --- END OF CHECK ---
