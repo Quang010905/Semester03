@@ -48,6 +48,18 @@ namespace Semester03.Models.Repositories
                 .ToListAsync();
         }
 
+        public async Task<List<TenantType>> GetActiveTenantType()
+        {
+            return await _context.TblTenantTypes
+                .Select(x => new TenantType
+                {
+                    Id = x.TenantTypeId,
+                    Name = x.TenantTypeName,
+                    Status = x.TenantTypeStatus ?? 0
+                }).Where(x => x.Status == 1)
+                .ToListAsync();
+        }
+
         public async Task AddAsync(TenantType entity)
         {
             var item = new TblTenantType

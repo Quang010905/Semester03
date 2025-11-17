@@ -7,11 +7,12 @@ namespace Semester03.Areas.Admin.Controllers
     public class TenantController : Controller
     {
         private readonly UserRepository _userRepo;
-
+        private readonly TenantTypeRepository _tenantTypeRepo;
         // Inject repository qua constructor
-        public TenantController(UserRepository userRepo)
+        public TenantController(UserRepository userRepo, TenantTypeRepository tenantTypeRepo)
         {
             _userRepo = userRepo ?? throw new ArgumentNullException(nameof(userRepo));
+            _tenantTypeRepo = tenantTypeRepo ?? throw new ArgumentNullException(nameof(_tenantTypeRepo));
         }
 
         public async Task<IActionResult> Index(int page = 1, string search = "")
@@ -51,12 +52,18 @@ namespace Semester03.Areas.Admin.Controllers
         public async Task<ActionResult> CreateTenant(int id)
         {
             var item  = await _userRepo.CreateTenantByUserId(id);
+            var lsTenantType = await _tenantTypeRepo.GetActiveTenantType();
             if (item == null)
             {
                 return NotFound();
             }
             ViewBag.itemUser = item;
+            ViewBag.listTenantType = lsTenantType;
             return View();
         } 
+        public async Task<ActionResult> Edit(int id)
+        {
+            return View();
+        }
     }
 }
