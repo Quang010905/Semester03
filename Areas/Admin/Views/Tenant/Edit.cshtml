@@ -80,9 +80,9 @@
             </div>
         </div>
 
-        @if (ViewBag.listTenant != null)
+        @if (ViewBag.listTenantType != null)
         {
-            var ls = (List<Semester03.Areas.Admin.Models.TenantType>)ViewBag.listTenant;
+            var ls = (List<Semester03.Areas.Admin.Models.TenantType>)ViewBag.listTenantType;
             if (ls != null && ls.Count > 0)
             {
                 int i = 1;
@@ -204,34 +204,6 @@
                     </tbody>
                 </table>
             }
-        }
-        else
-        {
-            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                <thead>
-                    <tr>
-                        <th scope="col">No</th>
-                        <th scope="col">CateName</th>
-                        <th scope="col">Image</th>
-                        <th scope="col">Active</th>
-                        <th scope="col">Action</th>
-                    </tr>
-                </thead>
-                <tfoot>
-                    <tr>
-                        <th scope="col">No</th>
-                        <th scope="col">CateName</th>
-                        <th scope="col">Image</th>
-                        <th scope="col">Active</th>
-                        <th scope="col">Action</th>
-                    </tr>
-                </tfoot>
-                <tbody>
-                    <tr>
-                        <td colspan="4" class="text-center">No Category.</td>
-                    </tr>
-                </tbody>
-            </table>
         }
     </form>
 </div>
