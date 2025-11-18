@@ -145,5 +145,51 @@ namespace Semester03.Models.Repositories
                     + (p.TenantPositionTopPct.Value - topPct) * (p.TenantPositionTopPct.Value - topPct)) < thresholdSq
                 );
         }
+
+
+        // ==========================================================
+        // === ADMIN METHODS ===
+        // ==========================================================
+
+        public async Task<IEnumerable<TblTenantPosition>> GetAllAdminEntitiesAsync(string search = null, int? floor = null, int? status = null)
+        {
+            var query = _db.TblTenantPositions
+                .Include(p => p.TenantPositionAssignedTenant) //
+                .AsQueryable();
+
+            // 1. Filter by Floor
+            if (floor.HasValue)
+            {
+                query = query.Where(p => p.TenantPositionFloor == floor.Value);
+            }
+
+            // 2. Filter by Status (0=Vacant, 1=Occupied)
+            if (status.HasValue)
+            {
+                query = query.Where(p => p.TenantPositionStatus == status.Value);
+            }
+
+            // 3. Search by Location Code OR Tenant Name
+            if (!string.IsNullOrEmpty(search))
+            {
+                search = search.ToLower();
+                query = query.Where(p =>
+                    p.TenantPositionLocation.ToLower().Contains(search) ||
+                    (p.TenantPositionAssignedTenant != null && p.TenantPositionAssignedTenant.TenantName.ToLower().Contains(search))
+                );
+            }
+
+            return await query
+                .OrderBy(p => p.TenantPositionFloor)
+                .ThenBy(p => p.TenantPositionLocation)
+                .ToListAsync();
+        }
+
+        public async Task<TblTenantPosition> GetEntityByIdAsync(int id)
+        {
+            return await _db.TblTenantPositions
+                .Include(p => p.TenantPositionAssignedTenant)
+                .FirstOrDefaultAsync(p => p.TenantPositionId == id);
+        }
     }
 }
