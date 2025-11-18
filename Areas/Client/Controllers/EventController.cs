@@ -25,7 +25,7 @@ namespace Semester03.Areas.Client.Controllers
                 Upcoming = await _repo.GetUpcomingEventsAsync()
             };
 
-            // expose upcoming events cho layout (kiểu IList<EventCardVm>)
+            // expose upcoming events cho layout
             ViewBag.Events = vm.Upcoming ?? new List<EventCardVm>();
 
             return View(vm);

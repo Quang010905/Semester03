@@ -50,6 +50,7 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public int Status { get; set; }
 
         public int TenantPositionId { get; set; }
+        public List<EventCardVm> Related { get; set; } = new();
     }
 
     // ===============================================================

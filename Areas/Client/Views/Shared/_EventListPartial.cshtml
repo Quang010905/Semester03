@@ -3,96 +3,64 @@
 @model IEnumerable<Semester03.Areas.Client.Models.ViewModels.EventCardVm>
 
 @{
-	// helper để chuẩn hóa đường dẫn ảnh (loại bỏ 'wwwroot/' nếu có, encode khoảng trắng)
-	Func<string, string> Img = (raw) =>
-	{
-		if (string.IsNullOrWhiteSpace(raw))
-		{
-			return Url.Content("~/images/event-placeholder.png");
-		}
+    Func<string, string> Img = (raw) =>
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return Url.Content("~/images/event-placeholder.png");
+        if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return raw;
+        var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
+        s = s.Replace(" ", "%20");
+        if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase)) return Url.Content("~/" + s);
+        if (s.StartsWith("images", StringComparison.OrdinalIgnoreCase) || s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase)) return Url.Content("~/" + s);
+        if (raw.StartsWith("/")) return Url.Content("~" + raw);
+        return Url.Content("~/Content/Uploads/Events/" + s);
+    };
 
-		// Nếu là URL tuyệt đối (http/https) -> trả thẳng
-		if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-		{
-			return raw;
-		}
-
-		// Loại bỏ wwwroot/ nếu có và bỏ ~ hoặc / ở đầu
-		var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
-
-		// Chỉ encode khoảng trắng (không encode dấu '/')
-		s = s.Replace(" ", "%20");
-
-		// Nếu đã bắt đầu bằng "Content/..." (DB lưu đường dẫn tương đối từ wwwroot)
-		if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase))
-		{
-			return Url.Content("~/" + s);
-		}
-
-		// Nếu bắt đầu với "images/..." (ví dụ bạn đặt trong wwwroot/images/...)
-		if (s.StartsWith("images", StringComparison.OrdinalIgnoreCase) || s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
-		{
-			return Url.Content("~/" + s);
-		}
-
-		// Nếu raw bắt đầu bằng '/' -> dùng trực tiếp
-		if (raw.StartsWith("/"))
-		{
-			return Url.Content("~" + raw);
-		}
-
-		// Mặc định: coi như filename lưu trong wwwroot/Content/Uploads/Events/
-		return Url.Content("~/Content/Uploads/Events/" + s);
-	};
+    var now = DateTime.Now;
+    var items = (Model ?? Enumerable.Empty<EventCardVm>())
+        .Where(e => e.StartDate == null || e.StartDate >= now)
+        .OrderBy(e => e.StartDate ?? DateTime.MaxValue)
+        .Take(6)
+        .ToList();
 }
 
 <div class="list-group small">
-	@{
-		var now = DateTime.Now;
-		var items = (Model ?? Enumerable.Empty<EventCardVm>())
-		.Where(e => e.StartDate == null || e.StartDate >= now) // cho an toàn nếu StartDate null
-		.OrderBy(e => e.StartDate ?? DateTime.MaxValue)
-		.Take(6)
-		.ToList();
-	}
+    @if (items.Any())
+    {
+        @foreach (var e in items)
+        {
+            var title = string.IsNullOrWhiteSpace(e.Title) ? "Event" : e.Title;
+            var start = e.StartDate.HasValue ? e.StartDate.Value.ToString("dd MMM yyyy HH:mm") : "--";
+            var img = Img(e.ImageUrl);
+            var detailUrl = Url.Action("Details", "Event", new { area = "Client", id = e.Id });
 
-	@if (items.Any())
-	{
-		@foreach (var e in items)
-		{
-			var title = string.IsNullOrWhiteSpace(e.Title) ? "Event" : e.Title;
-			var start = e.StartDate.HasValue ? e.StartDate.Value.ToString("dd MMM yyyy HH:mm") : "--";
-			var img = Img(e.ImageUrl);
-			var detailUrl = Url.Action("Details", "Event", new { area = "Client", id = e.Id });
+            <a href="@detailUrl" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
+                <img src="@img" alt="@title" style="width:84px; height:84px; object-fit:cover; border-radius:8px;" />
+                <div class="d-flex flex-column w-100">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="me-2" style="min-width:0;">
+                            <div class="fw-semibold text-truncate" style="max-width: calc(100% - 90px);">@title</div>
+                        </div>
+                        <small class="text-muted ms-2 text-nowrap">@start</small>
+                    </div>
 
-			<a href="@detailUrl" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
-				<img src="@img" alt="@title" style="width:84px; height:84px; object-fit:cover; border-radius:8px;" />
-				<div class="d-flex flex-column w-100">
-					<div class="d-flex justify-content-between align-items-start">
-						<div class="me-2" style="min-width:0;">
-							<div class="fw-semibold text-truncate" style="max-width: calc(100% - 90px);">@title</div>
-						</div>
-						<small class="text-muted ms-2 text-nowrap">@start</small>
-					</div>
+                    @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
+                    {
+                        <div class="small text-muted mt-1 text-truncate" style="max-width:100%;">@e.ShortDescription</div>
+                    }
+                </div>
+            </a>
+        }
+    }
+    else
+    {
+        <div class="text-center text-muted small p-3">
+            Không có sự kiện sắp tới.
+        </div>
+    }
 
-					@if (!string.IsNullOrWhiteSpace(e.ShortDescription))
-					{
-						<div class="small text-muted mt-1 text-truncate" style="max-width:100%;">@e.ShortDescription</div>
-					}
-				</div>
-			</a>
-		}
-	}
-	else
-	{
-		<div class="text-center text-muted small p-3">
-			No upcoming events 🔕
-		</div>
-	}
-
-	<div class="text-center mt-3">
-		<a href="@Url.Action("Index", "Event", new { area = "Client" })" class="btn btn-outline-secondary btn-sm">
-			View all events
-		</a>
-	</div>
+    <div class="text-center mt-3">
+        <a href="@Url.Action("Index", "Event", new { area = "Client" })" class="btn btn-outline-secondary btn-sm">
+            Xem tất cả sự kiện
+        </a>
+    </div>
 </div>
