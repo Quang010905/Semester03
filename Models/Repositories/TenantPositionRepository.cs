@@ -48,7 +48,8 @@ namespace Semester03.Models.Repositories
             var p = await _db.TblTenantPositions.FindAsync(id);
             if (p == null) return null;
 
-            return new TenantPositionDto
+            // mapping basic pos
+            var dto = new TenantPositionDto
             {
                 TenantPosition_ID = p.TenantPositionId,
                 TenantPosition_Location = p.TenantPositionLocation,
@@ -57,9 +58,33 @@ namespace Semester03.Models.Repositories
                 TenantPosition_Floor = p.TenantPositionFloor,
                 TenantPosition_Status = p.TenantPositionStatus.HasValue ? (int)p.TenantPositionStatus : 0,
                 TenantPosition_LeftPct = p.TenantPositionLeftPct,
-                TenantPosition_TopPct = p.TenantPositionTopPct
+                TenantPosition_TopPct = p.TenantPositionTopPct,
+                Tenant = null
             };
+
+            // nếu có assigned tenant id -> load tenant basic info
+            if (p.TenantPositionAssignedTenantId.HasValue)
+            {
+                var tid = p.TenantPositionAssignedTenantId.Value;
+
+                // CHÚ Ý: thay _db.TblTenants, TenantId, TenantName... bằng tên DbSet / property thực tế của bạn
+                var t = await _db.TblTenants.FirstOrDefaultAsync(x => x.TenantId == tid);
+                if (t != null)
+                {
+                    dto.Tenant = new TenantDto
+                    {
+                        Tenant_Id = t.TenantId,
+                        Tenant_Name = t.TenantName,       
+                        Tenant_Img = t.TenantImg,        
+                        Tenant_UserID = t.TenantUserId.ToString(),   
+                        Tenant_Status = t.TenantStatus   
+                    };
+                }
+            }
+
+            return dto;
         }
+
 
         public async Task DeleteAsync(int id)
         {

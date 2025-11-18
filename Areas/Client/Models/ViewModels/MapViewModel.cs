@@ -20,6 +20,15 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public List<TenantPositionDto> Positions { get; set; } = new List<TenantPositionDto>();
     }
 
+    public class TenantDto
+    {
+        public int Tenant_Id { get; set; }               
+        public string Tenant_Name { get; set; }
+        public string Tenant_Img { get; set; }
+        public string Tenant_UserID { get; set; }
+        public int? Tenant_Status { get; set; }         
+    }
+
     public class TenantPositionDto
     {
         public int TenantPosition_ID { get; set; }
@@ -32,5 +41,6 @@ namespace Semester03.Areas.Client.Models.ViewModels
         // new: coordinates from DB
         public decimal? TenantPosition_LeftPct { get; set; }
         public decimal? TenantPosition_TopPct { get; set; }
+        public TenantDto Tenant { get; set; }
     }
 }
