@@ -106,8 +106,8 @@ app.MapControllerRoute(
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Admin}/{action=Index}/{id?}",
-    defaults: new { area = "Admin" }
+    pattern: "{controller=Home}/{action=Index}/{id?}",
+    defaults: new { area = "Client" }
 )
 
 
