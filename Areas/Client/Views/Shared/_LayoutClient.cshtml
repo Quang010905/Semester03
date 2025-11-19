@@ -485,8 +485,50 @@
 						</div>
 
 						@{
-							// Lấy top upcoming events để hiển thị trong sidebar (non-blocking)
+							// Lấy top upcoming events để hiển thị trong sidebar
 							var topEvents = await _event_repo.GetUpcomingEventsAsync(12);
+
+							// helper để chuẩn hóa đường dẫn ảnh (dùng chung với các view khác)
+							Func<string, string> Img = (raw) =>
+							{
+								if (string.IsNullOrWhiteSpace(raw))
+								{
+									return Url.Content("~/images/event-placeholder.png");
+								}
+
+								// Nếu là URL tuyệt đối (http/https) -> trả thẳng
+								if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+								{
+									return raw;
+								}
+
+								// Loại bỏ wwwroot/ nếu có và bỏ ~ hoặc / ở đầu
+								var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
+
+								// Encode spaces (không encode '/')
+								s = s.Replace(" ", "%20");
+
+								// Nếu đã bắt đầu bằng "Content/..." (DB lưu đường dẫn tương đối từ wwwroot)
+								if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase))
+								{
+									return Url.Content("~/" + s);
+								}
+
+								// Nếu bắt đầu với "images/..." hoặc admin path
+								if (s.StartsWith("images", StringComparison.OrdinalIgnoreCase) || s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
+								{
+									return Url.Content("~/" + s);
+								}
+
+								// Nếu raw bắt đầu bằng '/' -> dùng trực tiếp
+								if (raw.StartsWith("/"))
+								{
+									return Url.Content("~" + raw);
+								}
+
+								// Mặc định: coi như filename lưu trong wwwroot/Content/Uploads/Events/
+								return Url.Content("~/Content/Uploads/Events/" + s);
+							};
 						}
 
 						<div class="mb-4">
@@ -500,19 +542,16 @@
 								<div class="slider-track">
 									@foreach (var e in topEvents ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.EventCardVm>())
 									{
-										var imgUrl = string.IsNullOrWhiteSpace(e.ImageUrl)
-										? Url.Content("~/images/event-placeholder.png")
-										: Url.Content(e.ImageUrl.StartsWith("/") ? "~" + e.ImageUrl : $"~/images/events/{e.ImageUrl}");
-
+										var imgUrl = Img(e.ImageUrl);
 										var start = e.StartDate.HasValue ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--";
-
 										<div class="slider-item">
 											<div class="card movie-card event-card position-relative h-100 small-card">
 												<img src="@imgUrl"
-													 class="movie-poster card-img-top small-poster" alt="@e.Title ?? " Event"" />
+													 class="movie-poster card-img-top small-poster"
+													 alt="@(e.Title ?? "Event")" />
 												<div class="small-card-body" style="flex:1">
-													<div class="small-title">@e.Title ?? "Event"</div>
-													<div class="small-meta">@start</div>
+													<div class="small-title">@(!string.IsNullOrWhiteSpace(e.Title) ? e.Title : "Event")</div>
+													<div class="small-meta text-muted">@start</div>
 													<div class="mt-2">
 														<a class="btn btn-sm btn-light" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">View</a>
 													</div>
@@ -522,6 +561,7 @@
 									}
 								</div>
 							</div>
+						</div>
 
 						<div class="mb-4">
 							<div class="d-flex align-items-center justify-content-between mb-2">

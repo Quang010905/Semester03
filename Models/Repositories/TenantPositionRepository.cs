@@ -48,7 +48,8 @@ namespace Semester03.Models.Repositories
             var p = await _db.TblTenantPositions.FindAsync(id);
             if (p == null) return null;
 
-            return new TenantPositionDto
+            // mapping basic pos
+            var dto = new TenantPositionDto
             {
                 TenantPosition_ID = p.TenantPositionId,
                 TenantPosition_Location = p.TenantPositionLocation,
@@ -57,9 +58,33 @@ namespace Semester03.Models.Repositories
                 TenantPosition_Floor = p.TenantPositionFloor,
                 TenantPosition_Status = p.TenantPositionStatus.HasValue ? (int)p.TenantPositionStatus : 0,
                 TenantPosition_LeftPct = p.TenantPositionLeftPct,
-                TenantPosition_TopPct = p.TenantPositionTopPct
+                TenantPosition_TopPct = p.TenantPositionTopPct,
+                Tenant = null
             };
+
+            // nếu có assigned tenant id -> load tenant basic info
+            if (p.TenantPositionAssignedTenantId.HasValue)
+            {
+                var tid = p.TenantPositionAssignedTenantId.Value;
+
+                // CHÚ Ý: thay _db.TblTenants, TenantId, TenantName... bằng tên DbSet / property thực tế của bạn
+                var t = await _db.TblTenants.FirstOrDefaultAsync(x => x.TenantId == tid);
+                if (t != null)
+                {
+                    dto.Tenant = new TenantDto
+                    {
+                        Tenant_Id = t.TenantId,
+                        Tenant_Name = t.TenantName,       
+                        Tenant_Img = t.TenantImg,        
+                        Tenant_UserID = t.TenantUserId.ToString(),   
+                        Tenant_Status = t.TenantStatus   
+                    };
+                }
+            }
+
+            return dto;
         }
+
 
         public async Task DeleteAsync(int id)
         {
@@ -119,6 +144,52 @@ namespace Semester03.Models.Repositories
                     ((p.TenantPositionLeftPct.Value - leftPct) * (p.TenantPositionLeftPct.Value - leftPct)
                     + (p.TenantPositionTopPct.Value - topPct) * (p.TenantPositionTopPct.Value - topPct)) < thresholdSq
                 );
+        }
+
+
+        // ==========================================================
+        // === ADMIN METHODS ===
+        // ==========================================================
+
+        public async Task<IEnumerable<TblTenantPosition>> GetAllAdminEntitiesAsync(string search = null, int? floor = null, int? status = null)
+        {
+            var query = _db.TblTenantPositions
+                .Include(p => p.TenantPositionAssignedTenant) //
+                .AsQueryable();
+
+            // 1. Filter by Floor
+            if (floor.HasValue)
+            {
+                query = query.Where(p => p.TenantPositionFloor == floor.Value);
+            }
+
+            // 2. Filter by Status (0=Vacant, 1=Occupied)
+            if (status.HasValue)
+            {
+                query = query.Where(p => p.TenantPositionStatus == status.Value);
+            }
+
+            // 3. Search by Location Code OR Tenant Name
+            if (!string.IsNullOrEmpty(search))
+            {
+                search = search.ToLower();
+                query = query.Where(p =>
+                    p.TenantPositionLocation.ToLower().Contains(search) ||
+                    (p.TenantPositionAssignedTenant != null && p.TenantPositionAssignedTenant.TenantName.ToLower().Contains(search))
+                );
+            }
+
+            return await query
+                .OrderBy(p => p.TenantPositionFloor)
+                .ThenBy(p => p.TenantPositionLocation)
+                .ToListAsync();
+        }
+
+        public async Task<TblTenantPosition> GetEntityByIdAsync(int id)
+        {
+            return await _db.TblTenantPositions
+                .Include(p => p.TenantPositionAssignedTenant)
+                .FirstOrDefaultAsync(p => p.TenantPositionId == id);
         }
     }
 }

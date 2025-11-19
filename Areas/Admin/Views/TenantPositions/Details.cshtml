@@ -1,0 +1,85 @@
+﻿@model Semester03.Models.Entities.TblTenantPosition
+
+@{
+    ViewData["Title"] = "Unit Details";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<h1 class="h3 mb-2 text-gray-800">Unit Details: @Model.TenantPositionLocation</h1>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Position Info</h6>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">Location Code</dt>
+                    <dd class="col-sm-8">@Html.DisplayFor(model => model.TenantPositionLocation)</dd>
+
+                    <dt class="col-sm-4">Floor</dt>
+                    <dd class="col-sm-8">Floor @Html.DisplayFor(model => model.TenantPositionFloor)</dd>
+
+                    <dt class="col-sm-4">Area</dt>
+                    <dd class="col-sm-8">@Html.DisplayFor(model => model.TenantPositionAreaM2) m²</dd>
+
+                    <dt class="col-sm-4">Rent Price</dt>
+                    <dd class="col-sm-8">@Model.TenantPositionRentPricePerM2.ToString("N0") VND / m²</dd>
+
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">
+                        @if (Model.TenantPositionStatus == 1)
+                        {
+                            <span class="badge badge-primary">Occupied</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-success">Vacant</span>
+                        }
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-success">Occupant Info</h6>
+            </div>
+            <div class="card-body text-center">
+                @if (Model.TenantPositionAssignedTenant != null)
+                {
+                    <img src="@Url.Content(string.IsNullOrEmpty(Model.TenantPositionAssignedTenant.TenantImg)
+                                     ? "~/Content/Uploads/noimage.png"
+                                     : "~/Content/Uploads/FloorImg/tenants/" + Model.TenantPositionAssignedTenant.TenantImg)"
+                     alt="@Model.TenantPositionAssignedTenant.TenantName"
+                     class="img-fluid mb-3" style="max-height: 150px;" onerror="this.onerror=null; this.src='/Content/Uploads/noimage.png';" />
+
+                    <h4>@Model.TenantPositionAssignedTenant.TenantName</h4>
+                    <p class="text-muted">@Model.TenantPositionAssignedTenant.TenantDescription</p>
+                    <a asp-controller="Tenants" asp-action="Details" asp-route-id="@Model.TenantPositionAssignedTenantId" class="btn btn-sm btn-info">
+                        View Tenant Profile
+                    </a>
+                }
+                else
+                {
+                    <div class="py-5">
+                        <i class="fas fa-store-slash fa-3x text-gray-300 mb-3"></i>
+                        <p class="text-gray-500">This unit is currently vacant.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <a asp-action="Edit" asp-route-id="@Model.TenantPositionId" class="btn btn-warning btn-lg">
+            <i class="fas fa-edit"></i> Edit Assignment / Details
+        </a>
+        <a asp-action="Index" class="btn btn-secondary btn-lg ml-2">Back to Map</a>
+    </div>
+</div>

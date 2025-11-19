@@ -1,0 +1,479 @@
+﻿@model IEnumerable<IGrouping<int, Semester03.Models.Entities.TblTenantPosition>>
+
+@{
+    ViewData["Title"] = "Mall Floor Plan (Optimized Layout)";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<style>
+    /* --- CONTAINER --- */
+    .floor-wrapper {
+        background-color: #fff;
+        border: 1px solid #d1d3e2;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 30px;
+        overflow-x: auto;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    /* --- MALL STRUCTURE --- */
+    .floor-layout {
+        display: flex;
+        flex-direction: column;
+        min-width: 1400px;
+        background-color: #eaecf4;
+        border: 2px solid #5a5c69;
+        padding: 5px;
+    }
+
+    /* --- ROWS --- */
+    .shop-strip {
+        display: flex;
+        height: 80px;
+        gap: 2px;
+    }
+
+    /* --- SHOP CLUSTERS (5 Units) --- */
+    .shop-cluster {
+        flex: 5;
+        display: flex;
+        gap: 1px;
+        background-color: white;
+        border: 1px solid #ccc;
+    }
+
+    /* --- INTERNAL UTILITY BLOCKS --- */
+    .util-block-inner {
+        flex: 1; /* Width ~ 1 shop unit */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #5a5c69;
+        color: white;
+        font-size: 0.65rem;
+        font-weight: bold;
+        text-align: center;
+        border-left: 2px solid #fff;
+        border-right: 2px solid #fff;
+        z-index: 5;
+    }
+
+    .util-icon {
+        font-size: 1.3rem;
+        margin-bottom: 2px;
+    }
+
+    .util-wc {
+        background-color: #36b9cc;
+    }
+    /* Cyan for WC */
+    .util-lift {
+        background-color: #f6c23e;
+        color: #333;
+    }
+    /* Yellow for Lift */
+
+    /* --- END CAPS (Exits) --- */
+    .end-cap {
+        width: 40px;
+        background-color: #e74a3b;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        writing-mode: vertical-lr;
+        font-size: 0.65rem;
+        font-weight: 900;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        border: 1px solid #c0392b;
+    }
+
+    /* --- CENTRAL HALLWAY --- */
+    .hallway {
+        height: 60px; /* Increased height for escalators */
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: #f8f9fc;
+        color: #b0b3b8;
+        font-size: 0.8rem;
+        font-weight: 900;
+        padding: 0 10px;
+        border-top: 1px dashed #d1d3e2;
+        border-bottom: 1px dashed #d1d3e2;
+    }
+
+    /* --- ESCALATOR ZONES --- */
+    .escalator-group {
+        display: flex;
+        align-items: center;
+        background-color: #e2e6ea;
+        padding: 5px 15px;
+        border-radius: 30px;
+        border: 1px solid #d1d3e2;
+        color: #5a5c69;
+    }
+
+    .escalator-icon {
+        font-size: 1.2rem;
+        margin: 0 5px;
+        color: #4e73df;
+    }
+
+    .stairs-icon {
+        font-size: 1rem;
+        margin-left: 8px;
+        color: #858796;
+    }
+
+    /* --- CENTER GATES --- */
+    .gate-center {
+        width: 60px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #fff;
+        color: #e74a3b;
+        font-size: 0.6rem;
+        font-weight: bold;
+        text-align: center;
+        border-left: 2px dashed #e74a3b;
+        border-right: 2px dashed #e74a3b;
+        margin: 0 2px;
+    }
+
+    .wall-connector {
+        width: 20px;
+        background-color: #858796;
+        opacity: 0.3;
+        margin: 0 auto;
+    }
+
+    /* --- SHOP UNIT STYLES --- */
+    .shop-unit {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        border-right: 1px solid #eee;
+        font-size: 0.65rem;
+        text-decoration: none !important;
+        transition: all 0.15s;
+        overflow: hidden;
+        color: #333;
+        background-color: white;
+        position: relative;
+        min-width: 40px;
+    }
+
+        .shop-unit:hover {
+            transform: scale(1.1);
+            z-index: 10;
+            border: 1px solid #4e73df;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+
+    .unit-vacant {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .unit-occupied {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+
+    .unit-add {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #fff;
+        color: #e3e6f0;
+        border-right: 1px dashed #d1d3e2;
+        font-size: 1.2rem;
+        text-decoration: none !important;
+    }
+
+        .unit-add:hover {
+            color: #4e73df;
+            background-color: #f8f9fc;
+        }
+</style>
+
+<h1 class="h3 mb-2 text-gray-800">Mall Floor Plan</h1>
+<p class="mb-4">Overview of tenant positions. Use the filter below to find specific units.</p>
+
+<div class="card mb-4 border-left-primary">
+    <div class="card-body">
+        <form method="get" asp-action="Index" class="form-inline">
+
+            <div class="form-group mb-2 mr-3">
+                <label for="search" class="sr-only">Search</label>
+                <input type="text" name="search" value="@ViewData["CurrentSearch"]"
+                       class="form-control" placeholder="Search Location or Tenant Name..." style="width: 250px;">
+            </div>
+
+            <div class="form-group mb-2 mr-3">
+                <select name="floor" class="form-control">
+                    <option value="">All Floors</option>
+                    <option value="0" selected="@(ViewData["CurrentFloor"]?.ToString() == "0")">Ground Floor</option>
+                    <option value="1" selected="@(ViewData["CurrentFloor"]?.ToString() == "1")">Floor 1</option>
+                    <option value="2" selected="@(ViewData["CurrentFloor"]?.ToString() == "2")">Floor 2</option>
+                    <option value="3" selected="@(ViewData["CurrentFloor"]?.ToString() == "3")">Floor 3</option>
+                    <option value="4" selected="@(ViewData["CurrentFloor"]?.ToString() == "4")">Floor 4</option>
+                </select>
+            </div>
+
+            <div class="form-group mb-2 mr-3">
+                <select name="status" class="form-control">
+                    <option value="">All Status</option>
+                    <option value="0" selected="@(ViewData["CurrentStatus"]?.ToString() == "0")">Vacant (Green)</option>
+                    <option value="1" selected="@(ViewData["CurrentStatus"]?.ToString() == "1")">Occupied (Blue)</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary mb-2 mr-2"><i class="fas fa-search"></i> Search</button>
+            <a asp-action="Index" class="btn btn-secondary mb-2">Reset</a>
+        </form>
+    </div>
+</div>
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-warning text-center">No positions found matching your search criteria.</div>
+}
+
+@foreach (var floorGroup in Model)
+{
+    bool isGroundFloor = (floorGroup.Key == 0 || floorGroup.Key == 1);
+
+    // Data Splitting (Same logic as before)
+    var topRow = floorGroup.Where(p => p.TenantPositionTopPct < 50).OrderBy(p => p.TenantPositionLeftPct).ToList();
+    var bottomRow = floorGroup.Where(p => p.TenantPositionTopPct >= 50).OrderBy(p => p.TenantPositionLeftPct).ToList();
+
+    var topChunk1 = topRow.Take(5).ToList();
+    var topChunk2 = topRow.Skip(5).Take(5).ToList();
+    var topChunk3 = topRow.Skip(10).Take(5).ToList();
+    var topChunk4 = topRow.Skip(15).Take(5).ToList();
+
+    var botChunk1 = bottomRow.Take(5).ToList();
+    var botChunk2 = bottomRow.Skip(5).Take(5).ToList();
+    var botChunk3 = bottomRow.Skip(10).Take(5).ToList();
+    var botChunk4 = bottomRow.Skip(15).Take(5).ToList();
+
+    <div class="floor-wrapper">
+        <div class="d-flex justify-content-between align-items-end mb-2">
+            <h5 class="m-0 font-weight-bold text-primary text-uppercase">
+                Floor @floorGroup.Key @(isGroundFloor ? "(Ground Level)" : "")
+            </h5>
+            <small>Occupancy: @floorGroup.Count(x => x.TenantPositionStatus == 1) / 40 Units</small>
+        </div>
+
+        <div class="floor-layout">
+
+            <div class="shop-strip">
+                <div class="end-cap">Exit</div>
+
+                <div class="shop-cluster">
+                    @foreach (var pos in topChunk1)
+                    {
+                        <partial name="_ShopButtonPartial" model="pos" />
+                    }
+                    @for (int i = 0; i < (5 - topChunk1.Count); i++)
+                    {
+                        <div class="shop-unit unit-void"></div>
+                    }
+                </div>
+
+                <div class="util-block-inner util-wc">
+                    <i class="fas fa-restroom util-icon"></i>
+                    <div>WC</div>
+                </div>
+
+                <div class="shop-cluster">
+                    @foreach (var pos in topChunk2)
+                    {
+                        <partial name="_ShopButtonPartial" model="pos" />
+                    }
+                    @for (int i = 0; i < (5 - topChunk2.Count); i++)
+                    {
+                        <div class="shop-unit unit-void"></div>
+                    }
+                </div>
+
+                @if (isGroundFloor)
+                {
+                    <div class="gate-center">
+                        <i class="fas fa-arrow-down fa-2x mb-1"></i>
+                        <div>NORTH</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="util-block-inner" style="background-color:#4e73df; color:white;" title="Digital Directory / Map">
+                        <i class="fas fa-map-marked-alt util-icon" style="color:white;"></i>
+                        <div style="font-size:0.55rem;">INFO MAP</div>
+                    </div>
+                }
+
+                <div class="shop-cluster">
+                    @foreach (var pos in topChunk3)
+                    {
+                        <partial name="_ShopButtonPartial" model="pos" />
+                    }
+                    @for (int i = 0; i < (5 - topChunk3.Count); i++)
+                    {
+                        <div class="shop-unit unit-void"></div>
+                    }
+                </div>
+
+                <div class="util-block-inner util-wc">
+                    <i class="fas fa-restroom util-icon"></i>
+                    <div>WC</div>
+                </div>
+
+                <div class="shop-cluster">
+                    @foreach (var pos in topChunk4)
+                    {
+                        <partial name="_ShopButtonPartial" model="pos" />
+                    }
+                    @for (int i = 0; i < (5 - topChunk4.Count); i++)
+                    {
+                        <div class="shop-unit unit-void"></div>
+                    }
+                </div>
+
+                <div class="end-cap" style="transform: rotate(180deg);">Exit</div>
+            </div>
+
+            <div class="hallway">
+                <div style="width:80px; text-align:center;">
+                    @if (isGroundFloor)
+                    {
+                        <span style="font-size:0.7rem; font-weight:bold; color:#e74a3b;"><i class="fas fa-chevron-right"></i> WEST</span>
+                    }
+                </div>
+
+                <div class="escalator-group" title="Escalator & Stairs">
+                    <i class="fas fa-level-up-alt escalator-icon"></i>
+                    <div style="text-align:center; line-height:1;">
+                        <span style="font-size:0.6rem; display:block;">ESCALATOR</span>
+                        <span style="font-size:0.5rem;">& STAIRS</span>
+                    </div>
+                    <i class="fas fa-level-down-alt escalator-icon"></i>
+                    <i class="fas fa-walking stairs-icon"></i>
+                </div>
+
+                <span>MAIN CORRIDOR (210m)</span>
+
+                <div class="escalator-group" title="Escalator & Stairs">
+                    <i class="fas fa-level-up-alt escalator-icon"></i>
+                    <div style="text-align:center; line-height:1;">
+                        <span style="font-size:0.6rem; display:block;">ESCALATOR</span>
+                        <span style="font-size:0.5rem;">& STAIRS</span>
+                    </div>
+                    <i class="fas fa-level-down-alt escalator-icon"></i>
+                    <i class="fas fa-walking stairs-icon"></i>
+                </div>
+
+                <div style="width:80px; text-align:center;">
+                    @if (isGroundFloor)
+                    {
+                        <span style="font-size:0.7rem; font-weight:bold; color:#e74a3b;">EAST <i class="fas fa-chevron-left"></i></span>
+                    }
+                </div>
+            </div>
+
+            <div class="shop-strip">
+                <div class="end-cap">Exit</div>
+
+                <div class="shop-cluster">
+                    @foreach (var pos in botChunk1)
+                    {
+                        <partial name="_ShopButtonPartial" model="pos" />
+                    }
+                    @for (int i = 0; i < (5 - botChunk1.Count); i++)
+                    {
+                        <div class="shop-unit unit-void"></div>
+                    }
+                </div>
+
+                <div class="util-block-inner util-lift">
+                    <i class="fas fa-elevator util-icon" style="color:#333;"></i>
+                    <div style="color:#333;">LIFT</div>
+                </div>
+
+                <div class="shop-cluster">
+                    @foreach (var pos in botChunk2)
+                    {
+                        <partial name="_ShopButtonPartial" model="pos" />
+                    }
+                    @for (int i = 0; i < (5 - botChunk2.Count); i++)
+                    {
+                        <div class="shop-unit unit-void"></div>
+                    }
+                </div>
+
+                @if (isGroundFloor)
+                {
+                    <div class="gate-center">
+                        <div>SOUTH</div>
+                        <i class="fas fa-arrow-up fa-2x mt-1"></i>
+                    </div>
+                }
+                else
+                {
+                    <div class="util-block-inner" style="background-color:#17a2b8; color:white;" title="Rest Area / Lounge">
+                        <i class="fas fa-couch util-icon" style="color:white;"></i>
+                        <div style="font-size:0.55rem;">LOUNGE</div>
+                    </div>
+                }
+
+                <div class="shop-cluster">
+                    @foreach (var pos in botChunk3)
+                    {
+                        <partial name="_ShopButtonPartial" model="pos" />
+                    }
+                    @for (int i = 0; i < (5 - botChunk3.Count); i++)
+                    {
+                        <div class="shop-unit unit-void"></div>
+                    }
+                </div>
+
+                <div class="util-block-inner util-lift">
+                    <i class="fas fa-elevator util-icon" style="color:#333;"></i>
+                    <div style="color:#333;">LIFT</div>
+                </div>
+
+                <div class="shop-cluster">
+                    @foreach (var pos in botChunk4)
+                    {
+                        <partial name="_ShopButtonPartial" model="pos" />
+                    }
+                    @for (int i = 0; i < (5 - botChunk4.Count); i++)
+                    {
+                        <div class="shop-unit unit-void"></div>
+                    }
+                </div>
+
+                <div class="end-cap" style="transform: rotate(180deg);">Exit</div>
+            </div>
+
+        </div>
+    </div>
+}

@@ -1,0 +1,19 @@
+﻿@model Semester03.Models.Entities.TblTenantPosition
+
+@{
+    string statusClass = (Model.TenantPositionStatus == 0) ? "unit-vacant" : "unit-occupied";
+    string name = (Model.TenantPositionStatus == 0) ? "VACANT" : Model.TenantPositionAssignedTenant?.TenantName;
+    string shortName = (name != null && name.Length > 12) ? name.Substring(0, 10) + ".." : name;
+    string tooltip = $"{Model.TenantPositionLocation}: {name}";
+}
+
+<a asp-action="Details" asp-route-id="@Model.TenantPositionId"
+   class="shop-unit @statusClass"
+   title="@tooltip">
+    <div style="font-size:9px; opacity:0.7;">@Model.TenantPositionLocation</div>
+    <div class="mt-1 font-weight-bold">@shortName</div>
+    @if (Model.TenantPositionStatus == 0)
+    {
+        <i class="fas fa-plus-circle mt-1 opacity-50"></i>
+    }
+</a>

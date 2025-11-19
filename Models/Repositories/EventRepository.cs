@@ -25,7 +25,8 @@ public class EventRepository
             {
                 Id = e.EventId,
                 Title = e.EventName,
-                ShortDescription = e.EventDescription.Length > 200 ? e.EventDescription.Substring(0, 197) + "..." : e.EventDescription,
+                ShortDescription = string.IsNullOrEmpty(e.EventDescription) ? "" :
+                    (e.EventDescription.Length > 200 ? e.EventDescription.Substring(0, 197) + "..." : e.EventDescription),
                 StartDate = e.EventStart,
                 EndDate = e.EventEnd,
                 ImageUrl = string.IsNullOrEmpty(e.EventImg) ? "/images/event-placeholder.png" : e.EventImg,
@@ -70,6 +71,7 @@ public class EventRepository
         }
         catch (Exception)
         {
+            // swallow intentionally; return defaults below
         }
 
         var defaults = new List<EventCardVm>(top);
@@ -92,7 +94,6 @@ public class EventRepository
         return defaults;
     }
 
-
     public async Task<EventDetailsVm> GetEventByIdAsync(int eventId)
     {
         var e = await _context.TblEvents
@@ -101,7 +102,7 @@ public class EventRepository
 
         if (e == null) return null;
 
-        return new EventDetailsVm
+        var vm = new EventDetailsVm
         {
             Id = e.EventId,
             Title = e.EventName,
@@ -111,8 +112,85 @@ public class EventRepository
             ImageUrl = string.IsNullOrEmpty(e.EventImg) ? "/images/event-placeholder.png" : e.EventImg,
             MaxSlot = e.EventMaxSlot,
             Status = (int)e.EventStatus,
-            TenantPositionId = e.EventTenantPositionId
+            TenantPositionId = e.EventTenantPositionId // assuming it's int
         };
+
+        // Lấy Sự kiện liên quan: nếu tenantId != 0 thì lấy, ngược lại bỏ qua
+        try
+        {
+            if (e.EventTenantPositionId != 0)
+            {
+                vm.Related = await GetRelatedEventsAsync(e.EventTenantPositionId, eventId, 8);
+            }
+            else
+            {
+                vm.Related = new List<EventCardVm>();
+            }
+        }
+        catch
+        {
+            vm.Related = new List<EventCardVm>();
+        }
+
+        return vm;
+    }
+
+
+    /// <summary>
+    /// Lấy các sự kiện liên quan (cùng tenant). Loại bỏ event hiện tại (excludeId).
+    /// </summary>
+    public async Task<List<EventCardVm>> GetRelatedEventsAsync(int tenantId, int excludeId, int take = 4)
+    {
+        var now = DateTime.Now;
+
+        var q = _context.TblEvents
+            .AsNoTracking()
+            .Where(e => e.EventTenantPositionId == tenantId && e.EventId != excludeId && e.EventStatus == 1 && e.EventEnd >= now)
+            .OrderBy(e => e.EventStart)
+            .Take(take)
+            .Select(e => new EventCardVm
+            {
+                Id = e.EventId,
+                Title = e.EventName,
+                ShortDescription = string.IsNullOrEmpty(e.EventDescription) ? "" :
+                    (e.EventDescription.Length > 120 ? e.EventDescription.Substring(0, 117) + "..." : e.EventDescription),
+                StartDate = e.EventStart,
+                EndDate = e.EventEnd,
+                ImageUrl = string.IsNullOrEmpty(e.EventImg) ? "/images/event-placeholder.png" : e.EventImg,
+                MaxSlot = e.EventMaxSlot,
+                Status = (int)e.EventStatus,
+                TenantPositionId = e.EventTenantPositionId
+            });
+
+        var list = await q.ToListAsync();
+
+        // Nếu không có related theo tenant, fallback lấy upcoming khác
+        if (list == null || !list.Any())
+        {
+            var fallback = await _context.TblEvents
+                .AsNoTracking()
+                .Where(e => e.EventId != excludeId && e.EventStatus == 1 && e.EventEnd >= now)
+                .OrderBy(e => e.EventStart)
+                .Take(take)
+                .Select(e => new EventCardVm
+                {
+                    Id = e.EventId,
+                    Title = e.EventName,
+                    ShortDescription = string.IsNullOrEmpty(e.EventDescription) ? "" :
+                        (e.EventDescription.Length > 120 ? e.EventDescription.Substring(0, 117) + "..." : e.EventDescription),
+                    StartDate = e.EventStart,
+                    EndDate = e.EventEnd,
+                    ImageUrl = string.IsNullOrEmpty(e.EventImg) ? "/images/event-placeholder.png" : e.EventImg,
+                    MaxSlot = e.EventMaxSlot,
+                    Status = (int)e.EventStatus,
+                    TenantPositionId = e.EventTenantPositionId
+                })
+                .ToListAsync();
+
+            return fallback ?? new List<EventCardVm>();
+        }
+
+        return list;
     }
 
     // ==========================================================
@@ -159,7 +237,7 @@ public class EventRepository
             await _context.SaveChangesAsync();
         }
     }
-
+    
     public async Task<bool> UpdateStatusAsync(int eventId, int status)
     {
         var evt = await _context.TblEvents.FindAsync(eventId);

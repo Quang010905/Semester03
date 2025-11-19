@@ -1,12 +1,13 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.MapViewModel
 @{
     Layout = "_LayoutClient";
-    // constants & data
+    // physical & svg constants
     var shopHeightMeters = 5m;
     var elevatorHeightMeters = 8m;
     var planWidthMeters = 120m;
     var planDepthMeters = 80m;
     var vbW = 1200m; var vbH = 800m;
+    var defaultRectW = 100m; var defaultRectH = 60m; // <-- same as Index
     var atrX = 460m; var atrY = 260m; var atrW = 280m; var atrH = 180m;
     var elevW = 48m;
     var elevH = atrH - 20m;
@@ -24,7 +25,6 @@
     <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
             <h4 class="mb-0">Mô phỏng 3D sơ đồ — @(currentFloor.HasValue ? (currentFloor == 0 ? "G (0)" : "Tầng " + currentFloor.ToString()) : "Tất cả")</h4>
-            <small class="text-muted">Giao diện 3D phong cách VIP — kéo/phóng/điều khiển camera, click để mở modal thông tin.</small>
         </div>
 
         <div class="d-flex gap-2 align-items-center">
@@ -77,39 +77,129 @@
 
 @section Styles {
     <style>
+        /* Container / background */
         #threeContainer {
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 12px 40px rgba(7,18,30,0.08);
+            /* nhẹ nhàng hơn: gradient pastel, ít chói */
+            background: linear-gradient(180deg, #f5f7fa 0%, #eef4f8 100%);
+            box-shadow: 0 10px 26px rgba(10,20,30,0.05);
+            border: 1px solid rgba(15,23,30,0.03);
         }
 
+        /* Global card / panel */
+        .card {
+            border-radius: 10px;
+            background-clip: padding-box;
+            border: 1px solid rgba(15,23,30,0.04);
+            box-shadow: 0 6px 18px rgba(15,23,30,0.04);
+        }
+
+        /* Form controls (dropdown / buttons) — slightly larger, softer */
+        .form-select, .btn, .form-check-label {
+            border-radius: 8px !important;
+            font-size: 13px;
+        }
+
+        .form-select {
+            border: 1px solid rgba(11,18,33,0.06) !important;
+            background: linear-gradient(180deg,#ffffff,#f8fbff);
+            box-shadow: none !important;
+        }
+
+        .btn-outline-primary {
+            color: #0b4da1;
+            border-color: rgba(11,77,161,0.12);
+            background: linear-gradient(180deg,#ffffff,#f7fbff);
+        }
+
+        /* Labels that render above shops (CSS2D) — clearer but not harsh */
         .label-2d {
             font-family: Inter, Roboto, Arial, sans-serif;
             font-size: 13px;
             padding: 6px 10px;
-            background: rgba(255,255,255,0.98);
-            border-radius: 6px;
-            color: #071221;
-            font-weight: 700;
-            border: 1px solid rgba(0,0,0,0.06);
-            box-shadow: 0 8px 22px rgba(7,18,30,0.08);
+            background: rgba(255,255,255,0.95); /* nearly opaque for legibility */
+            border-radius: 8px;
+            color: #0e2130; /* slightly softer than pure black */
+            font-weight: 600;
+            border: 1px solid rgba(6,12,20,0.06);
+            box-shadow: 0 6px 18px rgba(6,12,20,0.06);
+            pointer-events: auto;
+            white-space: nowrap;
+            transform-origin: center top;
         }
 
+        /* Smaller label for WC etc */
         .label-wc {
             font-size: 12px;
             padding: 6px 8px;
-            border-radius: 6px;
-            background: rgba(255,240,240,0.95);
+            border-radius: 8px;
+            background: rgba(255,245,245,0.98);
             color: #8b2b2b;
             font-weight: 700;
+            border: 1px solid rgba(139,43,43,0.06);
+            box-shadow: 0 4px 12px rgba(139,43,43,0.04);
         }
 
-        .elev-badge {
+        /* make 3D hover effect more subtle */
+        .label-2d:hover {
+            transform: translateY(-4px) scale(1.01);
+            transition: transform .12s ease;
+            box-shadow: 0 9px 22px rgba(6,12,20,0.07);
+        }
+
+        /* SVG-style buttons/legend in page (if any) */
+        .map-legend rect {
+            stroke: rgba(10,20,40,0.04);
+            fill: rgba(255,255,255,0.98);
+        }
+
+        /* reduce grid contrast (Three.js grid helper overlay is lighter already but be safe) */
+        .three-grid-helper {
+            opacity: 0.7;
+            filter: blur(0.0px);
+        }
+
+        /* small screens */
+        @@media (max-width: 767px) {
+            #threeContainer
+
+        {
+            height: 520px;
+        }
+
+        .label-2d {
             font-size: 12px;
-            padding: 4px 8px;
-            background: rgba(0,0,0,0.6);
-            color: white;
-            border-radius: 6px;
+            padding: 5px 8px;
+        }
+
+        .form-select, .btn {
+            font-size: 12px;
+        }
+
+        }
+
+        /* Reduce visual clutter: smaller shadow on shop highlight */
+        .shop-highlight {
+            box-shadow: 0 8px 20px rgba(8,16,30,0.06);
+            transition: transform .12s ease, box-shadow .12s ease;
+        }
+
+        /* subtle outline for selected shop in 3D (if you wish to add class) */
+        .shop-selected {
+            outline: 2px solid rgba(34,102,255,0.10);
+            box-shadow: 0 12px 28px rgba(34,102,255,0.06);
+        }
+
+        /* accessibility: high-contrast focus ring for keyboard users */
+        .form-select:focus, .btn:focus {
+            box-shadow: 0 0 0 3px rgba(11,77,161,0.08);
+            outline: none;
+        }
+
+        /* hide overly glossy bootstrap card backgrounds */
+        .card .card-body {
+            background: transparent;
         }
     </style>
 }
@@ -138,6 +228,8 @@
         const planDepthMeters = @((double)planDepthMeters);
         const vbW = @((double)vbW);
         const vbH = @((double)vbH);
+        const defaultRectW = @((double)defaultRectW);   // pixel units (same as Index)
+        const defaultRectH = @((double)defaultRectH);
         const atrX = @((double)atrX);
         const atrY = @((double)atrY);
         const atrW = @((double)atrW);
@@ -161,7 +253,7 @@
         function svgToMeterX(svgX){ return (svgX / vbW) * planWidthMeters - planWidthMeters/2.0; }
         function svgToMeterZ(svgY){ return (svgY / vbH) * planDepthMeters - planDepthMeters/2.0; }
 
-        // atrium bounds (meters) for exclusion test
+        // atrium bounds (meters) for other uses
         const atriumWidthMeters = (atrW / vbW * planWidthMeters);
         const atriumDepthMeters = (atrH / vbH * planDepthMeters);
         const atriumCenterX = ((atrX + atrW/2.0) / vbW * planWidthMeters) - planWidthMeters/2.0;
@@ -199,10 +291,10 @@
         controls.target.set(0, 30, 0);
         controls.update();
 
-        // Lighting (VIP-ish)
-        scene.add(new THREE.AmbientLight(0xffffff, 0.45));
-        scene.add(new THREE.HemisphereLight(0xffffff, 0x444b5a, 0.25));
-        const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+        // Lighting (softer)
+        scene.add(new THREE.AmbientLight(0xffffff, 0.38));
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x515760, 0.22));
+        const dir = new THREE.DirectionalLight(0xffffff, 0.85);
         dir.position.set(120,400,160);
         dir.castShadow = true;
         dir.shadow.mapSize.set(2048,2048);
@@ -210,11 +302,11 @@
 
         // ground + grid
         const groundGeom = new THREE.PlaneGeometry(planWidthMeters, planDepthMeters);
-        const groundMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness:0.03, roughness:0.86 });
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0xf8fbff, metalness:0.02, roughness:0.88 });
         const ground = new THREE.Mesh(groundGeom, groundMat); ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
         const grid = new THREE.GridHelper(Math.max(planWidthMeters, planDepthMeters), 12, 0xe9eef3, 0xe9eef3); grid.position.y = 0.01; scene.add(grid);
 
-        // floor separators & skylight & full atrium walls (unchanged idea)
+        // floor separators & skylight & full atrium walls
         const gap = 1.0;
         const maxFloor = (floorList && floorList.length>0) ? Math.max(...floorList,0) : 0;
         const floorsCount = Math.max(1, maxFloor + 1);
@@ -223,22 +315,22 @@
         const separatorsGroup = new THREE.Group(); scene.add(separatorsGroup);
         for (let f=1; f<=maxFloor; f++){
           const y = f * (shopHeightMeters + gap) - gap/2.0;
-          const matVis = new THREE.MeshStandardMaterial({ color: 0x0b1724, transparent:true, opacity:0.12, side: THREE.DoubleSide });
+          const matVis = new THREE.MeshStandardMaterial({ color: 0x0b1724, transparent:true, opacity:0.09, side: THREE.DoubleSide, roughness:0.9 });
           const plane = new THREE.Mesh(new THREE.PlaneGeometry(planWidthMeters, planDepthMeters), matVis);
           plane.rotation.x = -Math.PI/2;
           plane.position.y = y;
           separatorsGroup.add(plane);
           // 2D label
-          const div = document.createElement('div'); div.className='label-2d'; div.textContent = `Tầng ${f}`;
+          const div = document.createElement('div'); div.className='label-2d'; div.textContent = `Tầng ${f}`; div.style.fontSize='12px';
           const lbl = new CSS2DObject(div);
           lbl.position.set(-planWidthMeters/2 + 6, y + 0.4, -planDepthMeters/2 + 6);
           scene.add(lbl);
         }
 
-        // Atrium walls + skylight spanning floors
+        // Atrium walls + skylight spanning floors (same idea)
         (function addAtriumWallsAndSkylight(){
           const wallThickness = 0.6;
-          const sideMat = new THREE.MeshStandardMaterial({ color:0xfff6eb, transparent:true, opacity:0.95, roughness:0.6 });
+          const sideMat = new THREE.MeshStandardMaterial({ color:0xfff6eb, transparent:true, opacity:0.95, roughness:0.7 });
           const north = new THREE.Mesh(new THREE.BoxGeometry(atriumWidthMeters, totalHeight + 0.2, wallThickness), sideMat);
           north.position.set(atriumCenterX, (totalHeight)/2.0, atriumCenterZ - atriumHalfD + wallThickness/2); scene.add(north);
           const south = new THREE.Mesh(new THREE.BoxGeometry(atriumWidthMeters, totalHeight + 0.2, wallThickness), sideMat);
@@ -249,26 +341,32 @@
           east.position.set(atriumCenterX + atriumHalfW - wallThickness/2, (totalHeight)/2.0, atriumCenterZ); scene.add(east);
 
           // skylight (roof)
-          const skylightMat = new THREE.MeshPhysicalMaterial({ color:0xeef8ff, transparent:true, opacity:0.14, roughness:0.1, clearcoat:0.3 });
+          const skylightMat = new THREE.MeshPhysicalMaterial({ color:0xeef8ff, transparent:true, opacity:0.12, roughness:0.06, clearcoat:0.2 });
           const skylight = new THREE.Mesh(new THREE.PlaneGeometry(atriumWidthMeters, atriumDepthMeters), skylightMat);
           skylight.rotation.x = -Math.PI/2;
-          skylight.position.set(atriumCenterX, totalHeight + 0.5, atriumCenterZ);
+          skylight.position.set(atriumCenterX, totalHeight + 0.6, atriumCenterZ);
           scene.add(skylight);
+
+          const roofMat = new THREE.MeshStandardMaterial({ color: 0xf2f7fb, transparent:true, opacity:0.9, roughness:0.85 });
+          const roof = new THREE.Mesh(new THREE.PlaneGeometry(planWidthMeters, planDepthMeters), roofMat);
+          roof.rotation.x = -Math.PI/2;
+          roof.position.set(0, totalHeight + 1.0, 0);
+          scene.add(roof);
         })();
 
-        // elevator shafts + per-floor cone markers
+        // Elevators & WC (unchanged)
         const elevatorsGroup = new THREE.Group(); scene.add(elevatorsGroup);
         (function addElevatorsShafts(){
           const e1center = svgToMeterX(elev1X + elevW/2.0);
           const e2center = svgToMeterX(elev2X + elevW/2.0);
           const eZ = svgToMeterZ(elevY + elevH/2.0);
           const shaftGeom = new THREE.BoxGeometry(4, totalHeight + 0.4, 4.0);
-          const shaftMat = new THREE.MeshStandardMaterial({ color:0x222a35, transparent:true, opacity:0.12, roughness:0.5 });
+          const shaftMat = new THREE.MeshStandardMaterial({ color:0x222a35, transparent:true, opacity:0.12, roughness:0.9 });
           const s1 = new THREE.Mesh(shaftGeom, shaftMat); s1.position.set(e1center, totalHeight/2.0, eZ); s1.receiveShadow=true; elevatorsGroup.add(s1);
           const s2 = new THREE.Mesh(shaftGeom, shaftMat); s2.position.set(e2center, totalHeight/2.0, eZ); s2.receiveShadow=true; elevatorsGroup.add(s2);
           const coneGeom = new THREE.ConeGeometry(1.2, 2.4, 16);
-          const coneUpMat = new THREE.MeshStandardMaterial({ color:0x16a34a, emissive:0x16a34a, emissiveIntensity:0.2 });
-          const coneDownMat = new THREE.MeshStandardMaterial({ color:0xf39c12, emissive:0xf39c12, emissiveIntensity:0.2 });
+          const coneUpMat = new THREE.MeshStandardMaterial({ color:0x16a34a, emissive:0x16a34a, emissiveIntensity:0.18, roughness:0.6 });
+          const coneDownMat = new THREE.MeshStandardMaterial({ color:0xf39c12, emissive:0xf39c12, emissiveIntensity:0.18, roughness:0.6 });
           for (let f=0; f< floorsCount; f++){
             const baseY = f * (shopHeightMeters + gap);
             const c1 = new THREE.Mesh(coneGeom, (f%2===0)?coneUpMat:coneDownMat);
@@ -280,7 +378,6 @@
           }
         })();
 
-        // WC per-floor
         const wcGroup = new THREE.Group(); scene.add(wcGroup);
         (function addWCPerFloor(){
           const wcXm = svgToMeterX(wcX);
@@ -298,29 +395,24 @@
         })();
 
         // ---------------------------
-        // SHOPS: robust create / destroy
+        // SHOPS: use SVG-placement algorithm (same as Index) then map to 3D
         // ---------------------------
 
         // helper to remove CSS2D DOM elements attached to objects (recursive)
         function remove2DLabelsRecursively(obj){
           if (!obj) return;
           if (obj.element && obj.element.parentNode){
-            // CSS2DObject exposes .element
-            try { obj.element.parentNode.removeChild(obj.element); } catch(e){ /* ignore */ }
+            try { obj.element.parentNode.removeChild(obj.element); } catch(e){ }
           }
           if (obj.children && obj.children.length){
             for (let i=0;i<obj.children.length;i++) remove2DLabelsRecursively(obj.children[i]);
           }
         }
 
-        // factory to create new shopsGroup (we always replace the old one)
         let shopsGroup = null;
         function createNewShopsGroup(){
-          // remove old group and free resources
           if (shopsGroup){
-            // remove any CSS2D elements attached under old group
             shopsGroup.children.forEach(c => remove2DLabelsRecursively(c));
-            // dispose geometry and material
             shopsGroup.traverse(node => {
               if (node.geometry){ node.geometry.dispose(); }
               if (node.material){ if (Array.isArray(node.material)) node.material.forEach(m => m.dispose && m.dispose()); else node.material.dispose && node.material.dispose(); }
@@ -333,62 +425,128 @@
           return shopsGroup;
         }
 
-        function isInsideAtrium(x,z,halfW,halfD){
-          return (Math.abs(x - atriumCenterX) < (atriumHalfW - halfW)) && (Math.abs(z - atriumCenterZ) < (atriumHalfD - halfD));
-        }
-
-        // build shops for `forFloorsArray` (empty array means ALL floors)
+        // this function replicates Index placement exactly:
         function buildShops(forFloorsArray){
-          // recreate shopsGroup from scratch (ensures nothing old remains)
           createNewShopsGroup();
 
+          // pick positions to render
           let list = [];
           if (!forFloorsArray || forFloorsArray.length === 0){
-            if (currentFloor !== null) list = allPositions.filter(p => parseInt(p.TenantPosition_Floor ?? 0) === parseInt(currentFloor));
+            if (currentFloor !== null) list = allPositions.filter(p => parseInt((p.TenantPosition_Floor === undefined || p.TenantPosition_Floor === null) ? 0 : p.TenantPosition_Floor) === parseInt(currentFloor));
             else list = allPositions.slice();
           } else {
-            list = allPositions.filter(p => forFloorsArray.includes(parseInt(p.TenantPosition_Floor ?? 0)));
+            list = allPositions.filter(p => forFloorsArray.includes(parseInt((p.TenantPosition_Floor === undefined || p.TenantPosition_Floor === null) ? 0 : p.TenantPosition_Floor)));
           }
 
-          list.forEach(p => {
-            const leftPct = parseFloat(p.TenantPosition_LeftPct ?? 0);
-            const topPct = parseFloat(p.TenantPosition_TopPct ?? 0);
-            const floor = parseInt(p.TenantPosition_Floor ?? 0);
-            const area = parseFloat(p.TenantPosition_Area_M2 ?? 150);
-            const assigned = !!(p.TenantPosition_AssignedTenantID && p.TenantPosition_AssignedTenantID > 0);
-            const labelText = (p.Tenant && p.Tenant.Tenant_Name) ? p.Tenant.Tenant_Name : (p.TenantPosition_Location || "Trống");
+          // placed boxes in SVG coords (top-left x,y,w,h)
+          const placedBoxes = [];
+          // offsets same as Index
+          const offsets = [ [0,0],[8,0],[-8,0],[0,8],[0,-8],[12,12],[-12,12],[12,-12],[-12,-12] ];
 
-            // center in meters
-            const x = leftPctToX(leftPct);
-            const z = topPctToZ(topPct);
+          // forbidden rectangles in SVG coords (same as Index)
+          const forbiddenRects = [
+            {x: atrX, y: atrY, w: atrW, h: atrH, name:'atrium'},
+            {x: elev1X, y: elevY, w: elevW, h: elevH, name:'elev1'},
+            {x: elev2X, y: elevY, w: elevW, h: elevH, name:'elev2'},
+            {x: wcX, y: wcY, w: 44, h:44, name:'wc'}
+          ];
 
-            // estimate extents for atrium collision
-            const w = Math.max(6.0, Math.sqrt(area) * 0.9);
-            const d = Math.max(4.0, area / w);
-            const halfW = w/2.0;
-            const halfD = d/2.0;
-
-            // skip shops whose centers fall into the atrium inner area -> ensures no shop sits inside atrium
-            if (isInsideAtrium(x, z, halfW, halfD)) {
-              return;
+          function overlaps(ax, ay, aw, ah){
+            // check against already placed
+            for (let i=0;i<placedBoxes.length;i++){
+              const b = placedBoxes[i];
+              if (!(ax + aw <= b.x || b.x + b.w <= ax || ay + ah <= b.y || b.y + b.h <= ay)) return true;
             }
+            // check forbidden
+            for (let j=0;j<forbiddenRects.length;j++){
+              const fr = forbiddenRects[j];
+              if (!(ax + aw <= fr.x || fr.x + fr.w <= ax || ay + ah <= fr.y || fr.y + fr.h <= ay)) return true;
+            }
+            return false;
+          }
 
-            const h = shopHeightMeters;
-            const geom = new THREE.BoxGeometry(w, h, d);
-            const mat = new THREE.MeshStandardMaterial({ color: assigned ? 0x2b6cb0 : 0xffffff, roughness:0.45, metalness:0.02 });
-            const mesh = new THREE.Mesh(geom, mat); mesh.castShadow=true; mesh.receiveShadow=true;
-            const baseY = floor * (shopHeightMeters + gap);
-            mesh.position.set(x, baseY + h/2.0, z);
-            mesh.userData = { id: p.TenantPosition_ID, floor: floor, assigned: assigned, label: labelText };
+          // process each dto in same order as Index
+          for (let idx=0; idx<list.length; idx++){
+            const p = list[idx];
+            // skip if coords missing
+            if (p.TenantPosition_LeftPct === undefined || p.TenantPosition_TopPct === undefined) continue;
+            const leftPct = Math.max(0, Math.min(100, parseFloat(p.TenantPosition_LeftPct)));
+            const topPct = Math.max(0, Math.min(100, parseFloat(p.TenantPosition_TopPct)));
+            const cx = leftPct / 100.0 * vbW;
+            const cy = topPct / 100.0 * vbH;
+            const w = defaultRectW;
+            const h = defaultRectH;
+            let rx = cx - w/2.0;
+            let ry = cy - h/2.0;
+            const minX = 8.0, minY = 8.0;
+            const maxX = vbW - w - 8.0, maxY = vbH - h - 8.0;
+            rx = Math.max(minX, Math.min(maxX, rx));
+            ry = Math.max(minY, Math.min(maxY, ry));
 
-            // label (CSS2D)
-            const div = document.createElement('div'); div.className='label-2d'; div.textContent = `Tầng ${floor} - ${labelText}`;
-            const label = new CSS2DObject(div);
-            label.position.set(0, h/2 + 0.6, 0);
-            mesh.add(label);
+            let placed = false;
+            for (let oi=0; oi<offsets.length; oi++){
+              let candX = rx + offsets[oi][0];
+              let candY = ry + offsets[oi][1];
+              candX = Math.max(minX, Math.min(maxX, candX));
+              candY = Math.max(minY, Math.min(maxY, candY));
+              if (!overlaps(candX, candY, w, h)){
+                placedBoxes.push({x:candX, y:candY, w:w, h:h, id: p.TenantPosition_ID});
+                // map to 3D meters: use center of placed rect
+                const centerX = candX + w/2.0;
+                const centerY = candY + h/2.0;
+                const placedMetersX = svgToMeterX(centerX);
+                const placedMetersZ = svgToMeterZ(centerY);
+                addShopMesh(p, placedMetersX, placedMetersZ);
+                placed = true;
+                break;
+              }
+            }
+            if (!placed){
+              // fallback: shift along Y until fit (same as Index)
+              let tryX = Math.max(minX, Math.min(maxX, rx));
+              let tryY = Math.max(minY, Math.min(maxY, ry));
+              let attempts = 0;
+              while (overlaps(tryX, tryY, w, h) && attempts < 40){
+                tryY += 8.0;
+                if (tryY > maxY) tryY = minY;
+                attempts++;
+              }
+              placedBoxes.push({x:tryX, y:tryY, w:w, h:h, id: p.TenantPosition_ID});
+              const centerX = tryX + w/2.0;
+              const centerY = tryY + h/2.0;
+              const placedMetersX = svgToMeterX(centerX);
+              const placedMetersZ = svgToMeterZ(centerY);
+              addShopMesh(p, placedMetersX, placedMetersZ);
+            }
+          } // end for each list
+        } // end buildShops
 
-            shopsGroup.add(mesh);
-          });
+        // create and add 3D shop mesh at given meters center
+        function addShopMesh(p, centerMetersX, centerMetersZ){
+          const area = parseFloat(p.TenantPosition_Area_M2 ?? 150);
+          const assigned = !!(p.TenantPosition_AssignedTenantID && p.TenantPosition_AssignedTenantID > 0);
+          const labelText = (p.Tenant && p.Tenant.Tenant_Name) ? p.Tenant.Tenant_Name : (p.TenantPosition_Location || "Trống");
+
+          const w = Math.max(6.0, Math.sqrt(area) * 0.9);
+          const d = Math.max(4.0, area / w);
+          const h = shopHeightMeters;
+          const geom = new THREE.BoxGeometry(w, h, d);
+          const mat = new THREE.MeshStandardMaterial({ color: assigned ? 0x2b6cb0 : 0xffffff, roughness:0.48, metalness:0.02 });
+          const mesh = new THREE.Mesh(geom, mat); mesh.castShadow=true; mesh.receiveShadow=true;
+
+          // map centerMetersX/Z are centers; set Y by floor from data
+          const floor = parseInt((p.TenantPosition_Floor === undefined || p.TenantPosition_Floor === null) ? 0 : p.TenantPosition_Floor);
+          const baseY = floor * (shopHeightMeters + gap);
+          mesh.position.set(centerMetersX, baseY + h/2.0, centerMetersZ);
+          mesh.userData = { id: p.TenantPosition_ID, floor: floor, assigned: assigned, label: labelText };
+
+          // label
+          const div = document.createElement('div'); div.className='label-2d'; div.textContent = `Tầng ${floor} - ${labelText}`;
+          const label = new CSS2DObject(div);
+          label.position.set(0, h/2 + 0.6, 0);
+          mesh.add(label);
+
+          shopsGroup.add(mesh);
         }
 
         // ---------------------------
@@ -398,7 +556,6 @@
         const chkShowEmpty = document.getElementById('chkShowEmpty');
         const chkShowOcc = document.getElementById('chkShowOccupied');
 
-        // read selection; supports 'ALL' or numeric values
         function getSelectedFloorsFromSelect(){
           if (!floorSelect) return (currentFloor !== null) ? [parseInt(currentFloor)] : [];
           const val = floorSelect.value;
@@ -409,14 +566,12 @@
         }
 
         function applyFiltersFromSelect(){
-          // set currentFloor (null if ALL)
           if (floorSelect){
             currentFloor = (String(floorSelect.value).toUpperCase() === 'ALL') ? null : (isNaN(parseInt(floorSelect.value)) ? null : parseInt(floorSelect.value));
           }
           const floors = getSelectedFloorsFromSelect();
           buildShops(floors);
 
-          // occupation toggles
           const showEmpty = chkShowEmpty ? chkShowEmpty.checked : true;
           const showOcc = chkShowOcc ? chkShowOcc.checked : true;
           if (shopsGroup && shopsGroup.children){
@@ -433,21 +588,16 @@
         // init defaults
         if (floorSelect){
           if (currentFloor !== null) floorSelect.value = String(currentFloor); else {
-            // add ALL option fallback (if you want ALL)
-            // if select has no ALL, just leave as-is
             try { floorSelect.querySelector('option[value="ALL"]').selected = true; } catch(e) {}
           }
           applyFiltersFromSelect();
         }
 
-        // wire UI events
         if (floorSelect) floorSelect.addEventListener('change', applyFiltersFromSelect);
         if (chkShowEmpty) chkShowEmpty.addEventListener('change', applyFiltersFromSelect);
         if (chkShowOcc) chkShowOcc.addEventListener('change', applyFiltersFromSelect);
 
-        // ---------------------------
         // Raycast hover & click (uses the shopsGroup variable which we recreate safely)
-        // ---------------------------
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
         let hovered = null;
@@ -561,7 +711,6 @@
         // expose reload3DPositions (if needed)
         window.reload3DPositions = function(newPositions){
           if (!Array.isArray(newPositions)) return;
-          // replace allPositions content and rebuild
           allPositions.length = 0;
           newPositions.forEach(p => allPositions.push(p));
           applyFiltersFromSelect();
