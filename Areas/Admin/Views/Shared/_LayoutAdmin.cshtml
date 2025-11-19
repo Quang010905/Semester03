@@ -18,6 +18,7 @@
     <link href="@Url.Content("~/Admin")/css/sb-admin-2.min.css" rel="stylesheet">
 
     <link href="@Url.Content("~/Admin")/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+    @RenderSection("headerContent", required: false)
 
 </head>
 
@@ -83,7 +84,7 @@
             <li class="nav-item">
                 <a class="nav-link" asp-area="Admin" asp-controller="Tenant" asp-action="Index">
                     <i class="fas fa-fw fa-map-marker-alt"></i>
-                    <span>Positions</span>
+                    <span>Partners</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -337,6 +338,7 @@
     <script src="@Url.Content("~/Admin")/vendor/datatables/dataTables.bootstrap4.min.js"></script>
 
     @RenderSection("Scripts", required: false)
+
 </body>
 
 </html>
