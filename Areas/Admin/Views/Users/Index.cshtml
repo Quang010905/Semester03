@@ -1,0 +1,187 @@
+﻿@{
+    Layout = "/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+<div class="browser-tab-bar">
+    <a href="#" class="browser-tab active">
+        <span class="tab-icon">
+            <i class="fa-solid fa-users"></i>
+        </span>
+        <span class="tab-title">Partner account</span>
+    </a>
+    <a href="#" class="browser-tab">
+        <span class="tab-icon">
+            <i class="fas fa-journal-whills"></i>
+        </span>
+        <span class="tab-title">Employee account</span>
+    </a>
+    <a href="#" class="browser-tab">
+        <span class="tab-icon">
+            <i class="fas fa-shopping-cart"></i>
+        </span>
+        <span class="tab-title">Customer account</span>
+    </a>
+    <a href="#" class="undo-tab">
+        <span class="tab-icon">
+            <i class="fas fa-shopping-cart"></i>
+        </span>
+        <span class="tab-title">Restore</span>
+    </a>
+</div>
+
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background-color: #f1f3f4; /* Màu nền của thanh tab */
+    }
+
+    /* Thanh chứa các tab */
+    .browser-tab-bar {
+        display: flex;
+        align-items: flex-end; /* Quan trọng để các tab "dính" vào đường phân cách dưới */
+        height: 40px; /* Chiều cao tổng thể của thanh tab */
+        padding-left: 5px;
+        background-color: #e8eaed; /* Màu nền của thanh công cụ bên dưới tab */
+        border-bottom: 1px solid #c2c3c5;
+    }
+
+    .undo-tab {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: #3c4043;
+        font-size: 13px;
+        height: 34px; /* Chiều cao tab */
+        padding: 0 10px 0 8px; /* Padding để căn chỉnh nội dung */
+        margin-left: auto;
+        margin-right: 0;
+        background-color: #e8eaed; /* Màu nền tab không hoạt động */
+        /* Tạo hình dạng giống tab Chrome (dạng hình thang/bo góc) */
+        border-radius: 8px 8px 0 0; /* Bo góc trên */
+        border: 1px solid transparent;
+        border-bottom: none;
+    }
+
+    .undo-tab.active {
+        background-color: #ff6262 ; 
+            /* Màu trắng cho tab đang hoạt động */
+        color: #202124;
+        z-index: 2; /* Đặt tab hoạt động lên trên cùng */
+        height: 35px; /* Cao hơn 1px để che đi đường border dưới */
+        border: 1px solid #c2c3c5;
+        border-bottom: 1px solid #fff; /* Màu trắng để che đường border dưới của thanh tab */
+    }
+
+
+
+
+    /* Kiểu dáng chung cho một tab */
+    .browser-tab {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: #3c4043;
+        font-size: 13px;
+        height: 34px; /* Chiều cao tab */
+        padding: 0 10px 0 8px; /* Padding để căn chỉnh nội dung */
+        margin-right: -5px; /* Quan trọng: làm cho các tab chồng lên nhau một chút */
+        position: relative;
+        z-index: 1; /* Các tab sẽ chồng lên nhau theo Z-index */
+        background-color: #e8eaed; /* Màu nền tab không hoạt động */
+        /* Tạo hình dạng giống tab Chrome (dạng hình thang/bo góc) */
+        border-radius: 8px 8px 0 0; /* Bo góc trên */
+        border: 1px solid transparent;
+        border-bottom: none;
+        /* Thiết lập hình dáng hình thang/bo góc phức tạp hơn */
+        /* Có thể dùng clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); để cắt góc nếu cần */
+    }
+
+        /* Tab đang hoạt động (đang mở) */
+        .browser-tab.active {
+            background-color: #fff; /* Màu trắng cho tab đang hoạt động */
+            color: #202124;
+            z-index: 2; /* Đặt tab hoạt động lên trên cùng */
+            height: 35px; /* Cao hơn 1px để che đi đường border dưới */
+            border: 1px solid #c2c3c5;
+            border-bottom: 1px solid #fff; /* Màu trắng để che đường border dưới của thanh tab */
+        }
+
+    /* Icon (Ví dụ: favicon) */
+    .tab-icon {
+        width: 16px;
+        height: 16px;
+        margin-right: 8px;
+        border-radius: 2px;
+    }
+
+    /* Tiêu đề tab */
+    .tab-title {
+        max-width: 150px; /* Giới hạn chiều rộng để tiêu đề không quá dài */
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis; /* Hiển thị dấu ... khi tiêu đề quá dài */
+    }
+
+    /* Nút đóng (x) */
+    .tab-close {
+        margin-left: 15px;
+        font-size: 18px;
+        font-weight: 300;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0 2px;
+        border-radius: 50%;
+        transition: background-color 0.1s;
+    }
+
+        .tab-close:hover {
+            background-color: #dadce0; /* Màu nền khi di chuột vào nút đóng */
+        }
+
+
+   </style>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // 1. Chọn TẤT CẢ các tab thông thường
+        const tabs = document.querySelectorAll('.browser-tab');
+
+        // 🚨 BƯỚC SỬA: KHAI BÁO biến undoTab
+        const undoTab = document.querySelector('.undo-tab');
+
+        // Logic cho các tab thông thường (Partner, Employee, Customer)
+        tabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+
+                // Xóa 'active' khỏi tất cả các tab thông thường
+                tabs.forEach(t => {
+                    t.classList.remove('active');
+                });
+
+                // 🚨 BƯỚC SỬA: Đảm bảo xóa 'active' khỏi undo-tab khi chọn tab khác
+                if (undoTab) {
+                    undoTab.classList.remove('active');
+                }
+
+                // Thêm 'active' cho tab vừa được click
+                tab.classList.add('active');
+            });
+        });
+
+        // Logic RIÊNG cho undo-tab (Restore)
+        if (undoTab) {
+            undoTab.addEventListener('click', (e) => {
+                e.preventDefault();
+
+                // Xóa 'active' khỏi tất cả các tab thông thường
+                tabs.forEach(t => {
+                    t.classList.remove('active');
+                });
+
+                // Thêm trạng thái active để nó chuyển sang màu đỏ
+                undoTab.classList.add('active');
+            });
+        }
+    });
+</script>
