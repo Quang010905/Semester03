@@ -149,6 +149,22 @@ namespace Semester03.Models.Repositories
                 .ToList();
         }
 
+        //Lay danh sach tenant theo userid
+        public async Task<List<Tenant>> GetTenantByUserId(int id)
+        {
+            return await _context.TblTenants
+                .Select(x => new Tenant
+                {
+                    Id = x.TenantId,
+                    Name = x.TenantName,
+                    Image = x.TenantImg,
+                    UserId = x.TenantUserId,    
+                    TypeId = x.TenantTypeId,
+                    Description = x.TenantDescription,
+                    Status = x.TenantStatus ?? 0
+                }).Where(x => x.UserId == id)
+                .ToListAsync();
+        }
 
         //Thêm tenant 
         public async Task AddAsync(Tenant entity)
@@ -162,6 +178,7 @@ namespace Semester03.Models.Repositories
                     TenantTypeId = entity.TypeId,
                     TenantUserId = entity.UserId,
                     TenantDescription = entity.Description,
+                    TenantStatus = entity.Status,
                     TenantCreatedAt = DateTime.Now
                 };
                 _context.TblTenants.Add(item);
@@ -189,7 +206,7 @@ namespace Semester03.Models.Repositories
             catch (Exception)
             {
 
-                throw;
+                return false;
             }
         }
         //Update tenant
@@ -203,10 +220,49 @@ namespace Semester03.Models.Repositories
                 q.TenantTypeId = entity.TypeId;
                 q.TenantUserId = entity.UserId;
                 q.TenantDescription = entity.Description;
-                q.TenantCreatedAt = DateTime.Now;
+                q.TenantStatus = entity.Status;
                 return await _context.SaveChangesAsync() > 0;
             }
             return false;
+        }
+        //lay thong tin chi tiet tenant
+        public async Task<Tenant?> FindById(int id)
+        {
+            return await _context.TblTenants
+                .Where(t => t.TenantId == id)
+                .Select(t => new Tenant
+                {
+                    Id = t.TenantId,
+                    Name = t.TenantName,
+                    Status = t.TenantStatus ?? 0,
+                    Image = t.TenantImg,
+                    TypeId = t.TenantTypeId,
+                    UserId = t.TenantUserId,
+                    Description = t.TenantDescription,
+                    CreatedDate = (DateTime)t.TenantCreatedAt
+                })
+                .FirstOrDefaultAsync();
+        }
+        //kiem tra trung ten
+        public async Task<bool> CheckTenantNameAsync(string name, int? excludeId = null)
+        {
+            string normalizedInput = NormalizeName(name);
+
+            var allTenantTypeNames = await _context.TblTenants
+                .Where(t => !excludeId.HasValue || t.TenantId != excludeId.Value)
+                .Select(t => t.TenantName)
+                .ToListAsync();
+
+            return allTenantTypeNames.Any(dbName => NormalizeName(dbName) == normalizedInput);
+        }
+
+        private string NormalizeName(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            // Bỏ khoảng trắng và chuyển về chữ thường
+            return new string(input.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToLowerInvariant();
         }
     }
 }

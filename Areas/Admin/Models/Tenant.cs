@@ -7,6 +7,7 @@
         public string Image { get; set; } = "";
         public int UserId { get; set; } = 0;
         public int TypeId { get; set; } = 0;
+        public int Status { get; set; } = 0;
         public string Description { get; set; } = "";
         public DateTime CreatedDate { get; set; } = DateTime.Now;
     }

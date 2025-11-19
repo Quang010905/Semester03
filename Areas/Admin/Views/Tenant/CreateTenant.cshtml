@@ -4,6 +4,12 @@
 @{
     Layout = "/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
 }
+@section headerContent
+{
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2018.3.1017/styles/kendo.common-material.min.css" />
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2018.3.1017/styles/kendo.material.min.css" />
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2018.3.1017/styles/kendo.material.mobile.min.css" />
+}
 <div style="margin-left:20px; margin-right: 50px">
     <h2>Create Tenant</h2>
     @if (TempData["SuccessMessage"] != null)
@@ -28,7 +34,7 @@
     {
         Semester03.Areas.Admin.Models.User user =
         (Semester03.Areas.Admin.Models.User)ViewBag.itemUser;
-        <form action="@Url.Action("AddTenant", "Tenant")" method="post">
+        <form action="@Url.Action("AddTenant", "Tenant")" method="post" enctype="multipart/form-data">
             <div class="form-group mb-3">
                 <label>Partner Name</label>
                 <input type="text" class="form-control" name="UserName" value="@user.FullName" style="width: 300px;" readonly />
@@ -41,6 +47,10 @@
             <div class="form-group mb-3">
                 <label for="upFile">Image</label>
                 <input type="file" class="form-control-file" name="upFile" id="upFile" />
+            </div>
+            <div>
+                <label>Description</label>
+                <textarea id="Description" name="Description"></textarea>
             </div>
             <div class="form-group mb-3">
                 <label>Tenant Type</label>
@@ -59,8 +69,8 @@
 
             <div class="form-group mb-3">
                 <label>Status</label><br />
-                <input type="hidden" name="IsActiveHidden" value="false" />
-                <input type="checkbox" name="TenantTypeStatus" value="true" id="Active" />
+                <input type="hidden" name="IsActiveHidden" value="0" />
+                <input type="checkbox" name="TenantStatus" value="1" id="Active" />
                 <label class="form-check-label" for="Active">Enable</label>
             </div>
             <div class="form-group">
@@ -69,12 +79,12 @@
             </div>
         </form>
     }
-    <form method="get" action="@Url.Action("Index", "TenantType")">
+    <form method="get" action="@Url.Action("CreateTenant", "Tenant")">
         <div>
             <strong>Search</strong>
         </div>
         <div class="input-group mb-3" style="width: 300px;">
-            <input type="text" name="search" value="@ViewBag.Search" placeholder="Enter tenant type name..." class="form-control" />
+            <input type="text" name="search" value="@ViewBag.Search" placeholder="Enter tenant name..." class="form-control" />
             <div class="input-group-append">
                 <button type="submit" class="btn btn-primary">Search</button>
             </div>
@@ -82,7 +92,7 @@
 
         @if (ViewBag.listTenant != null)
         {
-            var ls = (List<Semester03.Areas.Admin.Models.TenantType>)ViewBag.listTenant;
+            var ls = (List<Semester03.Areas.Admin.Models.Tenant>)ViewBag.listTenant;
             if (ls != null && ls.Count > 0)
             {
                 int i = 1;
@@ -93,16 +103,20 @@
                                 <thead>
                                     <tr>
                                         <th scope="col">No</th>
-                                        <th scope="col">Tenant Type Name</th>
+                                        <th scope="col">Tenant Name</th>
                                         <th scope="col">Status</th>
+                                        <th scope="col">Image</th>
+                                        <th scope="col">Type</th>
                                         <th scope="col">Action</th>
                                     </tr>
                                 </thead>
                                 <tfoot>
                                     <tr>
                                         <th scope="col">No</th>
-                                        <th scope="col">Tenant Type Name</th>
+                                        <th scope="col">Tenant Name</th>
                                         <th scope="col">Status</th>
+                                        <th scope="col">Image</th>
+                                        <th scope="col">Type</th>
                                         <th scope="col">Action</th>
                                     </tr>
                                 </tfoot>
@@ -123,10 +137,20 @@
                                                 }
                                             </td>
                                             <td>
-                                                <a href="@Url.Action("Edit", "TenantType", new {id = item.Id})">
+                                                <img src="@Url.Content("~/uploads/" + item.Image)" style="max-width: 100px; max-height: 100px; display: block; margin-bottom: 10px;" />
+                                            </td>
+                                            <td>
+                                                @{
+                                                    var types = (List<Semester03.Areas.Admin.Models.TenantType>)ViewBag.listTenantType;
+                                                    var typeName = types.FirstOrDefault(t => t.Id == item.TypeId)?.Name ?? "";
+                                                }
+                                                @typeName
+                                            </td>
+                                            <td>
+                                                <a href="@Url.Action("Edit", "Tenant", new {id = item.Id})">
                                                     <img src="@Url.Content("~/Icon/pen.png")" style="width:1vw; height:2vh;" />
                                                 </a>
-                                                <a href="@Url.Action("deleteTenantType", "TenantType", new {id = item.Id})" onclick="return confirm('Are you sure to delete this Tenant Type?')">
+                                                <a href="@Url.Action("DeleteTenant", "Tenant", new {id = item.Id, userId = item.UserId})" onclick="return confirm('Are you sure to delete this Tenant Type?')">
                                                     <img src="@Url.Content("~/Icon/delete.png")" style="width:1vw; height:2vh;" />
                                                 </a>
                                             </td>
@@ -182,24 +206,26 @@
                     <thead>
                         <tr>
                             <th scope="col">No</th>
-                            <th scope="col">CateName</th>
+                            <th scope="col">Tenant Name</th>
+                            <th scope="col">Status</th>
                             <th scope="col">Image</th>
-                            <th scope="col">Active</th>
+                            <th scope="col">Type</th>
                             <th scope="col">Action</th>
                         </tr>
                     </thead>
                     <tfoot>
                         <tr>
                             <th scope="col">No</th>
-                            <th scope="col">CateName</th>
+                            <th scope="col">Tenant Name</th>
+                            <th scope="col">Status</th>
                             <th scope="col">Image</th>
-                            <th scope="col">Active</th>
+                            <th scope="col">Type</th>
                             <th scope="col">Action</th>
                         </tr>
                     </tfoot>
                     <tbody>
                         <tr>
-                            <td colspan="4" class="text-center">No Category.</td>
+                            <td colspan="4" class="text-center">No Tenant.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -211,27 +237,76 @@
                 <thead>
                     <tr>
                         <th scope="col">No</th>
-                        <th scope="col">CateName</th>
+                        <th scope="col">Tenant Name</th>
+                        <th scope="col">Status</th>
                         <th scope="col">Image</th>
-                        <th scope="col">Active</th>
+                        <th scope="col">Type</th>
                         <th scope="col">Action</th>
                     </tr>
                 </thead>
                 <tfoot>
                     <tr>
                         <th scope="col">No</th>
-                        <th scope="col">CateName</th>
+                        <th scope="col">Tenant Name</th>
+                        <th scope="col">Status</th>
                         <th scope="col">Image</th>
-                        <th scope="col">Active</th>
+                        <th scope="col">Type</th>
                         <th scope="col">Action</th>
                     </tr>
                 </tfoot>
                 <tbody>
                     <tr>
-                        <td colspan="4" class="text-center">No Category.</td>
+                        <td colspan="4" class="text-center">No Tennant.</td>
                     </tr>
                 </tbody>
             </table>
         }
     </form>
 </div>
+@section scripts
+{
+    <script src="https://kendo.cdn.telerik.com/2018.3.1017/js/jquery.min.js"></script>
+    <script src="https://kendo.cdn.telerik.com/2018.3.1017/js/kendo.all.min.js"></script>
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            var editor = $("#Description").kendoEditor({
+                tools: [
+                    "bold",
+                    "italic",
+                    "underline",
+                    "strikethrough",
+                    "justifyLeft",
+                    "justifyCenter",
+                    "justifyRight",
+                    "justifyFull",
+                    "insertUnorderedList",
+                    "insertOrderedList",
+                    "indent",
+                    "outdent",
+                    "createLink",
+                    "unlink",
+                    "insertImage",
+                    "insertFile",
+                    "subscript",
+                    "superscript",
+                    "tableWizard",
+                    "addRowAbove",
+                    "addRowBelow",
+                    "addColumnLeft",
+                    "addColumnRight",
+                    "deleteRow",
+                    "deleteColumn",
+                    "viewHtml",
+                    "formatting",
+                    "cleanFormatting",
+                    "fontName",
+                    "fontSize",
+                    "foreColor",
+                    "backColor",
+                    "print",
+                ]
+            }).data("kendoEditor");
+        });
+    </script>
+}

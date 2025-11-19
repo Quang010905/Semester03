@@ -4,8 +4,16 @@
 @{
     Layout = "/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
 }
+@section headerContent
+{
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2018.3.1017/styles/kendo.common-material.min.css" />
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2018.3.1017/styles/kendo.material.min.css" />
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2018.3.1017/styles/kendo.material.mobile.min.css" />
+}
+
 <div style="margin-left:20px; margin-right: 50px">
-    <h2>Create Tenant</h2>
+    <h2>Edit Tenant</h2>
+
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -15,6 +23,7 @@
             </button>
         </div>
     }
+
     @if (TempData["ErrorMessage"] != null)
     {
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -24,24 +33,36 @@
             </button>
         </div>
     }
-    @if (ViewBag.itemUser != null)
+
+    @if (ViewBag.itemTenant != null)
     {
-        Semester03.Areas.Admin.Models.User user =
-        (Semester03.Areas.Admin.Models.User)ViewBag.itemUser;
-        <form action="@Url.Action("AddTenant", "Tenant")" method="post">
-            <div class="form-group mb-3">
-                <label>Partner Name</label>
-                <input type="text" class="form-control" name="UserName" value="@user.FullName" style="width: 300px;" readonly />
-            </div>
-            <input type="hidden" value="@user.Id" name="UserId" />
+        Semester03.Areas.Admin.Models.Tenant tenant =
+        (Semester03.Areas.Admin.Models.Tenant)ViewBag.itemTenant;
+
+        <form action="@Url.Action("UpdateTenant", "Tenant")" method="post" enctype="multipart/form-data">
             <div class="form-group mb-3">
                 <label>Tenant Name</label>
-                <input type="text" class="form-control" name="TenantName" placeholder="Tenant name" style="width: 300px;" required />
+                <input type="text" class="form-control" name="TenantName" value="@tenant.Name" style="width: 300px;" required />
             </div>
+            <input type="hidden" value="@tenant.UserId" name="UserId"/>
+            <input type="hidden" value="@tenant.Id" name="TenantId" />
             <div class="form-group mb-3">
                 <label for="upFile">Image</label>
-                <input type="file" class="form-control-file" name="upFile" id="upFile" />
+                <img src="@Url.Content("~/uploads/" + tenant.Image)" style="max-width: 200px; max-height: 200px; display: block; margin-bottom: 10px;" />
+                <input type="file" class="form-control-file" id="upFile" name="upFile" />
+                <input type="hidden" name="OldImage" value="@tenant.Image" />
             </div>
+
+            <div>
+                <label>Description</label>
+                <textarea id="Description" name="Description"> @Html.Raw(tenant.Description)</textarea>
+            </div>
+
+            @{
+                var currentTenantTypeId = tenant.TypeId;
+            }
+
+            <!-- Combobox Tenant Type -->
             <div class="form-group mb-3">
                 <label>Tenant Type</label>
                 <select class="form-control" name="TenantTypeId" id="TenantTypeId" style="width: 300px;">
@@ -51,7 +72,14 @@
                         var ls = (List<Semester03.Areas.Admin.Models.TenantType>)ViewBag.listTenantType;
                         foreach (var item in ls)
                         {
-                            <option value="@item.Id">@item.Name</option>
+                            if (item.Id == currentTenantTypeId)
+                            {
+                                <option value="@item.Id" selected="selected">@item.Name</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Id">@item.Name</option>
+                            }
                         }
                     }
                 </select>
@@ -59,151 +87,37 @@
 
             <div class="form-group mb-3">
                 <label>Status</label><br />
-                <input type="hidden" name="IsActiveHidden" value="false" />
-                <input type="checkbox" name="TenantTypeStatus" value="true" id="Active" />
+                <input type="checkbox" name="TenantStatus" value="1" @(tenant.Status == 1 ? "checked" : "") />
                 <label class="form-check-label" for="Active">Enable</label>
             </div>
+
             <div class="form-group">
                 <button type="submit" class="btn btn-primary">Save</button>
-                <a href="@Url.Action("Index", "Tenant")" class="btn btn-secondary">Back</a>
+                <a href="@Url.Action("CreateTenant", "Tenant", new{id = tenant.UserId})" class="btn btn-secondary">Back</a>
             </div>
         </form>
     }
-    <form method="get" action="@Url.Action("Index", "TenantType")">
-        <div>
-            <strong>Search</strong>
-        </div>
-        <div class="input-group mb-3" style="width: 300px;">
-            <input type="text" name="search" value="@ViewBag.Search" placeholder="Enter tenant type name..." class="form-control" />
-            <div class="input-group-append">
-                <button type="submit" class="btn btn-primary">Search</button>
-            </div>
-        </div>
-
-        @if (ViewBag.listTenantType != null)
-        {
-            var ls = (List<Semester03.Areas.Admin.Models.TenantType>)ViewBag.listTenantType;
-            if (ls != null && ls.Count > 0)
-            {
-                int i = 1;
-                <div class="card shadow mb-4">
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-bordered" width="100%" cellspacing="0">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">No</th>
-                                        <th scope="col">Tenant Type Name</th>
-                                        <th scope="col">Status</th>
-                                        <th scope="col">Action</th>
-                                    </tr>
-                                </thead>
-                                <tfoot>
-                                    <tr>
-                                        <th scope="col">No</th>
-                                        <th scope="col">Tenant Type Name</th>
-                                        <th scope="col">Status</th>
-                                        <th scope="col">Action</th>
-                                    </tr>
-                                </tfoot>
-                                <tbody>
-                                    @foreach (var item in ls)
-                                    {
-                                        <tr>
-                                            <th scope="row">@i</th>
-                                            <td>@item.Name</td>
-                                            <td>
-                                                @if (item.Status == 1)
-                                                {
-                                                    <span style="color:green">Active</span>
-                                                }
-                                                else
-                                                {
-                                                    <span style="color:red">InActive</span>
-                                                }
-                                            </td>
-                                            <td>
-                                                <a href="@Url.Action("Edit", "TenantType", new {id = item.Id})">
-                                                    <img src="@Url.Content("~/Icon/pen.png")" style="width:1vw; height:2vh;" />
-                                                </a>
-                                                <a href="@Url.Action("deleteTenantType", "TenantType", new {id = item.Id})" onclick="return confirm('Are you sure to delete this Tenant Type?')">
-                                                    <img src="@Url.Content("~/Icon/delete.png")" style="width:1vw; height:2vh;" />
-                                                </a>
-                                            </td>
-                                        </tr>
-                                        i++;
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    @{
-                        string search = ViewBag.Search ?? "";
-                    }
-                    <div class="row">
-                        <div class="col-sm-12 col-md-5">
-                            <div class="dataTables_info" role="status" aria-live="polite" style="margin-left:20px">
-                                @if (ViewBag.TotalItems > 0)
-                                {
-                                    <text>
-                                        Page @ViewBag.CurrentPage
-                                        of @ViewBag.TotalPages
-                                    </text>
-                                }
-                            </div>
-                        </div>
-
-                        <div class="col-sm-12 col-md-7">
-                            <div class="dataTables_paginate paging_simple_numbers">
-                                <ul class="pagination">
-                                    <li class="paginate_button page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
-                                        <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage - 1 , search = search})">Previous</a>
-                                    </li>
-
-                                    @for (int j = 1; j <= ViewBag.TotalPages; j++)
-                                    {
-                                        <li class="paginate_button page-item @(j == ViewBag.CurrentPage ? "active" : "")">
-                                            <a class="page-link" href="@Url.Action("Index", new { page = j, search = search })">@j</a>
-                                        </li>
-                                    }
-
-                                    <li class="paginate_button page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
-                                        <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage + 1, search = search })">Next</a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
-            else
-            {
-                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th scope="col">No</th>
-                            <th scope="col">CateName</th>
-                            <th scope="col">Image</th>
-                            <th scope="col">Active</th>
-                            <th scope="col">Action</th>
-                        </tr>
-                    </thead>
-                    <tfoot>
-                        <tr>
-                            <th scope="col">No</th>
-                            <th scope="col">CateName</th>
-                            <th scope="col">Image</th>
-                            <th scope="col">Active</th>
-                            <th scope="col">Action</th>
-                        </tr>
-                    </tfoot>
-                    <tbody>
-                        <tr>
-                            <td colspan="4" class="text-center">No Category.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            }
-        }
-    </form>
 </div>
+    
+
+@section scripts
+{
+    <script src="https://kendo.cdn.telerik.com/2018.3.1017/js/jquery.min.js"></script>
+    <script src="https://kendo.cdn.telerik.com/2018.3.1017/js/kendo.all.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var editor = $("#Description").kendoEditor({
+                tools: [
+                    "bold","italic","underline","strikethrough",
+                    "justifyLeft","justifyCenter","justifyRight","justifyFull",
+                    "insertUnorderedList","insertOrderedList","indent","outdent",
+                    "createLink","unlink","insertImage","insertFile",
+                    "subscript","superscript","tableWizard","addRowAbove",
+                    "addRowBelow","addColumnLeft","addColumnRight","deleteRow",
+                    "deleteColumn","viewHtml","formatting","cleanFormatting",
+                    "fontName","fontSize","foreColor","backColor","print"
+                ]
+            }).data("kendoEditor");
+        });
+    </script>
+}
