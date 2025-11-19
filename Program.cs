@@ -29,8 +29,6 @@ if (string.IsNullOrWhiteSpace(conn))
     throw new InvalidOperationException("Missing connection string 'DefaultConnection' in appsettings.json or environment variables. Please add it to appsettings.json under ConnectionStrings.");
 }
 
-
-
 builder.Services.AddDbContext<AbcdmallContext>(options =>
     options.UseSqlServer(conn)
 );
@@ -104,21 +102,18 @@ app.MapControllerRoute(
     pattern: "{area:exists}/{controller=Admin}/{action=Index}/{id?}"
 );
 
-//app.MapControllerRoute(
-//    name: "default",
-//    pattern: "{controller=Admin}/{action=Index}/{id?}",
-//    defaults: new { area = "Admin" }
-//)
-
+// If you want a default non-area route, you can uncomment or adjust the block below:
+// app.MapControllerRoute(
+//     name: "default",
+//     pattern: "{controller=Admin}/{action=Index}/{id?}",
+//     defaults: new { area = "Admin" }
+// );
 
 app.MapControllerRoute(
     name: "client_default",
     pattern: "{controller=Home}/{action=Index}/{id?}",
     defaults: new { area = "Client" }
 )
-
 .WithStaticAssets();
 
 app.Run();
-
-

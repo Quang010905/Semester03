@@ -54,5 +54,13 @@ namespace Semester03.Areas.Client.Controllers
 
             return Json(new { success = true, message = "Cảm ơn bạn! Bình luận sẽ xuất hiện sau khi được duyệt." });
         }
+
+        [HttpGet]
+        public async Task<IActionResult> DebugNowShowing()  
+        {
+            var list = await _repo.GetNowShowingAsync();
+            return Json(new { count = list.Count, items = list.Select(x => new { x.Id, x.Title, x.NextShowtime, x.NextShowtimeId }) });
+        }
+
     }
 }

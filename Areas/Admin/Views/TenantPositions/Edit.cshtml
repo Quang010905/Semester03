@@ -1,0 +1,117 @@
+﻿@model Semester03.Models.Entities.TblTenantPosition
+
+@{
+    ViewData["Title"] = "Edit Position";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<h1 class="h3 mb-2 text-gray-800">Edit Unit: @Model.TenantPositionLocation</h1>
+<p class="mb-4">Assign a tenant to this unit or update rental details. Structural fields are read-only.</p>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Unit Details</h6>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit">
+                    <div asp-validation-summary="All" class="text-danger"></div>
+                    <input type="hidden" asp-for="TenantPositionId" />
+
+                    <input type="hidden" asp-for="TenantPositionLeftPct" />
+                    <input type="hidden" asp-for="TenantPositionTopPct" />
+
+                    <h6 class="text-secondary text-uppercase small font-weight-bold">Structural Info (Fixed)</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="TenantPositionLocation" class="control-label">Location Code</label>
+                                <input asp-for="TenantPositionLocation" class="form-control bg-light" readonly />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="TenantPositionFloor" class="control-label">Floor</label>
+                                <input asp-for="TenantPositionFloor" class="form-control bg-light" readonly />
+                            </div>
+                        </div>
+                    </div>
+                    <hr />
+
+                    <h6 class="text-primary text-uppercase small font-weight-bold">Lease Management</h6>
+
+                    <div class="form-group">
+                        <label asp-for="TenantPositionAssignedTenantId" class="control-label font-weight-bold">Assigned Tenant</label>
+                        <select asp-for="TenantPositionAssignedTenantId" class="form-control" asp-items="ViewBag.TenantList">
+                            <option value="">-- VACANT (No Tenant) --</option>
+                        </select>
+                        <small class="form-text text-muted">Selecting a tenant will automatically mark this unit as 'Occupied'. Selecting 'None' will mark it as 'Vacant'.</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="TenantPositionAreaM2" class="control-label">Area (m²)</label>
+                                <input asp-for="TenantPositionAreaM2" class="form-control" type="number" step="0.01" />
+                                <span asp-validation-for="TenantPositionAreaM2" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="TenantPositionRentPricePerM2" class="control-label">Rent Price (per m²)</label>
+                                <div class="input-group">
+                                    <input asp-for="TenantPositionRentPricePerM2" class="form-control" type="number" step="0.01" />
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">VND</span>
+                                    </div>
+                                </div>
+                                <span asp-validation-for="TenantPositionRentPricePerM2" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" asp-for="TenantPositionStatus" />
+
+                    <div class="form-group mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary btn-lg">Back to Map</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-info">Current Status</h6>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    @if (Model.TenantPositionStatus == 1)
+                    {
+                        <i class="fas fa-store fa-4x text-primary mb-2"></i>
+                        <h4 class="text-primary">Occupied</h4>
+                        <p>Assigned to: <strong>@Model.TenantPositionAssignedTenant?.TenantName</strong></p>
+                    }
+                    else
+                    {
+                        <i class="fas fa-door-open fa-4x text-success mb-2"></i>
+                        <h4 class="text-success">Vacant</h4>
+                        <p>Ready for lease</p>
+                    }
+                </div>
+                <div class="text-left">
+                    <p><strong>Coordinates:</strong></p>
+                    <ul>
+                        <li>Left: @Model.TenantPositionLeftPct%</li>
+                        <li>Top: @Model.TenantPositionTopPct%</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

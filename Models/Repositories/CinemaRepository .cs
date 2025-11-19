@@ -15,17 +15,24 @@ namespace Semester03.Models.Repositories
 
         public async Task<List<MovieCardVm>> GetFeaturedMoviesAsync(int top = 3)
         {
-            var now = DateTime.UtcNow;
+            // NOTE: dùng DateTime.Now để phù hợp với dữ liệu lưu theo local time. 
+            // Nếu DB dùng UTC, đổi về DateTime.UtcNow.
+            var now = DateTime.Now;
 
-            var nextStarts = _db.TblShowtimes
-                .AsNoTracking()
-                .Where(s => s.ShowtimeStart >= now)
-                .GroupBy(s => s.ShowtimeMovieId)
-                .Select(g => new
-                {
-                    MovieId = g.Key,
-                    NextStart = g.Min(s => s.ShowtimeStart)
-                });
+            var nextStarts = from s in _db.TblShowtimes.AsNoTracking()
+                             join m in _db.TblMovies.AsNoTracking()
+                                 on s.ShowtimeMovieId equals m.MovieId
+                             // chỉ chọn showtime trong tương lai
+                             where s.ShowtimeStart >= now
+                             // movie đang trong khoảng hoặc start/end null (treat null start = already started, null end = no end)
+                             && (m.MovieStartDate == null || m.MovieStartDate <= now)
+                             && (m.MovieEndDate == null || m.MovieEndDate >= now)
+                             group s by s.ShowtimeMovieId into g
+                             select new
+                             {
+                                 MovieId = g.Key,
+                                 NextStart = g.Min(s => s.ShowtimeStart)
+                             };
 
             var q = from ns in nextStarts
                     join s in _db.TblShowtimes.AsNoTracking()
@@ -34,6 +41,9 @@ namespace Semester03.Models.Repositories
                     join m in _db.TblMovies.AsNoTracking() on ns.MovieId equals m.MovieId
                     join scr in _db.TblScreens.AsNoTracking() on s.ShowtimeScreenId equals scr.ScreenId
                     join c in _db.TblCinemas.AsNoTracking() on scr.ScreenCinemaId equals c.CinemaId
+                    // thêm điều kiện an toàn
+                    where (m.MovieStartDate == null || m.MovieStartDate <= now)
+                          && (m.MovieEndDate == null || m.MovieEndDate >= now)
                     orderby s.ShowtimeStart
                     select new
                     {
@@ -66,17 +76,20 @@ namespace Semester03.Models.Repositories
 
         public async Task<List<MovieCardVm>> GetNowShowingAsync()
         {
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
 
-            var nextStarts = _db.TblShowtimes
-                .AsNoTracking()
-                .Where(s => s.ShowtimeStart >= now)
-                .GroupBy(s => s.ShowtimeMovieId)
-                .Select(g => new
-                {
-                    MovieId = g.Key,
-                    NextStart = g.Min(s => s.ShowtimeStart)
-                });
+            var nextStarts = from s in _db.TblShowtimes.AsNoTracking()
+                             join m in _db.TblMovies.AsNoTracking()
+                                 on s.ShowtimeMovieId equals m.MovieId
+                             where s.ShowtimeStart >= now
+                                && (m.MovieStartDate == null || m.MovieStartDate <= now)
+                                && (m.MovieEndDate == null || m.MovieEndDate >= now)
+                             group s by s.ShowtimeMovieId into g
+                             select new
+                             {
+                                 MovieId = g.Key,
+                                 NextStart = g.Min(s => s.ShowtimeStart)
+                             };
 
             var q = from ns in nextStarts
                     join s in _db.TblShowtimes.AsNoTracking()
@@ -85,6 +98,8 @@ namespace Semester03.Models.Repositories
                     join m in _db.TblMovies.AsNoTracking() on ns.MovieId equals m.MovieId
                     join scr in _db.TblScreens.AsNoTracking() on s.ShowtimeScreenId equals scr.ScreenId
                     join c in _db.TblCinemas.AsNoTracking() on scr.ScreenCinemaId equals c.CinemaId
+                    where (m.MovieStartDate == null || m.MovieStartDate <= now)
+                          && (m.MovieEndDate == null || m.MovieEndDate >= now)
                     orderby s.ShowtimeStart
                     select new
                     {
