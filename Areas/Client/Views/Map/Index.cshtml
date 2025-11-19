@@ -1,658 +1,759 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.MapViewModel
 @{
-	Layout = "_LayoutClient";
-	var floor = Model.FloorNumber;
+    ViewData["Title"] = "Mall Floor Plan";
+    Layout = "_LayoutClient";
+    int defaultCapacityPerFloor = 40;
+    var floors = Model?.AvailableFloors ?? new List<int> { Model?.FloorNumber ?? 0 };
+    var selectedFloor = Model?.FloorNumber ?? floors.FirstOrDefault();
+    var positions = Model?.Positions ?? new List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto>();
 }
 
-<div class="container py-3">
-	<div class="d-flex justify-content-between align-items-start mb-2">
-		<div>
-			<h4 class="mb-0">Sơ đồ tầng — Tầng @Model.FloorNumber</h4>
-			<small class="text-muted">Diện tích tầng: @Model.FloorAreaM2 m² · Dành riêng: @Model.ReservedAreaM2 m² · Diện tích ô: @Model.PositionAreaM2 m²</small>
-		</div>
+<style>
+    /* reset box-sizing to avoid width surprises */
+    *, *::before, *::after {
+        box-sizing: border-box;
+    }
 
-		<div class="d-flex align-items-center gap-2">
-			<form id="floorSelectForm" method="get" action="@Url.Action("Index","Map")" class="d-flex align-items-center gap-2 m-0 p-0">
-				<label class="small text-muted mb-0 me-1">Chọn tầng</label>
-				<select id="floorSelect" name="floor" class="form-select form-select-sm" style="min-width:110px;">
-					@{
-						var floors = Model.AvailableFloors;
-						if (floors == null || !floors.Any())
-						{
-							floors = new List<int> { 0, 1, 2, 3 };
-						}
-					}
-					@foreach (var f in floors)
-					{
-						<option value="@f" @(f == Model.FloorNumber ? "selected" : "")>@(f == 0 ? "G (0)" : "Tầng " + f)</option>
-					}
-				</select>
-			</form>
+    .floor-wrapper {
+        background: #fff;
+        border: 1px solid #e1e3ea;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+    }
 
-			<div>
-				<a class="btn btn-sm btn-outline-secondary" href="@Url.Action("Index","Map", new { floor = Model.FloorNumber })">Làm mới</a>
-				<a class="btn btn-sm btn-outline-primary ms-1" href="@Url.Action("Index3D","Map", new { floor = Model.FloorNumber })">3D View</a>
-			</div>
-		</div>
-	</div>
+    .floors-toolbar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 12px;
+    }
 
-	<div class="card p-3">
-		@* SVG map (read-only customer view) *@
-		<div class="map-frame svg-map-wrapper">
-			@{
-				// canonical viewBox and shop rect size
-				var vbW = 1200m;
-				var vbH = 800m;
-				var defaultRectW = 100m;
-				var defaultRectH = 60m;
+    .floor-tab {
+        border-radius: 20px;
+        padding: 6px 10px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        cursor: pointer;
+        font-weight: 700;
+        color: #374151;
+        user-select: none;
+    }
 
-				var positions = Model.Positions ?? new List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto>();
-				var withCoords = positions.Where(p => p.TenantPosition_LeftPct.HasValue && p.TenantPosition_TopPct.HasValue).ToList();
-				var withoutCoords = positions.Where(p => !p.TenantPosition_LeftPct.HasValue || !p.TenantPosition_TopPct.HasValue).ToList();
+        .floor-tab.active {
+            background: #2b6fb2;
+            color: #fff;
+            border-color: #2b6fb2;
+        }
 
-				// elevator visual params & labels by current floor
-				string elev1Fill = "#2b6cb0";
-				string elev2Fill = "#2b6cb0";
-				string elev1Label = "";
-				string elev2Label = "";
-				// show entrance only on ground by default
-				bool showEntrance = (floor == 0);
+    /* viewport that clips content - prevents overflow of the map outside the frame */
+    .map-viewport {
+        width: 100%;
+        height: 420px;
+        overflow: hidden; /* clip any overflow */
+        position: relative;
+        border-radius: 6px;
+        background: transparent;
+        padding: 10px; /* breathing room so transform edge isn't clipped harshly */
+        display: block;
+    }
 
-				// determine initial directions server-side (for first render)
-				string elev1Dir = "neutral";
-				string elev2Dir = "neutral";
+    /* actual content - we keep an internal "design width" and scale it down to fit */
+    .map-content {
+        transform-origin: 0 0; /* important: we compute translate/scale in JS */
+        transition: transform .06s linear;
+        display: block;
+        /* design size: this is the internal width & height of the layout */
+        width: 1240px; /* change if you prefer wider/narrower internal canvas */
+        background: transparent;
+        margin: 0 auto;
+    }
 
-				switch (floor)
-				{
-					case 0:
-						elev1Fill = elev2Fill = "#2b6cb0";
-						elev1Label = elev2Label = "Thang tầng 0 lên tầng 1";
-						elev1Dir = "up";
-						elev2Dir = "up";
-						break;
-					case 1:
-						elev1Fill = "#f39c12"; // down
-						elev2Fill = "#16a34a"; // up
-						elev1Label = "Tầng 1 xuống tầng 0 (G)";
-						elev2Label = "Tầng 1 lên tầng 2";
-						elev1Dir = "down";
-						elev2Dir = "up";
-						showEntrance = false;
-						break;
-					case 2:
-						elev1Fill = "#f39c12";
-						elev2Fill = "#16a34a";
-						elev1Label = "Tầng 2 xuống tầng 1";
-						elev2Label = "Tầng 2 lên tầng 3";
-						elev1Dir = "down";
-						elev2Dir = "up";
-						showEntrance = true;
-						break;
-					case 3:
-						elev1Fill = elev2Fill = "#f39c12";
-						elev1Label = elev2Label = "Tầng 3 xuống tầng 2";
-						elev1Dir = "down";
-						elev2Dir = "down";
-						showEntrance = true;
-						break;
-					default:
-						elev1Fill = elev2Fill = "#2b6cb0";
-						elev1Label = elev2Label = "";
-						elev1Dir = elev2Dir = "neutral";
-						showEntrance = true;
-						break;
-				}
+    /* layout inside the design canvas */
+    .floor-layout {
+        width: 100%;
+        background: #eaecf4;
+        border: 2px solid #5a5c69;
+        padding: 8px;
+        border-radius: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
 
-				// --------- fixed layout regions (must be declared BEFORE overlap checks) ----------
-				var atrX = 460m; var atrY = 260m; var atrW = 280m; var atrH = 180m;
-				var elevW = 48m;
-				var elevH = atrH - 20m;
-				var elevY = atrY + 10m;
-				var elev1X = atrX + 20m;
-				var elev2X = atrX + atrW - 20m - elevW;
-				var wcX = 1020m; var wcY = 320m;
-				// -------------------------------------------------------------------------------
+    .shop-strip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
 
-				// prepare render items with small nudges to avoid overlapping visually
-				var placedBoxes = new List<dynamic>();
-				var offsets = new List<(decimal dx, decimal dy)> {
-			(0,0),(8,0),(-8,0),(0,8),(0,-8),(12,12),(-12,12),(12,-12),(-12,-12)
-			};
+    .shop-cluster {
+        display: flex;
+        gap: 8px;
+        flex: 5;
+        align-items: stretch;
+    }
 
-				// forbidden rectangles — include atrium & elevators & WC so shops won't be placed over them
-				var forbiddenRects = new List<(decimal x, decimal y, decimal w, decimal h, string name)> {
-			(atrX, atrY, atrW, atrH, "atrium"),
-			(elev1X, elevY, elevW, elevH, "elev1"),
-			(elev2X, elevY, elevW, elevH, "elev2"),
-			(wcX, wcY, 44m, 44m, "wc")
-			};
+    .end-cap {
+        width: 44px;
+        background: #e74a3b;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        writing-mode: vertical-lr;
+        font-weight: 900;
+        border-radius: 6px;
+        min-height: 72px;
+    }
 
-				Func<decimal, decimal, decimal, decimal, bool> isOverlap = (ax, ay, aw, ah) =>
-				{
-					// check overlap with already placed shops
-					foreach (var bb in placedBoxes)
-					{
-						var bx = (decimal)bb.x;
-						var by = (decimal)bb.y;
-						var bw = (decimal)bb.w;
-						var bh = (decimal)bb.h;
-						if (!(ax + aw <= bx || bx + bw <= ax || ay + ah <= by || by + bh <= ay))
-						{
-							return true;
-						}
-					}
-					// check overlap with forbidden zones (atrium, elevators, wc)
-					foreach (var fr in forbiddenRects)
-					{
-						var bx = fr.x; var by = fr.y; var bw = fr.w; var bh = fr.h;
-						if (!(ax + aw <= bx || bx + bw <= ax || ay + ah <= by || by + bh <= ay))
-						{
-							return true;
-						}
-					}
-					return false;
-				};
+    /* shop unit - vertical rectangle */
+    .shop-unit {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 6px;
+        text-align: center;
+        border-radius: 6px;
+        padding: 8px 6px;
+        text-decoration: none;
+        color: inherit;
+        transition: transform .12s ease, box-shadow .12s ease;
+        min-width: 84px; /* control width of each cell */
+        max-width: 84px;
+        height: 110px; /* vertical rectangle */
+        background: #fff;
+        border: 1px solid #e9ecef;
+        box-sizing: border-box;
+    }
 
-				var renderItems = new List<dynamic>();
-				foreach (var dto in withCoords)
-				{
-					var leftPct = Math.Max(0m, Math.Min(100m, dto.TenantPosition_LeftPct ?? 0m));
-					var topPct = Math.Max(0m, Math.Min(100m, dto.TenantPosition_TopPct ?? 0m));
-					var cx = leftPct / 100m * vbW;
-					var cy = topPct / 100m * vbH;
-					var w = defaultRectW;
-					var h = defaultRectH;
-					var rx = cx - w / 2m;
-					var ry = cy - h / 2m;
-					var minX = 8m; var minY = 8m;
-					var maxX = vbW - w - 8m; var maxY = vbH - h - 8m;
-					rx = Math.Max(minX, Math.Min(maxX, rx));
-					ry = Math.Max(minY, Math.Min(maxY, ry));
+        .shop-unit:hover {
+            transform: translateY(-6px);
+            z-index: 20;
+            box-shadow: 0 10px 24px rgba(16,24,40,0.08);
+            border-color: #4e73df;
+        }
 
-					bool placed = false;
-					foreach (var off in offsets)
-					{
-						var candX = rx + off.dx;
-						var candY = ry + off.dy;
-						candX = Math.Max(minX, Math.Min(maxX, candX));
-						candY = Math.Max(minY, Math.Min(maxY, candY));
-						if (!isOverlap(candX, candY, w, h))
-						{
-							placedBoxes.Add(new { x = candX, y = candY, w = w, h = h, id = dto.TenantPosition_ID });
-							renderItems.Add(new { dto = dto, x = candX, y = candY, w = w, h = h, leftPct = leftPct, topPct = topPct, nudged = (off.dx != 0 || off.dy != 0) });
-							placed = true;
-							break;
-						}
-					}
-					if (!placed)
-					{
-						// last resort: place at original cx/ cy but try shifting along Y until fit
-						var tryX = Math.Max(minX, Math.Min(maxX, rx));
-						var tryY = Math.Max(minY, Math.Min(maxY, ry));
-						int attempts = 0;
-						while (isOverlap(tryX, tryY, w, h) && attempts < 40)
-						{
-							tryY += 8m;
-							if (tryY > maxY) tryY = minY;
-							attempts++;
-						}
-						placedBoxes.Add(new { x = tryX, y = tryY, w = w, h = h, id = dto.TenantPosition_ID });
-						renderItems.Add(new { dto = dto, x = tryX, y = tryY, w = w, h = h, leftPct = leftPct, topPct = topPct, nudged = false });
-					}
-				}
-			}
+    .unit-void {
+        background: transparent;
+        border: 1px dashed rgba(0,0,0,0.06);
+        min-width: 84px;
+        height: 110px;
+    }
 
-			<svg id="mallSvg" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;border-radius:6px;">
-				<defs>
-					<filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
-						<feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#0b1724" flood-opacity="0.06" />
-					</filter>
-					<linearGradient id="shopGrad" x1="0" x2="0" y1="0" y2="1">
-						<stop offset="0%" stop-color="#ffffff" />
-						<stop offset="100%" stop-color="#f3f7fb" />
-					</linearGradient>
-					<linearGradient id="occupiedGrad" x1="0" x2="0" y1="0" y2="1">
-						<stop offset="0%" stop-color="#2b6cb0" />
-						<stop offset="100%" stop-color="#1e4b7a" />
-					</linearGradient>
-					<pattern id="pathPattern" patternUnits="userSpaceOnUse" width="12" height="12">
-						<rect width="12" height="12" fill="#f3f4f6"></rect>
-						<path d="M0 8 L8 0" stroke="#e9eef3" stroke-width="1"></path>
-					</pattern>
+    .unit-vacant {
+        background: #e6f4ea;
+        color: #155724;
+    }
 
-					@* Icons *@
-					<symbol id="icon-wc" viewBox="0 0 24 24">
-						<rect x="2" y="2" width="20" height="20" rx="3" fill="#ffecec"></rect>
-						<path d="M8 9a2 2 0 100 4 2 2 0 000-4z" fill="#8b2b2b"></path>
-						<rect x="14" y="9" width="3" height="6" rx="1.2" fill="#8b2b2b"></rect>
-					</symbol>
+    .unit-occupied {
+        background: #cce5ff;
+        color: #003366;
+    }
 
-					<symbol id="icon-entrance" viewBox="0 0 24 24">
-						<path d="M6 3v18" stroke="#6b7280" stroke-width="1.4" stroke-linecap="round" fill="none" />
-						<path d="M18 3v18" stroke="#6b7280" stroke-width="1.4" stroke-linecap="round" fill="none" />
-						<path d="M6 12h12" stroke="#6b7280" stroke-width="1.4" stroke-linecap="round" fill="none" />
-					</symbol>
+    .shop-thumb {
+        width: 56px;
+        height: 48px;
+        border-radius: 6px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f3f5f7;
+    }
 
-					@* Arrow symbols (triangles) for elevators *@
-					<symbol id="arrow-up" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet">
-						<path d="M12 6 L6 14 H18 L12 6 Z" />
-					</symbol>
-					<symbol id="arrow-down" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet">
-						<path d="M12 18 L6 10 H18 L12 18 Z" />
-					</symbol>
-				</defs>
+        .shop-thumb img {
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+        }
 
-				<!-- base -->
-				<rect x="6" y="6" width="1188" height="788" rx="10" ry="10" fill="url(#shopGrad)" stroke="#e6e9ee" stroke-width="2"></rect>
+    .shop-location {
+        font-size: 0.66rem;
+        color: #374151;
+        font-weight: 700;
+        white-space: normal;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
-				<!-- pedestrian corridors (highlighted) -->
-				<rect x="60" y="120" width="1080" height="100" rx="8" fill="url(#pathPattern)"></rect>
-				<rect x="60" y="340" width="1080" height="80" rx="8" fill="url(#pathPattern)"></rect>
-				<rect x="60" y="520" width="1080" height="110" rx="8" fill="url(#pathPattern)"></rect>
+    .shop-status {
+        font-size: 0.72rem;
+        font-weight: 800;
+        margin-top: 4px;
+        color: inherit;
+    }
 
-				@* Entrance icons: show only on floor 0 (G) or as controlled by showEntrance *@
-				@if (showEntrance)
-				{
-					<use href="#icon-entrance" x="84" y="100" width="24" height="24"></use>
-					<svg:text x="112" y="118" font-size="11" fill="#6b7280">Cổng vào</svg:text>
-					<svg:text x="1048" y="658" font-size="11" fill="#6b7280">Lối ra</svg:text>
-				}
+    .map-controls {
+        position: absolute;
+        right: 16px;
+        top: 16px;
+        z-index: 60;
+        display: flex;
+        gap: 6px;
+    }
 
-				<!-- central atrium -->
-				<g id="atrium">
-					<rect x="@atrX" y="@atrY" width="@atrW" height="@atrH" rx="12" ry="12" fill="#fffaf0" stroke="#f5c06e" stroke-width="2" filter="url(#softShadow)"></rect>
-					<text x="@(atrX + atrW/2m)" y="@(atrY + atrH/2m + 6)" text-anchor="middle" font-size="16" font-weight="700" fill="#9a5a0f">Giếng trời</text>
-				</g>
+        .map-controls button {
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            padding: 6px 8px;
+            cursor: pointer;
+        }
 
-				<!-- elevators with arrows inside -->
-				<g id="elevators" aria-label="Elevators">
-					<g class="elev-1" transform="translate(0,0)" role="group" aria-label="Elevator 1">
-						<rect x="@elev1X" y="@elevY" width="@elevW" height="@elevH" rx="6" ry="6" fill="@elev1Fill" stroke="#12385a" stroke-opacity="0.12" filter="url(#softShadow)"></rect>
+    /* responsive: reduce cell sizes slightly on small screens */
+    @@media (max-width:1100px) {
+        .map-content
 
-						@* Placeholder group for the arrow icon (server renders initial content) *@
-						<g id="elev1Icon" transform="translate(@(elev1X + elevW/2m - 14), @(elevY + elevH/2m - 16))" class="elevator-arrow" aria-hidden="false">
-							@if (elev1Dir == "up")
-							{
-								<use href="#arrow-up" width="28" height="28" fill="#ffffff" stroke="#08304b" stroke-width="0.6" />
-							}
-							else if (elev1Dir == "down")
-							{
-								<use href="#arrow-down" width="28" height="28" fill="#ffffff" stroke="#08304b" stroke-width="0.6" />
-							}
-							else
-							{
-								<circle cx="14" cy="14" r="10" fill="#ffffff" stroke="#08304b" stroke-width="0.6" />
-							}
-						</g>
+    {
+        width: 1000px;
+    }
+    /* internal design smaller for small screens */
+    .shop-unit, .unit-void {
+        min-width: 68px;
+        max-width: 68px;
+        height: 96px;
+    }
 
-						@{
-							var badgeW = elevW - 8m;
-							var badgeX = elev1X + 4m;
-							var badgeY = elevY + elevH - 22m;
-							var badgeText1 = (elev1Dir == "up") ? "▲1" : (elev1Dir == "down") ? "▼1" : "•1";
-						}
-						<rect x="@badgeX" y="@badgeY" width="@badgeW" height="18" rx="6" fill="#ffffff" opacity="0.98" stroke="#000" stroke-opacity="0.06"></rect>
-						<text id="elev1Badge" x="@(badgeX + badgeW/2m)" y="@(badgeY + 13)" text-anchor="middle" font-size="12" fill="#0b1724" font-weight="800" dominant-baseline="middle">@badgeText1</text>
-					</g>
+    .shop-thumb {
+        width: 48px;
+        height: 36px;
+    }
 
-					<g class="elev-2" transform="translate(0,0)" role="group" aria-label="Elevator 2">
-						<rect x="@elev2X" y="@elevY" width="@elevW" height="@elevH" rx="6" ry="6" fill="@elev2Fill" stroke="#12385a" stroke-opacity="0.12" filter="url(#softShadow)"></rect>
+    }
+</style>
 
-						@* Placeholder group for the arrow icon (server renders initial content) *@
-						<g id="elev2Icon" transform="translate(@(elev2X + elevW/2m - 14), @(elevY + elevH/2m - 16))" class="elevator-arrow" aria-hidden="false">
-							@if (elev2Dir == "up")
-							{
-								<use href="#arrow-up" width="28" height="28" fill="#ffffff" stroke="#08304b" stroke-width="0.6" />
-							}
-							else if (elev2Dir == "down")
-							{
-								<use href="#arrow-down" width="28" height="28" fill="#ffffff" stroke="#08304b" stroke-width="0.6" />
-							}
-							else
-							{
-								<circle cx="14" cy="14" r="10" fill="#ffffff" stroke="#08304b" stroke-width="0.6" />
-							}
-						</g>
+<h1 class="h3 mb-2 text-gray-800">Mall Floor Plan</h1>
+<p class="mb-3 text-muted">Hiển thị vị trí tenant theo từng tầng — dữ liệu lấy từ Tbl_TenantPosition.</p>
 
-						@{
-							var badgeW2 = elevW - 8m;
-							var badgeX2 = elev2X + 4m;
-							var badgeY2 = elevY + elevH - 22m;
-							var badgeText2 = (elev2Dir == "up") ? "▲2" : (elev2Dir == "down") ? "▼2" : "•2";
-						}
-						<rect x="@badgeX2" y="@badgeY2" width="@badgeW2" height="18" rx="6" fill="#ffffff" opacity="0.98" stroke="#000" stroke-opacity="0.06"></rect>
-						<text id="elev2Badge" x="@(badgeX2 + badgeW2/2m)" y="@(badgeY2 + 13)" text-anchor="middle" font-size="12" fill="#0b1724" font-weight="800" dominant-baseline="middle">@badgeText2</text>
-					</g>
-				</g>
-
-				<!-- WC (placed off-center, not inside atrium) -->
-				<g transform="translate(@wcX,@wcY)">
-					<use href="#icon-wc" width="44" height="44"></use>
-					<text x="22" y="58" text-anchor="middle" font-size="10" fill="#8b2b2b">WC</text>
-				</g>
-
-				@* Render shops (from DB coords), with small nudges shown by dashed connector if nudged *@
-				@foreach (var item in renderItems)
-				{
-					var dto = (Semester03.Areas.Client.Models.ViewModels.TenantPositionDto)item.dto;
-					var x = (decimal)item.x;
-					var y = (decimal)item.y;
-					var w = (decimal)item.w;
-					var h = (decimal)item.h;
-					var assigned = dto.TenantPosition_AssignedTenantID.HasValue && dto.TenantPosition_AssignedTenantID.Value > 0;
-					var cssClass = assigned ? "occupied-shop" : "empty-shop";
-					var label = !string.IsNullOrEmpty(dto.TenantPosition_Location) ? dto.TenantPosition_Location : "Trống";
-					var idAttr = dto.TenantPosition_ID.ToString();
-					var nudged = (bool)item.nudged;
-					var trueCenterX = (decimal)item.leftPct / 100m * vbW;
-					var trueCenterY = (decimal)item.topPct / 100m * vbH;
-
-					if (nudged)
-					{
-						<line x1="@(trueCenterX)" y1="@(trueCenterY)" x2="@(x + w/2m)" y2="@(y + h/2m)" stroke="#e2a85f" stroke-dasharray="4 4" stroke-width="1"></line>
-					}
-
-					<g class="svg-shop-group" data-id="@idAttr" data-left="@((decimal)item.leftPct)" data-top="@((decimal)item.topPct)" title="@label">
-						<rect class="@cssClass" x="@x" y="@y" width="@w" height="@h" rx="8" ry="8" filter="url(#softShadow)"></rect>
-
-						@* ID badge removed per request *@
-
-						<text x="@(x + w/2m)" y="@(y + 22)" text-anchor="middle" font-size="12" font-weight="700" class="shop-label">@label</text>
-						<text x="@(x + w/2m)" y="@(y + h - 8)" text-anchor="middle" font-size="10" fill="#6b7280">@((assigned) ? "Có tenant" : "Trống")</text>
-					</g>
-				}
-
-			</svg>
-		</div>
-
-		<div class="map-legend mt-2">
-			<g transform="translate(70,748)">
-				<rect x="-12" y="-6" width="520" height="74" rx="8" fill="#ffffff" opacity="0.98" stroke="#e9eef3"></rect>
-
-				<g transform="translate(8,8)">
-					<rect x="0" y="0" width="14" height="14" rx="3" fill="#dbeafe" stroke="#93c0ff"></rect>
-					<text x="22" y="12" font-size="12" fill="#2b6cb0">Có tenant</text>
-
-					<rect x="0" y="20" width="14" height="14" rx="3" fill="#ffffff" stroke="#e6e9ee"></rect>
-					<text x="22" y="32" font-size="12" fill="#6b7280">Trống</text>
-
-					<rect x="0" y="40" width="14" height="14" rx="3" fill="#fffaf0" stroke="#f5c06e"></rect>
-					<text x="22" y="52" font-size="12" fill="#9a5a0f">Giếng trời</text>
-				</g>
-			</g>
-		</div>
-	</div>
-
-	@* show list of positions without coords for admin awareness *@
-	@if (withoutCoords.Any())
-	{
-		<div class="card mt-3 p-3">
-			<h6>Ô chưa có toạ độ (không hiển thị trên map)</h6>
-			<ul>
-				@foreach (var nc in withoutCoords)
-				{
-					<li><strong>@nc.TenantPosition_Location</strong> — @nc.TenantPosition_Area_M2 m² — ID: @nc.TenantPosition_ID</li>
-				}
-			</ul>
-			<small class="text-muted">Để hiển thị chính xác, admin cần cập nhật TenantPosition_LeftPct / TenantPosition_TopPct (theo viewBox 1200×800).</small>
-		</div>
-	}
+<div class="floors-toolbar mb-3">
+    @foreach (var f in floors.OrderBy(x => x))
+    {
+        var css = (f == selectedFloor) ? "floor-tab active" : "floor-tab";
+        <div class="@css" data-floor="@f"> @(f == 0 ? "G (0)" : "Tầng " + f) </div>
+    }
+    <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+        <span class="text-muted small">Zoom / Pan</span>
+        <button class="btn btn-sm btn-outline-secondary" id="globalZoomOut" title="Zoom out">-</button>
+        <button class="btn btn-sm btn-outline-secondary" id="globalZoomReset" title="Reset">⟳</button>
+        <button class="btn btn-sm btn-outline-secondary" id="globalZoomIn" title="Zoom in">+</button>
+    </div>
 </div>
 
-<!-- modal for read-only view -->
-<div class="modal fade" id="posModal" tabindex="-1" aria-hidden="true">
-	<div class="modal-dialog modal-md modal-dialog-centered">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title">Thông tin ô</h5>
-				<button class="btn-close" data-bs-dismiss="modal"></button>
-			</div>
-			<div class="modal-body" id="posModalBody">
-				<div class="text-center py-3 text-muted">Đang tải...</div>
-			</div>
-			<div class="modal-footer">
-				<button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-			</div>
-		</div>
-	</div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div><strong>Positions:</strong> @(ViewData["PositionsCount"] ?? positions.Count)</div>
+    <div class="d-flex align-items-center gap-2">
+        <form id="floorSelectForm" method="get" action="@Url.Action("Index","Map", new { area = "Client" })" class="m-0 p-0 d-flex align-items-center gap-2">
+            <label class="small text-muted mb-0 me-1">Chọn tầng</label>
+            <select id="floorSelect" name="floor" class="form-select form-select-sm" style="min-width:120px;">
+                @foreach (var f in floors.OrderBy(x => x))
+                {
+                    <option value="@f" @(f == selectedFloor ? "selected" : "")>@(f == 0 ? "G (0)" : "Tầng " + f)</option>
+                }
+            </select>
+        </form>
+        <a class="btn btn-sm btn-outline-secondary ms-2" href="@Url.Action("Index","Map", new { area = "Client", floor = selectedFloor })">Làm mới</a>
+        <a class="btn btn-sm btn-outline-primary ms-1" href="@Url.Action("Index3D","Map", new { area = "Client", floor = selectedFloor })">3D View</a>
+    </div>
 </div>
 
-@section Styles {
-	<style>
-		.svg-map-wrapper {
-			background: linear-gradient(180deg,#fff,#fbfdff);
-			padding: 12px;
-			border-radius: .6rem;
-			box-shadow: 0 6px 20px rgba(20,30,40,0.05);
-			overflow: visible;
-		}
+<div class="card p-3">
+    @if (!floors.Any())
+    {
+        <div class="alert alert-warning">Không có tầng để hiển thị.</div>
+    }
 
-		.occupied-shop {
-			fill: url(#occupiedGrad);
-			stroke: rgba(0,0,0,0.08);
-		}
+    @foreach (var floor in floors.OrderBy(x => x))
+    {
+        var floorPositions = positions.Where(p => p.TenantPosition_Floor == floor).ToList();
+        bool isGround = (floor == 0 || floor == 1);
 
-		.empty-shop {
-			fill: url(#shopGrad);
-			stroke: rgba(10,20,40,0.06);
-		}
+        var topRow = floorPositions.Where(p => (p.TenantPosition_TopPct ?? 0m) < 50m).OrderBy(p => (p.TenantPosition_LeftPct ?? 0m)).ToList();
+        var bottomRow = floorPositions.Where(p => (p.TenantPosition_TopPct ?? 0m) >= 50m).OrderBy(p => (p.TenantPosition_LeftPct ?? 0m)).ToList();
+        var withoutCoords = floorPositions.Where(p => !p.TenantPosition_LeftPct.HasValue || !p.TenantPosition_TopPct.HasValue).ToList();
 
-		.svg-shop-group {
-			cursor: pointer;
-		}
+        List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto> ChunkOrFill(List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto> list, int skip)
+        {
+            var chunk = list.Skip(skip).Take(5).ToList();
+            if (chunk.Count < 5 && withoutCoords.Any())
+            {
+                var need = 5 - chunk.Count;
+                var extras = withoutCoords.Take(need).ToList();
+                chunk.AddRange(extras);
+                foreach (var e in extras) withoutCoords.Remove(e);
+            }
+            return chunk;
+        }
 
-			.svg-shop-group:hover rect {
-				stroke-width: 2.4;
-				filter: drop-shadow(0 10px 24px rgba(10,20,40,0.12));
-				transform: translateY(-3px);
-				transition: all .12s ease;
-			}
+        var topChunk1 = ChunkOrFill(topRow, 0);
+        var topChunk2 = ChunkOrFill(topRow, 5);
+        var topChunk3 = ChunkOrFill(topRow, 10);
+        var topChunk4 = ChunkOrFill(topRow, 15);
 
-		.shop-label {
-			pointer-events: none;
-			fill: #0b1724;
-		}
+        var botChunk1 = ChunkOrFill(bottomRow, 0);
+        var botChunk2 = ChunkOrFill(bottomRow, 5);
+        var botChunk3 = ChunkOrFill(bottomRow, 10);
+        var botChunk4 = ChunkOrFill(bottomRow, 15);
 
-		.elevator-arrow {
-			pointer-events: none;
-		}
+        var hiddenStyle = floor == selectedFloor ? "" : "display:none;";
+        <div class="floor-wrapper" data-floor="@floor" style="@hiddenStyle">
+            <div class="d-flex justify-content-between align-items-end mb-1">
+                <div>
+                    <h5 class="m-0 font-weight-bold text-primary text-uppercase">Floor @floor @(isGround ? "(Ground Level)" : "")</h5>
+                    <small class="text-muted">Diện tích tầng: @Model.FloorAreaM2 m² · Dành riêng: @Model.ReservedAreaM2 m² · Diện tích ô: @Model.PositionAreaM2 m²</small>
+                </div>
+                <div><small class="text-muted">Occupancy: @floorPositions.Count(x => x.TenantPosition_Status == 1) / @defaultCapacityPerFloor Units</small></div>
+            </div>
 
-		@@media (max-width: 767px) {
-			svg #mallSvg {
-				height: 520px !important;
-			}
+            <div class="map-viewport" id="viewport-@floor">
+                <div class="map-controls" data-floor="@floor">
+                    <button class="map-zoom-out" title="Zoom out">-</button>
+                    <button class="map-zoom-reset" title="Reset">⟳</button>
+                    <button class="map-zoom-in" title="Zoom in">+</button>
+                </div>
 
-			.shop-label {
-				font-size: 11px !important;
-			}
-		}
-	</style>
-}
+                <div class="map-content" id="map-content-@floor" data-floor="@floor">
+                    <div class="floor-layout">
+                        <div class="shop-strip">
+                            <div class="end-cap">Exit</div>
 
+                            <div class="shop-cluster">
+                                @foreach (var pos in topChunk1)
+                                {
+                                    var css = pos.TenantPosition_Status == 1 ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
+                                    <a href="@Url.Action("Details","Map", new { area="Client", id = pos.TenantPosition_ID })" class="@css" title="@pos.TenantPosition_Location" data-id="@pos.TenantPosition_ID">
+                                        <div class="shop-thumb">
+                                            @{
+                                                var img = pos.Tenant?.Tenant_Img;
+                                                if (!string.IsNullOrWhiteSpace(img))
+                                                {
+                                                    var src = img.StartsWith("wwwroot/") ? "/" + img.Substring("wwwroot/".Length) : img;
+                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" />
+                                                }
+                                                else
+                                                {
+                                                    <span style="font-size:0.8rem;">@pos.TenantPosition_ID</span>
+                                                }
+                                            }
+                                        </div>
+                                        <div class="shop-location">@pos.TenantPosition_Location</div>
+                                        <div class="shop-status">@((pos.TenantPosition_Status == 1 && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
+                                    </a>
+                                }
+                                @for (int i = 0; i < (5 - topChunk1.Count); i++)
+                                {
+                                    <div class="unit-void"></div>
+                                }
+                            </div>
+
+                            <div class="util-block-inner util-wc" style="background:#36b9cc; color:#fff; min-width:72px;">
+                                <i class="fas fa-restroom" style="font-size:18px; margin-bottom:4px;"></i>
+                                <div style="font-size:0.78rem;">WC</div>
+                            </div>
+
+                            <div class="shop-cluster">
+                                @foreach (var pos in topChunk2)
+                                {
+                                    var css = pos.TenantPosition_Status == 1 ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
+                                    <a href="@Url.Action("Details","Map", new { area="Client", id = pos.TenantPosition_ID })" class="@css" title="@pos.TenantPosition_Location" data-id="@pos.TenantPosition_ID">
+                                        <div class="shop-thumb">
+                                            @{
+                                                var img = pos.Tenant?.Tenant_Img;
+                                                if (!string.IsNullOrWhiteSpace(img))
+                                                {
+                                                    var src = img.StartsWith("wwwroot/") ? "/" + img.Substring("wwwroot/".Length) : img;
+                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" />
+                                                }
+                                                else
+                                                {
+                                                    <span style="font-size:0.8rem;">@pos.TenantPosition_ID</span>
+                                                }
+                                            }
+                                        </div>
+                                        <div class="shop-location">@pos.TenantPosition_Location</div>
+                                        <div class="shop-status">@((pos.TenantPosition_Status == 1 && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
+                                    </a>
+                                }
+                                @for (int i = 0; i < (5 - topChunk2.Count); i++)
+                                {
+                                    <div class="unit-void"></div>
+                                }
+                            </div>
+
+                            @if (isGround)
+                            {
+                                <div class="gate-center" style="width:64px; min-height:72px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                                    <i class="fas fa-arrow-down" style="font-size:18px;"></i>
+                                    <div style="font-size:0.7rem; margin-top:4px;">NORTH</div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="util-block-inner" style="background-color:#4e73df; color:white; min-width:72px;">
+                                    <i class="fas fa-map-marked-alt" style="font-size:18px;"></i>
+                                    <div style="font-size:0.66rem; margin-top:4px;">INFO MAP</div>
+                                </div>
+                            }
+
+                            <div class="shop-cluster">
+                                @foreach (var pos in topChunk3)
+                                {
+                                    var css = pos.TenantPosition_Status == 1 ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
+                                    <a href="@Url.Action("Details","Map", new { area="Client", id = pos.TenantPosition_ID })" class="@css" title="@pos.TenantPosition_Location" data-id="@pos.TenantPosition_ID">
+                                        <div class="shop-thumb">
+                                            @{
+                                                var img = pos.Tenant?.Tenant_Img;
+                                                if (!string.IsNullOrWhiteSpace(img))
+                                                {
+                                                    var src = img.StartsWith("wwwroot/") ? "/" + img.Substring("wwwroot/".Length) : img;
+                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" />
+                                                }
+                                                else
+                                                {
+                                                    <span style="font-size:0.8rem;">@pos.TenantPosition_ID</span>
+                                                }
+                                            }
+                                        </div>
+                                        <div class="shop-location">@pos.TenantPosition_Location</div>
+                                        <div class="shop-status">@((pos.TenantPosition_Status == 1 && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
+                                    </a>
+                                }
+                                @for (int i = 0; i < (5 - topChunk3.Count); i++)
+                                {
+                                    <div class="unit-void"></div>
+                                }
+                            </div>
+
+                            <div class="util-block-inner util-wc" style="background:#36b9cc; color:#fff; min-width:72px;"><i class="fas fa-restroom" style="font-size:18px; margin-bottom:4px;"></i><div style="font-size:0.78rem;">WC</div></div>
+
+                            <div class="shop-cluster">
+                                @foreach (var pos in topChunk4)
+                                {
+                                    var css = pos.TenantPosition_Status == 1 ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
+                                    <a href="@Url.Action("Details","Map", new { area="Client", id = pos.TenantPosition_ID })" class="@css" title="@pos.TenantPosition_Location" data-id="@pos.TenantPosition_ID">
+                                        <div class="shop-thumb">
+                                            @{
+                                                var img = pos.Tenant?.Tenant_Img;
+                                                if (!string.IsNullOrWhiteSpace(img))
+                                                {
+                                                    var src = img.StartsWith("wwwroot/") ? "/" + img.Substring("wwwroot/".Length) : img;
+                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" />
+                                                }
+                                                else
+                                                {
+                                                    <span style="font-size:0.8rem;">@pos.TenantPosition_ID</span>
+                                                }
+                                            }
+                                        </div>
+                                        <div class="shop-location">@pos.TenantPosition_Location</div>
+                                        <div class="shop-status">@((pos.TenantPosition_Status == 1 && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
+                                    </a>
+                                }
+                                @for (int i = 0; i < (5 - topChunk4.Count); i++)
+                                {
+                                    <div class="unit-void"></div>
+                                }
+                            </div>
+
+                            <div class="end-cap" style="transform:rotate(180deg);">Exit</div>
+                        </div> <!-- shop-strip -->
+
+                        <div class="hallway" style="height:64px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; background:#f8f9fc; border-top:1px dashed #d1d3e2; border-bottom:1px dashed #d1d3e2;">
+                            <div style="width:80px; text-align:center;">
+                                @if (isGround)
+                                {
+                                    <span style="font-weight:bold; color:#e74a3b;"><i class="fas fa-chevron-right"></i> WEST</span>
+                                }
+                            </div>
+
+                            <div class="escalator-group" title="Escalator & Stairs" style="display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:30px; background:#e9eef6; border:1px solid #d1d3e2;">
+                                <i class="fas fa-level-up-alt"></i>
+                                <div style="text-align:center;"><div style="font-size:0.6rem;">ESCALATOR</div><div style="font-size:0.52rem;">& STAIRS</div></div>
+                                <i class="fas fa-level-down-alt"></i>
+                            </div>
+
+                            <div style="font-weight:700; color:#6c757d;">MAIN CORRIDOR (210m)</div>
+
+                            <div class="escalator-group" title="Escalator & Stairs" style="display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:30px; background:#e9eef6; border:1px solid #d1d3e2;">
+                                <i class="fas fa-level-up-alt"></i>
+                                <div style="text-align:center;"><div style="font-size:0.6rem;">ESCALATOR</div><div style="font-size:0.52rem;">& STAIRS</div></div>
+                                <i class="fas fa-level-down-alt"></i>
+                            </div>
+
+                            <div style="width:80px; text-align:center;">
+                                @if (isGround)
+                                {
+                                    <span style="font-weight:bold; color:#e74a3b;">EAST <i class="fas fa-chevron-left"></i></span>
+                                }
+                            </div>
+                        </div> <!-- hallway -->
+                        <!-- BOTTOM ROW (same structure as TOP) -->
+                        <div class="shop-strip">
+                            <div class="end-cap">Exit</div>
+
+                            <div class="shop-cluster">
+                                @foreach (var pos in botChunk1)
+                                {
+                                    var css = pos.TenantPosition_Status == 1 ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
+                                    <a href="@Url.Action("Details","Map", new { area="Client", id = pos.TenantPosition_ID })" class="@css" title="@pos.TenantPosition_Location" data-id="@pos.TenantPosition_ID">
+                                        <div class="shop-thumb">
+                                            @{
+                                                var img = pos.Tenant?.Tenant_Img;
+                                                if (!string.IsNullOrWhiteSpace(img))
+                                                {
+                                                    var src = img.StartsWith("wwwroot/") ? "/" + img.Substring("wwwroot/".Length) : img;
+                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" />
+                                                }
+                                                else
+                                                {
+                                                    <span style="font-size:0.8rem;">@pos.TenantPosition_ID</span>
+                                                }
+                                            }
+                                        </div>
+                                        <div class="shop-location">@pos.TenantPosition_Location</div>
+                                        <div class="shop-status">@((pos.TenantPosition_Status == 1 && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
+                                    </a>
+                                }
+                                @for (int i = 0; i < (5 - botChunk1.Count); i++)
+                                {
+                                    <div class="unit-void"></div>
+                                }
+                            </div>
+
+                            <div class="util-block-inner util-lift" style="background:#f6c23e; color:#222; min-width:72px;"><i class="fas fa-elevator" style="font-size:18px; color:#333"></i><div style="color:#333; font-size:0.75rem; margin-top:4px;">LIFT</div></div>
+
+                            <div class="shop-cluster">
+                                @foreach (var pos in botChunk2)
+                                {
+                                    var css = pos.TenantPosition_Status == 1 ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
+                                    <a href="@Url.Action("Details","Map", new { area="Client", id = pos.TenantPosition_ID })" class="@css" title="@pos.TenantPosition_Location" data-id="@pos.TenantPosition_ID">
+                                        <div class="shop-thumb">
+                                            @{
+                                                var img = pos.Tenant?.Tenant_Img;
+                                                if (!string.IsNullOrWhiteSpace(img))
+                                                {
+                                                    var src = img.StartsWith("wwwroot/") ? "/" + img.Substring("wwwroot/".Length) : img;
+                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" />
+                                                }
+                                                else
+                                                {
+                                                    <span style="font-size:0.8rem;">@pos.TenantPosition_ID</span>
+                                                }
+                                            }
+                                        </div>
+                                        <div class="shop-location">@pos.TenantPosition_Location</div>
+                                        <div class="shop-status">@((pos.TenantPosition_Status == 1 && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
+                                    </a>
+                                }
+                                @for (int i = 0; i < (5 - botChunk2.Count); i++)
+                                {
+                                    <div class="unit-void"></div>
+                                }
+                            </div>
+
+                            @if (isGround)
+                            {
+                                <div class="gate-center" style="width:64px; min-height:72px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center;"><div style="font-weight:700;">SOUTH</div><i class="fas fa-arrow-up" style="font-size:18px; margin-top:6px;"></i></div>
+                            }
+                            else
+                            {
+                                <div class="util-block-inner" style="background-color:#17a2b8; color:white; min-width:72px;"><i class="fas fa-couch"></i><div style="font-size:0.66rem; margin-top:4px;">LOUNGE</div></div>
+                            }
+
+                            <div class="shop-cluster">
+                                @foreach (var pos in botChunk3)
+                                {
+                                    var css = pos.TenantPosition_Status == 1 ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
+                                    <a href="@Url.Action("Details","Map", new { area="Client", id = pos.TenantPosition_ID })" class="@css" title="@pos.TenantPosition_Location" data-id="@pos.TenantPosition_ID">
+                                        <div class="shop-thumb">
+                                            @{
+                                                var img = pos.Tenant?.Tenant_Img;
+                                                if (!string.IsNullOrWhiteSpace(img))
+                                                {
+                                                    var src = img.StartsWith("wwwroot/") ? "/" + img.Substring("wwwroot/".Length) : img;
+                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" />
+                                                }
+                                                else
+                                                {
+                                                    <span style="font-size:0.8rem;">@pos.TenantPosition_ID</span>
+                                                }
+                                            }
+                                        </div>
+                                        <div class="shop-location">@pos.TenantPosition_Location</div>
+                                        <div class="shop-status">@((pos.TenantPosition_Status == 1 && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
+                                    </a>
+                                }
+                                @for (int i = 0; i < (5 - botChunk3.Count); i++)
+                                {
+                                    <div class="unit-void"></div>
+                                }
+                            </div>
+
+                            <div class="util-block-inner util-lift" style="background:#f6c23e; color:#222; min-width:72px;"><i class="fas fa-elevator" style="font-size:18px; color:#333"></i><div style="color:#333; font-size:0.75rem; margin-top:4px;">LIFT</div></div>
+
+                            <div class="shop-cluster">
+                                @foreach (var pos in botChunk4)
+                                {
+                                    var css = pos.TenantPosition_Status == 1 ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
+                                    <a href="@Url.Action("Details","Map", new { area="Client", id = pos.TenantPosition_ID })" class="@css" title="@pos.TenantPosition_Location" data-id="@pos.TenantPosition_ID">
+                                        <div class="shop-thumb">
+                                            @{
+                                                var img = pos.Tenant?.Tenant_Img;
+                                                if (!string.IsNullOrWhiteSpace(img))
+                                                {
+                                                    var src = img.StartsWith("wwwroot/") ? "/" + img.Substring("wwwroot/".Length) : img;
+                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" />
+                                                }
+                                                else
+                                                {
+                                                    <span style="font-size:0.8rem;">@pos.TenantPosition_ID</span>
+                                                }
+                                            }
+                                        </div>
+                                        <div class="shop-location">@pos.TenantPosition_Location</div>
+                                        <div class="shop-status">@((pos.TenantPosition_Status == 1 && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
+                                    </a>
+                                }
+                                @for (int i = 0; i < (5 - botChunk4.Count); i++)
+                                {
+                                    <div class="unit-void"></div>
+                                }
+                            </div>
+
+                            <div class="end-cap" style="transform:rotate(180deg);">Exit</div>
+                        </div> <!-- bottom strip -->
+
+                    </div> <!-- floor-layout -->
+                </div> <!-- map-content -->
+            </div> <!-- map-viewport -->
+        </div> <!-- floor-wrapper -->
+    } <!-- foreach floors -->
+</div> <!-- card -->
 @section Scripts {
-	<script>
-		(function(){
-			// floor select
-			var floorSelect = document.getElementById('floorSelect');
-			if (floorSelect) {
-				// ensure the form still submits on change (existing behavior)
-				floorSelect.addEventListener('change', function(){
-					// update visuals immediately
-					var v = parseInt(this.value, 10);
-					if (!isNaN(v)) setElevatorVisuals(v);
+    <script>
+        (function(){
+            // floor select submit
+            var sel = document.getElementById('floorSelect');
+            if (sel) sel.addEventListener('change', function(){ document.getElementById('floorSelectForm').submit(); });
 
-					// keep existing behavior: submit to server
-					document.getElementById('floorSelectForm').submit();
-				});
-			}
+            // tabs: show/hide floors client-side
+            document.querySelectorAll('.floor-tab').forEach(function(t){
+                t.addEventListener('click', function(e){
+                    e.preventDefault();
+                    var f = this.getAttribute('data-floor');
+                    document.querySelectorAll('.floor-tab').forEach(x=>x.classList.remove('active'));
+                    this.classList.add('active');
+                    document.querySelectorAll('.floor-wrapper').forEach(function(w){
+                        w.style.display = (w.getAttribute('data-floor') === f) ? '' : 'none';
+                    });
+                    // fit visible floor after toggle
+                    setTimeout(function(){ fitMapToViewport(f); }, 80);
+                });
+            });
 
-			// modal / click to show info (read-only)
-			var svg = document.getElementById('mallSvg');
-			if (!svg) return;
-			var bsModal = new bootstrap.Modal(document.getElementById('posModal'));
-			var modalBody = document.getElementById('posModalBody');
+            // MapController (pan + zoom) - improved centering & fit
+            var controllers = {};
+            function MapController(viewportEl, contentEl) {
+                this.v = viewportEl; this.c = contentEl;
+                if(!this.v||!this.c) return;
+                this.scale = 1; this.tx = 0; this.ty = 0; this.dragging=false; this.lastX=0; this.lastY=0;
+                this.apply = function(){ this.c.style.transform = 'translate(' + this.tx + 'px, ' + this.ty + 'px) scale(' + this.scale + ')'; };
+                this.reset = function(){ this.scale=1; this.tx=0; this.ty=0; this.apply(); };
+                this.zoomBy = function(factor, cx, cy){
+                    var old = this.scale;
+                    var newScale = Math.max(0.4, Math.min(2.6, this.scale * factor));
+                    if (typeof cx === 'number') {
+                        var rect = this.v.getBoundingClientRect();
+                        var localX = cx - rect.left; var localY = cy - rect.top;
+                        this.tx = localX - ((localX - this.tx) * (newScale/old));
+                        this.ty = localY - ((localY - this.ty) * (newScale/old));
+                    } else {
+                        var r = this.v.getBoundingClientRect();
+                        var localX = r.width/2, localY = r.height/2;
+                        this.tx = localX - ((localX - this.tx) * (newScale/old));
+                        this.ty = localY - ((localY - this.ty) * (newScale/old));
+                    }
+                    this.scale = newScale; this.apply();
+                };
+                var self=this;
+                // wheel zoom (Ctrl not required)
+                this.v.addEventListener('wheel', function(e){ e.preventDefault(); var f = e.deltaY>0?0.92:1.08; self.zoomBy(f, e.clientX, e.clientY); }, {passive:false});
+                // drag
+                this.c.addEventListener('mousedown', function(e){ if(e.target.closest('a')) return; e.preventDefault(); self.dragging=true; self.lastX=e.clientX; self.lastY=e.clientY; });
+                window.addEventListener('mousemove', function(e){ if(!self.dragging) return; var dx=e.clientX-self.lastX, dy=e.clientY-self.lastY; self.lastX=e.clientX; self.lastY=e.clientY; self.tx+=dx; self.ty+=dy; self.apply(); });
+                window.addEventListener('mouseup', function(){ self.dragging=false; });
+                // simple touch gestures (pan + pinch)
+                var lastDist=null;
+                this.v.addEventListener('touchstart', function(e){ if(e.touches.length===1){ self.dragging=true; self.lastX=e.touches[0].clientX; self.lastY=e.touches[0].clientY;} else if(e.touches.length===2){ lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); } }, {passive:false});
+                this.v.addEventListener('touchmove', function(e){ if(e.touches.length===1 && self.dragging){ var dx = e.touches[0].clientX - self.lastX; var dy = e.touches[0].clientY - self.lastY; self.lastX=e.touches[0].clientX; self.lastY=e.touches[0].clientY; self.tx+=dx; self.ty+=dy; self.apply(); } else if(e.touches.length===2 && lastDist){ var dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); var f = dist/lastDist; self.zoomBy(f); lastDist = dist; } }, {passive:false});
+                this.v.addEventListener('touchend', function(){ lastDist=null; self.dragging=false; });
+            }
 
-			function onShopClick(e) {
-				e.stopPropagation();
-				var g = e.currentTarget;
-				var id = parseInt(g.getAttribute('data-id') || '0', 10);
-				if (!id || id <= 0) return;
+            function initControllers(){
+                document.querySelectorAll('.map-content').forEach(function(c){
+                    var floor = c.getAttribute('data-floor');
+                    var vp = document.getElementById('viewport-' + floor);
+                    if (!vp) return;
+                    var ctrl = new MapController(vp, c);
+                    controllers[floor] = ctrl;
+                    var pc = vp.querySelector('.map-controls');
+                    pc.querySelector('.map-zoom-in')?.addEventListener('click', function(){ ctrl.zoomBy(1.12); });
+                    pc.querySelector('.map-zoom-out')?.addEventListener('click', function(){ ctrl.zoomBy(0.88); });
+                    pc.querySelector('.map-zoom-reset')?.addEventListener('click', function(){ ctrl.reset(); fitMapToViewport(floor); });
+                });
+            }
 
-				// nếu có phần tử đang giữ focus, blur nó để tránh lỗi aria-hidden
-				try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch(err){}
+            // fit content to viewport: calculate scale so content fits (no horizontal overflow)
+            function fitMapToViewport(floor){
+                var c = document.getElementById('map-content-' + floor);
+                var v = document.getElementById('viewport-' + floor);
+                var ctrl = controllers[floor];
+                if (!c || !v || !ctrl) return;
 
-				// show modal ngay lập tức với spinner (giúp người dùng biết đang load)
-				modalBody.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary" role="status"></div><div class="mt-2 text-muted">Đang tải...</div></div>';
-				bsModal.show();
+                // temporarily clear transforms to measure true size
+                c.style.transform = 'none';
+                var contentW = c.getBoundingClientRect().width;
+                var contentH = c.getBoundingClientRect().height;
+                var viewRect = v.getBoundingClientRect();
+                var vw = viewRect.width - 20; // leave some padding
+                var vh = viewRect.height - 20;
 
-				fetch('@Url.Action("GetPositionJson", "Map", new { area = "Client" })?id=' + id)
-				.then(function (r) {
-				  console.log('fetch status', r.status, r.ok);
-				  if (!r.ok) throw new Error('notfound');
-				  return r.json();
-				})
-				.then(function (data) {
-				  try {
-					console.log('position json', data);
+                // compute scale to fit both width and height, but don't scale up beyond 1
+                var scaleW = vw / contentW;
+                var scaleH = vh / contentH;
+                var scale = Math.min(1, Math.max(0.45, Math.min(scaleW, scaleH)));
 
-					var tenant = data.Tenant || null;
-					// ưu tiên tên tenant, nếu không có dùng TenantPosition_Location
-					var titleText = (tenant && tenant.Tenant_Name) ? tenant.Tenant_Name : (data.TenantPosition_Location || '');
+                // center content in viewport
+                ctrl.scale = scale;
+                ctrl.tx = ( (viewRect.width) - (contentW * scale) ) / 2;
+                ctrl.ty = ( (viewRect.height) - (contentH * scale) ) / 2;
+                ctrl.apply();
+            }
 
-					var html = '<div class="d-flex gap-3 align-items-start">';
-					if (tenant && tenant.Tenant_Img) {
-					  var img = tenant.Tenant_Img || '';
-					  if (img.indexOf('wwwroot/') === 0) img = '/' + img.replace(/^wwwroot\//, '');
-					  html += '<div style="flex:0 0 96px"><img src="' + img + '" class="img-fluid rounded" alt="tenant img" /></div>';
-					  html += '<div style="flex:1">';
-					  html += '<h5 class="mb-1">' + (titleText) + '</h5>';
-					} else {
-					  html += '<div style="flex:1">';
-					  html += '<h5 class="mb-1">' + (titleText) + '</h5>';
-					}
+            initControllers();
 
-					// trạng thái (nếu có)
-					if (tenant && (tenant.Tenant_Status !== undefined && tenant.Tenant_Status !== null)) {
-					  var tenantStatusVal = (typeof tenant.Tenant_Status === 'string') ? parseInt(tenant.Tenant_Status, 10) : tenant.Tenant_Status;
-					  var statusText = (tenantStatusVal === 1) ? 'Đang hoạt động' : 'Không hoạt động';
-					  var statusClass = (tenantStatusVal === 1) ? 'bg-success' : 'bg-secondary';
-					  html += '<div class="small mb-1"><span class="badge ' + statusClass + '">' + statusText + '</span></div>';
-					}
+            // initial fit for visible floor(s)
+            setTimeout(function(){
+                Object.keys(controllers).forEach(function(k){
+                    // only fit visible floor (not display:none)
+                    var wrapper = document.querySelector('.floor-wrapper[data-floor="'+k+'"]');
+                    if (!wrapper) return;
+                    if (getComputedStyle(wrapper).display === 'none') return;
+                    fitMapToViewport(k);
+                });
+            }, 140);
 
-					// mô tả nếu có
-					if (data.Tenant && data.Tenant.Tenant_Description) {
-					  html += '<div class="text-muted small mb-2">' + data.Tenant.Tenant_Description + '</div>';
-					}
+            // global controls
+            document.getElementById('globalZoomIn')?.addEventListener('click', function(){ Object.keys(controllers).forEach(k=>controllers[k] && controllers[k].zoomBy(1.12)); });
+            document.getElementById('globalZoomOut')?.addEventListener('click', function(){ Object.keys(controllers).forEach(k=>controllers[k] && controllers[k].zoomBy(0.88)); });
+            document.getElementById('globalZoomReset')?.addEventListener('click', function(){ Object.keys(controllers).forEach(k=>controllers[k] && controllers[k].reset()); Object.keys(controllers).forEach(k=>fitMapToViewport(k)); });
 
-					// thêm nếu bạn muốn hiển thị loại tenant
-					if (data.Tenant && data.Tenant.TenantType_Name) {
-					  html += '<div class="small text-secondary mb-1">Loại: ' + data.Tenant.TenantType_Name + '</div>';
-					}
-
-					html += '</div></div>';
-
-					// set nội dung modal (modal đã show)
-					modalBody.innerHTML = html;
-
-				  } catch (err) {
-					console.error('error building modal html', err);
-					modalBody.innerHTML = '<div class="p-3 text-danger">Lỗi khi dựng nội dung. Vui lòng thử lại.</div>';
-				  }
-				})
-				.catch(function (err) {
-				  console.error('fetch/get position error', err);
-				  modalBody.innerHTML = '<div class="p-3 text-danger">Không tải được dữ liệu. Vui lòng thử lại.</div>';
-				});
-			}
-
-			function bindShopClicks() {
-				var groups = svg.querySelectorAll('.svg-shop-group');
-				groups.forEach(function(g){
-					g.removeEventListener('click', onShopClick);
-					g.addEventListener('click', onShopClick);
-				});
-			}
-
-			// ---------- Elevator visuals updater ----------
-			// Updates the arrow icon (<use> or circle) and badge text inside the SVG placeholders.
-			function setElevatorVisuals(floorNumber) {
-				try {
-					var elev1Icon = document.getElementById('elev1Icon');
-					var elev2Icon = document.getElementById('elev2Icon');
-					var elev1Badge = document.getElementById('elev1Badge');
-					var elev2Badge = document.getElementById('elev2Badge');
-
-					if (!elev1Icon || !elev2Icon || !elev1Badge || !elev2Badge) return;
-
-					// determine directions as per your rules
-					var elev1Dir = 'neutral';
-					var elev2Dir = 'neutral';
-					switch (parseInt(floorNumber, 10)) {
-						case 0:
-							elev1Dir = 'up'; elev2Dir = 'up';
-							break;
-						case 1:
-							elev1Dir = 'down'; elev2Dir = 'up';
-							break;
-						case 2:
-							elev1Dir = 'down'; elev2Dir = 'up';
-							break;
-						case 3:
-							elev1Dir = 'down'; elev2Dir = 'down';
-							break;
-						default:
-							elev1Dir = elev2Dir = 'neutral';
-					}
-
-					// create small helper to produce innerSVG for icon
-					function iconSVG(dir) {
-						if (dir === 'up') {
-							return '<use href=\"#arrow-up\" width=\"28\" height=\"28\" fill=\"#ffffff\" stroke=\"#08304b\" stroke-width=\"0.6\"></use>';
-						} else if (dir === 'down') {
-							return '<use href=\"#arrow-down\" width=\"28\" height=\"28\" fill=\"#ffffff\" stroke=\"#08304b\" stroke-width=\"0.6\"></use>';
-						} else {
-							return '<circle cx=\"14\" cy=\"14\" r=\"10\" fill=\"#ffffff\" stroke=\"#08304b\" stroke-width=\"0.6\"></circle>';
-						}
-					}
-
-					// update icon groups (replace content)
-					elev1Icon.innerHTML = iconSVG(elev1Dir);
-					elev2Icon.innerHTML = iconSVG(elev2Dir);
-
-					// update badge text: NO NUMBERS now
-					var badgeText1 = (elev1Dir === 'up') ? '▲' : (elev1Dir === 'down') ? '▼' : '•';
-					var badgeText2 = (elev2Dir === 'up') ? '▲' : (elev2Dir === 'down') ? '▼' : '•';
-
-					// For <text> elements, set textContent
-					elev1Badge.textContent = badgeText1;
-					elev2Badge.textContent = badgeText2;
-
-				} catch (err) {
-					console.error('setElevatorVisuals error', err);
-				}
-			}
-
-			// run initially (use server-provided floor)
-			document.addEventListener('DOMContentLoaded', function(){
-				// initial binding clicks
-				bindShopClicks();
-
-				// set initial elevator visuals from current select or model floor
-				var initialFloor = null;
-				if (floorSelect) {
-					initialFloor = parseInt(floorSelect.value, 10);
-				}
-				if (isNaN(initialFloor)) {
-					// fallback to server-provided model floor (embedded in Razor variable)
-					initialFloor = @Model.FloorNumber;
-				}
-				setElevatorVisuals(initialFloor);
-			});
-
-			// also re-bind on resize (existing behavior)
-			window.addEventListener('resize', function(){ setTimeout(bindShopClicks, 120); });
-
-		})();
-	</script>
+            // on resize, refit visible map(s)
+            var resizeTimer;
+            window.addEventListener('resize', function(){ clearTimeout(resizeTimer); resizeTimer = setTimeout(function(){ Object.keys(controllers).forEach(k=>fitMapToViewport(k)); }, 160); });
+        })();
+    </script>
 }
-

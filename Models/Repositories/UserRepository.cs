@@ -77,8 +77,8 @@ namespace Semester03.Models.Repositories
         /// </summary>
         public async Task<TblUser> CreateUserAsync(string username, string fullName, string email, string phone, string plainPassword)
         {
-            if (string.IsNullOrWhiteSpace(username)) throw new ArgumentException("username");
-            if (string.IsNullOrWhiteSpace(plainPassword)) throw new ArgumentException("plainPassword");
+            if (string.IsNullOrWhiteSpace(username)) throw new ArgumentException(nameof(username));
+            if (string.IsNullOrWhiteSpace(plainPassword)) throw new ArgumentException(nameof(plainPassword));
 
             var user = new TblUser
             {
@@ -89,7 +89,8 @@ namespace Semester03.Models.Repositories
                 UsersRoleId = 2, // role = 2 when registering
                 UsersPoints = 0,
                 UsersCreatedAt = DateTime.UtcNow,
-                UsersUpdatedAt = DateTime.UtcNow
+                UsersUpdatedAt = DateTime.UtcNow,
+                UsersStatus = 1 // <-- ensure account is active when created
             };
 
             user.UsersPassword = _hasher.HashPassword(user, plainPassword);
@@ -99,6 +100,7 @@ namespace Semester03.Models.Repositories
 
             return user;
         }
+
         public string NormalizeSearch(string input)
         {
             if (string.IsNullOrWhiteSpace(input))

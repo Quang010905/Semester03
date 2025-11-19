@@ -201,6 +201,11 @@
 
 @section Scripts {
     <script>
+        // Nếu VNPay/custom.min.js tham chiếu `timer` mà bạn không thể sửa, khai báo trước
+        window.timer = window.timer || null;
+    </script>
+
+    <script>
         (function () {
             const payForm = document.getElementById('payForm');
             const btnConfirmPay = document.getElementById('btnConfirmPay');
@@ -208,11 +213,12 @@
             const btnPay = document.getElementById('btnPay');
             const seatIdsInput = document.getElementById('seatIdsInput');
 
+            // sanitize seatIds from query string if not present in hidden input
             if (!seatIdsInput.value) {
                 const qs = new URLSearchParams(window.location.search);
                 const qSeatIds = qs.get('seatIds') || qs.get('seatids');
                 if (qSeatIds) {
-                    seatIdsInput.value = qSeatIds.replace(/[^\d,]/g, '').replace(/,+/g, ',').replace(/(^,|,$)/g, '');
+                    seatIdsInput.value = String(qSeatIds).replace(/[^\d,]/g, '').replace(/,+/g, ',').replace(/(^,|,$)/g, '');
                 }
             } else {
                 seatIdsInput.value = seatIdsInput.value.replace(/[^\d,]/g, '').replace(/,+/g, ',').replace(/(^,|,$)/g, '');
@@ -223,80 +229,111 @@
                 return t ? t.value : null;
             }
 
+            function hideBootstrapModalById(id) {
+                try {
+                    const mEl = document.getElementById(id);
+                    if (!mEl) return;
+                    const inst = bootstrap.Modal.getInstance(mEl) || bootstrap.Modal.getOrCreateInstance(mEl);
+                    if (inst) inst.hide();
+                } catch (e) {
+                    // ignore - bootstrap may not be available in edge cases
+                    console.warn('Could not hide modal', e);
+                }
+            }
+
             btnConfirmPay.addEventListener('click', function () {
+                // disable button UI
                 btnConfirmPay.disabled = true;
                 const originalBtnText = btnConfirmPay.innerText;
                 btnConfirmPay.innerText = 'Đang chuyển...';
 
-                try {
-                    if (!seatIdsInput.value) {
-                        alert('Không có ghế để thanh toán. Vui lòng kiểm tra lại.');
-                        return;
-                    }
-
-                    const rawAmount = payForm.querySelector('input[name="amount"]').value;
-                    const numericAmount = Number(String(rawAmount).replace(/[^\d.\-]/g, ''));
-                    if (!rawAmount || Number.isNaN(numericAmount) || !isFinite(numericAmount) || numericAmount <= 0) {
-                        alert('Số tiền không hợp lệ.');
-                        return;
-                    }
-
-                    const amountToSend = numericAmount.toString();
-
-                    const formData = new FormData();
-                    formData.append('showtimeId', payForm.querySelector('input[name="showtimeId"]').value);
-                    const cleanedSeatIds = seatIdsInput.value.replace(/[^\d,]/g, '').replace(/,+/g, ',').replace(/(^,|,$)/g, '');
-                    formData.append('seatIds', cleanedSeatIds);
-                    formData.append('amount', amountToSend);
-
-                    const headers = { 'X-Requested-With': 'XMLHttpRequest' };
-                    const token = getAntiForgeryToken();
-                    if (token) headers['RequestVerificationToken'] = token;
-
-                    fetch('@Url.Action("CreatePaymentUrlVnpay", "Booking", new { area = "Client" })', {
-                        method: 'POST',
-                        headers: headers,
-                        body: formData,
-                        credentials: 'same-origin'
-                    })
-                    .then(async (res) => {
-                        const txt = await res.text();
-                        try {
-                            const json = JSON.parse(txt);
-                            if (res.ok) return json;
-                            throw new Error('Server error: ' + res.status + ' — ' + (json.message || JSON.stringify(json)));
-                        } catch (e) {
-                            if (!res.ok) throw new Error('Server error: ' + res.status + ' — ' + txt);
-                            try { return JSON.parse(txt); } catch { return { success: false, message: txt }; }
+                (async () => {
+                    try {
+                        // validate seatIds
+                        if (!seatIdsInput.value) {
+                            alert('Không có ghế để thanh toán. Vui lòng kiểm tra lại.');
+                            return;
                         }
-                    })
-                    .then(data => {
-                        if (data && data.success && data.url) {
-                            window.location.href = data.url;
-                        } else {
-                            const msg = data && data.message ? data.message : 'Không thể tạo URL thanh toán';
+
+                        // validate amount from hidden input
+                        const rawAmount = payForm.querySelector('input[name="amount"]').value;
+                        const numericAmount = Number(String(rawAmount).replace(/[^\d.\-]/g, ''));
+                        if (!rawAmount || Number.isNaN(numericAmount) || !isFinite(numericAmount) || numericAmount <= 0) {
+                            alert('Số tiền không hợp lệ.');
+                            return;
+                        }
+
+                        // prepare form data - ensure seatIds only contain digits and commas
+                        const cleanedSeatIds = seatIdsInput.value.replace(/[^\d,]/g, '').replace(/,+/g, ',').replace(/(^,|,$)/g, '');
+                        if (!cleanedSeatIds) {
+                            alert('Không có ghế hợp lệ để thanh toán.');
+                            return;
+                        }
+
+                        const formData = new FormData();
+                        formData.append('showtimeId', payForm.querySelector('input[name="showtimeId"]').value);
+                        formData.append('seatIds', cleanedSeatIds);
+                        formData.append('amount', numericAmount.toString()); // send plain numeric string
+
+                        const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+                        const token = getAntiForgeryToken();
+                        if (token) headers['RequestVerificationToken'] = token;
+
+                        // use fetch to call server action that returns { success, url } JSON
+                        const res = await fetch('@Url.Action("CreatePaymentUrlVnpay", "Booking", new { area = "Client" })', {
+                            method: 'POST',
+                            headers: headers,
+                            body: formData,
+                            credentials: 'same-origin'
+                        });
+
+                        // try to parse response as JSON safely
+                        const txt = await res.text();
+                        let data;
+                        try {
+                            data = txt ? JSON.parse(txt) : null;
+                        } catch (e) {
+                            // server returned non-json; show error
+                            throw new Error('Server trả về dữ liệu không hợp lệ: ' + txt);
+                        }
+
+                        if (!res.ok || !data) {
+                            const msg = (data && data.message) ? data.message : ('Lỗi server: ' + res.status);
                             throw new Error(msg);
                         }
-                    })
-                    .catch(err => {
+
+                        if (data.success && data.url) {
+                            // Use top.location to exit iframe if page was embedded anywhere
+                            try {
+                                // prefer top to avoid iframe problems
+                                if (window.top && window.top !== window) {
+                                    window.top.location.href = data.url;
+                                } else {
+                                    window.location.href = data.url;
+                                }
+                            } catch (e) {
+                                // some browsers restrict cross-origin top access; fallback to window.open
+                                try {
+                                    window.open(data.url, '_blank');
+                                } catch (exOpen) {
+                                    // final fallback
+                                    window.location.href = data.url;
+                                }
+                            }
+                        } else {
+                            const msg = (data && data.message) ? data.message : 'Không thể tạo URL thanh toán.';
+                            throw new Error(msg);
+                        }
+                    } catch (err) {
                         console.error("Error when creating VNPAY request:", err);
-                        alert('Lỗi khi tạo yêu cầu thanh toán: ' + (err.message || err));
-                    })
-                    .finally(() => {
+                        alert('Lỗi khi tạo yêu cầu thanh toán: ' + (err && err.message ? err.message : err));
+                    } finally {
+                        // restore UI and close modal
                         btnConfirmPay.disabled = false;
                         btnConfirmPay.innerText = originalBtnText || 'Xác nhận & chuyển đến VNPAY';
-                        var modalEl = document.getElementById('confirmPayModal');
-                        if (modalEl) {
-                            var modal = bootstrap.Modal.getInstance(modalEl);
-                            if (modal) modal.hide();
-                        }
-                    });
-                } catch (exInner) {
-                    console.error("Unexpected error in btnConfirmPay handler:", exInner);
-                    alert('Có lỗi xảy ra. Vui lòng thử lại.');
-                    btnConfirmPay.disabled = false;
-                    btnConfirmPay.innerText = originalBtnText || 'Xác nhận & chuyển đến VNPAY';
-                }
+                        hideBootstrapModalById('confirmPayModal');
+                    }
+                })();
             });
 
             btnPrint.addEventListener('click', function () {
@@ -304,7 +341,7 @@
             });
 
             btnPay.addEventListener('click', function () {
-                // modal opened by bootstrap attribute
+                // Button only triggers modal via bootstrap attributes. No extra logic needed here.
             });
         })();
     </script>
