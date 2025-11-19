@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Semester03.Areas.Client.Repositories;
+using Semester03.Models.Repositories;
 using Semester03.Models.Entities;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
@@ -119,18 +119,20 @@ namespace Semester03.Areas.Client.Controllers
 
             if (user.UsersRoleId == 1)
             {
+
+                // Admin area (thay Dashboard/Index bằng controller/action bạn dùng)
                 return RedirectToAction("Index", "Admin", new { area = "Admin" });
             }
             else if (user.UsersRoleId == 2)
             {
-                return RedirectToAction("Index", "Cinema", new { area = "Client" });
+                return RedirectToAction("Index", "Home", new { area = "Client" });
             }
             else
             {
                 if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
                     return Redirect(returnUrl);
 
-                return RedirectToAction("Index", "Cinema", new { area = "Client" });
+                return RedirectToAction("Index", "Home", new { area = "Client" });
             }
         }
 
@@ -306,7 +308,7 @@ namespace Semester03.Areas.Client.Controllers
                 return Ok();
             }
 
-            return RedirectToAction("Index", "Cinema", new { area = "Client" });
+            return RedirectToAction("Index", "Home", new { area = "Client" });
         }
     }
 }

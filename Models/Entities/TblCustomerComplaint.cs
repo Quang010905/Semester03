@@ -25,9 +25,5 @@ public partial class TblCustomerComplaint
 
     public virtual TblUser CustomerComplaintCustomerUser { get; set; } = null!;
 
-    public virtual TblEvent? CustomerComplaintEvent { get; set; }
-
-    public virtual TblMovie? CustomerComplaintMovie { get; set; }
-
     public virtual TblTenant? CustomerComplaintTenant { get; set; }
 }

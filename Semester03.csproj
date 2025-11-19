@@ -7,6 +7,18 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="wwwroot\Client\Css\**" />
+	  <Content Remove="wwwroot\Client\Css\**" />
+	  <EmbeddedResource Remove="wwwroot\Client\Css\**" />
+	  <None Remove="wwwroot\Client\Css\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Remove="appsettings.Development.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="MailKit" Version="4.14.1" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.10" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10">
@@ -23,13 +35,14 @@
 
 	<ItemGroup>
 		<Folder Include="Areas/Client/Data/" />
-		<Folder Include="Areas/Client/Views/Home/" />
 		<Folder Include="Areas/Admin/Data/" />
 		<Folder Include="Models\ModelViews\" />
-		<Folder Include="wwwroot\Content\" />
-		<Folder Include="wwwroot\Content\Uploads\" />
 		<Folder Include="wwwroot\Client\img\" />
-		<Folder Include="wwwroot\Client\Css\" />
+		<Folder Include="wwwroot\Content\Uploads\Events\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="appsettings.Development.json" />
 	</ItemGroup>
 
 </Project>

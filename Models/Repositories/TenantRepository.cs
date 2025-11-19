@@ -3,6 +3,7 @@ using Semester03.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
+using Semester03.Areas.Admin.Models;
 
 namespace Semester03.Models.Repositories
 {
@@ -135,8 +136,133 @@ namespace Semester03.Models.Repositories
         }
 
 
+        public List<ProductCategoryVm> GetProductCategoriesByTenant(int tenantId)
+        {
+            return _context.TblProductCategories
+                .Where(pc => pc.ProductCategoryTenantId == tenantId && (pc.ProductCategoryStatus == 1 || pc.ProductCategoryStatus == null))
+                .Select(pc => new ProductCategoryVm
+                {
+                    Id = pc.ProductCategoryId,
+                    Name = pc.ProductCategoryName,
+                    Img = pc.ProductCategoryImg
+                })
+                .ToList();
+        }
 
+        //Lay danh sach tenant theo userid
+        public async Task<List<Tenant>> GetTenantByUserId(int id)
+        {
+            return await _context.TblTenants
+                .Select(x => new Tenant
+                {
+                    Id = x.TenantId,
+                    Name = x.TenantName,
+                    Image = x.TenantImg,
+                    UserId = x.TenantUserId,    
+                    TypeId = x.TenantTypeId,
+                    Description = x.TenantDescription,
+                    Status = x.TenantStatus ?? 0
+                }).Where(x => x.UserId == id)
+                .ToListAsync();
+        }
 
+        //Thêm tenant 
+        public async Task AddAsync(Tenant entity)
+        {
+            try
+            {
+                var item = new TblTenant
+                {
+                    TenantName = entity.Name,
+                    TenantImg = entity.Image,
+                    TenantTypeId = entity.TypeId,
+                    TenantUserId = entity.UserId,
+                    TenantDescription = entity.Description,
+                    TenantStatus = entity.Status,
+                    TenantCreatedAt = DateTime.Now
+                };
+                _context.TblTenants.Add(item);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
 
+                throw;
+            }
+        }
+        //Xóa tenant
+        public async Task<bool> Delete(int Id)
+        {
+            try
+            {
+                var item = await _context.TblTenants.FirstOrDefaultAsync(t => t.TenantId == Id);
+                if (item != null)
+                {
+                    _context.TblTenants.Remove(item);
+                    return await _context.SaveChangesAsync() > 0;
+                }
+                return false;
+            }
+            catch (Exception)
+            {
+
+                return false;
+            }
+        }
+        //Update tenant
+        public async Task<bool> Update(Tenant entity)
+        {
+            var q = await _context.TblTenants.FirstOrDefaultAsync(t => t.TenantId == entity.Id);
+            if (q != null)
+            {
+                q.TenantName = entity.Name;
+                q.TenantImg = entity.Image;
+                q.TenantTypeId = entity.TypeId;
+                q.TenantUserId = entity.UserId;
+                q.TenantDescription = entity.Description;
+                q.TenantStatus = entity.Status;
+                return await _context.SaveChangesAsync() > 0;
+            }
+            return false;
+        }
+        //lay thong tin chi tiet tenant
+        public async Task<Tenant?> FindById(int id)
+        {
+            return await _context.TblTenants
+                .Where(t => t.TenantId == id)
+                .Select(t => new Tenant
+                {
+                    Id = t.TenantId,
+                    Name = t.TenantName,
+                    Status = t.TenantStatus ?? 0,
+                    Image = t.TenantImg,
+                    TypeId = t.TenantTypeId,
+                    UserId = t.TenantUserId,
+                    Description = t.TenantDescription,
+                    CreatedDate = (DateTime)t.TenantCreatedAt
+                })
+                .FirstOrDefaultAsync();
+        }
+        //kiem tra trung ten
+        public async Task<bool> CheckTenantNameAsync(string name, int? excludeId = null)
+        {
+            string normalizedInput = NormalizeName(name);
+
+            var allTenantTypeNames = await _context.TblTenants
+                .Where(t => !excludeId.HasValue || t.TenantId != excludeId.Value)
+                .Select(t => t.TenantName)
+                .ToListAsync();
+
+            return allTenantTypeNames.Any(dbName => NormalizeName(dbName) == normalizedInput);
+        }
+
+        private string NormalizeName(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            // Bỏ khoảng trắng và chuyển về chữ thường
+            return new string(input.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToLowerInvariant();
+        }
     }
 }

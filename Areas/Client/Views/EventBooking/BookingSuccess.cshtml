@@ -1,0 +1,23 @@
+﻿@model Semester03.Areas.Client.Models.ViewModels.EventBookingSuccessVm
+@{
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+    ViewData["Title"] = "Đặt vé thành công";
+}
+
+<div class="container py-4">
+    <div class="card p-4">
+        <h3>Đặt vé thành công</h3>
+        <p>Mã đặt vé: <strong>#@Model.BookingId</strong></p>
+        <p>Sự kiện: <strong>@Model.EventTitle</strong></p>
+        <p>Số lượng: <strong>@Model.Quantity</strong></p>
+        <p>Tổng tiền: <strong>@Model.Amount.ToString("N0") VND</strong></p>
+
+        @if (!string.IsNullOrWhiteSpace(Model.ContactEmail))
+        {
+            <p>Biên nhận đã được gửi tới: <strong>@Model.ContactEmail</strong></p>
+        }
+        <div class="mt-3">
+            <a class="btn btn-primary" href="@Url.Action("Index", "Event", new { area = "Client" })">Quay về danh sách sự kiện</a>
+        </div>
+    </div>
+</div>

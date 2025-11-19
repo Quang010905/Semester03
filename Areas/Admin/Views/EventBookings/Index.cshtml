@@ -1,0 +1,80 @@
+﻿@model IEnumerable<Semester03.Models.Entities.TblEventBooking>
+
+@{
+    ViewData["Title"] = "Event Booking Management";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<h1 class="h3 mb-2 text-gray-800">Event Booking Management</h1>
+<p class="mb-4">View all event bookings made by customers.</p>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Booking List</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Booking ID</th>
+                        <th>Event</th>
+                        <th>Tenant</th>
+                        <th>Customer</th>
+                        <th>Cost</th>
+                        <th>Payment Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.EventBookingId</td>
+                            <td>
+                                @item.EventBookingEvent?.EventName
+                            </td>
+                            <td>
+                                @item.EventBookingTenant?.TenantName
+                            </td>
+                            <td>
+                                @item.EventBookingUser?.UsersFullName
+                            </td>
+                            <td>
+                                @if (item.EventBookingTotalCost.HasValue)
+                                {
+                                    @item.EventBookingTotalCost.Value.ToString("C", new System.Globalization.CultureInfo("en-US"))
+                                }
+                            </td>
+                            <td>
+                                @if (item.EventBookingPaymentStatus == 1) // 1 = Paid
+                                {
+                                    <span class="badge badge-success">Paid</span>
+                                }
+                                else if (item.EventBookingPaymentStatus == 2) // 2 = Free
+                                {
+                                    <span class="badge badge-info">Free</span>
+                                }
+                                else // 0 = Unpaid
+                                {
+                                    <span class="badge badge-warning">Unpaid</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@item.EventBookingId" class="btn btn-info btn-sm">Details / Manage</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+          $('#dataTable').DataTable({"order": [[ 0, "desc" ]]});
+        });
+    </script>
+}

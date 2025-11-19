@@ -7,7 +7,10 @@
     var totalAmount = (decimal)(ViewData["TotalAmount"] ?? 0m);
     var pricePerSeat = (decimal)(ViewData["PricePerSeat"] ?? 0m);
     var processingError = ViewData["PaymentProcessingError"] as string;
+    var showtimeSeatIds = ViewData["ShowtimeSeatIds"] as string ?? "";
 }
+
+@Html.AntiForgeryToken()
 
 @section Styles {
     <style>
@@ -66,13 +69,17 @@
             border-radius: .5rem;
             margin-bottom: 1rem;
         }
+
+        #emailStatus {
+            margin-top: 1rem;
+        }
     </style>
 }
 
 <div class="success-container">
     <div class="success-icon"><i class="bi bi-check-lg"></i></div>
     <div class="success-title">Thanh toán thành công!</div>
-    <div class="success-desc">Cảm ơn bạn đã đặt vé. Vé điện tử của bạn đã được ghi nhận — nếu không có lỗi.</div>
+    <div class="success-desc">Cảm ơn bạn đã đặt vé. Vé điện tử của bạn sẽ được gửi đến email của bạn.</div>
 
     @if (!string.IsNullOrEmpty(processingError))
     {
@@ -100,6 +107,10 @@
         </div>
         <div class="mb-2"><strong>Giá mỗi ghế:</strong> @pricePerSeat.ToString("N0") VND</div>
         <div class="mb-2"><strong>Tổng thanh toán:</strong> <span class="total-amount">@totalAmount.ToString("N0") VND</span></div>
+
+        <div id="emailStatus" class="alert alert-info p-2 mt-3">
+            Đang gửi vé tới email của bạn...
+        </div>
     </div>
 
     <div class="actions d-flex justify-content-center gap-3 mt-4">
@@ -116,6 +127,56 @@
                 icon.style.transition = "transform 0.3s ease";
                 setTimeout(() => icon.style.transform = "scale(1)", 100);
             }
+
+            const showtimeSeatIds = "@(showtimeSeatIds)";
+            const emailStatus = document.getElementById("emailStatus");
+            const btnResend = document.getElementById("btnResend");
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            async function sendEmail() {
+                if (!showtimeSeatIds) {
+                    emailStatus.className = "alert alert-warning p-2";
+                    emailStatus.innerText = "Không có thông tin ghế để gửi email.";
+                    return;
+                }
+
+                emailStatus.className = "alert alert-info p-2";
+                emailStatus.innerText = "Đang gửi vé tới email của bạn...";
+
+                const form = new FormData();
+                form.append("__RequestVerificationToken", token);
+                form.append("showtimeSeatIds", showtimeSeatIds);
+
+                try {
+                    const res = await fetch("/Client/Booking/SendTicketEmailAjax", {
+                        method: "POST",
+                        body: form,
+                        headers: { "X-Requested-With": "XMLHttpRequest" }
+                    });
+
+                    const data = await res.json();
+                    if (data.success) {
+                        emailStatus.className = "alert alert-success p-2";
+                        emailStatus.innerText = "Email đã được gửi. Vui lòng kiểm tra hộp thư (hoặc mục Spam).";
+                    } else {
+                        emailStatus.className = "alert alert-danger p-2";
+                        emailStatus.innerText = data.message || "Gửi email thất bại.";
+                    }
+                } catch (err) {
+                    console.error(err);
+                    emailStatus.className = "alert alert-danger p-2";
+                    emailStatus.innerText = "Lỗi khi gửi email: " + err.message;
+                }
+            }
+
+            // Gửi tự động khi load trang
+            setTimeout(sendEmail, 800);
+
+            // Nút gửi lại
+            btnResend.addEventListener("click", e => {
+                e.preventDefault();
+                sendEmail();
+            });
         });
     </script>
 }

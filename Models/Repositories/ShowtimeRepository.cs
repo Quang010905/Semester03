@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Semester03.Areas.Client.Models.ViewModels;
 using Semester03.Models.Entities;
 
-namespace Semester03.Areas.Client.Repositories
+namespace Semester03.Models.Repositories
 {
     public class ShowtimeRepository
     {
@@ -56,5 +56,54 @@ namespace Semester03.Areas.Client.Repositories
 
             return result;
         }
+
+        // ==========================================================
+        // ADMIN CRUD METHODS 
+        // ==========================================================
+
+        public async Task<IEnumerable<TblShowtime>> GetAllAsync()
+        {
+            // We MUST Include() Movie and Screen to display their names
+            return await _db.TblShowtimes
+                .Include(s => s.ShowtimeMovie)
+                .Include(s => s.ShowtimeScreen)
+                .ToListAsync();
+        }
+
+        public async Task<TblShowtime> GetByIdAsync(int id)
+        {
+            return await _db.TblShowtimes
+                .Include(s => s.ShowtimeMovie) 
+                .Include(s => s.ShowtimeScreen) 
+                .Include(s => s.TblShowtimeSeats) 
+                .FirstOrDefaultAsync(s => s.ShowtimeId == id);
+        }
+
+        public async Task<TblShowtime> AddAsync(TblShowtime entity)
+        {
+            _db.TblShowtimes.Add(entity);
+            await _db.SaveChangesAsync();
+            // NOTE: The DB Trigger will now automatically 
+            // populate Tbl_ShowtimeSeat for this new Showtime.
+            return entity;
+        }
+
+        public async Task UpdateAsync(TblShowtime entity)
+        {
+            _db.Entry(entity).State = EntityState.Modified;
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            var entity = await _db.TblShowtimes.FindAsync(id);
+            if (entity != null)
+            {
+                _db.TblShowtimes.Remove(entity);
+                await _db.SaveChangesAsync();
+            }
+        }
+
+
     }
 }

@@ -1,0 +1,79 @@
+﻿@model Semester03.Models.Entities.TblCinema
+
+@{
+    ViewData["Title"] = "Cinema Settings";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<h1 class="h3 mb-2 text-gray-800">Cinema Settings</h1>
+<p class="mb-4">Edit the details for the one mall-owned cinema. This information will be used for all Screens.</p>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Edit Details</h6>
+            </div>
+            <div class="card-body">
+
+                <form asp-action="Index" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <input type="hidden" asp-for="CinemaId" />
+                    <input type="hidden" asp-for="CinemaImg" />
+
+                    <div class="form-group">
+                        <label asp-for="CinemaName" class="control-label">Cinema Name</label>
+                        <input asp-for="CinemaName" class="form-control" />
+                        <span asp-validation-for="CinemaName" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="control-label">Cinema Logo (Optional)</label>
+                        <br />
+                        <img id="imagePreview"
+                             src="@(string.IsNullOrEmpty(Model.CinemaImg) ? "~/Content/Uploads/noimage.png" : "/Content/Uploads/Cinema/" + Model.CinemaImg)"
+                             alt="Current Logo"
+                             style="max-width: 200px; border-radius: 5px; margin-bottom: 10px;" />
+                        <input type="file" name="imageFile" id="imageFile" class="form-control" accept="image/*" />
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="CinemaDescription" class="control-label">Description</label>
+                        <textarea asp-for="CinemaDescription" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="CinemaDescription" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="submit" value="Save Settings" class="btn btn-primary" />
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Script to preview the NEW image on file select
+        document.getElementById('imageFile').addEventListener('change', function(event) {
+            var preview = document.getElementById('imagePreview');
+            if (event.target.files && event.target.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result; // Update preview
+                };
+                reader.readAsDataURL(event.target.files[0]);
+            }
+        });
+    </script>
+}

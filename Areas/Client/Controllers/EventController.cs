@@ -1,19 +1,17 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Semester03.Areas.Client.Models.ViewModels;
-using Semester03.Areas.Client.Repositories;
+using Semester03.Models.Repositories;
 
 namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
     public class EventController : Controller
     {
-        // NOTE: using singleton repository instance directly.
-        private readonly EventRepository _repo = EventRepository.Instance;
+        private readonly EventRepository _repo;
 
-        public EventController()
+        public EventController(EventRepository repo)
         {
+            _repo = repo;
         }
 
         public async Task<IActionResult> Index()
@@ -23,12 +21,12 @@ namespace Semester03.Areas.Client.Controllers
 
             var vm = new EventHomeVm
             {
-                Featured = await _repo.GetFeaturedEventsAsync(3),
+                Featured = await _repo.GetFeaturedEventsAsync(6),
                 Upcoming = await _repo.GetUpcomingEventsAsync()
             };
 
-            // expose for layout partial
-            ViewBag.Events = vm.Upcoming;
+            // expose upcoming events cho layout
+            ViewBag.Events = vm.Upcoming ?? new List<EventCardVm>();
 
             return View(vm);
         }
@@ -36,21 +34,13 @@ namespace Semester03.Areas.Client.Controllers
         public async Task<IActionResult> Details(int id)
         {
             var ev = await _repo.GetEventByIdAsync(id);
-            if (ev == null) return NotFound();
+            if (ev == null)
+                return NotFound();
 
             ViewData["Title"] = ev.Title;
-
-            // also expose upcoming to layout partial (so sidebar works on details page)
-            ViewBag.Events = await _repo.GetUpcomingEventsAsync();
+            ViewBag.Events = await _repo.GetUpcomingEventsAsync() ?? new List<EventCardVm>();
 
             return View(ev);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> ListPartial(int top = 5)
-        {
-            var events = await _repo.GetUpcomingEventsAsync();
-            return PartialView("_EventListPartial", events.Take(top));
         }
     }
 }

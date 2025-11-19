@@ -1,33 +1,29 @@
 ﻿// File: Areas/Admin/Controllers/MoviesController.cs
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Semester03.Areas.Client.Repositories;
 using Semester03.Models.Entities;
-
-// Add these 'using' statements for file upload
-using Microsoft.AspNetCore.Http; // For IFormFile
-using System.IO; // For Path
-using System; // For Guid
-using System.Threading.Tasks; // For Task
+using Semester03.Models.Repositories;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Semester03.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = "1")]
     // [Authorize(Roles = "Super Admin, Mall Manager")]
     public class MoviesController : Controller
     {
         private readonly MovieRepository _movieRepo;
-        // 1. Add IWebHostEnvironment
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly AbcdmallContext _context;
 
-        // 2. Inject it in the constructor
-        public MoviesController(MovieRepository movieRepo, IWebHostEnvironment webHostEnvironment)
+        public MoviesController(MovieRepository movieRepo,
+                                        IWebHostEnvironment webHostEnvironment,
+                                        AbcdmallContext context) 
         {
             _movieRepo = movieRepo;
             _webHostEnvironment = webHostEnvironment;
+            _context = context; 
         }
-
         // GET: Admin/Movies
         public async Task<IActionResult> Index()
         {
@@ -47,11 +43,20 @@ namespace Semester03.Areas.Admin.Controllers
         // GET: Admin/Movies/Create
         public IActionResult Create()
         {
+            
+            // We must round the time to avoid the browser step validation error.
+            var now = DateTime.Now;
+
+            // Round down to the current minute (e.g., 4:31:53 -> 4:31:00)
+            var defaultStart = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0);
+
             var model = new TblMovie
             {
                 MovieStatus = 1, // Default to 'Available'
-                MovieStartDate = DateTime.Now,
-                MovieEndDate = DateTime.Now.AddDays(14)
+
+                // Use the "clean" (rounded) values
+                MovieStartDate = defaultStart,
+                MovieEndDate = defaultStart.AddDays(14)
             };
             return View(model);
         }
@@ -74,6 +79,21 @@ namespace Semester03.Areas.Admin.Controllers
                 // This error will be shown by the span for "MovieImg" 
                 ModelState.AddModelError("MovieImg", "A poster image is required.");
             }
+
+            // --- Business Logic Validation ---
+            if (tblMovie.MovieDurationMin <= 0)
+            {
+                ModelState.AddModelError("MovieDurationMin", "Duration must be greater than 0 minutes.");
+            }
+            if (tblMovie.MovieStartDate.Date < DateTime.Now.Date)
+            {
+                ModelState.AddModelError("MovieStartDate", "Start Date cannot be in the past.");
+            }
+            if (tblMovie.MovieEndDate <= tblMovie.MovieStartDate)
+            {
+                ModelState.AddModelError("MovieEndDate", "End Date must be after the Start Date.");
+            }
+            // --- END VALIDATION ---
 
             // 4. Now, check ModelState
             if (ModelState.IsValid)
@@ -114,6 +134,21 @@ namespace Semester03.Areas.Admin.Controllers
         {
             if (id != tblMovie.MovieId) return NotFound();
 
+            // --- Business Logic Validation ---
+            if (tblMovie.MovieDurationMin <= 0)
+            {
+                ModelState.AddModelError("MovieDurationMin", "Duration must be greater than 0 minutes.");
+            }
+            if (tblMovie.MovieEndDate <= tblMovie.MovieStartDate)
+            {
+                ModelState.AddModelError("MovieEndDate", "End Date must be after the Start Date.");
+            }
+            if (tblMovie.MovieRate < 0 || tblMovie.MovieRate > 5)
+            {
+                ModelState.AddModelError("MovieRate", "Rating must be between 0 and 5.");
+            }
+            // --- END VALIDATION ---
+
             if (ModelState.IsValid)
             {
                 tblMovie.MovieRate = 0;
@@ -151,8 +186,8 @@ namespace Semester03.Areas.Admin.Controllers
             // 1. Get the wwwroot path
             string wwwRootPath = _webHostEnvironment.WebRootPath;
 
-            // 2. Define the save path (wwwroot/Admin/img)
-            string savePath = Path.Combine(wwwRootPath, "Admin", "img");
+            // 2. Define the save path (wwwroot/Content/Uploads/Movies)
+            string savePath = Path.Combine(wwwRootPath, "Content", "Uploads", "Movies");
 
             // 3. Create the directory if it doesn't exist
             if (!Directory.Exists(savePath))
@@ -182,6 +217,26 @@ namespace Semester03.Areas.Admin.Controllers
             if (id == null) return NotFound();
             var movie = await _movieRepo.GetByIdAsync(id.Value);
             if (movie == null) return NotFound();
+            
+            // --- ADDED: Dependency Check ---
+            // Check if any Showtimes are linked to this Movie
+            bool hasShowtimes = await _context.TblShowtimes.AnyAsync(s => s.ShowtimeMovieId == id.Value);
+            bool hasComplaints = await _context.TblCustomerComplaints.AnyAsync(c => c.CustomerComplaintMovieId == id.Value);
+
+            if (hasShowtimes || hasComplaints)
+            {
+                ViewData["HasDependencies"] = true;
+                string error = "This movie cannot be deleted. It is linked to:";
+                if (hasShowtimes) error += " one or more Showtimes.";
+                if (hasComplaints) error += " one or more Customer Reviews.";
+                ViewData["ErrorMessage"] = error;
+            }
+            else
+            {
+                ViewData["HasDependencies"] = false;
+            }
+            // --- END OF CHECK ---
+
             return View(movie);
         }
 
@@ -190,11 +245,21 @@ namespace Semester03.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            // --- Final Dependency Check (Safety Net) ---
+            bool hasShowtimes = await _context.TblShowtimes.AnyAsync(s => s.ShowtimeMovieId == id);
+            bool hasComplaints = await _context.TblCustomerComplaints.AnyAsync(c => c.CustomerComplaintMovieId == id); //
+
+            if (hasShowtimes || hasComplaints)
+            {
+                TempData["Error"] = "This movie cannot be deleted (it has dependencies).";
+                return RedirectToAction(nameof(Index));
+            }
+            // --- END OF CHECK ---
+
             // 1. Get the movie object first to find the filename
             var movie = await _movieRepo.GetByIdAsync(id);
             if (movie == null)
             {
-                // This shouldn't happen if the GET Delete page worked
                 return RedirectToAction(nameof(Index));
             }
 
@@ -210,6 +275,7 @@ namespace Semester03.Areas.Admin.Controllers
                 DeleteImageFile(oldImageFileName);
             }
 
+            TempData["Success"] = "Movie deleted successfully.";
             return RedirectToAction(nameof(Index));
         }
         private void DeleteImageFile(string fileName)
@@ -220,7 +286,7 @@ namespace Semester03.Areas.Admin.Controllers
                 string wwwRootPath = _webHostEnvironment.WebRootPath;
 
                 // 2. Define the full file path
-                string filePath = Path.Combine(wwwRootPath, "Admin", "img", fileName);
+                string filePath = Path.Combine(wwwRootPath, "Content", "Uploads", "Movies", fileName);
 
                 // 3. Check if the file exists and delete it
                 if (System.IO.File.Exists(filePath))

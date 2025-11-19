@@ -13,7 +13,7 @@ public partial class TblNotification
 
     public string NotificationBody { get; set; } = null!;
 
-    public string? NotificationChannel { get; set; }
+    public string NotificationChannel { get; set; } = null!;
 
     public bool? NotificationIsRead { get; set; }
 

@@ -1,0 +1,148 @@
+﻿@model IEnumerable<Semester03.Models.Entities.TblEvent>
+
+@{
+    ViewData["Title"] = "Event Management";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+
+    // --- ADDED: Separate lists for better UX ---
+    var pendingEvents = Model.Where(e => e.EventStatus == 0).ToList();
+    var otherEvents = Model.Where(e => e.EventStatus != 0).ToList();
+}
+
+<h1 class="h3 mb-2 text-gray-800">Event Management</h1>
+<p class="mb-4">Approve, reject, or manage all promotional events from tenants.</p>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Create Event Manually
+    </a>
+</p>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-warning">Pending Approval (@pendingEvents.Count)</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Event Name</th>
+                        <th>Tenant</th>
+                        <th>Start Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!pendingEvents.Any())
+                    {
+                        <tr>
+                            <td colspan="4" class="text-center">No events pending approval.</td>
+                        </tr>
+                    }
+                    @foreach (var item in pendingEvents)
+                    {
+                        <tr>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@item.EventId">
+                                    @Html.DisplayFor(modelItem => item.EventName)
+                                </a>
+                                <br>
+                                <small>@item.EventTenantPosition?.TenantPositionLocation</small>
+                            </td>
+                            <td>
+                                @item.EventTenantPosition?.TenantPositionAssignedTenant?.TenantName
+                            </td>
+                            <td>
+                                @item.EventStart.ToString("g")
+                            </td>
+                            <td style="min-width: 220px;">
+                                <form asp-action="Approve" asp-route-id="@item.EventId" method="post" style="display: inline;">
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        <i class="fas fa-check"></i> Approve
+                                    </button>
+                                </form>
+                                <form asp-action="Reject" asp-route-id="@item.EventId" method="post" style="display: inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-times"></i> Reject
+                                    </button>
+                                </form>
+                                <a asp-action="Edit" asp-route-id="@item.EventId" class="btn btn-secondary btn-sm" title="Edit before approving">
+                                    <i class="fas fa-pen"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">All Active & Inactive Events</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Event Name</th>
+                        <th>Location</th>
+                        <th>Start Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in otherEvents)
+                    {
+                        <tr>
+                            <td>
+                                <img src="@(string.IsNullOrEmpty(item.EventImg) ? "~/Content/Uploads/noimage.png" : "/Content/Uploads/Events/" + item.EventImg)"
+                                     alt="@item.EventName" style="width: 100px; height: 70px; object-fit: cover;" />
+                            </td>
+                            <td>@Html.DisplayFor(modelItem => item.EventName)</td>
+                            <td>@Html.DisplayFor(modelItem => item.EventTenantPosition.TenantPositionLocation)</td>
+                            <td>@item.EventStart.ToString("g")</td>
+                            <td>
+                                @if (item.EventStatus == 1)
+                                {
+                                    <span class="badge badge-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="Edit" asp-route-id="@item.EventId" class="btn btn-warning btn-sm">Edit</a>
+                                <a asp-action="Details" asp-route-id="@item.EventId" class="btn btn-info btn-sm">Details</a>
+                                <a asp-action="Delete" asp-route-id="@item.EventId" class="btn btn-danger btn-sm">Delete</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+          $('#dataTable').DataTable({"order": [[ 3, "desc" ]]});
+        });
+    </script>
+}

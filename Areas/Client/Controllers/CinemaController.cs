@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Semester03.Areas.Client.Repositories;
 using Semester03.Areas.Client.Models.ViewModels;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Semester03.Models.Repositories;
 
 namespace Semester03.Areas.Client.Controllers
 {
@@ -54,5 +54,13 @@ namespace Semester03.Areas.Client.Controllers
 
             return Json(new { success = true, message = "Cảm ơn bạn! Bình luận sẽ xuất hiện sau khi được duyệt." });
         }
+
+        [HttpGet]
+        public async Task<IActionResult> DebugNowShowing()  
+        {
+            var list = await _repo.GetNowShowingAsync();
+            return Json(new { count = list.Count, items = list.Select(x => new { x.Id, x.Title, x.NextShowtime, x.NextShowtimeId }) });
+        }
+
     }
 }

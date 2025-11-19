@@ -1,0 +1,53 @@
+﻿@model Semester03.Models.Entities.TblShowtime
+
+@{
+    ViewData["Title"] = "Edit Showtime";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<h1 class="h3 mb-2 text-gray-800">Edit Showtime</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Showtime Details</h6>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit">
+                    <div asp-validation-summary="All" class="text-danger"></div>
+                    <input type="hidden" asp-for="ShowtimeId" />
+
+                    <div class="form-group">
+                        <label asp-for="ShowtimeMovieId" class="control-label">Movie</label>
+                        <select asp-for="ShowtimeMovieId" class="form-control" asp-items="@ViewBag.MovieList"></select>
+                        <span asp-validation-for="ShowtimeMovieId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="ShowtimeScreenId" class="control-label">Screen</label>
+                        <select asp-for="ShowtimeScreenId" class="form-control" asp-items="@ViewBag.ScreenList"></select>
+                        <span asp-validation-for="ShowtimeScreenId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="ShowtimeStart" class="control-label">Show Start Time</label>
+                        <input asp-for="ShowtimeStart" class="form-control" type="datetime-local" />
+                        <span asp-validation-for="ShowtimeStart" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="ShowtimePrice" class="control-label">Price</label>
+                        <input asp-for="ShowtimePrice" class="form-control" type="number" step="1000" />
+                        <span asp-validation-for="ShowtimePrice" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="submit" value="Save" class="btn btn-primary" />
+                        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,41 @@
+﻿@model Semester03.Models.Entities.TblParkingLevel
+
+@{
+    ViewData["Title"] = "Edit Parking Level";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<h1 class="h3 mb-2 text-gray-800">Edit Parking Level</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">@Model.LevelName</h6>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit">
+                    <div asp-validation-summary="All" class="text-danger"></div>
+                    <input type="hidden" asp-for="LevelId" />
+
+                    <div class="form-group">
+                        <label asp-for="LevelName" class="control-label">Level Name (e.g., "Basement 1 (B1)")</label>
+                        <input asp-for="LevelName" class="form-control" />
+                        <span asp-validation-for="LevelName" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="LevelCapacity" class="control-label">Total Capacity (Max Spots)</label>
+                        <input asp-for="LevelCapacity" class="form-control" type="number" />
+                        <span asp-validation-for="LevelCapacity" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="submit" value="Save" class="btn btn-primary" />
+                        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

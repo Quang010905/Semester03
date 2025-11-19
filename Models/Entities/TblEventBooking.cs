@@ -20,9 +20,7 @@ public partial class TblEventBooking
     public string? EventBookingNotes { get; set; }
 
     public DateTime? EventBookingCreatedDate { get; set; }
-
     public virtual TblEvent EventBookingEvent { get; set; } = null!;
-
     public virtual TblTenant EventBookingTenant { get; set; } = null!;
 
     public virtual TblUser EventBookingUser { get; set; } = null!;

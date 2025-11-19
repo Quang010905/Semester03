@@ -3,43 +3,70 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Semester03.Models.Entities;
-using Semester03.Areas.Client.Repositories;
-using Semester03.Services.Vnpay;
 using Semester03.Models.Repositories;
-using Microsoft.AspNetCore.Identity;
+using Semester03.Services;
+using Semester03.Services.Email;
+using Semester03.Services.Vnpay;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Semester03.Infrastructure;
+using Microsoft.Extensions.Logging;
 using System;
+using Microsoft.AspNetCore.Identity;
+using Semester03.Areas.Client.Models.ViewModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews();
+// Add services to the container.
+builder.Services.AddControllersWithViews()
+    // Optional: mở cho debug view thay đổi mà không cần rebuild
+    //.AddRazorRuntimeCompilation()
+    ;
 
-// Đọc chuỗi kết nối từ appsettings.json hoặc fallback mặc định
-var conn = builder.Configuration.GetConnectionString("DefaultConnection")
-           ?? "Server=(local);Database=ABCDMall;uid=sa;pwd=123;Trusted_Connection=True;TrustServerCertificate=true;";
+
+var conn = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(conn))
+{
+    throw new InvalidOperationException("Missing connection string 'DefaultConnection' in appsettings.json or environment variables. Please add it to appsettings.json under ConnectionStrings.");
+}
 
 builder.Services.AddDbContext<AbcdmallContext>(options =>
     options.UseSqlServer(conn)
 );
 
-// ====== Đăng ký các repository ======
-builder.Services.AddScoped<CinemaRepository>();
-builder.Services.AddScoped<ShowtimeRepository>();
+// ===== Optional: register HttpContextAccessor (many services expect this) =====
+builder.Services.AddHttpContextAccessor();
+
+// ===== Register repositories =====
 builder.Services.AddScoped<MovieRepository>();
+builder.Services.AddScoped<ShowtimeRepository>();
 builder.Services.AddScoped<SeatRepository>();
 builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<TicketRepository>();
+builder.Services.AddScoped<CinemaRepository>();
 builder.Services.AddScoped<ScreenRepository>();
 builder.Services.AddScoped<TenantRepository>();
-
-// ====== Đăng ký dịch vụ bổ sung ======
-builder.Services.AddScoped<IPasswordHasher<TblUser>, PasswordHasher<TblUser>>();
+builder.Services.AddScoped<EventRepository>();
+builder.Services.AddScoped<EventBookingRepository>();
+builder.Services.AddScoped<TenantTypeRepository>();
+builder.Services.AddScoped<CouponRepository>();
+builder.Services.AddScoped<TenantPositionRepository>();
+builder.Services.AddScoped<ParkingLevelRepository>();
+builder.Services.AddScoped<ParkingSpotRepository>();
+// ===== Register other services =====
+builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
+builder.Services.AddScoped<IEmailSender, EmailSender>();
+builder.Services.AddScoped<TicketEmailService>();
 builder.Services.AddScoped<IVnPayService, VnPayService>();
+builder.Services.AddScoped<IPasswordHasher<TblUser>, PasswordHasher<TblUser>>();
 
-// ====== Cấu hình Authentication (Cookie) ======
+// RazorViewToStringRenderer needs IRazorViewEngine, ITempDataProvider, IServiceProvider -> scoped is fine
+builder.Services.AddScoped<RazorViewToStringRenderer>();
+
+// ===== Authentication =====
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
-        options.Cookie.Name = ".AspNetCore.Cookies"; // choose one name — dùng cùng tên khi xóa cookie
+        options.Cookie.Name = ".AspNetCore.Cookies";
         options.LoginPath = "/Client/Account/Login";
         options.LogoutPath = "/Client/Account/Logout";
         options.AccessDeniedPath = "/Client/Account/Login";
@@ -49,12 +76,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddAuthorization();
 
-// ====== Nếu cần Session ======
-// builder.Services.AddDistributedMemoryCache();
-// builder.Services.AddSession(options => { options.IdleTimeout = TimeSpan.FromMinutes(30); });
-
 var app = builder.Build();
 
+// ===== Middleware =====
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -77,19 +101,19 @@ app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Admin}/{action=Index}/{id?}"
 );
-//app.MapControllerRoute(
-//    name: "default",
-//    pattern: "{controller=Admin}/{action=Index}/{id?}",
-//    defaults: new { area = "Admin" }
-//);
 
+// If you want a default non-area route, you can uncomment or adjust the block below:
+// app.MapControllerRoute(
+//     name: "default",
+//     pattern: "{controller=Admin}/{action=Index}/{id?}",
+//     defaults: new { area = "Admin" }
+// );
 
 app.MapControllerRoute(
     name: "client_default",
-    pattern: "{controller=Cinema}/{action=Index}/{id?}",
+    pattern: "{controller=Home}/{action=Index}/{id?}",
     defaults: new { area = "Client" }
 )
 .WithStaticAssets();
+
 app.Run();
-
-

@@ -1,0 +1,50 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+<div style="margin-left:20px; margin-right: 50px">
+    <h2>Edit Tenant Type</h2>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+    @if (ViewBag.itemTenantType != null)
+    {
+        Semester03.Areas.Admin.Models.TenantType tenantType =
+        (Semester03.Areas.Admin.Models.TenantType)ViewBag.itemTenantType;
+        <form action="@Url.Action("UpdateTenantType", "TenantType")" method="post">
+            <div class="form-group mb-3">
+                <label>Name</label>
+                <input type="text" class="form-control" name="TenantTypeName" value="@tenantType.Name" style="width: 300px;" required />
+            </div>
+            <div class="form-group mb-3">
+                <label>Status</label><br />
+                <input type="hidden" name="TenantTypeStatus" value="0" />
+                <input type="checkbox" name="TenantTypeStatus" value="1"
+                @(tenantType.Status == 1 ? "checked" : "") />
+                <label class="form-check-label" for="Active">Enable</label>
+            </div>
+            <input type="hidden" value="@tenantType.Id" name="TenantTypeId"/>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="@Url.Action("Index", "TenantType")" class="btn btn-secondary">Back</a>
+            </div>
+        </form>
+    }
+</div>

@@ -1,0 +1,209 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+<div style="margin-left:20px; margin-right: 50px">
+    <h2>List Partner</h2>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+    <form method="get" action="@Url.Action("Index", "Tenant")">
+        <div>
+            <strong>Search</strong>
+        </div>
+        <div class="input-group mb-3" style="width: 300px;">
+            <input type="text" name="search" value="@ViewBag.Search" placeholder="Enter full name..." class="form-control" />
+            <div class="input-group-append">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </div>
+
+        @if (ViewBag.listUser != null)
+        {
+            var ls = (List<Semester03.Areas.Admin.Models.User>)ViewBag.listUser;
+            if (ls != null && ls.Count > 0)
+            {
+                int i = ViewBag.StartIndex;
+                <div class="card shadow mb-4">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">No</th>
+                                        <th scope="col">Username</th>
+                                        <th scope="col">Fullname</th>
+                                        <th scope="col">Email</th>
+                                        <th scope="col">Phone</th>
+                                        <th scope="col">Role</th>
+                                        <th scope="col">Created At</th>
+                                        <th scope="col">Action</th>
+                                    </tr>
+                                </thead>
+                                <tfoot>
+                                    <tr>
+                                        <th scope="col">No</th>
+                                        <th scope="col">Username</th>
+                                        <th scope="col">Fullname</th>
+                                        <th scope="col">Email</th>
+                                        <th scope="col">Phone</th>
+                                        <th scope="col">Role</th>
+                                        <th scope="col">Created At</th>
+                                        <th scope="col">Action</th>
+                                    </tr>
+                                </tfoot>
+                                <tbody>
+                                    @foreach (var item in ls)
+                                    {
+                                        <tr>
+                                            <th scope="row">@i</th>
+                                            <td>@item.Username</td>
+                                            <td>@item.FullName</td>
+                                            <td>@item.Email</td>
+                                            <td>@item.Phone</td>
+                                            <td>
+                                                @if (item.Role == 3)
+                                                {
+                                                    <span style="color:green">Partner</span>
+                                                }
+                                            </td>
+                                            <td>@item.CreatedAt</td>
+                                            <td>
+                                                <a href="@Url.Action("CreateTenant", "Tenant", new {id = item.Id})">
+                                                    <img src="@Url.Content("~/Icon/tenant.png")" style="width:1vw; height:2vh;" />
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        i++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    @{
+                        string search = ViewBag.Search ?? "";
+                    }
+                    <div class="row">
+                        <div class="col-sm-12 col-md-5">
+                            <div class="dataTables_info" role="status" aria-live="polite" style="margin-left:20px">
+                                @if (ViewBag.TotalItems > 0)
+                                {
+                                    <text>
+                                        Page @ViewBag.CurrentPage
+                                        of @ViewBag.TotalPages
+                                    </text>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="col-sm-12 col-md-7">
+                            <div class="dataTables_paginate paging_simple_numbers">
+                                <ul class="pagination">
+                                    <li class="paginate_button page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                                        <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage - 1 , search = search})">Previous</a>
+                                    </li>
+
+                                    @for (int j = 1; j <= ViewBag.TotalPages; j++)
+                                    {
+                                        <li class="paginate_button page-item @(j == ViewBag.CurrentPage ? "active" : "")">
+                                            <a class="page-link" href="@Url.Action("Index", new { page = j, search = search })">@j</a>
+                                        </li>
+                                    }
+
+                                    <li class="paginate_button page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                                        <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage + 1, search = search })">Next</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th scope="col">No</th>
+                            <th scope="col">Username</th>
+                            <th scope="col">Fullname</th>
+                            <th scope="col">Email</th>
+                            <th scope="col">Phone</th>
+                            <th scope="col">Role</th>
+                            <th scope="col">Created At</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th scope="col">No</th>
+                            <th scope="col">Username</th>
+                            <th scope="col">Fullname</th>
+                            <th scope="col">Email</th>
+                            <th scope="col">Phone</th>
+                            <th scope="col">Role</th>
+                            <th scope="col">Created At</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </tfoot>
+                    <tbody>
+                        <tr>
+                            <td colspan="4" class="text-center">No Category.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            }
+        }
+        else
+        {
+            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th scope="col">No</th>
+                        <th scope="col">Username</th>
+                        <th scope="col">Fullname</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Phone</th>
+                        <th scope="col">Role</th>
+                        <th scope="col">Created At</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tfoot>
+                    <tr>
+                        <th scope="col">No</th>
+                        <th scope="col">Username</th>
+                        <th scope="col">Fullname</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Phone</th>
+                        <th scope="col">Role</th>
+                        <th scope="col">Created At</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </tfoot>
+                <tbody>
+                    <tr>
+                        <td colspan="4" class="text-center">No Partner.</td>
+                    </tr>
+                </tbody>
+            </table>
+        }
+    </form>
+</div>

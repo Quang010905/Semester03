@@ -1,25 +1,52 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.EventHomeVm
+@using System
+@using System.Linq
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
+
 @{
     ViewData["Title"] = "Events";
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+
+    Func<string, string> Img = (raw) =>
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return Url.Content("~/images/event-placeholder.png");
+        }
+        if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        {
+            return raw;
+        }
+        var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
+        s = s.Replace(" ", "%20");
+        if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase) || s.StartsWith("images", StringComparison.OrdinalIgnoreCase) || s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
+        {
+            return Url.Content("~/" + s);
+        }
+        if (raw.StartsWith("/"))
+        {
+            return Url.Content("~" + raw);
+        }
+        return Url.Content("~/Content/Uploads/Events/" + s);
+    };
 }
 
 <div class="row g-4">
     <div class="col-12">
         <h2>Featured events</h2>
         <div class="row row-cols-1 row-cols-md-3 g-3">
-            @foreach (var e in Model.Featured)
+            @foreach (var e in Model.Featured ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.EventCardVm>())
             {
                 <div class="col">
                     <div class="card h-100 shadow-sm">
-                        <img src="@e.ImageUrl" class="card-img-top" alt="@e.Title" style="height:160px; object-fit:cover;">
+                        <img src="@Img(e.ImageUrl)" class="card-img-top" alt="@e.Title" style="height:160px; object-fit:cover;">
                         <div class="card-body">
                             <h5 class="card-title text-truncate">@e.Title</h5>
                             <p class="card-text small text-muted">@e.ShortDescription</p>
-                            <p class="small text-muted mb-0">@((e.StartDate.HasValue ? e.StartDate.Value.ToString("dd MMM yyyy HH:mm") : ""))</p>
+                            <p class="small text-muted mb-0">@e.StartDate?.ToString("dd MMM yyyy HH:mm") ?? "--"</p>
                         </div>
                         <div class="card-footer bg-transparent border-top-0">
-                            <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">Details</a>
+                            <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">Chi tiết</a>
                         </div>
                     </div>
                 </div>
@@ -29,6 +56,6 @@
 
     <div class="col-12">
         <h4 class="mt-4">Upcoming events</h4>
-        @await Html.PartialAsync("_EventListPartial", Model.Upcoming)
+        @await Html.PartialAsync("_EventListPartial", Model.Upcoming ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.EventCardVm>())
     </div>
 </div>
