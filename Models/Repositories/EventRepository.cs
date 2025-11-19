@@ -237,7 +237,7 @@ public class EventRepository
             await _context.SaveChangesAsync();
         }
     }
-
+    
     public async Task<bool> UpdateStatusAsync(int eventId, int status)
     {
         var evt = await _context.TblEvents.FindAsync(eventId);

@@ -90,12 +90,6 @@
 
             <div class="d-flex align-items-center gap-2">
                 <a href="@Url.Action("Index", "Event", new { area = "Client" })" class="btn btn-outline-secondary">Quay lại</a>
-
-                <a class="btn btn-primary btn-register"
-                   href="@Url.Action("Register", "EventBooking", new { area = "Client", id = Model.Id })">
-                    Đăng ký / Booking
-                </a>
-
                 <div class="ms-auto text-muted small">
                     <div><strong>Slots:</strong> @Model.MaxSlot</div>
                     <div><strong>Status:</strong> @(Model.Status == 1 ? "Active" : "Inactive")</div>
