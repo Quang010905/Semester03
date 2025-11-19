@@ -1,13 +1,46 @@
-﻿@{
-    ViewData["Title"] = "Home";
-    ViewData["MallName"] = "ABCD Mall";
-    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
-}
-
-@using Semester03.Areas.Client.Models.ViewModels
+﻿@using Semester03.Areas.Client.Models.ViewModels
 @inject Semester03.Models.Repositories.EventRepository _eventRepo
 
 @{
+    ViewData["Title"] = "Home";
+    ViewData["MallName"] = "ABCD Mall";
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+
+    // Hàm chuẩn hóa đường dẫn ảnh (hỗ trợ: full URL, /path, đường dẫn trong wwwroot, hoặc Content/Uploads/...)
+    Func<string, string> Img = raw =>
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return Url.Content("~/images/event-placeholder.png");
+        }
+
+        if (raw.StartsWith("http", System.StringComparison.OrdinalIgnoreCase))
+        {
+            return raw;
+        }
+
+        // Loại bỏ "wwwroot/" hoặc "~/" nếu có, và trim ký tự '/'
+        var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
+        s = s.Replace(" ", "%20"); // encode space
+
+        // Nếu đường dẫn đã là dạng Content/... hoặc images/...
+        if (s.StartsWith("Content", System.StringComparison.OrdinalIgnoreCase)
+            || s.StartsWith("images", System.StringComparison.OrdinalIgnoreCase)
+            || s.StartsWith("Admin/img", System.StringComparison.OrdinalIgnoreCase))
+        {
+            return Url.Content("~/" + s);
+        }
+
+        // Nếu bắt đầu bằng '/', trả về tương đối từ root
+        if (raw.StartsWith("/"))
+        {
+            return Url.Content("~" + raw);
+        }
+
+        // Mặc định: giả định ảnh nằm trong Content/Uploads/Events/
+        return Url.Content("~/Content/Uploads/Events/" + s);
+    };
+
     // Lấy 6 sự kiện sắp tới bằng repository được inject (async)
     var topEvents = await _eventRepo.GetUpcomingEventsAsync(6);
     topEvents = topEvents ?? new List<EventCardVm>();
@@ -22,9 +55,7 @@
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden">
                     <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">
-                        <img src="@( !string.IsNullOrEmpty(e.ImageUrl)
-                                        ? Url.Content(e.ImageUrl.StartsWith("/") ? e.ImageUrl : $"~/{e.ImageUrl}")
-                                        : Url.Content("~/images/event-placeholder.png") )"
+                        <img src="@Img(e.ImageUrl)"
                              class="card-img-top" alt="@e.Title" style="height:200px; object-fit:cover;" />
                     </a>
                     <div class="card-body p-3 text-center">

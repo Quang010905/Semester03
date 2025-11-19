@@ -1,38 +1,23 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.EventBookingSuccessVm
 @{
-    ViewData["Title"] = "Đăng ký thành công";
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+    ViewData["Title"] = "Đặt vé thành công";
 }
 
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h4 class="card-title">Đăng ký thành công</h4>
-                <p class="mb-2">Cảm ơn bạn đã đăng ký tham dự sự kiện.</p>
+<div class="container py-4">
+    <div class="card p-4">
+        <h3>Đặt vé thành công</h3>
+        <p>Mã đặt vé: <strong>#@Model.BookingId</strong></p>
+        <p>Sự kiện: <strong>@Model.EventTitle</strong></p>
+        <p>Số lượng: <strong>@Model.Quantity</strong></p>
+        <p>Tổng tiền: <strong>@Model.Amount.ToString("N0") VND</strong></p>
 
-                <dl class="row">
-                    <dt class="col-sm-4">Mã đặt chỗ</dt>
-                    <dd class="col-sm-8"><strong>@Model.BookingId</strong></dd>
-
-                    <dt class="col-sm-4">Sự kiện</dt>
-                    <dd class="col-sm-8">@Model.EventTitle</dd>
-
-                    <dt class="col-sm-4">Số lượng</dt>
-                    <dd class="col-sm-8">@Model.Quantity</dd>
-
-                    <dt class="col-sm-4">Tổng thanh toán</dt>
-                    <dd class="col-sm-8">@Model.Amount.ToString("C")</dd>
-
-                    <dt class="col-sm-4">Email liên hệ</dt>
-                    <dd class="col-sm-8">@Model.ContactEmail</dd>
-                </dl>
-
-                <div class="mt-3">
-                    <a class="btn btn-primary" href="@Url.Action("Index", "Event", new { area = "Client" })">Quay lại sự kiện</a>
-                    <a class="btn btn-outline-secondary ms-2" href="@Url.Action("Index", "Home", new { area = "Client" })">Về trang chủ</a>
-                </div>
-            </div>
+        @if (!string.IsNullOrWhiteSpace(Model.ContactEmail))
+        {
+            <p>Biên nhận đã được gửi tới: <strong>@Model.ContactEmail</strong></p>
+        }
+        <div class="mt-3">
+            <a class="btn btn-primary" href="@Url.Action("Index", "Event", new { area = "Client" })">Quay về danh sách sự kiện</a>
         </div>
     </div>
 </div>
