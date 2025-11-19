@@ -119,6 +119,7 @@ namespace Semester03.Areas.Client.Controllers
 
             if (user.UsersRoleId == 1)
             {
+
                 // Admin area (thay Dashboard/Index bằng controller/action bạn dùng)
                 return RedirectToAction("Index", "Admin", new { area = "Admin" });
             }
