@@ -185,5 +185,3 @@ public class VnPayCompare : IComparer<string>
         return vnpCompare.Compare(x, y, CompareOptions.Ordinal);
     }
 }
-
-

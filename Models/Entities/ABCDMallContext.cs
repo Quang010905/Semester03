@@ -61,13 +61,13 @@ public partial class AbcdmallContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=(local);Database=ABCDMall;uid=sa;pwd=123456;Trusted_Connection=True;TrustServerCertificate=true;");
+        => optionsBuilder.UseSqlServer("Server=(local);Database=ABCDMall;uid=sa;pwd=123;Trusted_Connection=True;TrustServerCertificate=true;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<TblCinema>(entity =>
         {
-            entity.HasKey(e => e.CinemaId).HasName("PK__Tbl_Cine__89C6DAE1EF65D0A2");
+            entity.HasKey(e => e.CinemaId).HasName("PK__Tbl_Cine__89C6DAE126C87784");
 
             entity.ToTable("Tbl_Cinema");
 
@@ -85,11 +85,11 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblCoupon>(entity =>
         {
-            entity.HasKey(e => e.CouponId).HasName("PK__Tbl_Coup__2A776BBCF7378E80");
+            entity.HasKey(e => e.CouponId).HasName("PK__Tbl_Coup__2A776BBC01EF38F6");
 
             entity.ToTable("Tbl_Coupon");
 
-            entity.HasIndex(e => e.CouponName, "UQ__Tbl_Coup__4AFC9B50C38FA3E6").IsUnique();
+            entity.HasIndex(e => e.CouponName, "UQ__Tbl_Coup__4AFC9B50B0EF7623").IsUnique();
 
             entity.Property(e => e.CouponId).HasColumnName("Coupon_ID");
             entity.Property(e => e.CouponDescription)
@@ -110,7 +110,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblCouponUser>(entity =>
         {
-            entity.HasKey(e => e.CouponUserId).HasName("PK__Tbl_Coup__3B4F48E032A38B27");
+            entity.HasKey(e => e.CouponUserId).HasName("PK__Tbl_Coup__3B4F48E090BA6440");
 
             entity.ToTable("Tbl_CouponUser");
 
@@ -131,7 +131,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblCustomerComplaint>(entity =>
         {
-            entity.HasKey(e => e.CustomerComplaintId).HasName("PK__Tbl_Cust__EF854084A2144197");
+            entity.HasKey(e => e.CustomerComplaintId).HasName("PK__Tbl_Cust__EF8540844FA04543");
 
             entity.ToTable("Tbl_CustomerComplaint");
 
@@ -163,7 +163,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblEvent>(entity =>
         {
-            entity.HasKey(e => e.EventId).HasName("PK__Tbl_Even__FD6BEFE42B4377B1");
+            entity.HasKey(e => e.EventId).HasName("PK__Tbl_Even__FD6BEFE41F2CA187");
 
             entity.ToTable("Tbl_Event");
 
@@ -193,7 +193,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblEventBooking>(entity =>
         {
-            entity.HasKey(e => e.EventBookingId).HasName("PK__Tbl_Even__B471E4EA5B8ED1E5");
+            entity.HasKey(e => e.EventBookingId).HasName("PK__Tbl_Even__B471E4EA4B4236B0");
 
             entity.ToTable("Tbl_EventBooking");
 
@@ -216,7 +216,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblMovie>(entity =>
         {
-            entity.HasKey(e => e.MovieId).HasName("PK__Tbl_Movi__7A880405B7CA67EF");
+            entity.HasKey(e => e.MovieId).HasName("PK__Tbl_Movi__7A880405E658B186");
 
             entity.ToTable("Tbl_Movie");
 
@@ -247,7 +247,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblNotification>(entity =>
         {
-            entity.HasKey(e => e.NotificationId).HasName("PK__Tbl_Noti__8C1160B539654101");
+            entity.HasKey(e => e.NotificationId).HasName("PK__Tbl_Noti__8C1160B500D0FAB1");
 
             entity.ToTable("Tbl_Notification");
 
@@ -277,7 +277,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblParkingLevel>(entity =>
         {
-            entity.HasKey(e => e.LevelId).HasName("PK__Tbl_Park__C4322E601CA3E554");
+            entity.HasKey(e => e.LevelId).HasName("PK__Tbl_Park__C4322E60B1FCF9A4");
 
             entity.ToTable("Tbl_ParkingLevel");
 
@@ -290,7 +290,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblParkingSpot>(entity =>
         {
-            entity.HasKey(e => e.ParkingSpotId).HasName("PK__Tbl_Park__B45C14DC299E872E");
+            entity.HasKey(e => e.ParkingSpotId).HasName("PK__Tbl_Park__B45C14DCE3A5722D");
 
             entity.ToTable("Tbl_ParkingSpot");
 
@@ -313,7 +313,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblProduct>(entity =>
         {
-            entity.HasKey(e => e.ProductId).HasName("PK__Tbl_Prod__9834FB9A621A81C1");
+            entity.HasKey(e => e.ProductId).HasName("PK__Tbl_Prod__9834FB9AFCC4384A");
 
             entity.ToTable("Tbl_Product");
 
@@ -346,7 +346,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblProductCategory>(entity =>
         {
-            entity.HasKey(e => e.ProductCategoryId).HasName("PK__Tbl_Prod__4C1E45D94625EE39");
+            entity.HasKey(e => e.ProductCategoryId).HasName("PK__Tbl_Prod__4C1E45D9B3ECC82A");
 
             entity.ToTable("Tbl_ProductCategory");
 
@@ -370,7 +370,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblRole>(entity =>
         {
-            entity.HasKey(e => e.RolesId).HasName("PK__Tbl_Role__BB563FB72338F3F4");
+            entity.HasKey(e => e.RolesId).HasName("PK__Tbl_Role__BB563FB7E0F8C6F2");
 
             entity.ToTable("Tbl_Roles");
 
@@ -385,7 +385,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblScreen>(entity =>
         {
-            entity.HasKey(e => e.ScreenId).HasName("PK__Tbl_Scre__1D3FB5CB5285F5BF");
+            entity.HasKey(e => e.ScreenId).HasName("PK__Tbl_Scre__1D3FB5CBC2F4AFA0");
 
             entity.ToTable("Tbl_Screen");
 
@@ -404,7 +404,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblSeat>(entity =>
         {
-            entity.HasKey(e => e.SeatId).HasName("PK__Tbl_Seat__8B2CE7B6A36BCE12");
+            entity.HasKey(e => e.SeatId).HasName("PK__Tbl_Seat__8B2CE7B6ACC0C49B");
 
             entity.ToTable("Tbl_Seat");
 
@@ -429,7 +429,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblShowtime>(entity =>
         {
-            entity.HasKey(e => e.ShowtimeId).HasName("PK__Tbl_Show__7C7A90890B2C2864");
+            entity.HasKey(e => e.ShowtimeId).HasName("PK__Tbl_Show__7C7A9089FDBBCE08");
 
             entity.ToTable("Tbl_Showtime");
 
@@ -454,7 +454,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblShowtimeSeat>(entity =>
         {
-            entity.HasKey(e => e.ShowtimeSeatId).HasName("PK__Tbl_Show__A216F9D2C0A45108");
+            entity.HasKey(e => e.ShowtimeSeatId).HasName("PK__Tbl_Show__A216F9D27C5F2DED");
 
             entity.ToTable("Tbl_ShowtimeSeat");
 
@@ -494,7 +494,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblTenant>(entity =>
         {
-            entity.HasKey(e => e.TenantId).HasName("PK__Tbl_Tena__8E8F347276B6A5F8");
+            entity.HasKey(e => e.TenantId).HasName("PK__Tbl_Tena__8E8F34722F85E309");
 
             entity.ToTable("Tbl_Tenant");
 
@@ -530,7 +530,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblTenantPosition>(entity =>
         {
-            entity.HasKey(e => e.TenantPositionId).HasName("PK__Tbl_Tena__3AD42952A226F695");
+            entity.HasKey(e => e.TenantPositionId).HasName("PK__Tbl_Tena__3AD429527C25663A");
 
             entity.ToTable("Tbl_TenantPosition");
 
@@ -563,7 +563,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblTenantType>(entity =>
         {
-            entity.HasKey(e => e.TenantTypeId).HasName("PK__Tbl_Tena__7AEEA9C4D1A10458");
+            entity.HasKey(e => e.TenantTypeId).HasName("PK__Tbl_Tena__7AEEA9C40C0EF39B");
 
             entity.ToTable("Tbl_TenantType");
 
@@ -578,7 +578,7 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblTicket>(entity =>
         {
-            entity.HasKey(e => e.TicketId).HasName("PK__Tbl_Tick__ED7260D9D4173F78");
+            entity.HasKey(e => e.TicketId).HasName("PK__Tbl_Tick__ED7260D91D2855EC");
 
             entity.ToTable("Tbl_Ticket");
 
@@ -612,13 +612,13 @@ public partial class AbcdmallContext : DbContext
 
         modelBuilder.Entity<TblUser>(entity =>
         {
-            entity.HasKey(e => e.UsersId).HasName("PK__Tbl_User__EB68290DC54262A9");
+            entity.HasKey(e => e.UsersId).HasName("PK__Tbl_User__EB68290D97103CAE");
 
             entity.ToTable("Tbl_Users");
 
-            entity.HasIndex(e => e.UsersUsername, "UQ__Tbl_User__76886E482AF93B58").IsUnique();
+            entity.HasIndex(e => e.UsersUsername, "UQ__Tbl_User__76886E48CB79D6DC").IsUnique();
 
-            entity.HasIndex(e => e.UsersEmail, "UQ__Tbl_User__7F0D8B4200916A07").IsUnique();
+            entity.HasIndex(e => e.UsersEmail, "UQ__Tbl_User__7F0D8B42AD742A7C").IsUnique();
 
             entity.Property(e => e.UsersId).HasColumnName("Users_ID");
             entity.Property(e => e.UsersCreatedAt)

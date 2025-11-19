@@ -20,10 +20,14 @@ namespace Semester03.Models.Repositories
 
         public async Task<List<TenantPositionDto>> GetPositionsByFloorAsync(int floor)
         {
+            // use AsNoTracking for read-only queries
             var list = await _db.TblTenantPositions
+                .AsNoTracking()
                 .Where(p => p.TenantPositionFloor == floor)
                 .OrderBy(p => p.TenantPositionId)
                 .ToListAsync();
+
+            if (list == null || !list.Any()) return new List<TenantPositionDto>();
 
             return list.Select(p => new TenantPositionDto
             {
@@ -34,9 +38,43 @@ namespace Semester03.Models.Repositories
                 TenantPosition_Floor = p.TenantPositionFloor,
                 TenantPosition_Status = p.TenantPositionStatus.HasValue ? (int)p.TenantPositionStatus : 0,
                 TenantPosition_LeftPct = p.TenantPositionLeftPct,
-                TenantPosition_TopPct = p.TenantPositionTopPct
+                TenantPosition_TopPct = p.TenantPositionTopPct,
+                Tenant = null
             }).ToList();
         }
+        public async Task<List<TenantPositionDto>> GetPositionsByFloorWithTenantAsync(int floor)
+        {
+            var list = await _db.TblTenantPositions
+                .AsNoTracking()
+                // CHÚ Ý: đổi tên navigation property nếu model EF của bạn đặt tên khác
+                .Include(p => p.TenantPositionAssignedTenant)
+                .Where(p => p.TenantPositionFloor == floor)
+                .OrderBy(p => p.TenantPositionId)
+                .ToListAsync();
+
+            if (list == null || !list.Any()) return new List<TenantPositionDto>();
+
+            return list.Select(p => new TenantPositionDto
+            {
+                TenantPosition_ID = p.TenantPositionId,
+                TenantPosition_Location = p.TenantPositionLocation,
+                TenantPosition_AssignedTenantID = p.TenantPositionAssignedTenantId,
+                TenantPosition_Area_M2 = p.TenantPositionAreaM2,
+                TenantPosition_Floor = p.TenantPositionFloor,
+                TenantPosition_Status = p.TenantPositionStatus.HasValue ? (int)p.TenantPositionStatus : 0,
+                TenantPosition_LeftPct = p.TenantPositionLeftPct,
+                TenantPosition_TopPct = p.TenantPositionTopPct,
+                Tenant = p.TenantPositionAssignedTenant == null ? null : new TenantDto
+                {
+                    Tenant_Id = p.TenantPositionAssignedTenant.TenantId,
+                    Tenant_Name = p.TenantPositionAssignedTenant.TenantName,
+                    Tenant_Img = p.TenantPositionAssignedTenant.TenantImg,
+                    Tenant_UserID = p.TenantPositionAssignedTenant.TenantUserId.ToString() ?? "",
+                    Tenant_Status = p.TenantPositionAssignedTenant.TenantStatus
+                }
+            }).ToList();
+        }
+
 
         public async Task<int> GetCountByFloorAsync(int floor)
         {

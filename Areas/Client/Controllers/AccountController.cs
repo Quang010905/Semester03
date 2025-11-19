@@ -69,6 +69,16 @@ namespace Semester03.Areas.Client.Controllers
                 return View();
             }
 
+            // --- CHECK ACCOUNT STATUS ---
+            // If UsersStatus == 0 => disabled
+            // (Works for both int and int? property types)
+            if (user.UsersStatus == 0)
+            {
+                ModelState.AddModelError("", "Tài khoản này đã bị vô hiệu hóa. Vui lòng liên hệ quản trị để biết thêm chi tiết.");
+                return View();
+            }
+            // --------------------------------
+
             var verify = _userRepo.VerifyPassword(user, password);
             if (verify != PasswordVerificationResult.Success && verify != PasswordVerificationResult.SuccessRehashNeeded)
             {
@@ -90,10 +100,10 @@ namespace Semester03.Areas.Client.Controllers
 
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.UsersId.ToString()),
-                new Claim(ClaimTypes.Name, user.UsersFullName ?? user.UsersUsername),
-                new Claim(ClaimTypes.Role, user.UsersRoleId.ToString())
-            };
+        new Claim(ClaimTypes.NameIdentifier, user.UsersId.ToString()),
+        new Claim(ClaimTypes.Name, user.UsersFullName ?? user.UsersUsername),
+        new Claim(ClaimTypes.Role, user.UsersRoleId.ToString())
+    };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
@@ -119,8 +129,7 @@ namespace Semester03.Areas.Client.Controllers
 
             if (user.UsersRoleId == 1)
             {
-
-                // Admin area (thay Dashboard/Index bằng controller/action bạn dùng)
+                // Admin area
                 return RedirectToAction("Index", "Admin", new { area = "Admin" });
             }
             else if (user.UsersRoleId == 2)
@@ -135,6 +144,7 @@ namespace Semester03.Areas.Client.Controllers
                 return RedirectToAction("Index", "Home", new { area = "Client" });
             }
         }
+
 
         // ------------------- REGISTER (AJAX-ready) -------------------
         [HttpGet]

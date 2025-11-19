@@ -1,0 +1,38 @@
+﻿@model Semester03.Areas.Client.Models.ViewModels.TenantPositionDto
+
+@{
+    // CSS class tương ứng với style trong Index.cshtml
+    var css = (Model?.TenantPosition_Status == 1) ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
+    var label = string.IsNullOrWhiteSpace(Model?.TenantPosition_Location) ? "Unit" : Model.TenantPosition_Location;
+    var areaText = Model?.TenantPosition_Area_M2.ToString("0.#") + " m²";
+    var idAttr = Model?.TenantPosition_ID.ToString() ?? "0";
+    // tenant image if exists (attempt to normalize path)
+    string tenantImg = null;
+    if (Model?.Tenant != null && !string.IsNullOrWhiteSpace(Model.Tenant.Tenant_Img))
+    {
+        tenantImg = Model.Tenant.Tenant_Img;
+        if (tenantImg.StartsWith("wwwroot/")) tenantImg = "/" + tenantImg.Substring("wwwroot/".Length);
+    }
+
+    // link to details (adjust controller/action if your details action elsewhere)
+    var detailsUrl = Url.Action("Details", "Map", new { area = "Client", id = Model?.TenantPosition_ID });
+}
+
+<a href="@detailsUrl" class="@css" title="@label"
+   data-id="@idAttr"
+   data-left="@(Model?.TenantPosition_LeftPct?.ToString() ?? "")"
+   data-top="@(Model?.TenantPosition_TopPct?.ToString() ?? "")"
+   data-status="@(Model?.TenantPosition_Status)">
+    <div style="display:flex;align-items:center;gap:8px;width:100%;justify-content:center;">
+        @if (!string.IsNullOrEmpty(tenantImg))
+        {
+            <div style="flex:0 0 36px; height:36px; overflow:hidden; border-radius:6px; background:#f1f3f5; display:flex; align-items:center; justify-content:center;">
+                <img src="@tenantImg" alt="@label" style="max-width:100%; max-height:100%; display:block;" />
+            </div>
+        }
+        <div style="flex:1; min-width:0;">
+            <div class="tenant-name" style="line-height:1.05;">@label</div>
+            <div class="tenant-meta">@areaText</div>
+        </div>
+    </div>
+</a>
