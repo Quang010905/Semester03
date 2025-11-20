@@ -1,6 +1,7 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.MapViewModel
+
 @{
-    ViewData["Title"] = "Mall Floor Plan";
+    ViewData["Title"] = "Mall Floor Plan — Tube / Diamond (Client)";
     Layout = "_LayoutClient";
     int defaultCapacityPerFloor = 40;
     var floors = Model?.AvailableFloors ?? new List<int> { Model?.FloorNumber ?? 0 };
@@ -9,20 +10,255 @@
 }
 
 <style>
-    /* reset box-sizing to avoid width surprises */
-    *, *::before, *::after {
+    /* ========== Layout (tube) ========== */
+    * {
         box-sizing: border-box;
     }
 
-    .floor-wrapper {
+    .card-tube {
         background: #fff;
-        border: 1px solid #e1e3ea;
-        border-radius: 8px;
+        border: 1px solid #e6e8ee;
+        border-radius: 10px;
         padding: 12px;
-        margin-bottom: 24px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+        margin-bottom: 18px;
+        box-shadow: 0 6px 18px rgba(14,20,30,0.04);
     }
 
+    .tube-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 8px 4px;
+    }
+
+    .tube {
+        display: inline-block;
+        min-width: 1200px;
+        padding: 14px;
+        border-radius: 10px;
+        background: linear-gradient(180deg,#f6f8fb,#eef2f8);
+        border: 1px solid #dfe4ee;
+    }
+
+    .tube-inner {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        min-width: 1000px;
+    }
+
+    .tube-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .end-cap {
+        width: 44px;
+        height: 92px;
+        background: #e74a3b;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        writing-mode: vertical-lr;
+        font-weight: 900;
+        border-radius: 6px;
+        flex: 0 0 44px;
+    }
+
+    .shop-cluster {
+        display: grid;
+        grid-template-columns: repeat(5,1fr);
+        gap: 10px;
+        min-width: 540px;
+    }
+
+    .shop-unit {
+        background: #fff;
+        border-radius: 8px;
+        min-height: 86px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 8px;
+        border: 1px solid #eef2f6;
+        transition: transform .12s ease, box-shadow .12s ease;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+    }
+
+        .shop-unit:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 10px 18px rgba(16,24,40,0.08);
+            border-color: #4e73df;
+            z-index: 15;
+        }
+
+    .shop-thumb {
+        width: 56px;
+        height: 42px;
+        border-radius: 6px;
+        background: #f5f7fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        margin-bottom: 6px;
+    }
+
+    .shop-title {
+        font-weight: 800;
+        font-size: 0.68rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .shop-sub {
+        font-size: 0.62rem;
+        opacity: 0.9;
+    }
+
+    /* variants */
+    .unit-occupied {
+        background: linear-gradient(180deg,#cfe9ff,#c6e2ff);
+        color: #083358;
+    }
+
+    .unit-vacant {
+        background: linear-gradient(180deg,#e6f4ea,#dff0e6);
+        color: #155724;
+    }
+
+    .unit-void {
+        background: transparent;
+        border: 2px dashed rgba(0,0,0,0.05);
+    }
+
+    /* click effect (temporary) */
+    .shop-unit.active-click {
+        animation: pop .42s ease;
+        box-shadow: 0 14px 36px rgba(16,24,40,0.18);
+        transform: translateY(-8px) scale(1.02);
+    }
+    @@keyframes pop {
+        0%
+
+    {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(-8px) scale(1.03);
+    }
+
+    100% {
+        transform: translateY(-6px) scale(1.02);
+    }
+
+    }
+
+    /* modal / slide panel (custom, no bootstrap required) */
+    .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1200;
+        padding: 20px;
+    }
+
+    .panel {
+        width: 680px;
+        max-width: 96%;
+        background: #fff;
+        border-radius: 10px;
+        padding: 18px;
+        box-shadow: 0 14px 40px rgba(7,10,25,0.45);
+        transform: translateY(20px);
+        opacity: 0;
+        transition: all .18s ease;
+        max-height: 88vh;
+        overflow: auto;
+    }
+
+    .overlay.visible {
+        display: flex;
+    }
+
+    .panel.visible {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    /* panel header */
+    .panel .hdr {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+        .panel .hdr h4 {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+    .panel .close-btn {
+        border: 0;
+        background: transparent;
+        font-size: 1.2rem;
+        cursor: pointer;
+    }
+
+    /* tenant content */
+    .tenant-row {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .tenant-img {
+        width: 140px;
+        height: 100px;
+        border-radius: 8px;
+        background: #f5f7fa;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .tenant-body {
+        flex: 1;
+    }
+
+        .tenant-body p {
+            margin: 6px 0;
+            color: #374151;
+            font-size: 0.95rem;
+        }
+
+    .meta {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* fallback no-shop */
+    .no-shop {
+        text-align: center;
+        padding: 24px 12px;
+        color: #6b7280;
+        font-weight: 700;
+    }
+
+    /* floor tabs */
     .floors-toolbar {
         display: flex;
         gap: 8px;
@@ -33,7 +269,7 @@
 
     .floor-tab {
         border-radius: 20px;
-        padding: 6px 10px;
+        padding: 6px 12px;
         border: 1px solid #e2e8f0;
         background: #f8fafc;
         cursor: pointer;
@@ -48,597 +284,287 @@
             border-color: #2b6fb2;
         }
 
-    /* viewport that clips content - prevents overflow of the map outside the frame */
-    .map-viewport {
-        width: 100%;
-        height: 420px;
-        overflow: hidden; /* clip any overflow */
-        position: relative;
-        border-radius: 6px;
-        background: transparent;
-        padding: 10px; /* breathing room so transform edge isn't clipped harshly */
-        display: block;
-    }
-
-    /* actual content - we keep an internal "design width" and scale it down to fit */
-    .map-content {
-        transform-origin: 0 0; /* important: we compute translate/scale in JS */
-        transition: transform .06s linear;
-        display: block;
-        /* design size: this is the internal width & height of the layout */
-        width: 1240px; /* change if you prefer wider/narrower internal canvas */
-        background: transparent;
-        margin: 0 auto;
-    }
-
-    /* layout inside the design canvas */
-    .floor-layout {
-        width: 100%;
-        background: #eaecf4;
-        border: 2px solid #5a5c69;
-        padding: 8px;
-        border-radius: 6px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .shop-strip {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .shop-cluster {
-        display: flex;
-        gap: 8px;
-        flex: 5;
-        align-items: stretch;
-    }
-
-    .end-cap {
-        width: 44px;
-        background: #e74a3b;
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        writing-mode: vertical-lr;
-        font-weight: 900;
-        border-radius: 6px;
-        min-height: 72px;
-    }
-
-    /* shop unit - vertical rectangle */
-    .shop-unit {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        gap: 6px;
-        text-align: center;
-        border-radius: 6px;
-        padding: 8px 6px;
-        text-decoration: none;
-        color: inherit;
-        transition: transform .12s ease, box-shadow .12s ease;
-        min-width: 84px; /* control width of each cell */
-        max-width: 84px;
-        height: 110px; /* vertical rectangle */
-        background: #fff;
-        border: 1px solid #e9ecef;
-        box-sizing: border-box;
-    }
-
-        .shop-unit:hover {
-            transform: translateY(-6px);
-            z-index: 20;
-            box-shadow: 0 10px 24px rgba(16,24,40,0.08);
-            border-color: #4e73df;
-        }
-
-    .unit-void {
-        background: transparent;
-        border: 1px dashed rgba(0,0,0,0.06);
-        min-width: 84px;
-        height: 110px;
-    }
-
-    .unit-vacant {
-        background: #e6f4ea;
-        color: #155724;
-    }
-
-    .unit-occupied {
-        background: #cce5ff;
-        color: #003366;
-    }
-
-    .shop-thumb {
-        width: 56px;
-        height: 48px;
-        border-radius: 6px;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #f3f5f7;
-    }
-
-        .shop-thumb img {
-            max-width: 100%;
-            max-height: 100%;
-            display: block;
-        }
-
-    .shop-location {
-        font-size: 0.66rem;
-        color: #374151;
-        font-weight: 700;
-        white-space: normal;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .shop-status {
-        font-size: 0.72rem;
-        font-weight: 800;
-        margin-top: 4px;
-        color: inherit;
-    }
-
-    .map-controls {
-        position: absolute;
-        right: 16px;
-        top: 16px;
-        z-index: 60;
-        display: flex;
-        gap: 6px;
-    }
-
-        .map-controls button {
-            border-radius: 6px;
-            border: 1px solid #d1d5db;
-            background: #fff;
-            padding: 6px 8px;
-            cursor: pointer;
-        }
-
-    /* responsive: reduce cell sizes slightly on small screens */
-    @@media (max-width:1100px) {
-        .map-content
+    /* responsive */
+    @@media (max-width:640px) {
+        .tenant-row
 
     {
-        width: 1000px;
-    }
-    /* internal design smaller for small screens */
-    .shop-unit, .unit-void {
-        min-width: 68px;
-        max-width: 68px;
-        height: 96px;
+        flex-direction: column;
     }
 
-    .shop-thumb {
-        width: 48px;
-        height: 36px;
+    .tenant-img {
+        width: 100%;
+        height: 140px;
+    }
+
+    .panel {
+        padding: 12px;
     }
 
     }
 </style>
 
-<h1 class="h3 mb-2 text-gray-800">Mall Floor Plan</h1>
-<p class="mb-3 text-muted">Hiển thị vị trí tenant theo từng tầng — dữ liệu lấy từ Tbl_TenantPosition.</p>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h3 mb-0">Mall Floor Plan — Tube / Diamond</h1>
+        <small class="text-muted">Hiển thị vị trí tenant theo từng tầng (MapViewModel)</small>
+    </div>
 
-<div class="floors-toolbar mb-3">
+    <!-- RIGHT SIDE: removed combobox as requested -->
+    <div>
+        <!-- left intentionally empty: floor selection handled by tabs above -->
+    </div>
+</div>
+
+@if (!floors.Any())
+{
+    <div class="alert alert-warning">Không có tầng để hiển thị.</div>
+}
+
+@functions {
+    private List<List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto>> ChunkInto(List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto> src)
+    {
+        var res = new List<List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto>>();
+        if (src == null) return res;
+        for (int i = 0; i < src.Count; i += 5) res.Add(src.Skip(i).Take(5).ToList());
+        return res;
+    }
+}
+
+<div class="d-flex gap-2 mb-3 floors-toolbar">
     @foreach (var f in floors.OrderBy(x => x))
     {
         var css = (f == selectedFloor) ? "floor-tab active" : "floor-tab";
         <div class="@css" data-floor="@f"> @(f == 0 ? "G (0)" : "Tầng " + f) </div>
     }
-    <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
-        <span class="text-muted small">Zoom / Pan</span>
-        <button class="btn btn-sm btn-outline-secondary" id="globalZoomOut" title="Zoom out">-</button>
-        <button class="btn btn-sm btn-outline-secondary" id="globalZoomReset" title="Reset">⟳</button>
-        <button class="btn btn-sm btn-outline-secondary" id="globalZoomIn" title="Zoom in">+</button>
-    </div>
 </div>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div><strong>Positions:</strong> @(ViewData["PositionsCount"] ?? positions.Count)</div>
-    <div class="d-flex align-items-center gap-2">
-        <form id="floorSelectForm" method="get" action="@Url.Action("Index","Map", new { area = "Client" })" class="m-0 p-0 d-flex align-items-center gap-2">
-            <label class="small text-muted mb-0 me-1">Chọn tầng</label>
-            <select id="floorSelect" name="floor" class="form-select form-select-sm" style="min-width:120px;">
-                @foreach (var f in floors.OrderBy(x => x))
-                {
-                    <option value="@f" @(f == selectedFloor ? "selected" : "")>@(f == 0 ? "G (0)" : "Tầng " + f)</option>
-                }
-            </select>
-        </form>
-        <a class="btn btn-sm btn-outline-secondary ms-2" href="@Url.Action("Index","Map", new { area = "Client", floor = selectedFloor })">Làm mới</a>
-        <a class="btn btn-sm btn-outline-primary ms-1" href="@Url.Action("Index3D","Map", new { area = "Client", floor = selectedFloor })">3D View</a>
-    </div>
-</div>
+@foreach (var floor in floors.OrderBy(x => x))
+{
+    var floorPositions = positions.Where(p => p.TenantPosition_Floor == floor).ToList();
+    bool isGround = (floor == 0 || floor == 1);
 
-<div class="card p-3">
-    @if (!floors.Any())
-    {
-        <div class="alert alert-warning">Không có tầng để hiển thị.</div>
-    }
+    var topRow = floorPositions.Where(p => (p.TenantPosition_TopPct ?? 0m) < 50m).OrderBy(p => (p.TenantPosition_LeftPct ?? 0m)).ToList();
+    var bottomRow = floorPositions.Where(p => (p.TenantPosition_TopPct ?? 0m) >= 50m).OrderBy(p => (p.TenantPosition_LeftPct ?? 0m)).ToList();
 
-    @foreach (var floor in floors.OrderBy(x => x))
-    {
-        var floorPositions = positions.Where(p => p.TenantPosition_Floor == floor).ToList();
-        bool isGround = (floor == 0 || floor == 1);
+    var topChunks = ChunkInto(topRow);
+    var botChunks = ChunkInto(bottomRow);
 
-        var topRow = floorPositions.Where(p => (p.TenantPosition_TopPct ?? 0m) < 50m).OrderBy(p => (p.TenantPosition_LeftPct ?? 0m)).ToList();
-        var bottomRow = floorPositions.Where(p => (p.TenantPosition_TopPct ?? 0m) >= 50m).OrderBy(p => (p.TenantPosition_LeftPct ?? 0m)).ToList();
-        var withoutCoords = floorPositions.Where(p => !p.TenantPosition_LeftPct.HasValue || !p.TenantPosition_TopPct.HasValue).ToList();
+    var hiddenStyle = (floor == selectedFloor) ? "" : "display:none;";
+    <div class="card-tube" data-floor="@floor" style="@hiddenStyle">
+        <div class="d-flex justify-content-between align-items-end mb-2">
+            <div>
+                <h5 class="m-0 fw-bold">Floor @floor @(isGround ? "(Ground Level)" : "")</h5>
+                <small class="text-muted">Diện tích tầng: @Model.FloorAreaM2 m² · Dành riêng: @Model.ReservedAreaM2 m² · Diện tích ô: @Model.PositionAreaM2 m²</small>
+            </div>
+            <div><small class="text-muted">Occupancy: @floorPositions.Count(x => x.TenantPosition_Status == 1) / @defaultCapacityPerFloor Units</small></div>
+        </div>
 
-        List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto> ChunkOrFill(List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto> list, int skip)
-        {
-            var chunk = list.Skip(skip).Take(5).ToList();
-            if (chunk.Count < 5 && withoutCoords.Any())
-            {
-                var need = 5 - chunk.Count;
-                var extras = withoutCoords.Take(need).ToList();
-                chunk.AddRange(extras);
-                foreach (var e in extras) withoutCoords.Remove(e);
-            }
-            return chunk;
-        }
+        <div class="tube-wrap" aria-label="Floor @floor tube">
+            <div class="tube" role="region" aria-label="Tube map for floor @floor">
+                <div class="tube-inner">
 
-        var topChunk1 = ChunkOrFill(topRow, 0);
-        var topChunk2 = ChunkOrFill(topRow, 5);
-        var topChunk3 = ChunkOrFill(topRow, 10);
-        var topChunk4 = ChunkOrFill(topRow, 15);
+                    <!-- TOP ROW -->
+                    <div class="tube-row">
+                        <div class="end-cap">EXIT</div>
 
-        var botChunk1 = ChunkOrFill(bottomRow, 0);
-        var botChunk2 = ChunkOrFill(bottomRow, 5);
-        var botChunk3 = ChunkOrFill(bottomRow, 10);
-        var botChunk4 = ChunkOrFill(bottomRow, 15);
+                        @foreach (var cluster in topChunks)
+                        {
+                            <div class="shop-cluster">
+                                @foreach (var pos in cluster)
+                                {
+                                    var occupied = pos.TenantPosition_Status == 1;
+                                    var dataTenantId = pos.Tenant?.Tenant_Id ?? 0;
+                                    var dataTenantName = (pos.Tenant?.Tenant_Name ?? "");
+                                    var dataTenantImg = (pos.Tenant?.Tenant_Img ?? "");
+                                    var dataTenantDesc = (pos.Tenant?.Tenant_Description ?? "");
+                                    var dataLocation = pos.TenantPosition_Location ?? "";
+                                    var dataArea = pos.TenantPosition_Area_M2.ToString();
+                                    var dataRent = pos.TenantPosition_Rent_Price_Per_M2?.ToString() ?? "";
+                                    <a href="#" class="shop-unit @(occupied ? "unit-occupied" : "unit-vacant")"
+                                       data-id="@pos.TenantPosition_ID"
+                                       data-floor="@pos.TenantPosition_Floor"
+                                       data-location="@dataLocation"
+                                       data-area="@dataArea"
+                                       data-rent="@dataRent"
+                                       data-status="@(pos.TenantPosition_Status)"
+                                       data-tenant-id="@dataTenantId"
+                                       data-tenant-name="@Html.Raw(System.Net.WebUtility.HtmlEncode(dataTenantName))"
+                                       data-tenant-img="@Html.Raw(System.Net.WebUtility.HtmlEncode(dataTenantImg))"
+                                       data-tenant-desc="@Html.Raw(System.Net.WebUtility.HtmlEncode(dataTenantDesc))"
+                                       title="@dataLocation">
+                                        <div class="shop-thumb">
+                                            @if (!string.IsNullOrWhiteSpace(pos.Tenant?.Tenant_Img))
+                                            {
+                                                var src = pos.Tenant.Tenant_Img.StartsWith("wwwroot/") ? "/" + pos.Tenant.Tenant_Img.Substring("wwwroot/".Length) : pos.Tenant.Tenant_Img;
+                                                <img src="@src" alt="@pos.Tenant?.Tenant_Name" style="max-width:100%;max-height:100%;" />
+                                            }
+                                            else
+                                            {
+                                                <span style="font-size:0.82rem;">@pos.TenantPosition_ID</span>
+                                            }
+                                        </div>
+                                        <div class="shop-title">@pos.TenantPosition_Location</div>
+                                        <div class="shop-sub">@((occupied && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
+                                    </a>
+                                }
+                                @for (int i = 0; i < (5 - cluster.Count); i++)
+                                {
+                                    <div class="shop-unit unit-void" aria-hidden="true"></div>
+                                }
+                            </div>
+                        }
 
-        var hiddenStyle = floor == selectedFloor ? "" : "display:none;";
-        <div class="floor-wrapper" data-floor="@floor" style="@hiddenStyle">
-            <div class="d-flex justify-content-between align-items-end mb-1">
-                <div>
-                    <h5 class="m-0 font-weight-bold text-primary text-uppercase">Floor @floor @(isGround ? "(Ground Level)" : "")</h5>
-                    <small class="text-muted">Diện tích tầng: @Model.FloorAreaM2 m² · Dành riêng: @Model.ReservedAreaM2 m² · Diện tích ô: @Model.PositionAreaM2 m²</small>
-                </div>
-                <div><small class="text-muted">Occupancy: @floorPositions.Count(x => x.TenantPosition_Status == 1) / @defaultCapacityPerFloor Units</small></div>
+                        <div class="util-block util-wc" title="WC" style="background:#36b9cc;color:#fff;padding:8px;border-radius:8px;min-width:92px;">
+                            <i class="fas fa-restroom" style="font-size:18px;margin-bottom:6px;"></i>
+                            <div style="font-size:0.7rem;">WC</div>
+                        </div>
+
+                        @if (isGround)
+                        {
+                            <div class="gate-center" title="Gate / North">NORTH</div>
+                        }
+                        else
+                        {
+                            <div class="util-block util-info" title="Digital Map" style="background:#4e73df;color:#fff;min-width:92px;padding:8px;border-radius:8px;">
+                                <i class="fas fa-map-marked-alt" style="font-size:16px;"></i>
+                                <div style="font-size:0.7rem;">MAP</div>
+                            </div>
+                        }
+
+                        <div class="end-cap" style="transform:rotate(180deg);">EXIT</div>
+                    </div>
+
+                    <!-- CORRIDOR -->
+                    <div class="corridor" style="height:68px;border-radius:8px;padding:8px 20px; display:flex;align-items:center;justify-content:space-between;border:1px dashed #e0e6ef;">
+                        <div style="display:flex;align-items:center;gap:14px;">
+                            <div style="color:#b54444;font-weight:900;">WEST</div>
+                            <div style="padding:6px 12px;border-radius:26px;background:#eef3fb;border:1px solid #d6def6;font-weight:700;"> <i class="fas fa-level-up-alt"></i> <span style="margin-left:6px;">ESCALATOR • STAIRS</span></div>
+                        </div>
+
+                        <div style="font-weight:800;color:#6f7b89;">MAIN CORRIDOR (210m)</div>
+
+                        <div style="display:flex;align-items:center;gap:14px;">
+                            <div style="padding:6px 12px;border-radius:26px;background:#eef3fb;border:1px solid #d6def6;font-weight:700;"> <i class="fas fa-level-up-alt"></i> <span style="margin-left:6px;">ESCALATOR • STAIRS</span></div>
+                            <div style="color:#b54444;font-weight:900;">EAST</div>
+                        </div>
+                    </div>
+
+                    <!-- BOTTOM ROW -->
+                    <div class="tube-row">
+                        <div class="end-cap">EXIT</div>
+
+                        @foreach (var cluster in botChunks)
+                        {
+                            <div class="shop-cluster">
+                                @foreach (var pos in cluster)
+                                {
+                                    var occupied = pos.TenantPosition_Status == 1;
+                                    var dataTenantId = pos.Tenant?.Tenant_Id ?? 0;
+                                    var dataTenantName = (pos.Tenant?.Tenant_Name ?? "");
+                                    var dataTenantImg = (pos.Tenant?.Tenant_Img ?? "");
+                                    var dataTenantDesc = (pos.Tenant?.Tenant_Description ?? "");
+                                    var dataLocation = pos.TenantPosition_Location ?? "";
+                                    var dataArea = pos.TenantPosition_Area_M2.ToString();
+                                    var dataRent = pos.TenantPosition_Rent_Price_Per_M2?.ToString() ?? "";
+                                    <a href="#" class="shop-unit @(occupied ? "unit-occupied" : "unit-vacant")"
+                                       data-id="@pos.TenantPosition_ID"
+                                       data-floor="@pos.TenantPosition_Floor"
+                                       data-location="@dataLocation"
+                                       data-area="@dataArea"
+                                       data-rent="@dataRent"
+                                       data-status="@(pos.TenantPosition_Status)"
+                                       data-tenant-id="@dataTenantId"
+                                       data-tenant-name="@Html.Raw(System.Net.WebUtility.HtmlEncode(dataTenantName))"
+                                       data-tenant-img="@Html.Raw(System.Net.WebUtility.HtmlEncode(dataTenantImg))"
+                                       data-tenant-desc="@Html.Raw(System.Net.WebUtility.HtmlEncode(dataTenantDesc))"
+                                       title="@dataLocation">
+                                        <div class="shop-thumb">
+                                            @{
+                                                if (!string.IsNullOrWhiteSpace(pos.Tenant?.Tenant_Img))
+                                                {
+                                                    var src = pos.Tenant.Tenant_Img.StartsWith("wwwroot/") ? "/" + pos.Tenant.Tenant_Img.Substring("wwwroot/".Length) : pos.Tenant.Tenant_Img;
+                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" style="max-width:100%;max-height:100%;" />
+                                                }
+                                                else
+                                                {
+                                                    <span style="font-size:0.82rem;">@pos.TenantPosition_ID</span>
+                                                }
+                                            }
+                                        </div>
+                                        <div class="shop-title">@pos.TenantPosition_Location</div>
+                                        <div class="shop-sub">@((occupied && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
+                                    </a>
+                                }
+                                @for (int i = 0; i < (5 - cluster.Count); i++)
+                                {
+                                    <div class="shop-unit unit-void" aria-hidden="true"></div>
+                                }
+                            </div>
+                        }
+
+                        <div class="util-block util-lift" title="Lift" style="background:#f6c23e;color:#222;padding:8px;border-radius:8px;min-width:92px;">
+                            <i class="fas fa-elevator" style="font-size:18px;margin-bottom:6px;"></i>
+                            <div style="font-size:0.7rem;color:inherit;">LIFT</div>
+                        </div>
+
+                        <div class="end-cap" style="transform:rotate(180deg);">EXIT</div>
+                    </div>
+
+                </div> <!-- tube-inner -->
+            </div> <!-- tube -->
+        </div> <!-- tube-wrap -->
+    </div> <!-- card-tube -->
+}
+
+<!-- Modal / Panel HTML (hidden until needed) -->
+<div id="tenantOverlay" class="overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div id="tenantPanel" class="panel" role="document" aria-hidden="true">
+        <div class="hdr">
+            <h4 id="panelTitle">Shop details</h4>
+            <button id="panelClose" class="close-btn" aria-label="Close">✕</button>
+        </div>
+
+        <div id="panelContent">
+            <!-- filled dynamically -->
+            <div id="noShop" class="no-shop" style="display:none;">
+                Không có shop (No shop assigned to this position).
             </div>
 
-            <div class="map-viewport" id="viewport-@floor">
-                <div class="map-controls" data-floor="@floor">
-                    <button class="map-zoom-out" title="Zoom out">-</button>
-                    <button class="map-zoom-reset" title="Reset">⟳</button>
-                    <button class="map-zoom-in" title="Zoom in">+</button>
+            <div id="tenantInfo" style="display:none;">
+                <div class="tenant-row">
+                    <div class="tenant-img" id="tenantImg">
+                        <!-- image -->
+                    </div>
+                    <div class="tenant-body">
+                        <p id="tenantName" style="font-size:1.05rem;font-weight:800;margin:0 0 6px 0;"></p>
+                        <p class="meta" id="positionMeta"></p>
+                        <p id="tenantDesc" style="margin-top:8px;color:#374151;"></p>
+                    </div>
                 </div>
 
-                <div class="map-content" id="map-content-@floor" data-floor="@floor">
-                    <div class="floor-layout">
-                        <div class="shop-strip">
-                            <div class="end-cap">Exit</div>
+                <hr />
 
-                            <div class="shop-cluster">
-                                @foreach (var pos in topChunk1)
-                                {
-                                    var css = pos.TenantPosition_Status == 1 ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
-                                    <a href="@Url.Action("Details","Map", new { area="Client", id = pos.TenantPosition_ID })" class="@css" title="@pos.TenantPosition_Location" data-id="@pos.TenantPosition_ID">
-                                        <div class="shop-thumb">
-                                            @{
-                                                var img = pos.Tenant?.Tenant_Img;
-                                                if (!string.IsNullOrWhiteSpace(img))
-                                                {
-                                                    var src = img.StartsWith("wwwroot/") ? "/" + img.Substring("wwwroot/".Length) : img;
-                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" />
-                                                }
-                                                else
-                                                {
-                                                    <span style="font-size:0.8rem;">@pos.TenantPosition_ID</span>
-                                                }
-                                            }
-                                        </div>
-                                        <div class="shop-location">@pos.TenantPosition_Location</div>
-                                        <div class="shop-status">@((pos.TenantPosition_Status == 1 && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
-                                    </a>
-                                }
-                                @for (int i = 0; i < (5 - topChunk1.Count); i++)
-                                {
-                                    <div class="unit-void"></div>
-                                }
-                            </div>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <div class="meta">Location: <strong id="metaLocation"></strong></div>
+                    <div class="meta">Floor: <strong id="metaFloor"></strong></div>
+                    <div class="meta">Area (m²): <strong id="metaArea"></strong></div>
+                    <div class="meta">Rent/m²: <strong id="metaRent"></strong></div>
+                    <div class="meta">Status: <strong id="metaStatus"></strong></div>
+                </div>
+            </div>
+        </div>
 
-                            <div class="util-block-inner util-wc" style="background:#36b9cc; color:#fff; min-width:72px;">
-                                <i class="fas fa-restroom" style="font-size:18px; margin-bottom:4px;"></i>
-                                <div style="font-size:0.78rem;">WC</div>
-                            </div>
+        <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+            <a id="detailsLink" class="btn btn-sm btn-primary" href="#" style="text-decoration:none;color:white;display:none;">Xem chi tiết</a>
+            <button id="panelClose2" class="btn btn-sm btn-secondary" style="margin-left:8px;">Đóng</button>
+        </div>
+    </div>
+</div>
 
-                            <div class="shop-cluster">
-                                @foreach (var pos in topChunk2)
-                                {
-                                    var css = pos.TenantPosition_Status == 1 ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
-                                    <a href="@Url.Action("Details","Map", new { area="Client", id = pos.TenantPosition_ID })" class="@css" title="@pos.TenantPosition_Location" data-id="@pos.TenantPosition_ID">
-                                        <div class="shop-thumb">
-                                            @{
-                                                var img = pos.Tenant?.Tenant_Img;
-                                                if (!string.IsNullOrWhiteSpace(img))
-                                                {
-                                                    var src = img.StartsWith("wwwroot/") ? "/" + img.Substring("wwwroot/".Length) : img;
-                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" />
-                                                }
-                                                else
-                                                {
-                                                    <span style="font-size:0.8rem;">@pos.TenantPosition_ID</span>
-                                                }
-                                            }
-                                        </div>
-                                        <div class="shop-location">@pos.TenantPosition_Location</div>
-                                        <div class="shop-status">@((pos.TenantPosition_Status == 1 && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
-                                    </a>
-                                }
-                                @for (int i = 0; i < (5 - topChunk2.Count); i++)
-                                {
-                                    <div class="unit-void"></div>
-                                }
-                            </div>
-
-                            @if (isGround)
-                            {
-                                <div class="gate-center" style="width:64px; min-height:72px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                                    <i class="fas fa-arrow-down" style="font-size:18px;"></i>
-                                    <div style="font-size:0.7rem; margin-top:4px;">NORTH</div>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="util-block-inner" style="background-color:#4e73df; color:white; min-width:72px;">
-                                    <i class="fas fa-map-marked-alt" style="font-size:18px;"></i>
-                                    <div style="font-size:0.66rem; margin-top:4px;">INFO MAP</div>
-                                </div>
-                            }
-
-                            <div class="shop-cluster">
-                                @foreach (var pos in topChunk3)
-                                {
-                                    var css = pos.TenantPosition_Status == 1 ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
-                                    <a href="@Url.Action("Details","Map", new { area="Client", id = pos.TenantPosition_ID })" class="@css" title="@pos.TenantPosition_Location" data-id="@pos.TenantPosition_ID">
-                                        <div class="shop-thumb">
-                                            @{
-                                                var img = pos.Tenant?.Tenant_Img;
-                                                if (!string.IsNullOrWhiteSpace(img))
-                                                {
-                                                    var src = img.StartsWith("wwwroot/") ? "/" + img.Substring("wwwroot/".Length) : img;
-                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" />
-                                                }
-                                                else
-                                                {
-                                                    <span style="font-size:0.8rem;">@pos.TenantPosition_ID</span>
-                                                }
-                                            }
-                                        </div>
-                                        <div class="shop-location">@pos.TenantPosition_Location</div>
-                                        <div class="shop-status">@((pos.TenantPosition_Status == 1 && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
-                                    </a>
-                                }
-                                @for (int i = 0; i < (5 - topChunk3.Count); i++)
-                                {
-                                    <div class="unit-void"></div>
-                                }
-                            </div>
-
-                            <div class="util-block-inner util-wc" style="background:#36b9cc; color:#fff; min-width:72px;"><i class="fas fa-restroom" style="font-size:18px; margin-bottom:4px;"></i><div style="font-size:0.78rem;">WC</div></div>
-
-                            <div class="shop-cluster">
-                                @foreach (var pos in topChunk4)
-                                {
-                                    var css = pos.TenantPosition_Status == 1 ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
-                                    <a href="@Url.Action("Details","Map", new { area="Client", id = pos.TenantPosition_ID })" class="@css" title="@pos.TenantPosition_Location" data-id="@pos.TenantPosition_ID">
-                                        <div class="shop-thumb">
-                                            @{
-                                                var img = pos.Tenant?.Tenant_Img;
-                                                if (!string.IsNullOrWhiteSpace(img))
-                                                {
-                                                    var src = img.StartsWith("wwwroot/") ? "/" + img.Substring("wwwroot/".Length) : img;
-                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" />
-                                                }
-                                                else
-                                                {
-                                                    <span style="font-size:0.8rem;">@pos.TenantPosition_ID</span>
-                                                }
-                                            }
-                                        </div>
-                                        <div class="shop-location">@pos.TenantPosition_Location</div>
-                                        <div class="shop-status">@((pos.TenantPosition_Status == 1 && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
-                                    </a>
-                                }
-                                @for (int i = 0; i < (5 - topChunk4.Count); i++)
-                                {
-                                    <div class="unit-void"></div>
-                                }
-                            </div>
-
-                            <div class="end-cap" style="transform:rotate(180deg);">Exit</div>
-                        </div> <!-- shop-strip -->
-
-                        <div class="hallway" style="height:64px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; background:#f8f9fc; border-top:1px dashed #d1d3e2; border-bottom:1px dashed #d1d3e2;">
-                            <div style="width:80px; text-align:center;">
-                                @if (isGround)
-                                {
-                                    <span style="font-weight:bold; color:#e74a3b;"><i class="fas fa-chevron-right"></i> WEST</span>
-                                }
-                            </div>
-
-                            <div class="escalator-group" title="Escalator & Stairs" style="display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:30px; background:#e9eef6; border:1px solid #d1d3e2;">
-                                <i class="fas fa-level-up-alt"></i>
-                                <div style="text-align:center;"><div style="font-size:0.6rem;">ESCALATOR</div><div style="font-size:0.52rem;">& STAIRS</div></div>
-                                <i class="fas fa-level-down-alt"></i>
-                            </div>
-
-                            <div style="font-weight:700; color:#6c757d;">MAIN CORRIDOR (210m)</div>
-
-                            <div class="escalator-group" title="Escalator & Stairs" style="display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:30px; background:#e9eef6; border:1px solid #d1d3e2;">
-                                <i class="fas fa-level-up-alt"></i>
-                                <div style="text-align:center;"><div style="font-size:0.6rem;">ESCALATOR</div><div style="font-size:0.52rem;">& STAIRS</div></div>
-                                <i class="fas fa-level-down-alt"></i>
-                            </div>
-
-                            <div style="width:80px; text-align:center;">
-                                @if (isGround)
-                                {
-                                    <span style="font-weight:bold; color:#e74a3b;">EAST <i class="fas fa-chevron-left"></i></span>
-                                }
-                            </div>
-                        </div> <!-- hallway -->
-                        <!-- BOTTOM ROW (same structure as TOP) -->
-                        <div class="shop-strip">
-                            <div class="end-cap">Exit</div>
-
-                            <div class="shop-cluster">
-                                @foreach (var pos in botChunk1)
-                                {
-                                    var css = pos.TenantPosition_Status == 1 ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
-                                    <a href="@Url.Action("Details","Map", new { area="Client", id = pos.TenantPosition_ID })" class="@css" title="@pos.TenantPosition_Location" data-id="@pos.TenantPosition_ID">
-                                        <div class="shop-thumb">
-                                            @{
-                                                var img = pos.Tenant?.Tenant_Img;
-                                                if (!string.IsNullOrWhiteSpace(img))
-                                                {
-                                                    var src = img.StartsWith("wwwroot/") ? "/" + img.Substring("wwwroot/".Length) : img;
-                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" />
-                                                }
-                                                else
-                                                {
-                                                    <span style="font-size:0.8rem;">@pos.TenantPosition_ID</span>
-                                                }
-                                            }
-                                        </div>
-                                        <div class="shop-location">@pos.TenantPosition_Location</div>
-                                        <div class="shop-status">@((pos.TenantPosition_Status == 1 && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
-                                    </a>
-                                }
-                                @for (int i = 0; i < (5 - botChunk1.Count); i++)
-                                {
-                                    <div class="unit-void"></div>
-                                }
-                            </div>
-
-                            <div class="util-block-inner util-lift" style="background:#f6c23e; color:#222; min-width:72px;"><i class="fas fa-elevator" style="font-size:18px; color:#333"></i><div style="color:#333; font-size:0.75rem; margin-top:4px;">LIFT</div></div>
-
-                            <div class="shop-cluster">
-                                @foreach (var pos in botChunk2)
-                                {
-                                    var css = pos.TenantPosition_Status == 1 ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
-                                    <a href="@Url.Action("Details","Map", new { area="Client", id = pos.TenantPosition_ID })" class="@css" title="@pos.TenantPosition_Location" data-id="@pos.TenantPosition_ID">
-                                        <div class="shop-thumb">
-                                            @{
-                                                var img = pos.Tenant?.Tenant_Img;
-                                                if (!string.IsNullOrWhiteSpace(img))
-                                                {
-                                                    var src = img.StartsWith("wwwroot/") ? "/" + img.Substring("wwwroot/".Length) : img;
-                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" />
-                                                }
-                                                else
-                                                {
-                                                    <span style="font-size:0.8rem;">@pos.TenantPosition_ID</span>
-                                                }
-                                            }
-                                        </div>
-                                        <div class="shop-location">@pos.TenantPosition_Location</div>
-                                        <div class="shop-status">@((pos.TenantPosition_Status == 1 && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
-                                    </a>
-                                }
-                                @for (int i = 0; i < (5 - botChunk2.Count); i++)
-                                {
-                                    <div class="unit-void"></div>
-                                }
-                            </div>
-
-                            @if (isGround)
-                            {
-                                <div class="gate-center" style="width:64px; min-height:72px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center;"><div style="font-weight:700;">SOUTH</div><i class="fas fa-arrow-up" style="font-size:18px; margin-top:6px;"></i></div>
-                            }
-                            else
-                            {
-                                <div class="util-block-inner" style="background-color:#17a2b8; color:white; min-width:72px;"><i class="fas fa-couch"></i><div style="font-size:0.66rem; margin-top:4px;">LOUNGE</div></div>
-                            }
-
-                            <div class="shop-cluster">
-                                @foreach (var pos in botChunk3)
-                                {
-                                    var css = pos.TenantPosition_Status == 1 ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
-                                    <a href="@Url.Action("Details","Map", new { area="Client", id = pos.TenantPosition_ID })" class="@css" title="@pos.TenantPosition_Location" data-id="@pos.TenantPosition_ID">
-                                        <div class="shop-thumb">
-                                            @{
-                                                var img = pos.Tenant?.Tenant_Img;
-                                                if (!string.IsNullOrWhiteSpace(img))
-                                                {
-                                                    var src = img.StartsWith("wwwroot/") ? "/" + img.Substring("wwwroot/".Length) : img;
-                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" />
-                                                }
-                                                else
-                                                {
-                                                    <span style="font-size:0.8rem;">@pos.TenantPosition_ID</span>
-                                                }
-                                            }
-                                        </div>
-                                        <div class="shop-location">@pos.TenantPosition_Location</div>
-                                        <div class="shop-status">@((pos.TenantPosition_Status == 1 && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
-                                    </a>
-                                }
-                                @for (int i = 0; i < (5 - botChunk3.Count); i++)
-                                {
-                                    <div class="unit-void"></div>
-                                }
-                            </div>
-
-                            <div class="util-block-inner util-lift" style="background:#f6c23e; color:#222; min-width:72px;"><i class="fas fa-elevator" style="font-size:18px; color:#333"></i><div style="color:#333; font-size:0.75rem; margin-top:4px;">LIFT</div></div>
-
-                            <div class="shop-cluster">
-                                @foreach (var pos in botChunk4)
-                                {
-                                    var css = pos.TenantPosition_Status == 1 ? "shop-unit unit-occupied" : "shop-unit unit-vacant";
-                                    <a href="@Url.Action("Details","Map", new { area="Client", id = pos.TenantPosition_ID })" class="@css" title="@pos.TenantPosition_Location" data-id="@pos.TenantPosition_ID">
-                                        <div class="shop-thumb">
-                                            @{
-                                                var img = pos.Tenant?.Tenant_Img;
-                                                if (!string.IsNullOrWhiteSpace(img))
-                                                {
-                                                    var src = img.StartsWith("wwwroot/") ? "/" + img.Substring("wwwroot/".Length) : img;
-                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" />
-                                                }
-                                                else
-                                                {
-                                                    <span style="font-size:0.8rem;">@pos.TenantPosition_ID</span>
-                                                }
-                                            }
-                                        </div>
-                                        <div class="shop-location">@pos.TenantPosition_Location</div>
-                                        <div class="shop-status">@((pos.TenantPosition_Status == 1 && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
-                                    </a>
-                                }
-                                @for (int i = 0; i < (5 - botChunk4.Count); i++)
-                                {
-                                    <div class="unit-void"></div>
-                                }
-                            </div>
-
-                            <div class="end-cap" style="transform:rotate(180deg);">Exit</div>
-                        </div> <!-- bottom strip -->
-
-                    </div> <!-- floor-layout -->
-                </div> <!-- map-content -->
-            </div> <!-- map-viewport -->
-        </div> <!-- floor-wrapper -->
-    } <!-- foreach floors -->
-</div> <!-- card -->
 @section Scripts {
     <script>
         (function(){
-            // floor select submit
-            var sel = document.getElementById('floorSelect');
-            if (sel) sel.addEventListener('change', function(){ document.getElementById('floorSelectForm').submit(); });
-
             // tabs: show/hide floors client-side
             document.querySelectorAll('.floor-tab').forEach(function(t){
                 t.addEventListener('click', function(e){
@@ -646,114 +572,116 @@
                     var f = this.getAttribute('data-floor');
                     document.querySelectorAll('.floor-tab').forEach(x=>x.classList.remove('active'));
                     this.classList.add('active');
-                    document.querySelectorAll('.floor-wrapper').forEach(function(w){
+                    document.querySelectorAll('.card-tube').forEach(function(w){
                         w.style.display = (w.getAttribute('data-floor') === f) ? '' : 'none';
                     });
-                    // fit visible floor after toggle
-                    setTimeout(function(){ fitMapToViewport(f); }, 80);
+                    // scroll left to start for visible
+                    setTimeout(function(){
+                        var vis = document.querySelector('.card-tube[style*="display:"] .tube-wrap');
+                        if(vis) vis.scrollLeft = 0;
+                    }, 80);
                 });
             });
 
-            // MapController (pan + zoom) - improved centering & fit
-            var controllers = {};
-            function MapController(viewportEl, contentEl) {
-                this.v = viewportEl; this.c = contentEl;
-                if(!this.v||!this.c) return;
-                this.scale = 1; this.tx = 0; this.ty = 0; this.dragging=false; this.lastX=0; this.lastY=0;
-                this.apply = function(){ this.c.style.transform = 'translate(' + this.tx + 'px, ' + this.ty + 'px) scale(' + this.scale + ')'; };
-                this.reset = function(){ this.scale=1; this.tx=0; this.ty=0; this.apply(); };
-                this.zoomBy = function(factor, cx, cy){
-                    var old = this.scale;
-                    var newScale = Math.max(0.4, Math.min(2.6, this.scale * factor));
-                    if (typeof cx === 'number') {
-                        var rect = this.v.getBoundingClientRect();
-                        var localX = cx - rect.left; var localY = cy - rect.top;
-                        this.tx = localX - ((localX - this.tx) * (newScale/old));
-                        this.ty = localY - ((localY - this.ty) * (newScale/old));
+            // modal / panel elements
+            var overlay = document.getElementById('tenantOverlay');
+            var panel = document.getElementById('tenantPanel');
+            var panelTitle = document.getElementById('panelTitle');
+            var panelClose = document.getElementById('panelClose');
+            var panelClose2 = document.getElementById('panelClose2');
+
+            function openPanel(){
+                overlay.classList.add('visible');
+                panel.classList.add('visible');
+                overlay.setAttribute('aria-hidden','false');
+                panel.setAttribute('aria-hidden','false');
+            }
+            function closePanel(){
+                panel.classList.remove('visible');
+                overlay.classList.remove('visible');
+                overlay.setAttribute('aria-hidden','true');
+                panel.setAttribute('aria-hidden','true');
+            }
+            panelClose.addEventListener('click', closePanel);
+            panelClose2.addEventListener('click', closePanel);
+            overlay.addEventListener('click', function(e){
+                if(e.target === overlay) closePanel();
+            });
+            window.addEventListener('keydown', function(e){ if(e.key === 'Escape') closePanel(); });
+
+            // helper: set panel content
+            function populatePanelFromElem(elem){
+                var tenantId = elem.getAttribute('data-tenant-id') || "";
+                var tenantName = elem.getAttribute('data-tenant-name') || "";
+                var tenantImg = elem.getAttribute('data-tenant-img') || "";
+                var tenantDesc = elem.getAttribute('data-tenant-desc') || "";
+                var location = elem.getAttribute('data-location') || "";
+                var floor = elem.getAttribute('data-floor') || "";
+                var area = elem.getAttribute('data-area') || "";
+                var rent = elem.getAttribute('data-rent') || "";
+                var status = elem.getAttribute('data-status') || "0";
+
+                var tenantInfo = document.getElementById('tenantInfo');
+                var noShop = document.getElementById('noShop');
+
+                if (!tenantId || tenantId === "0" || tenantName.trim() === ""){
+                    // no tenant assigned
+                    noShop.style.display = '';
+                    tenantInfo.style.display = 'none';
+                    document.getElementById('detailsLink').style.display = 'none';
+                    panelTitle.textContent = 'No shop assigned';
+                } else {
+                    noShop.style.display = 'none';
+                    tenantInfo.style.display = '';
+                    // image
+                    var imgWrap = document.getElementById('tenantImg');
+                    imgWrap.innerHTML = '';
+                    if (tenantImg && tenantImg.length > 5){
+                        var src = tenantImg;
+                        if (tenantImg.indexOf('wwwroot/') === 0) src = '/' + tenantImg.substring('wwwroot/'.length);
+                        var img = document.createElement('img');
+                        img.src = src;
+                        img.alt = tenantName;
+                        img.style.maxWidth = '100%';
+                        img.style.maxHeight = '100%';
+                        imgWrap.appendChild(img);
                     } else {
-                        var r = this.v.getBoundingClientRect();
-                        var localX = r.width/2, localY = r.height/2;
-                        this.tx = localX - ((localX - this.tx) * (newScale/old));
-                        this.ty = localY - ((localY - this.ty) * (newScale/old));
+                        imgWrap.textContent = tenantId;
                     }
-                    this.scale = newScale; this.apply();
-                };
-                var self=this;
-                // wheel zoom (Ctrl not required)
-                this.v.addEventListener('wheel', function(e){ e.preventDefault(); var f = e.deltaY>0?0.92:1.08; self.zoomBy(f, e.clientX, e.clientY); }, {passive:false});
-                // drag
-                this.c.addEventListener('mousedown', function(e){ if(e.target.closest('a')) return; e.preventDefault(); self.dragging=true; self.lastX=e.clientX; self.lastY=e.clientY; });
-                window.addEventListener('mousemove', function(e){ if(!self.dragging) return; var dx=e.clientX-self.lastX, dy=e.clientY-self.lastY; self.lastX=e.clientX; self.lastY=e.clientY; self.tx+=dx; self.ty+=dy; self.apply(); });
-                window.addEventListener('mouseup', function(){ self.dragging=false; });
-                // simple touch gestures (pan + pinch)
-                var lastDist=null;
-                this.v.addEventListener('touchstart', function(e){ if(e.touches.length===1){ self.dragging=true; self.lastX=e.touches[0].clientX; self.lastY=e.touches[0].clientY;} else if(e.touches.length===2){ lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); } }, {passive:false});
-                this.v.addEventListener('touchmove', function(e){ if(e.touches.length===1 && self.dragging){ var dx = e.touches[0].clientX - self.lastX; var dy = e.touches[0].clientY - self.lastY; self.lastX=e.touches[0].clientX; self.lastY=e.touches[0].clientY; self.tx+=dx; self.ty+=dy; self.apply(); } else if(e.touches.length===2 && lastDist){ var dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); var f = dist/lastDist; self.zoomBy(f); lastDist = dist; } }, {passive:false});
-                this.v.addEventListener('touchend', function(){ lastDist=null; self.dragging=false; });
+
+                    document.getElementById('tenantName').textContent = tenantName;
+                    document.getElementById('metaLocation').textContent = location;
+                    document.getElementById('metaFloor').textContent = floor;
+                    document.getElementById('metaArea').textContent = area;
+                    document.getElementById('metaRent').textContent = rent;
+                    document.getElementById('metaStatus').textContent = (status === "1") ? "Occupied" : "Vacant";
+                    panelTitle.textContent = tenantName + " — Shop info";
+
+                    // details link
+                    var detailsLink = document.getElementById('detailsLink');
+                    detailsLink.style.display = '';
+                    detailsLink.href = '@Url.Action("Details", "Stores", new { area = "Client" })' + '/' + elem.getAttribute('data-id');
+                }
             }
 
-            function initControllers(){
-                document.querySelectorAll('.map-content').forEach(function(c){
-                    var floor = c.getAttribute('data-floor');
-                    var vp = document.getElementById('viewport-' + floor);
-                    if (!vp) return;
-                    var ctrl = new MapController(vp, c);
-                    controllers[floor] = ctrl;
-                    var pc = vp.querySelector('.map-controls');
-                    pc.querySelector('.map-zoom-in')?.addEventListener('click', function(){ ctrl.zoomBy(1.12); });
-                    pc.querySelector('.map-zoom-out')?.addEventListener('click', function(){ ctrl.zoomBy(0.88); });
-                    pc.querySelector('.map-zoom-reset')?.addEventListener('click', function(){ ctrl.reset(); fitMapToViewport(floor); });
-                });
-            }
+            // attach click handlers to shop units (delegation)
+            document.addEventListener('click', function(e){
+                var target = e.target.closest('.shop-unit');
+                if (!target) return;
+                e.preventDefault();
 
-            // fit content to viewport: calculate scale so content fits (no horizontal overflow)
-            function fitMapToViewport(floor){
-                var c = document.getElementById('map-content-' + floor);
-                var v = document.getElementById('viewport-' + floor);
-                var ctrl = controllers[floor];
-                if (!c || !v || !ctrl) return;
+                // add click animation
+                target.classList.remove('active-click');
+                // force reflow to restart animation
+                void target.offsetWidth;
+                target.classList.add('active-click');
+                setTimeout(function(){ target.classList.remove('active-click'); }, 700);
 
-                // temporarily clear transforms to measure true size
-                c.style.transform = 'none';
-                var contentW = c.getBoundingClientRect().width;
-                var contentH = c.getBoundingClientRect().height;
-                var viewRect = v.getBoundingClientRect();
-                var vw = viewRect.width - 20; // leave some padding
-                var vh = viewRect.height - 20;
+                // populate and open panel
+                populatePanelFromElem(target);
+                openPanel();
+            });
 
-                // compute scale to fit both width and height, but don't scale up beyond 1
-                var scaleW = vw / contentW;
-                var scaleH = vh / contentH;
-                var scale = Math.min(1, Math.max(0.45, Math.min(scaleW, scaleH)));
-
-                // center content in viewport
-                ctrl.scale = scale;
-                ctrl.tx = ( (viewRect.width) - (contentW * scale) ) / 2;
-                ctrl.ty = ( (viewRect.height) - (contentH * scale) ) / 2;
-                ctrl.apply();
-            }
-
-            initControllers();
-
-            // initial fit for visible floor(s)
-            setTimeout(function(){
-                Object.keys(controllers).forEach(function(k){
-                    // only fit visible floor (not display:none)
-                    var wrapper = document.querySelector('.floor-wrapper[data-floor="'+k+'"]');
-                    if (!wrapper) return;
-                    if (getComputedStyle(wrapper).display === 'none') return;
-                    fitMapToViewport(k);
-                });
-            }, 140);
-
-            // global controls
-            document.getElementById('globalZoomIn')?.addEventListener('click', function(){ Object.keys(controllers).forEach(k=>controllers[k] && controllers[k].zoomBy(1.12)); });
-            document.getElementById('globalZoomOut')?.addEventListener('click', function(){ Object.keys(controllers).forEach(k=>controllers[k] && controllers[k].zoomBy(0.88)); });
-            document.getElementById('globalZoomReset')?.addEventListener('click', function(){ Object.keys(controllers).forEach(k=>controllers[k] && controllers[k].reset()); Object.keys(controllers).forEach(k=>fitMapToViewport(k)); });
-
-            // on resize, refit visible map(s)
-            var resizeTimer;
-            window.addEventListener('resize', function(){ clearTimeout(resizeTimer); resizeTimer = setTimeout(function(){ Object.keys(controllers).forEach(k=>fitMapToViewport(k)); }, 160); });
         })();
     </script>
 }
