@@ -34,6 +34,7 @@ public partial class TblEventBooking
     public virtual TblEvent EventBookingEvent { get; set; } = null!;
 
     public virtual ICollection<TblEventBookingHistory> TblEventBookingHistories { get; set; } = new List<TblEventBookingHistory>();
+
     public virtual TblTenant EventBookingTenant { get; set; } = null!;
 
     public virtual TblUser EventBookingUser { get; set; } = null!;

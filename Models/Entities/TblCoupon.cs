@@ -17,6 +17,8 @@ public partial class TblCoupon
 
     public DateTime CouponValidTo { get; set; }
 
+    public int? CouponMinimumPointsRequired { get; set; }
+
     public bool? CouponIsActive { get; set; }
 
     public virtual ICollection<TblCouponUser> TblCouponUsers { get; set; } = new List<TblCouponUser>();
