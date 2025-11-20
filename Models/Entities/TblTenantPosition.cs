@@ -19,9 +19,15 @@ public partial class TblTenantPosition
 
     public int? TenantPositionAssignedTenantId { get; set; }
 
+    public int? TenantPositionAssignedCinemaId { get; set; }
+
     public decimal? TenantPositionLeftPct { get; set; }
 
     public decimal? TenantPositionTopPct { get; set; }
+
+    public DateTime? PositionLeaseStart { get; set; }
+
+    public DateTime? PositionLeaseEnd { get; set; }
 
     public virtual ICollection<TblEvent> TblEvents { get; set; } = new List<TblEvent>();
 
