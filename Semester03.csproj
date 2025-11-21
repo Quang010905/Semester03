@@ -36,6 +36,7 @@
 	<ItemGroup>
 		<Folder Include="Areas/Client/Data/" />
 		<Folder Include="Areas/Admin/Data/" />
+		<Folder Include="Areas\Partner\Data\" />
 		<Folder Include="Models\ModelViews\" />
 		<Folder Include="wwwroot\Client\img\" />
 		<Folder Include="wwwroot\Content\Uploads\Events\" />

@@ -216,7 +216,13 @@ namespace Semester03.Areas.Admin.Controllers
                 {
                     fileName = Request.Form["OldImage"];
                 }
-                if (string.IsNullOrEmpty(tenantName) || string.IsNullOrEmpty(description) || string.IsNullOrWhiteSpace(typeId) || typeId == "0")
+                if (string.IsNullOrWhiteSpace(description))
+                {
+                    TempData["ErrorMessage"] = "Please enter enough information!";
+                    return RedirectToAction("CreateTenant", new { id = userId });
+                }
+
+                if (string.IsNullOrWhiteSpace(typeId) || typeId == "0")
                 {
                     TempData["ErrorMessage"] = "Please enter enough information!";
                     return RedirectToAction("CreateTenant", new { id = userId });
