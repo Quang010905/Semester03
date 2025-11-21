@@ -1,123 +1,85 @@
-﻿@using System.Linq
-@using Semester03.Areas.Client.Models.ViewModels
-@model IEnumerable<Semester03.Areas.Client.Models.ViewModels.EventCardVm>
+﻿@model IEnumerable<Semester03.Areas.Client.Models.ViewModels.EventCardVm>
+@using System
+@using System.Linq
 
 @{
-    Func<string, string> Img = (raw) =>
+    Func<string, string> Img = raw =>
     {
-        if (string.IsNullOrWhiteSpace(raw)) return Url.Content("~/images/event-placeholder.png");
-        if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return raw;
+        if (string.IsNullOrWhiteSpace(raw))
+            return Url.Content("~/images/event-placeholder.png");
 
-        var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
-        s = s.Replace(" ", "%20");
+        if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            return raw;
 
-        if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase)) return Url.Content("~/" + s);
-        if (s.StartsWith("images", StringComparison.OrdinalIgnoreCase) ||
-            s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
+        var s = raw.Replace("wwwroot/", "").TrimStart('~', '/')
+                   .Replace(" ", "%20");
+
+        if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase)
+            || s.StartsWith("images", StringComparison.OrdinalIgnoreCase)
+            || s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
             return Url.Content("~/" + s);
 
-        if (raw.StartsWith("/")) return Url.Content("~" + raw);
+        if (raw.StartsWith("/"))
+            return Url.Content("~" + raw);
 
         return Url.Content("~/Content/Uploads/Events/" + s);
     };
 
     var now = DateTime.Now;
-    var items = (Model ?? Enumerable.Empty<EventCardVm>())
-        .Where(e => e.StartDate == null || e.StartDate >= now)
-        .OrderBy(e => e.StartDate ?? DateTime.MaxValue)
-        .Take(6)
-        .ToList();
+    var items = (Model ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.EventCardVm>())
+                    .Where(e => e.StartDate == null || e.StartDate >= now)
+                    .OrderBy(e => e.StartDate ?? DateTime.MaxValue)
+                    .Take(6)
+                    .ToList();
 }
 
-<div class="list-group small event-list-group">
-    @if (items.Any())
-    {
-        @foreach (var e in items)
-        {
-            var title = string.IsNullOrWhiteSpace(e.Title) ? "Event" : e.Title;
-            var start = e.StartDate.HasValue ? e.StartDate.Value.ToString("dd MMM yyyy HH:mm") : "--";
-            var img = Img(e.ImageUrl);
-            var detailUrl = Url.Action("Details", "Event", new { area = "Client", id = e.Id });
+<div class="card shadow-sm rounded-4">
+    <ul class="list-group list-group-flush">
 
-            <a href="@detailUrl"
-               class="list-group-item list-group-item-action d-flex gap-3 py-3 event-list-item"
-               aria-current="true">
-                <img src="@img"
-                     alt="@title"
-                     class="event-list-thumb" />
-                <div class="d-flex flex-column w-100">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="me-2" style="min-width:0;">
-                            <div class="fw-semibold text-truncate event-list-title"
-                                 style="max-width: calc(100% - 90px);">
-                                @title
-                            </div>
+        @if (!items.Any())
+        {
+            <li class="list-group-item text-center text-muted py-4">
+                Hiện chưa có sự kiện sắp diễn ra.
+            </li>
+        }
+        else
+        {
+            @foreach (var e in items)
+            {
+                var start = e.StartDate?.ToString("dd MMM yyyy HH:mm") ?? "--";
+
+                <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })"
+                   class="list-group-item list-group-item-action d-flex gap-3 py-3">
+
+                    <img src="@Img(e.ImageUrl)" class="rounded-3"
+                         style="width:84px;height:84px;object-fit:cover;box-shadow:0 8px 18px rgba(15,23,42,0.25);" />
+
+                    <div class="w-100">
+                        <div class="d-flex justify-content-between">
+                            <strong class="text-truncate">
+                                @e.Title
+                            </strong>
+                            <small class="text-muted">@start</small>
                         </div>
-                        <small class="text-muted ms-2 text-nowrap event-list-date">@start</small>
+
+                        @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
+                        {
+                            <div class="text-muted small text-truncate mt-1">
+                                @e.ShortDescription
+                            </div>
+                        }
                     </div>
 
-                    @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
-                    {
-                        <div class="small text-muted mt-1 text-truncate"
-                             style="max-width:100%;">
-                            @e.ShortDescription
-                        </div>
-                    }
-                </div>
-            </a>
+                </a>
+            }
         }
-    }
-    else
-    {
-        <div class="text-center text-muted small p-3">
-            No upcoming events.
-        </div>
-    }
-
-    <div class="text-center mt-3">
-        <a href="@Url.Action("Index", "Event", new { area = "Client" })"
-           class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-            View all events
-        </a>
-    </div>
+    </ul>
 </div>
 
 <style>
-    .event-list-group {
-        border-radius: .75rem;
-        overflow: hidden;
-    }
-
-    .event-list-item {
-        border: none;
-        border-bottom: 1px solid rgba(226, 232, 240, 0.9);
-        transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
-    }
-
-        .event-list-item:last-child {
-            border-bottom: none;
-        }
-
-        .event-list-item:hover {
-            background: #f9fafb;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
-        }
-
-    .event-list-thumb {
-        width: 84px;
-        height: 84px;
-        object-fit: cover;
-        border-radius: .7rem;
-        flex-shrink: 0;
-        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.28);
-    }
-
-    .event-list-title {
-        font-size: .95rem;
-    }
-
-    .event-list-date {
-        font-size: .75rem;
+    .list-group-item-action:hover {
+        background: #f9fafb !important;
+        transform: translateY(-1px);
+        transition: .15s;
     }
 </style>
