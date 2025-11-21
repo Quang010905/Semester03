@@ -1,22 +1,66 @@
 ﻿@using System.Linq
+@model object
+
 @{
-    var cats = Model as IEnumerable<string> ?? ViewBag.Categories as IEnumerable<string> ?? Enumerable.Empty<string>();
+    var cats = Model as IEnumerable<string>
+               ?? ViewBag.Categories as IEnumerable<string>
+               ?? Enumerable.Empty<string>();
 }
-<ul class="list-unstyled mb-0">
+
+<ul class="list-unstyled mb-0 category-list">
     @if (cats.Any())
     {
         foreach (var c in cats)
         {
             <li class="mb-2">
-                <a href="@Url.Action("Category","Mall", new { name = c })" class="d-flex align-items-center text-decoration-none">
-                    <div class="category-icon me-2 bg-light d-flex align-items-center justify-content-center">@c.Substring(0, 1)</div>
-                    <div>@c</div>
+                <a href="@Url.Action("Category", "Mall", new { name = c })"
+                   class="d-flex align-items-center text-decoration-none category-item-link">
+                    <div class="category-icon me-2 bg-light d-flex align-items-center justify-content-center">
+                        @c.Substring(0, 1).ToUpper()
+                    </div>
+                    <div class="category-name text-truncate" title="@c">@c</div>
                 </a>
             </li>
         }
     }
     else
     {
-        <li class="text-muted small">No categories available</li>
+        <li class="text-muted small">No categories available.</li>
     }
 </ul>
+
+<style>
+    .category-list {
+        padding-left: 0;
+    }
+
+    .category-item-link {
+        padding: .25rem .3rem;
+        border-radius: .7rem;
+        transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+        color: #111827;
+    }
+
+        .category-item-link:hover {
+            background: rgba(255, 148, 114, 0.08);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+        }
+
+    .category-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 1rem;
+        font-weight: 700;
+        color: #ff4b6e;
+        background: radial-gradient(circle at top left, #fff5e9, #ffeaf4);
+        box-shadow: 0 6px 16px rgba(248, 113, 113, 0.25);
+        text-transform: uppercase;
+        font-size: .9rem;
+    }
+
+    .category-name {
+        font-size: .9rem;
+        font-weight: 500;
+    }
+</style>

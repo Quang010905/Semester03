@@ -1,42 +1,84 @@
 ﻿@{
-    var mallName = ViewData["MallName"] ?? "ABCD Mall";
+    var mallName = ViewData["MallName"] ?? "ABCDMall";
     var heroImage = ViewData["HeroImage"] ?? "/images/hero-default.jpg";
 }
+
 <section class="hero-outer">
     <div class="container text-white py-4 hero-top">
-        <h1 class="display-5 mb-1">@mallName</h1>
-        <p class="lead mb-0">Welcome to the sample shopping center — discover stores, events and deals.</p>
+        <h1 class="display-5 mb-1 hero-title">@mallName</h1>
+        <p class="lead mb-0 hero-subtitle">
+            Your vibrant lifestyle destination – discover fashion, food, entertainment and exclusive deals.
+        </p>
     </div>
 
-    <!-- HERO: centered inner width so left/right "thụt vào" -->
+    <!-- HERO: centered carousel with inset sides -->
     <div class="hero-carousel">
         <div class="hero-inner">
-            <!-- this centers the carousel and creates the side inset -->
-            <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
+            <!-- This centers the carousel and creates left/right inset -->
+            <div id="heroCarousel"
+                 class="carousel slide"
+                 data-bs-ride="carousel"
+                 data-bs-interval="3500">
 
                 <div class="carousel-indicators custom-indicators">
-                    <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true"></button>
+                    <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0"
+                            class="active" aria-current="true"></button>
                     <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
                     <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
                 </div>
 
-                <div class="carousel-inner">
+                <div class="carousel-inner hero-carousel-inner">
                     <div class="carousel-item active">
-                        <img src="/Admin/img/download (2).jpg" class="d-block w-100 hero-img" alt="slide-1" />
+                        <div class="hero-img-wrapper">
+                            <img src="/Admin/img/download (2).jpg"
+                                 class="d-block w-100 hero-img"
+                                 alt="Shopping highlights" />
+                            <div class="hero-overlay-gradient"></div>
+                            <div class="hero-caption">
+                                <h2>Shop the latest collections</h2>
+                                <p>Discover trending brands and curated fashion at your favorite mall.</p>
+                            </div>
+                        </div>
                     </div>
                     <div class="carousel-item">
-                        <img src="/Admin/img/download (5).jpg" class="d-block w-100 hero-img" alt="slide-2" />
+                        <div class="hero-img-wrapper">
+                            <img src="/Admin/img/download (5).jpg"
+                                 class="d-block w-100 hero-img"
+                                 alt="Dining and cuisine" />
+                            <div class="hero-overlay-gradient"></div>
+                            <div class="hero-caption">
+                                <h2>Taste the world</h2>
+                                <p>Colorful food court, cozy cafés and signature restaurants.</p>
+                            </div>
+                        </div>
                     </div>
                     <div class="carousel-item">
-                        <img src="/Admin/img/images (2).jpg" class="d-block w-100 hero-img" alt="slide-3" />
+                        <div class="hero-img-wrapper">
+                            <img src="/Admin/img/images (2).jpg"
+                                 class="d-block w-100 hero-img"
+                                 alt="Entertainment and events" />
+                            <div class="hero-overlay-gradient"></div>
+                            <div class="hero-caption">
+                                <h2>Events & experiences</h2>
+                                <p>Live shows, cinema, family activities and weekend fun.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev" aria-label="Previous slide">
+                <button class="carousel-control-prev"
+                        type="button"
+                        data-bs-target="#heroCarousel"
+                        data-bs-slide="prev"
+                        aria-label="Previous slide">
                     <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                 </button>
 
-                <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next" aria-label="Next slide">
+                <button class="carousel-control-next"
+                        type="button"
+                        data-bs-target="#heroCarousel"
+                        data-bs-slide="next"
+                        aria-label="Next slide">
                     <span class="carousel-control-next-icon" aria-hidden="true"></span>
                 </button>
             </div> <!-- /#heroCarousel -->
@@ -45,9 +87,15 @@
 </section>
 
 <style>
-    /* HERO - centered with side inset + autoplay enabled via JS/data attribute */
+    /* HERO - centered with side inset + autoplay */
 
-    /* outer spacing */
+    .hero-outer {
+        background: radial-gradient(circle at top left, #ff7a18 0, #ff4b6e 35%, #201f3f 100%);
+        color: #fff;
+        padding-bottom: 1.5rem;
+    }
+
+    /* top text spacing */
     .hero-top {
         max-width: 1200px;
         margin: 0 auto;
@@ -55,123 +103,204 @@
         z-index: 5;
     }
 
+    .hero-title {
+        font-weight: 800;
+        letter-spacing: .02em;
+        text-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+    }
+
+    .hero-subtitle {
+        opacity: .95;
+        text-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    }
+
     /* center the carousel content and create side gutters */
     .hero-carousel {
         width: 100%;
         display: block;
         background: transparent;
-        padding: 0; /* keeps full width background if any */
+        padding: 0;
         box-sizing: border-box;
     }
 
-    /* this inner element defines the centered content width (thụt vào hai bên) */
     .hero-inner {
-        max-width: 1580px; /* adjust how much "thụt vào" you want (smaller -> thụt nhiều hơn) */
+        max-width: 1580px;
         margin: 0 auto;
-        position: relative; /* controls/indicators positioned relative to this */
+        position: relative;
     }
 
-    /* image sizing: fill the hero-inner width and keep aspect */
+    .hero-carousel-inner {
+        border-radius: 1.5rem;
+        overflow: hidden;
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.45);
+    }
+
+    .hero-img-wrapper {
+        position: relative;
+    }
+
     .hero-img {
         width: 100%;
-        height: 500px; /* desktop height - change if you want */
-        object-fit: cover; /* crop nicely without distortion */
+        height: 520px;
+        object-fit: cover;
         object-position: center;
         display: block;
+        filter: saturate(1.1) contrast(1.02);
+        transform: scale(1.02);
+        transition: transform 1.2s ease-out;
     }
 
-    /* controls and indicators positioned inside hero-inner (so they thụt vào cùng) */
+    .carousel-item.active .hero-img {
+        transform: scale(1.06);
+    }
+
+    .hero-overlay-gradient {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient( 120deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.18) 35%, rgba(0, 0, 0, 0.1) 65%, rgba(0, 0, 0, 0.55) 100% );
+        pointer-events: none;
+    }
+
+    .hero-caption {
+        position: absolute;
+        bottom: 32px;
+        left: 48px;
+        right: 48px;
+        max-width: 520px;
+        color: #fff;
+        z-index: 10;
+        text-shadow: 0 6px 18px rgba(0, 0, 0, 0.7);
+    }
+
+        .hero-caption h2 {
+            font-size: 1.9rem;
+            font-weight: 800;
+            margin-bottom: .4rem;
+        }
+
+        .hero-caption p {
+            font-size: 1rem;
+            margin-bottom: 0;
+        }
+
+    /* controls & indicators inside hero-inner */
     .hero-inner .carousel-control-prev,
     .hero-inner .carousel-control-next {
-        width: 48px;
-        height: 48px;
+        width: 52px;
+        height: 52px;
         top: 50%;
         transform: translateY(-50%);
-        background: rgba(0,0,0,0.28);
+        background: rgba(15, 23, 42, 0.35);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 6;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        transition: all 0.2s ease;
     }
 
-    /* put the prev/next a little inside the hero-inner edges */
+        .hero-inner .carousel-control-prev:hover,
+        .hero-inner .carousel-control-next:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-50%) scale(1.03);
+        }
+
     .hero-inner .carousel-control-prev {
-        left: 12px;
+        left: 18px;
     }
 
     .hero-inner .carousel-control-next {
-        right: 12px;
+        right: 18px;
     }
 
-    /* indicator dots centered within hero-inner */
     .hero-inner .custom-indicators {
         position: absolute;
         bottom: 16px;
-        left: 50%;
-        transform: translateX(-120%);
+        right: 32px;
         z-index: 7;
         display: flex;
-        gap: 8px;
+        gap: 10px;
     }
 
-
         .hero-inner .custom-indicators button {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            border: 1px solid rgba(255,255,255,0.45);
-            background: rgba(255,255,255,0.35);
+            width: 11px;
+            height: 11px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.35);
             padding: 0;
+            transition: all 0.2s ease;
         }
 
             .hero-inner .custom-indicators button.active {
-                background: #f5a623;
-                transform: scale(1.25);
-                box-shadow: 0 4px 8px rgba(245,166,35,0.18);
+                width: 26px;
+                background: linear-gradient(135deg, #ff7a18, #ff4b6e, #ffd166);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
             }
 
-    /* icon style */
     .carousel-control-prev-icon,
     .carousel-control-next-icon {
         filter: invert(1);
-        background-size: 18px 18px; /* keep icon visible inside circle */
+        background-size: 18px 18px;
     }
 
-    /* responsive changes */
+    /* responsive */
     @@media (max-width: 992px) {
-        .hero-img
-
-    {
-        height: 420px;
-    }
-
-    .hero-inner {
-        max-width: 940px;
-    }
-
-        .hero-inner .carousel-control-prev, .hero-inner .carousel-control-next {
-            width: 44px;
-            height: 44px;
-            left: 8px;
-            right: 8px;
+        .hero-img {
+            height: 420px;
         }
 
+        .hero-inner {
+            max-width: 940px;
+        }
+
+        .hero-caption {
+            left: 24px;
+            right: 24px;
+            bottom: 24px;
+        }
+
+            .hero-caption h2 {
+                font-size: 1.5rem;
+            }
+
+        .hero-inner .carousel-control-prev,
+        .hero-inner .carousel-control-next {
+            width: 46px;
+            height: 46px;
+            left: 10px;
+            right: 10px;
+        }
     }
+
     @@media (max-width: 576px) {
-        .hero-img
+        .hero-img {
+            height: 260px;
+        }
 
-    {
-        height: 260px;
-    }
+        .hero-inner {
+            padding: 0 12px;
+            max-width: calc(100% - 24px);
+        }
 
-    .hero-inner {
-        padding: 0 12px;
-        max-width: calc(100% - 24px);
-    }
+        .hero-caption {
+            left: 18px;
+            right: 18px;
+            bottom: 18px;
+        }
 
-        .hero-inner .carousel-control-prev, .hero-inner .carousel-control-next {
+            .hero-caption h2 {
+                font-size: 1.25rem;
+            }
+
+            .hero-caption p {
+                font-size: .85rem;
+            }
+
+        .hero-inner .carousel-control-prev,
+        .hero-inner .carousel-control-next {
             width: 40px;
             height: 40px;
         }
@@ -186,6 +315,7 @@
 
         .hero-inner .custom-indicators {
             bottom: 10px;
+            right: 18px;
             gap: 6px;
         }
 
@@ -193,32 +323,29 @@
                 width: 8px;
                 height: 8px;
             }
-
     }
 
-    /* prevent horizontal scroll */
     html, body {
         overflow-x: hidden;
     }
 </style>
 
-<!-- Optional JS init: ensure autoplay definitely runs and allow pause-on-hover -->
+<!-- JS: ensure autoplay + pause on hover -->
 <script>
-    // If bootstrap JS is loaded, initialize/ensure carousel autoplay
     (function () {
         try {
             var el = document.getElementById('heroCarousel');
-            if (el) {
-                // Create or re-init with desired options
+            if (el && window.bootstrap && bootstrap.Carousel) {
                 var carousel = bootstrap.Carousel.getInstance(el) || new bootstrap.Carousel(el, {
-                    interval: 3000,   // 3 seconds
+                    interval: 3500,
                     ride: 'carousel',
-                    pause: 'hover',   // pause when user hovers
-                    touch: true
+                    pause: 'hover',
+                    touch: true,
+                    wrap: true
                 });
             }
         } catch (e) {
-            console.warn('Bootstrap carousel init failed:', e);
+            console.warn('Bootstrap hero carousel init failed:', e);
         }
     })();
 </script>

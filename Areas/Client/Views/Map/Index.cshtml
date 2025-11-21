@@ -1,684 +1,699 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.MapViewModel
 
 @{
-    ViewData["Title"] = "Mall Floor Plan — Tube / Diamond (Client)";
-    Layout = "_LayoutClient";
-    int defaultCapacityPerFloor = 40;
-    var floors = Model?.AvailableFloors ?? new List<int> { Model?.FloorNumber ?? 0 };
+    ViewData["Title"] = "Mall Floor Plan — Tube Layout";
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+
+    int defaultCapacity = 40;
+    var floors = Model?.AvailableFloors ?? new List<int> { Model.FloorNumber };
     var selectedFloor = Model?.FloorNumber ?? floors.FirstOrDefault();
     var positions = Model?.Positions ?? new List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto>();
 }
 
-<style>
-    /* ========== Layout (tube) ========== */
-    * {
-        box-sizing: border-box;
-    }
+@section Styles {
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
-    .card-tube {
-        background: #fff;
-        border: 1px solid #e6e8ee;
-        border-radius: 10px;
-        padding: 12px;
-        margin-bottom: 18px;
-        box-shadow: 0 6px 18px rgba(14,20,30,0.04);
-    }
-
-    .tube-wrap {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        padding: 8px 4px;
-    }
-
-    .tube {
-        display: inline-block;
-        min-width: 1200px;
-        padding: 14px;
-        border-radius: 10px;
-        background: linear-gradient(180deg,#f6f8fb,#eef2f8);
-        border: 1px solid #dfe4ee;
-    }
-
-    .tube-inner {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-        min-width: 1000px;
-    }
-
-    .tube-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .end-cap {
-        width: 44px;
-        height: 92px;
-        background: #e74a3b;
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        writing-mode: vertical-lr;
-        font-weight: 900;
-        border-radius: 6px;
-        flex: 0 0 44px;
-    }
-
-    .shop-cluster {
-        display: grid;
-        grid-template-columns: repeat(5,1fr);
-        gap: 10px;
-        min-width: 540px;
-    }
-
-    .shop-unit {
-        background: #fff;
-        border-radius: 8px;
-        min-height: 86px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 8px;
-        border: 1px solid #eef2f6;
-        transition: transform .12s ease, box-shadow .12s ease;
-        cursor: pointer;
-        text-decoration: none;
-        color: inherit;
-    }
-
-        .shop-unit:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 10px 18px rgba(16,24,40,0.08);
-            border-color: #4e73df;
-            z-index: 15;
+    <style>
+        * {
+            box-sizing: border-box;
         }
 
-    .shop-thumb {
-        width: 56px;
-        height: 42px;
-        border-radius: 6px;
-        background: #f5f7fa;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        margin-bottom: 6px;
-    }
-
-    .shop-title {
-        font-weight: 800;
-        font-size: 0.68rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .shop-sub {
-        font-size: 0.62rem;
-        opacity: 0.9;
-    }
-
-    /* variants */
-    .unit-occupied {
-        background: linear-gradient(180deg,#cfe9ff,#c6e2ff);
-        color: #083358;
-    }
-
-    .unit-vacant {
-        background: linear-gradient(180deg,#e6f4ea,#dff0e6);
-        color: #155724;
-    }
-
-    .unit-void {
-        background: transparent;
-        border: 2px dashed rgba(0,0,0,0.05);
-    }
-
-    /* click effect (temporary) */
-    .shop-unit.active-click {
-        animation: pop .42s ease;
-        box-shadow: 0 14px 36px rgba(16,24,40,0.18);
-        transform: translateY(-8px) scale(1.02);
-    }
-    @@keyframes pop {
-        0%
-
-    {
-        transform: translateY(0) scale(1);
-    }
-
-    50% {
-        transform: translateY(-8px) scale(1.03);
-    }
-
-    100% {
-        transform: translateY(-6px) scale(1.02);
-    }
-
-    }
-
-    /* modal / slide panel (custom, no bootstrap required) */
-    .overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.45);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 1200;
-        padding: 20px;
-    }
-
-    .panel {
-        width: 680px;
-        max-width: 96%;
-        background: #fff;
-        border-radius: 10px;
-        padding: 18px;
-        box-shadow: 0 14px 40px rgba(7,10,25,0.45);
-        transform: translateY(20px);
-        opacity: 0;
-        transition: all .18s ease;
-        max-height: 88vh;
-        overflow: auto;
-    }
-
-    .overlay.visible {
-        display: flex;
-    }
-
-    .panel.visible {
-        transform: translateY(0);
-        opacity: 1;
-    }
-
-    /* panel header */
-    .panel .hdr {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 12px;
-    }
-
-        .panel .hdr h4 {
-            margin: 0;
-            font-size: 1.05rem;
+        /* ---------- HEADER ---------- */
+        .map-header h1 {
+            font-weight: 800;
+            font-size: 1.9rem;
+            background: linear-gradient(90deg,#0d6efd,#4f46e5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-    .panel .close-btn {
-        border: 0;
-        background: transparent;
-        font-size: 1.2rem;
-        cursor: pointer;
-    }
+        .map-header small {
+            font-size: .85rem;
+            color: #6b7280;
+        }
 
-    /* tenant content */
-    .tenant-row {
-        display: flex;
-        gap: 12px;
-        align-items: flex-start;
-    }
+        /* ---------- FLOOR TABS ---------- */
+        .floors-toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 14px 0;
+        }
 
-    .tenant-img {
-        width: 140px;
-        height: 100px;
-        border-radius: 8px;
-        background: #f5f7fa;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+        .floor-tab {
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid #d1d5db;
+            background: #f8fafc;
+            font-weight: 600;
+            cursor: pointer;
+            transition: .15s;
+        }
 
-    .tenant-body {
-        flex: 1;
-    }
+            .floor-tab:hover {
+                background: #e7eeff;
+            }
 
-        .tenant-body p {
-            margin: 6px 0;
+            .floor-tab.active {
+                background: #0d6efd;
+                border-color: #0d6efd;
+                color: #ffffff;
+            }
+
+        /* ---------- FLOOR WRAPPER ---------- */
+        .floor-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 26px rgba(0,0,0,0.06);
+        }
+
+        /* ---------- LAYOUT ---------- */
+        .floor-layout {
+            display: flex;
+            flex-direction: column;
+            min-width: 1400px;
+            background: #f3f4f6;
+            padding: 8px;
+            border: 2px solid #d1d5db;
+        }
+
+        .shop-strip {
+            display: flex;
+            min-height: 82px;
+            gap: 2px;
+        }
+
+        /* ---------- SHOP CLUSTER (5 units) ---------- */
+        .shop-cluster {
+            flex: 5;
+            display: flex;
+            gap: 1px;
+        }
+
+        /* ---------- EXIT BLOCK ---------- */
+        .end-cap {
+            width: 42px;
+            background: #ef4444;
+            color: #ffffff;
+            border: 1px solid #b91c1c;
+            writing-mode: vertical-lr;
+            font-size: .7rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+        }
+
+        /* ---------- UTIL BLOCKS ---------- */
+        .util-block {
+            flex: 1;
+            min-width: 70px;
+            background: #4b5563;
+            color: #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: .65rem;
+            font-weight: 700;
+        }
+
+        .util-wc {
+            background: #36b9cc !important;
+        }
+
+        .util-lift {
+            background: #f6c23e !important;
+            color: #333 !important;
+        }
+
+        .util-info {
+            background: #4e73df !important;
+        }
+
+        /* ---------- GATE ---------- */
+        .gate-center {
+            flex: 1;
+            min-width: 60px;
+            background: #ffffff;
+            text-align: center;
+            font-size: .65rem;
+            font-weight: 800;
+            color: #e74a3b;
+            border-left: 2px dashed #e74a3b;
+            border-right: 2px dashed #e74a3b;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* ---------- HALLWAY ---------- */
+        .hallway {
+            height: 60px;
+            background: #f8fafc;
+            border-top: 1px dashed #d1d3e2;
+            border-bottom: 1px dashed #d1d3e2;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            font-weight: 700;
+            font-size: .75rem;
+        }
+
+        .escalator-group {
+            display: flex;
+            align-items: center;
+            background: #e2e6ea;
+            padding: 5px 15px;
+            border-radius: 30px;
+            border: 1px solid #d1d3e2;
             color: #374151;
-            font-size: 0.95rem;
+            font-weight: 600;
+            gap: 6px;
         }
 
-    .meta {
-        font-size: 0.85rem;
-        color: #6b7280;
-    }
-
-    /* fallback no-shop */
-    .no-shop {
-        text-align: center;
-        padding: 24px 12px;
-        color: #6b7280;
-        font-weight: 700;
-    }
-
-    /* floor tabs */
-    .floors-toolbar {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        align-items: center;
-        margin-bottom: 12px;
-    }
-
-    .floor-tab {
-        border-radius: 20px;
-        padding: 6px 12px;
-        border: 1px solid #e2e8f0;
-        background: #f8fafc;
-        cursor: pointer;
-        font-weight: 700;
-        color: #374151;
-        user-select: none;
-    }
-
-        .floor-tab.active {
-            background: #2b6fb2;
-            color: #fff;
-            border-color: #2b6fb2;
+        /* ---------- SHOP UNITS ---------- */
+        .shop-unit {
+            flex: 1;
+            min-width: 45px;
+            background: #ffffff;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 6px;
+            text-align: center;
+            font-size: .65rem;
+            text-decoration: none;
+            color: #333;
+            transition: .15s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
-    /* responsive */
-    @@media (max-width:640px) {
-        .tenant-row
+            .shop-unit:hover {
+                transform: scale(1.1);
+                z-index: 10;
+                border-color: #0d6efd;
+                box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            }
 
-    {
-        flex-direction: column;
-    }
+        .unit-vacant {
+            background: #e8fce8;
+            color: #14532d;
+        }
 
-    .tenant-img {
-        width: 100%;
-        height: 140px;
-    }
+        .unit-occupied {
+            background: #d9ecff;
+            color: #0c4a6e;
+        }
 
-    .panel {
-        padding: 12px;
-    }
+        .unit-void {
+            border: 1px dashed #d1d3e2 !important;
+            background: transparent !important;
+        }
 
-    }
-</style>
+        .unit-title {
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h1 class="h3 mb-0">Mall Floor Plan — Tube / Diamond</h1>
-        <small class="text-muted">Hiển thị vị trí tenant theo từng tầng (MapViewModel)</small>
-    </div>
+        .unit-tenant {
+            font-size: .65rem;
+            color: #6b7280;
+        }
 
-    <!-- RIGHT SIDE: removed combobox as requested -->
-    <div>
-        <!-- left intentionally empty: floor selection handled by tabs above -->
-    </div>
+        /* ---------- OVERLAY PANEL ---------- */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+            .overlay.visible {
+                display: flex;
+            }
+
+        .panel {
+            background: #ffffff;
+            width: 680px;
+            max-width: 95%;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+            padding: 20px;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: .2s ease;
+            max-height: 88vh;
+            overflow: auto;
+        }
+
+            .panel.visible {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            .panel .hdr {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+
+                .panel .hdr h4 {
+                    margin: 0;
+                    font-weight: 700;
+                    font-size: 1.1rem;
+                }
+
+        .close-btn {
+            border: 0;
+            background: 0;
+            font-size: 1.3rem;
+            color: #555;
+            cursor: pointer;
+        }
+
+        .tenant-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .tenant-img {
+            width: 140px;
+            height: 100px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .no-shop {
+            padding: 24px;
+            text-align: center;
+            font-weight: 600;
+            color: #6b7280;
+        }
+    </style>
+}
+
+<!-- HEADER -->
+<div class="map-header mb-3">
+    <h1>Mall Floor Plan</h1>
+    <small>Browse tenants + facilities by floor</small>
 </div>
 
 @if (!floors.Any())
 {
-    <div class="alert alert-warning">Không có tầng để hiển thị.</div>
+    <div class="alert alert-warning">No floors available.</div>
 }
 
 @functions {
-    private List<List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto>> ChunkInto(List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto> src)
+    List<List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto>> Chunk5(List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto> src)
     {
-        var res = new List<List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto>>();
-        if (src == null) return res;
-        for (int i = 0; i < src.Count; i += 5) res.Add(src.Skip(i).Take(5).ToList());
-        return res;
+        var list = new List<List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto>>();
+        if (src == null) return list;
+        for (int i = 0; i < src.Count; i += 5)
+            list.Add(src.Skip(i).Take(5).ToList());
+        return list;
     }
 }
 
-<div class="d-flex gap-2 mb-3 floors-toolbar">
+<!-- FLOOR TABS -->
+<div class="floors-toolbar">
     @foreach (var f in floors.OrderBy(x => x))
     {
-        var css = (f == selectedFloor) ? "floor-tab active" : "floor-tab";
-        <div class="@css" data-floor="@f"> @(f == 0 ? "G (0)" : "Tầng " + f) </div>
+        var cls = f == selectedFloor ? "floor-tab active" : "floor-tab";
+        <div class="@cls" data-floor="@f">@(f == 0 ? "Ground Floor" : $"Floor {f}")</div>
     }
 </div>
 
+<!-- FLOOR LAYOUT -->
 @foreach (var floor in floors.OrderBy(x => x))
 {
-    var floorPositions = positions.Where(p => p.TenantPosition_Floor == floor).ToList();
-    bool isGround = (floor == 0 || floor == 1);
+    var list = positions.Where(p => p.TenantPosition_Floor == floor).ToList();
 
-    var topRow = floorPositions.Where(p => (p.TenantPosition_TopPct ?? 0m) < 50m).OrderBy(p => (p.TenantPosition_LeftPct ?? 0m)).ToList();
-    var bottomRow = floorPositions.Where(p => (p.TenantPosition_TopPct ?? 0m) >= 50m).OrderBy(p => (p.TenantPosition_LeftPct ?? 0m)).ToList();
+    var top = list.Where(p => (p.TenantPosition_TopPct ?? 0) < 50)
+                  .OrderBy(p => p.TenantPosition_LeftPct).ToList();
 
-    var topChunks = ChunkInto(topRow);
-    var botChunks = ChunkInto(bottomRow);
+    var bottom = list.Where(p => (p.TenantPosition_TopPct ?? 0) >= 50)
+                     .OrderBy(p => p.TenantPosition_LeftPct).ToList();
 
-    var hiddenStyle = (floor == selectedFloor) ? "" : "display:none;";
-    <div class="card-tube" data-floor="@floor" style="@hiddenStyle">
+    var topClusters = Chunk5(top);
+    var bottomClusters = Chunk5(bottom);
+
+    <div class="floor-card" data-floor="@floor" style="@(floor == selectedFloor ? "" : "display:none;")">
+
         <div class="d-flex justify-content-between align-items-end mb-2">
             <div>
-                <h5 class="m-0 fw-bold">Floor @floor @(isGround ? "(Ground Level)" : "")</h5>
-                <small class="text-muted">Diện tích tầng: @Model.FloorAreaM2 m² · Dành riêng: @Model.ReservedAreaM2 m² · Diện tích ô: @Model.PositionAreaM2 m²</small>
+                <h5 class="fw-bold mb-1">@((floor == 0) ? "Ground Floor" : $"Floor {floor}")</h5>
+                <small class="text-muted">
+                    Floor area: @Model.FloorAreaM2 m² ● Reserved: @Model.ReservedAreaM2 m² ● Unit area: @Model.PositionAreaM2 m²
+                </small>
             </div>
-            <div><small class="text-muted">Occupancy: @floorPositions.Count(x => x.TenantPosition_Status == 1) / @defaultCapacityPerFloor Units</small></div>
+
+            <small class="text-muted">
+                Occupied: @list.Count(x => x.TenantPosition_Status == 1) / @defaultCapacity units
+            </small>
         </div>
 
-        <div class="tube-wrap" aria-label="Floor @floor tube">
-            <div class="tube" role="region" aria-label="Tube map for floor @floor">
-                <div class="tube-inner">
+        <!-- REAL-FLOOR STRUCTURE -->
+        <div class="floor-layout">
 
-                    <!-- TOP ROW -->
-                    <div class="tube-row">
-                        <div class="end-cap">EXIT</div>
+            <!-- TOP STRIP -->
+            <div class="shop-strip">
 
-                        @foreach (var cluster in topChunks)
+                <div class="end-cap">EXIT</div>
+
+                @foreach (var cluster in topClusters)
+                {
+                    <div class="shop-cluster">
+                        @foreach (var pos in cluster)
                         {
-                            <div class="shop-cluster">
-                                @foreach (var pos in cluster)
-                                {
-                                    var occupied = pos.TenantPosition_Status == 1;
-                                    var dataTenantId = pos.Tenant?.Tenant_Id ?? 0;
-                                    var dataTenantName = (pos.Tenant?.Tenant_Name ?? "");
-                                    var dataTenantImg = (pos.Tenant?.Tenant_Img ?? "");
-                                    var dataTenantDesc = (pos.Tenant?.Tenant_Description ?? "");
-                                    var dataLocation = pos.TenantPosition_Location ?? "";
-                                    var dataArea = pos.TenantPosition_Area_M2.ToString();
-                                    var dataRent = pos.TenantPosition_Rent_Price_Per_M2?.ToString() ?? "";
-                                    <a href="#" class="shop-unit @(occupied ? "unit-occupied" : "unit-vacant")"
-                                       data-id="@pos.TenantPosition_ID"
-                                       data-floor="@pos.TenantPosition_Floor"
-                                       data-location="@dataLocation"
-                                       data-area="@dataArea"
-                                       data-rent="@dataRent"
-                                       data-status="@(pos.TenantPosition_Status)"
-                                       data-tenant-id="@dataTenantId"
-                                       data-tenant-name="@Html.Raw(System.Net.WebUtility.HtmlEncode(dataTenantName))"
-                                       data-tenant-img="@Html.Raw(System.Net.WebUtility.HtmlEncode(dataTenantImg))"
-                                       data-tenant-desc="@Html.Raw(System.Net.WebUtility.HtmlEncode(dataTenantDesc))"
-                                       title="@dataLocation">
-                                        <div class="shop-thumb">
-                                            @if (!string.IsNullOrWhiteSpace(pos.Tenant?.Tenant_Img))
-                                            {
-                                                var src = pos.Tenant.Tenant_Img.StartsWith("wwwroot/") ? "/" + pos.Tenant.Tenant_Img.Substring("wwwroot/".Length) : pos.Tenant.Tenant_Img;
-                                                <img src="@src" alt="@pos.Tenant?.Tenant_Name" style="max-width:100%;max-height:100%;" />
-                                            }
-                                            else
-                                            {
-                                                <span style="font-size:0.82rem;">@pos.TenantPosition_ID</span>
-                                            }
-                                        </div>
-                                        <div class="shop-title">@pos.TenantPosition_Location</div>
-                                        <div class="shop-sub">@((occupied && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
-                                    </a>
-                                }
-                                @for (int i = 0; i < (5 - cluster.Count); i++)
-                                {
-                                    <div class="shop-unit unit-void" aria-hidden="true"></div>
-                                }
-                            </div>
+                            bool occ = pos.TenantPosition_Status == 1;
+                            var tenantName = pos.Tenant?.Tenant_Name ?? "";
+                            var tenantImg = pos.Tenant?.Tenant_Img ?? "";
+                            var desc = pos.Tenant?.Tenant_Description ?? "";
+                            var loc = pos.TenantPosition_Location ?? "";
+                            var area = pos.TenantPosition_Area_M2.ToString("0.#");
+
+                            <a href="#"
+                               class="shop-unit @(occ ? "unit-occupied" : "unit-vacant")"
+                               data-tenant-name="@tenantName"
+                               data-tenant-img="@tenantImg"
+                               data-tenant-desc="@desc"
+                               data-location="@loc"
+                               data-floor="@floor"
+                               data-area="@area"
+                               data-status="@pos.TenantPosition_Status"
+                               data-details-url="@Url.Action("Details", "Map", new { area = "Client", id = pos.TenantPosition_ID })">
+
+                                <div class="unit-title">@(!string.IsNullOrEmpty(loc) ? loc : $"Unit {pos.TenantPosition_ID}")</div>
+                                <div class="unit-tenant">@((occ ? tenantName : "Vacant"))</div>
+                            </a>
                         }
-
-                        <div class="util-block util-wc" title="WC" style="background:#36b9cc;color:#fff;padding:8px;border-radius:8px;min-width:92px;">
-                            <i class="fas fa-restroom" style="font-size:18px;margin-bottom:6px;"></i>
-                            <div style="font-size:0.7rem;">WC</div>
-                        </div>
-
-                        @if (isGround)
+                        @for (int i = cluster.Count; i < 5; i++)
                         {
-                            <div class="gate-center" title="Gate / North">NORTH</div>
+                            <div class="shop-unit unit-void"></div>
                         }
-                        else
-                        {
-                            <div class="util-block util-info" title="Digital Map" style="background:#4e73df;color:#fff;min-width:92px;padding:8px;border-radius:8px;">
-                                <i class="fas fa-map-marked-alt" style="font-size:16px;"></i>
-                                <div style="font-size:0.7rem;">MAP</div>
-                            </div>
-                        }
-
-                        <div class="end-cap" style="transform:rotate(180deg);">EXIT</div>
                     </div>
+                }
 
-                    <!-- CORRIDOR -->
-                    <div class="corridor" style="height:68px;border-radius:8px;padding:8px 20px; display:flex;align-items:center;justify-content:space-between;border:1px dashed #e0e6ef;">
-                        <div style="display:flex;align-items:center;gap:14px;">
-                            <div style="color:#b54444;font-weight:900;">WEST</div>
-                            <div style="padding:6px 12px;border-radius:26px;background:#eef3fb;border:1px solid #d6def6;font-weight:700;"> <i class="fas fa-level-up-alt"></i> <span style="margin-left:6px;">ESCALATOR • STAIRS</span></div>
-                        </div>
+                <div class="util-block util-wc">
+                    <i class="fas fa-restroom util-icon"></i>
+                    <div>WC</div>
+                </div>
 
-                        <div style="font-weight:800;color:#6f7b89;">MAIN CORRIDOR (210m)</div>
+                <div class="end-cap" style="transform:rotate(180deg);">EXIT</div>
+            </div>
 
-                        <div style="display:flex;align-items:center;gap:14px;">
-                            <div style="padding:6px 12px;border-radius:26px;background:#eef3fb;border:1px solid #d6def6;font-weight:700;"> <i class="fas fa-level-up-alt"></i> <span style="margin-left:6px;">ESCALATOR • STAIRS</span></div>
-                            <div style="color:#b54444;font-weight:900;">EAST</div>
-                        </div>
+            <!-- CENTRAL HALLWAY -->
+            <div class="hallway">
+                <span style="color:#dc2626;">WEST</span>
+
+                <div class="escalator-group">
+                    <i class="fas fa-level-up-alt escalator-icon"></i>
+                    <div style="line-height:1;">
+                        <span style="font-size:.65rem;">ESCALATOR</span><br />
+                        <span style="font-size:.55rem;">& STAIRS</span>
                     </div>
+                    <i class="fas fa-level-down-alt escalator-icon"></i>
+                </div>
 
-                    <!-- BOTTOM ROW -->
-                    <div class="tube-row">
-                        <div class="end-cap">EXIT</div>
+                <span>MAIN CORRIDOR (210m)</span>
 
-                        @foreach (var cluster in botChunks)
+                <div class="escalator-group">
+                    <i class="fas fa-level-up-alt escalator-icon"></i>
+                    <div style="line-height:1;">
+                        <span style="font-size:.65rem;">ESCALATOR</span><br />
+                        <span style="font-size:.55rem;">& STAIRS</span>
+                    </div>
+                    <i class="fas fa-level-down-alt escalator-icon"></i>
+                </div>
+
+                <span style="color:#dc2626;">EAST</span>
+            </div>
+
+            <!-- BOTTOM STRIP -->
+            <div class="shop-strip">
+
+                <div class="end-cap">EXIT</div>
+
+                @foreach (var cluster in bottomClusters)
+                {
+                    <div class="shop-cluster">
+                        @foreach (var pos in cluster)
                         {
-                            <div class="shop-cluster">
-                                @foreach (var pos in cluster)
-                                {
-                                    var occupied = pos.TenantPosition_Status == 1;
-                                    var dataTenantId = pos.Tenant?.Tenant_Id ?? 0;
-                                    var dataTenantName = (pos.Tenant?.Tenant_Name ?? "");
-                                    var dataTenantImg = (pos.Tenant?.Tenant_Img ?? "");
-                                    var dataTenantDesc = (pos.Tenant?.Tenant_Description ?? "");
-                                    var dataLocation = pos.TenantPosition_Location ?? "";
-                                    var dataArea = pos.TenantPosition_Area_M2.ToString();
-                                    var dataRent = pos.TenantPosition_Rent_Price_Per_M2?.ToString() ?? "";
-                                    <a href="#" class="shop-unit @(occupied ? "unit-occupied" : "unit-vacant")"
-                                       data-id="@pos.TenantPosition_ID"
-                                       data-floor="@pos.TenantPosition_Floor"
-                                       data-location="@dataLocation"
-                                       data-area="@dataArea"
-                                       data-rent="@dataRent"
-                                       data-status="@(pos.TenantPosition_Status)"
-                                       data-tenant-id="@dataTenantId"
-                                       data-tenant-name="@Html.Raw(System.Net.WebUtility.HtmlEncode(dataTenantName))"
-                                       data-tenant-img="@Html.Raw(System.Net.WebUtility.HtmlEncode(dataTenantImg))"
-                                       data-tenant-desc="@Html.Raw(System.Net.WebUtility.HtmlEncode(dataTenantDesc))"
-                                       title="@dataLocation">
-                                        <div class="shop-thumb">
-                                            @{
-                                                if (!string.IsNullOrWhiteSpace(pos.Tenant?.Tenant_Img))
-                                                {
-                                                    var src = pos.Tenant.Tenant_Img.StartsWith("wwwroot/") ? "/" + pos.Tenant.Tenant_Img.Substring("wwwroot/".Length) : pos.Tenant.Tenant_Img;
-                                                    <img src="@src" alt="@pos.Tenant?.Tenant_Name" style="max-width:100%;max-height:100%;" />
-                                                }
-                                                else
-                                                {
-                                                    <span style="font-size:0.82rem;">@pos.TenantPosition_ID</span>
-                                                }
-                                            }
-                                        </div>
-                                        <div class="shop-title">@pos.TenantPosition_Location</div>
-                                        <div class="shop-sub">@((occupied && pos.Tenant != null) ? pos.Tenant.Tenant_Name : "VACANT")</div>
-                                    </a>
-                                }
-                                @for (int i = 0; i < (5 - cluster.Count); i++)
-                                {
-                                    <div class="shop-unit unit-void" aria-hidden="true"></div>
-                                }
-                            </div>
+                            bool occ = pos.TenantPosition_Status == 1;
+                            var tenantName = pos.Tenant?.Tenant_Name ?? "";
+                            var tenantImg = pos.Tenant?.Tenant_Img ?? "";
+                            var desc = pos.Tenant?.Tenant_Description ?? "";
+                            var loc = pos.TenantPosition_Location ?? "";
+                            var area = pos.TenantPosition_Area_M2.ToString("0.#");
+
+                            <a href="#"
+                               class="shop-unit @(occ?"unit-occupied":"unit-vacant")"
+                               data-tenant-name="@tenantName"
+                               data-tenant-img="@tenantImg"
+                               data-tenant-desc="@desc"
+                               data-location="@loc"
+                               data-floor="@floor"
+                               data-area="@area"
+                               data-status="@pos.TenantPosition_Status"
+                               data-details-url="@Url.Action("Details", "Map", new { area = "Client", id = pos.TenantPosition_ID })">
+
+                                <div class="unit-title">@(!string.IsNullOrEmpty(loc) ? loc : $"Unit {pos.TenantPosition_ID}")</div>
+                                <div class="unit-tenant">@((occ ? tenantName : "Vacant"))</div>
+                            </a>
                         }
-
-                        <div class="util-block util-lift" title="Lift" style="background:#f6c23e;color:#222;padding:8px;border-radius:8px;min-width:92px;">
-                            <i class="fas fa-elevator" style="font-size:18px;margin-bottom:6px;"></i>
-                            <div style="font-size:0.7rem;color:inherit;">LIFT</div>
-                        </div>
-
-                        <div class="end-cap" style="transform:rotate(180deg);">EXIT</div>
+                        @for (int i = cluster.Count; i < 5; i++)
+                        {
+                            <div class="shop-unit unit-void"></div>
+                        }
                     </div>
+                }
 
-                </div> <!-- tube-inner -->
-            </div> <!-- tube -->
-        </div> <!-- tube-wrap -->
-    </div> <!-- card-tube -->
+                <div class="util-block util-lift">
+                    <i class="fas fa-elevator util-icon"></i>
+                    <div>LIFT</div>
+                </div>
+
+                <div class="end-cap" style="transform:rotate(180deg);">EXIT</div>
+
+            </div>
+
+        </div>
+    </div>
 }
 
-<!-- Modal / Panel HTML (hidden until needed) -->
-<div id="tenantOverlay" class="overlay" role="dialog" aria-modal="true" aria-hidden="true">
-    <div id="tenantPanel" class="panel" role="document" aria-hidden="true">
+<!-- MODAL -->
+<div id="tenantOverlay" class="overlay">
+    <div id="tenantPanel" class="panel">
         <div class="hdr">
             <h4 id="panelTitle">Shop details</h4>
-            <button id="panelClose" class="close-btn" aria-label="Close">✕</button>
+            <button class="close-btn" id="panelClose" aria-label="Close panel">&times;</button>
         </div>
 
         <div id="panelContent">
-            <!-- filled dynamically -->
-            <div id="noShop" class="no-shop" style="display:none;">
-                Không có shop (No shop assigned to this position).
+            <div id="noShop" class="no-shop">
+                No tenant assigned for this unit.
             </div>
 
             <div id="tenantInfo" style="display:none;">
                 <div class="tenant-row">
-                    <div class="tenant-img" id="tenantImg">
-                        <!-- image -->
-                    </div>
+                    <div class="tenant-img" id="tenantImg"></div>
                     <div class="tenant-body">
-                        <p id="tenantName" style="font-size:1.05rem;font-weight:800;margin:0 0 6px 0;"></p>
-                        <p class="meta" id="positionMeta"></p>
-                        <p id="tenantDesc" style="margin-top:8px;color:#374151;"></p>
+                        <p id="tenantName" style="font-weight:800;font-size:1.05rem;margin-bottom:6px;"></p>
+                        <p class="meta">Location: <span id="metaLocation"></span></p>
+                        <p class="meta">Floor: <span id="metaFloor"></span></p>
+                        <p class="meta">Area: <span id="metaArea"></span> m²</p>
+                        <p class="meta">Status: <span id="metaStatus"></span></p>
+                        <p id="tenantDesc" class="mt-2"></p>
                     </div>
-                </div>
-
-                <hr />
-
-                <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                    <div class="meta">Location: <strong id="metaLocation"></strong></div>
-                    <div class="meta">Floor: <strong id="metaFloor"></strong></div>
-                    <div class="meta">Area (m²): <strong id="metaArea"></strong></div>
-                    <div class="meta">Rent/m²: <strong id="metaRent"></strong></div>
-                    <div class="meta">Status: <strong id="metaStatus"></strong></div>
                 </div>
             </div>
         </div>
 
-        <div style="display:flex; justify-content:flex-end; margin-top:12px;">
-            <a id="detailsLink" class="btn btn-sm btn-primary" href="#" style="text-decoration:none;color:white;display:none;">Xem chi tiết</a>
-            <button id="panelClose2" class="btn btn-sm btn-secondary" style="margin-left:8px;">Đóng</button>
+        <div class="d-flex justify-content-end gap-2 mt-3">
+            <a id="detailsLink"
+               href="#"
+               class="btn btn-sm btn-primary"
+               style="display:none;">
+                View store details
+            </a>
+            <button id="panelClose2" class="btn btn-sm btn-outline-secondary">
+                Close
+            </button>
         </div>
     </div>
 </div>
 
 @section Scripts {
     <script>
-        (function(){
-            // tabs: show/hide floors client-side
-            document.querySelectorAll('.floor-tab').forEach(function(t){
-                t.addEventListener('click', function(e){
+        (function () {
+
+            /* FLOOR TABS CLICK */
+            const floorTabs  = document.querySelectorAll('.floor-tab');
+            const floorCards = document.querySelectorAll('.floor-card');
+
+            floorTabs.forEach(tab => {
+                tab.addEventListener('click', function (e) {
                     e.preventDefault();
-                    var f = this.getAttribute('data-floor');
-                    document.querySelectorAll('.floor-tab').forEach(x=>x.classList.remove('active'));
+                    const floor = this.getAttribute('data-floor');
+
+                    floorTabs.forEach(t => t.classList.remove('active'));
                     this.classList.add('active');
-                    document.querySelectorAll('.card-tube').forEach(function(w){
-                        w.style.display = (w.getAttribute('data-floor') === f) ? '' : 'none';
+
+                    floorCards.forEach(card => {
+                        card.style.display = (card.getAttribute('data-floor') === floor) ? '' : 'none';
                     });
-                    // scroll left to start for visible
-                    setTimeout(function(){
-                        var vis = document.querySelector('.card-tube[style*="display:"] .tube-wrap');
-                        if(vis) vis.scrollLeft = 0;
-                    }, 80);
                 });
             });
 
-            // modal / panel elements
-            var overlay = document.getElementById('tenantOverlay');
-            var panel = document.getElementById('tenantPanel');
-            var panelTitle = document.getElementById('panelTitle');
-            var panelClose = document.getElementById('panelClose');
-            var panelClose2 = document.getElementById('panelClose2');
+            /* OVERLAY / PANEL ELEMENTS */
+            const overlay     = document.getElementById('tenantOverlay');
+            const panel       = document.getElementById('tenantPanel');
+            const btnClose    = document.getElementById('panelClose');
+            const btnClose2   = document.getElementById('panelClose2');
+            const panelTitle  = document.getElementById('panelTitle');
+            const noShop      = document.getElementById('noShop');
+            const tenantInfo  = document.getElementById('tenantInfo');
+            const tenantImg   = document.getElementById('tenantImg');
+            const tenantName  = document.getElementById('tenantName');
+            const tenantDesc  = document.getElementById('tenantDesc');
+            const metaLocation = document.getElementById('metaLocation');
+            const metaFloor    = document.getElementById('metaFloor');
+            const metaArea     = document.getElementById('metaArea');
+            const metaStatus   = document.getElementById('metaStatus');
+            const detailsLink  = document.getElementById('detailsLink');
 
-            function openPanel(){
+            function openPanel() {
+                if (!overlay || !panel) return;
                 overlay.classList.add('visible');
                 panel.classList.add('visible');
-                overlay.setAttribute('aria-hidden','false');
-                panel.setAttribute('aria-hidden','false');
             }
-            function closePanel(){
+
+            function closePanel() {
+                if (!overlay || !panel) return;
                 panel.classList.remove('visible');
                 overlay.classList.remove('visible');
-                overlay.setAttribute('aria-hidden','true');
-                panel.setAttribute('aria-hidden','true');
             }
-            panelClose.addEventListener('click', closePanel);
-            panelClose2.addEventListener('click', closePanel);
-            overlay.addEventListener('click', function(e){
-                if(e.target === overlay) closePanel();
-            });
-            window.addEventListener('keydown', function(e){ if(e.key === 'Escape') closePanel(); });
 
-            // helper: set panel content
-            function populatePanelFromElem(elem){
-                var tenantId = elem.getAttribute('data-tenant-id') || "";
-                var tenantName = elem.getAttribute('data-tenant-name') || "";
-                var tenantImg = elem.getAttribute('data-tenant-img') || "";
-                var tenantDesc = elem.getAttribute('data-tenant-desc') || "";
-                var location = elem.getAttribute('data-location') || "";
-                var floor = elem.getAttribute('data-floor') || "";
-                var area = elem.getAttribute('data-area') || "";
-                var rent = elem.getAttribute('data-rent') || "";
-                var status = elem.getAttribute('data-status') || "0";
+            if (btnClose)  btnClose.addEventListener('click', closePanel);
+            if (btnClose2) btnClose2.addEventListener('click', closePanel);
 
-                var tenantInfo = document.getElementById('tenantInfo');
-                var noShop = document.getElementById('noShop');
-
-                if (!tenantId || tenantId === "0" || tenantName.trim() === ""){
-                    // no tenant assigned
-                    noShop.style.display = '';
-                    tenantInfo.style.display = 'none';
-                    document.getElementById('detailsLink').style.display = 'none';
-                    panelTitle.textContent = 'No shop assigned';
-                } else {
-                    noShop.style.display = 'none';
-                    tenantInfo.style.display = '';
-                    // image
-                    var imgWrap = document.getElementById('tenantImg');
-                    imgWrap.innerHTML = '';
-                    if (tenantImg && tenantImg.length > 5){
-                        var src = tenantImg;
-                        if (tenantImg.indexOf('wwwroot/') === 0) src = '/' + tenantImg.substring('wwwroot/'.length);
-                        var img = document.createElement('img');
-                        img.src = src;
-                        img.alt = tenantName;
-                        img.style.maxWidth = '100%';
-                        img.style.maxHeight = '100%';
-                        imgWrap.appendChild(img);
-                    } else {
-                        imgWrap.textContent = tenantId;
+            if (overlay) {
+                overlay.addEventListener('click', function (e) {
+                    if (e.target === overlay) {
+                        closePanel();
                     }
+                });
+            }
 
-                    document.getElementById('tenantName').textContent = tenantName;
-                    document.getElementById('metaLocation').textContent = location;
-                    document.getElementById('metaFloor').textContent = floor;
-                    document.getElementById('metaArea').textContent = area;
-                    document.getElementById('metaRent').textContent = rent;
-                    document.getElementById('metaStatus').textContent = (status === "1") ? "Occupied" : "Vacant";
-                    panelTitle.textContent = tenantName + " — Shop info";
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    closePanel();
+                }
+            });
 
-                    // details link
-                    var detailsLink = document.getElementById('detailsLink');
-                    detailsLink.style.display = '';
-                    detailsLink.href = '@Url.Action("Details", "Stores", new { area = "Client" })' + '/' + elem.getAttribute('data-id');
+            function normalizeImgPath(raw) {
+                if (!raw) return '';
+                let s = raw;
+
+                if (s.indexOf('wwwroot/') === 0) {
+                    s = '/' + s.substring('wwwroot/'.length);
+                }
+                // If already starts with http or / then just return
+                if (s.startsWith('http')) return s;
+                if (s.startsWith('/')) return s;
+
+                // Otherwise treat as relative path from web root
+                return '/' + s;
+            }
+
+            function populatePanelFromUnit(el) {
+                if (!el) return;
+
+                const name       = el.getAttribute('data-tenant-name') || '';
+                const img        = el.getAttribute('data-tenant-img') || '';
+                const desc       = el.getAttribute('data-tenant-desc') || '';
+                const location   = el.getAttribute('data-location') || '';
+                const floor      = el.getAttribute('data-floor') || '';
+                const area       = el.getAttribute('data-area') || '';
+                const status     = el.getAttribute('data-status') || '0';
+                const detailsUrl = el.getAttribute('data-details-url') || '';
+
+                if (!name.trim()) {
+                    // no tenant
+                    if (noShop)   noShop.style.display = '';
+                    if (tenantInfo) tenantInfo.style.display = 'none';
+                    if (detailsLink) detailsLink.style.display = 'none';
+                    if (panelTitle) panelTitle.textContent = 'Vacant unit';
+                    return;
+                }
+
+                // show tenant info
+                if (noShop)     noShop.style.display = 'none';
+                if (tenantInfo) tenantInfo.style.display = '';
+
+                if (panelTitle) {
+                    panelTitle.textContent = name + ' — shop details';
+                }
+
+                if (tenantImg) {
+                    tenantImg.innerHTML = '';
+                    if (img) {
+                        const imgEl = document.createElement('img');
+                        imgEl.src = normalizeImgPath(img);
+                        imgEl.alt = name;
+                        imgEl.style.maxWidth = '100%';
+                        imgEl.style.maxHeight = '100%';
+                        tenantImg.appendChild(imgEl);
+                    } else {
+                        tenantImg.textContent = location || 'Unit';
+                    }
+                }
+
+                if (tenantName)   tenantName.textContent   = name;
+                if (tenantDesc)   tenantDesc.textContent   = desc || 'No description.';
+                if (metaLocation) metaLocation.textContent = location || '—';
+                if (metaFloor)    metaFloor.textContent    = floor || '—';
+                if (metaArea)     metaArea.textContent     = area || '—';
+                if (metaStatus)   metaStatus.textContent   = (status === '1') ? 'Occupied' : 'Vacant';
+
+                if (detailsLink) {
+                    if (detailsUrl) {
+                        detailsLink.style.display = '';
+                        detailsLink.href = detailsUrl;
+                    } else {
+                        detailsLink.style.display = 'none';
+                    }
                 }
             }
 
-            // attach click handlers to shop units (delegation)
-            document.addEventListener('click', function(e){
-                var target = e.target.closest('.shop-unit');
-                if (!target) return;
+            // CLICK ON SHOP UNIT
+            document.addEventListener('click', function (e) {
+                const unit = e.target.closest('.shop-unit');
+                if (!unit) return;
                 e.preventDefault();
 
-                // add click animation
-                target.classList.remove('active-click');
-                // force reflow to restart animation
-                void target.offsetWidth;
-                target.classList.add('active-click');
-                setTimeout(function(){ target.classList.remove('active-click'); }, 700);
-
-                // populate and open panel
-                populatePanelFromElem(target);
+                populatePanelFromUnit(unit);
                 openPanel();
             });
 
