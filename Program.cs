@@ -52,6 +52,7 @@ builder.Services.AddScoped<CouponRepository>();
 builder.Services.AddScoped<TenantPositionRepository>();
 builder.Services.AddScoped<ParkingLevelRepository>();
 builder.Services.AddScoped<ParkingSpotRepository>();
+builder.Services.AddScoped<CategoryRepository>();
 // ===== Register other services =====
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
 builder.Services.AddScoped<IEmailSender, EmailSender>();
