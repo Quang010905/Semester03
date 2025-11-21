@@ -13,5 +13,8 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public List<string> SelectedSeats { get; set; } = new();
         public decimal SeatPrice { get; set; } = 0m;
         public decimal TotalAmount { get; set; } = 0m;
+
+        public List<CouponDto> AvailableCoupons { get; set; } = new();
+        public int UserPoints { get; set; } = 0;
     }
 }

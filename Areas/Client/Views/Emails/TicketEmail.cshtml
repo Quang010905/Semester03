@@ -127,6 +127,13 @@
             <div class="summary">
                 <div>
                     <div class="meta">Tổng số vé: <strong>@Model.Tickets.Count</strong></div>
+
+                    @if (Model.DiscountAmount > 0)
+                    {
+                        <div class="meta">Tổng trước khuyến mãi: <strong>@Model.OriginalAmount.ToString("N0") đ</strong></div>
+                        <div class="meta">Giảm giá: <strong>-@Model.DiscountAmount.ToString("N0") đ</strong></div>
+                    }
+
                     <div class="meta">Tổng thanh toán: <strong>@Model.TotalAmount.ToString("N0") đ</strong></div>
                 </div>
                 <div style="text-align:right">
