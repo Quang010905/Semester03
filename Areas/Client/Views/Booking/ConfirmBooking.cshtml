@@ -109,6 +109,37 @@
                 </div>
             </div>
 
+            <!-- COUPON SELECT (nằm giữa) -->
+            <div class="card mb-3 p-3">
+                <h6 class="mb-2">Mã giảm giá</h6>
+                <div class="mb-2 small text-muted">Chọn mã để áp dụng. Nếu chưa đăng nhập, bạn cần đăng nhập để dùng mã theo điểm.</div>
+
+                <div class="row g-2 align-items-center">
+                    <div class="col">
+                        <select id="couponSelect" class="form-select" aria-label="Chọn mã giảm giá">
+                            <option value="">-- Không dùng mã giảm giá --</option>
+                            @foreach (var c in Model.AvailableCoupons)
+                            {
+                                <option value="@c.Id"
+                                        data-discount="@c.DiscountPercent"
+                                        data-minpoints="@((c.MinimumPointsRequired ?? 0))">
+                                    @c.Name — @c.DiscountPercent.ToString("N2")% @(
+                                c.MinimumPointsRequired.HasValue && c.MinimumPointsRequired.Value > 0
+                                ? $" (Cần {@c.MinimumPointsRequired} điểm)"
+                                : ""
+                                )
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button id="btnApplyCoupon" class="btn btn-outline-primary">Áp dụng</button>
+                    </div>
+                </div>
+
+                <div id="couponNote" class="mt-2 small text-danger" style="display:none;"></div>
+            </div>
+
             <div class="card summary-card p-3 mb-3">
                 <div class="table-responsive">
                     <table class="table table-borderless mb-0">
@@ -129,9 +160,13 @@
                             </tr>
                         </tbody>
                         <tfoot>
+                            <tr id="discountRow" style="display:none;">
+                                <th colspan="3" class="text-end">Khuyến mãi</th>
+                                <th id="discountAmount" class="text-end text-success">0 VND</th>
+                            </tr>
                             <tr>
                                 <th colspan="3" class="text-end">Tổng cộng</th>
-                                <th class="text-end h5 text-danger">@totalAmount.ToString("N0") VND</th>
+                                <th class="text-end h5 text-danger" id="totalAmountDisplay">@totalAmount.ToString("N0") VND</th>
                             </tr>
                         </tfoot>
                     </table>
@@ -148,7 +183,8 @@
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="showtimeId" value='@Model.ShowtimeId' />
                     <input type="hidden" id="seatIdsInput" name="seatIds" value='@($"{seatIdsFromQuery}".Replace(" ", ""))' />
-                    <input type="hidden" name="amount" value='@totalAmount.ToString("F0", CultureInfo.InvariantCulture)' />
+                    <input type="hidden" id="couponIdInput" name="couponId" value="" />
+                    <input type="hidden" id="amountHidden" name="amount" value='@totalAmount.ToString("F0", CultureInfo.InvariantCulture)' />
 
                     <div class="d-grid gap-2 actions mt-2">
                         <button id="btnPay" type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#confirmPayModal">Thanh toán qua VNPAY</button>
@@ -212,6 +248,14 @@
             const btnPrint = document.getElementById('btnPrint');
             const btnPay = document.getElementById('btnPay');
             const seatIdsInput = document.getElementById('seatIdsInput');
+            const couponSelect = document.getElementById('couponSelect');
+            const btnApplyCoupon = document.getElementById('btnApplyCoupon');
+            const couponNote = document.getElementById('couponNote');
+            const couponIdInput = document.getElementById('couponIdInput');
+            const discountRow = document.getElementById('discountRow');
+            const discountAmountEl = document.getElementById('discountAmount');
+            const totalAmountDisplay = document.getElementById('totalAmountDisplay');
+            const amountHidden = document.getElementById('amountHidden');
 
             // sanitize seatIds from query string if not present in hidden input
             if (!seatIdsInput.value) {
@@ -241,6 +285,79 @@
                 }
             }
 
+            // original total from server (invariant culture)
+            const originalTotal = Number('@totalAmount.ToString("F0", CultureInfo.InvariantCulture)');
+
+            function formatVnd(n) {
+                return Math.round(n).toLocaleString('en-US') + ' VND';
+            }
+
+            btnApplyCoupon.addEventListener('click', async function (ev) {
+                ev.preventDefault();
+                couponNote.style.display = 'none';
+                const couponId = couponSelect.value;
+                if (!couponId) {
+                    // clear
+                    couponIdInput.value = "";
+                    discountRow.style.display = 'none';
+                    discountAmountEl.innerText = '0 VND';
+                    amountHidden.value = originalTotal;
+                    totalAmountDisplay.innerText = formatVnd(originalTotal);
+                    return;
+                }
+
+                const token = getAntiForgeryToken();
+                const form = new FormData();
+                form.append('couponId', couponId);
+                form.append('showtimeId', payForm.querySelector('input[name="showtimeId"]').value);
+                form.append('seatIds', seatIdsInput.value);
+                form.append('amount', amountHidden.value);
+
+                const headers = {};
+                if (token) headers['RequestVerificationToken'] = token;
+
+                try {
+                    const res = await fetch('@Url.Action("ValidateCouponAjax", "Booking", new { area = "Client" })', {
+                        method: 'POST',
+                        headers: headers,
+                        body: form,
+                        credentials: 'same-origin'
+                    });
+
+                    const data = await res.json();
+                    if (!res.ok || !data) {
+                        throw new Error((data && data.message) ? data.message : ('Lỗi server: ' + res.status));
+                    }
+
+                    if (data.success) {
+                    const discount = Number(data.discountAmount || 0);
+                    const newTotal = Number(data.newTotal || 0);
+
+                    couponIdInput.value = couponId;
+                    discountRow.style.display = '';
+                    discountAmountEl.innerText = formatVnd(discount);
+                    totalAmountDisplay.innerText = formatVnd(newTotal);
+                    amountHidden.value = newTotal.toString();
+
+                    couponNote.style.display = 'none';
+                    btnApplyCoupon.disabled = true;
+                    couponSelect.disabled = true;
+                    } else {
+                        couponNote.innerText = data.message || 'Không thể áp dụng mã này';
+                        couponNote.style.display = '';
+                        couponIdInput.value = "";
+                        discountRow.style.display = 'none';
+                        discountAmountEl.innerText = '0 VND';
+                        amountHidden.value = originalTotal;
+                        totalAmountDisplay.innerText = formatVnd(originalTotal);
+                    }
+                } catch (err) {
+                    console.error('Validate coupon error', err);
+                    couponNote.innerText = 'Lỗi khi kiểm tra mã giảm giá.';
+                    couponNote.style.display = '';
+                }
+            });
+
             btnConfirmPay.addEventListener('click', function () {
                 // disable button UI
                 btnConfirmPay.disabled = true;
@@ -256,7 +373,7 @@
                         }
 
                         // validate amount from hidden input
-                        const rawAmount = payForm.querySelector('input[name="amount"]').value;
+                        const rawAmount = amountHidden.value;
                         const numericAmount = Number(String(rawAmount).replace(/[^\d.\-]/g, ''));
                         if (!rawAmount || Number.isNaN(numericAmount) || !isFinite(numericAmount) || numericAmount <= 0) {
                             alert('Số tiền không hợp lệ.');
@@ -274,12 +391,12 @@
                         formData.append('showtimeId', payForm.querySelector('input[name="showtimeId"]').value);
                         formData.append('seatIds', cleanedSeatIds);
                         formData.append('amount', numericAmount.toString()); // send plain numeric string
+                        formData.append('couponId', document.getElementById('couponIdInput').value || "");
 
                         const headers = { 'X-Requested-With': 'XMLHttpRequest' };
                         const token = getAntiForgeryToken();
                         if (token) headers['RequestVerificationToken'] = token;
 
-                        // use fetch to call server action that returns { success, url } JSON
                         const res = await fetch('@Url.Action("CreatePaymentUrlVnpay", "Booking", new { area = "Client" })', {
                             method: 'POST',
                             headers: headers,
@@ -287,13 +404,11 @@
                             credentials: 'same-origin'
                         });
 
-                        // try to parse response as JSON safely
                         const txt = await res.text();
                         let data;
                         try {
                             data = txt ? JSON.parse(txt) : null;
                         } catch (e) {
-                            // server returned non-json; show error
                             throw new Error('Server trả về dữ liệu không hợp lệ: ' + txt);
                         }
 
@@ -303,20 +418,16 @@
                         }
 
                         if (data.success && data.url) {
-                            // Use top.location to exit iframe if page was embedded anywhere
                             try {
-                                // prefer top to avoid iframe problems
                                 if (window.top && window.top !== window) {
                                     window.top.location.href = data.url;
                                 } else {
                                     window.location.href = data.url;
                                 }
                             } catch (e) {
-                                // some browsers restrict cross-origin top access; fallback to window.open
                                 try {
                                     window.open(data.url, '_blank');
                                 } catch (exOpen) {
-                                    // final fallback
                                     window.location.href = data.url;
                                 }
                             }
@@ -328,7 +439,6 @@
                         console.error("Error when creating VNPAY request:", err);
                         alert('Lỗi khi tạo yêu cầu thanh toán: ' + (err && err.message ? err.message : err));
                     } finally {
-                        // restore UI and close modal
                         btnConfirmPay.disabled = false;
                         btnConfirmPay.innerText = originalBtnText || 'Xác nhận & chuyển đến VNPAY';
                         hideBootstrapModalById('confirmPayModal');

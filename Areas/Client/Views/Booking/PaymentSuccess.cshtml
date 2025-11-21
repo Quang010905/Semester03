@@ -4,12 +4,16 @@
 
     var seatLabels = ViewData["SeatLabels"] as List<string> ?? new List<string>();
     var showtimeId = ViewData["ShowtimeId"]?.ToString();
-    var totalAmount = (decimal)(ViewData["TotalAmount"] ?? 0m);
+    var totalAmount = (decimal)(ViewData["TotalAmount"] ?? 0m);         // sau giảm
     var pricePerSeat = (decimal)(ViewData["PricePerSeat"] ?? 0m);
+
+    var originalAmount = (decimal)(ViewData["OriginalAmount"] ?? totalAmount);
+    var discountAmount = (decimal)(ViewData["DiscountAmount"] ?? 0m);
+    var pointsAwarded = (int)(ViewData["PointsAwarded"] ?? 0);
+
     var processingError = ViewData["PaymentProcessingError"] as string;
     var showtimeSeatIds = ViewData["ShowtimeSeatIds"] as string ?? "";
-}
-
+    }
 @Html.AntiForgeryToken()
 
 @section Styles {
@@ -106,7 +110,24 @@
             }
         </div>
         <div class="mb-2"><strong>Giá mỗi ghế:</strong> @pricePerSeat.ToString("N0") VND</div>
-        <div class="mb-2"><strong>Tổng thanh toán:</strong> <span class="total-amount">@totalAmount.ToString("N0") VND</span></div>
+
+        @if (discountAmount > 0)
+        {
+            <div class="mb-2"><strong>Tổng trước khuyến mãi:</strong> @originalAmount.ToString("N0") VND</div>
+            <div class="mb-2"><strong>Giảm giá:</strong> -@discountAmount.ToString("N0") VND</div>
+        }
+
+        <div class="mb-2">
+            <strong>Tổng thanh toán:</strong>
+            <span class="total-amount">@totalAmount.ToString("N0") VND</span>
+        </div>
+
+        @if (pointsAwarded > 0)
+        {
+            <div class="mb-2">
+                <strong>Điểm nhận được:</strong> @pointsAwarded điểm
+            </div>
+        }
 
         <div id="emailStatus" class="alert alert-info p-2 mt-3">
             Đang gửi vé tới email của bạn...
