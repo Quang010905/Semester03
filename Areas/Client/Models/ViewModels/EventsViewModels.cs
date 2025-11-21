@@ -19,9 +19,7 @@ namespace Semester03.Areas.Client.Models.ViewModels
 
         public int? MaxSlot { get; set; }
         public int Status { get; set; }
-
         public int? TenantPositionId { get; set; }
-        public string TenantName { get; set; }        // Tên đơn vị/địa điểm tổ chức
     }
 
     // ==========================
@@ -52,27 +50,30 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public int Status { get; set; }
 
         public int TenantPositionId { get; set; }
-        public string TenantName { get; set; }        // Tên đơn vị/địa điểm tổ chức
 
         public List<EventCardVm> Related { get; set; } = new();
+
+        // === COMMENT CHO EVENT (dùng chung CommentVm với Movie) ===
+        public List<CommentVm> Comments { get; set; } = new();
+        public double AvgRate { get; set; }
+        public int CommentCount { get; set; }
     }
 
     // ===============================================================
     // BOOKING MODELS
     // ===============================================================
 
-    // Trang đăng ký (hiển thị Event + slot còn trống)
+    // For client register page (controller expects this)
     public class EventRegisterVm
     {
         public EventDetailsVm Event { get; set; }
         public int AvailableSlots { get; set; }
     }
 
-    // Model submit booking (dùng nếu bạn muốn binding dạng object)
+    // Used when submit booking (you may use instead EventBookingVm)
     public class EventBookingVm
     {
         public int EventId { get; set; }
-        public DateTime EventDate { get; set; }       // Ngày tham dự sự kiện (EventBooking_Date – có thể dùng sau)
         public int Slot { get; set; }
 
         public string CustomerName { get; set; }
@@ -82,73 +83,57 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 
-    // View hiển thị sau khi booking thành công
+    // Booking success view model (controller expects this)
     public class EventBookingSuccessVm
     {
         public int BookingId { get; set; }
-        public int? OrderGroup { get; set; }          // Mã nhóm đơn hàng (nếu có)
         public string EventTitle { get; set; }
         public int Quantity { get; set; }
         public decimal Amount { get; set; }
+        public int PaymentStatus { get; set; } 
         public string ContactEmail { get; set; }
-
-        public int PaymentStatus { get; set; }        // Trạng thái thanh toán
     }
 
-    // Chi tiết một booking (cho user/admin – bạn sẽ dùng sau)
+    // Dùng hiển thị chi tiết booking
     public class EventBookingDetailsVm
     {
         public int BookingId { get; set; }
         public int EventId { get; set; }
+
         public string EventTitle { get; set; }
         public string EventImage { get; set; }
 
-        public DateTime EventDate { get; set; }       // Ngày tham dự sự kiện
         public int Slot { get; set; }
-        public decimal UnitPrice { get; set; }        // Đơn giá mỗi vé/slot
-        public decimal TotalAmount => UnitPrice * Slot;
-
         public string CustomerName { get; set; }
         public string CustomerPhone { get; set; }
         public string CustomerEmail { get; set; }
 
-        public int PaymentStatus { get; set; }
-        public int? OrderGroup { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 
-    // Danh sách booking của user (Profile – bạn sẽ dùng sau)
+    // Dùng hiển thị danh sách booking của user
     public class UserEventBookingVm
     {
         public int BookingId { get; set; }
         public int EventId { get; set; }
+
         public string EventTitle { get; set; }
         public string EventImage { get; set; }
 
-        public DateTime EventDate { get; set; }
         public int Slot { get; set; }
-        public decimal UnitPrice { get; set; }
-        public decimal TotalAmount => UnitPrice * Slot;
-
-        public int PaymentStatus { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 
-    // Dùng cho Admin (nếu muốn – hiện tại không đụng vào Admin controller)
+    // Dành cho Admin (nếu cần)
     public class EventBookingListVm
     {
         public int BookingId { get; set; }
         public string EventTitle { get; set; }
+
         public string CustomerName { get; set; }
         public string CustomerPhone { get; set; }
 
-        public DateTime EventDate { get; set; }
         public int Slot { get; set; }
-        public decimal UnitPrice { get; set; }
-        public decimal TotalAmount => UnitPrice * Slot;
-
-        public int PaymentStatus { get; set; }
-        public int? OrderGroup { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

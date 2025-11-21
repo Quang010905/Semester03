@@ -88,8 +88,7 @@ namespace Semester03.Areas.Client.Controllers
                     ImageUrl = evt.ImageUrl,
                     MaxSlot = evt.MaxSlot,
                     Status = evt.Status,
-                    TenantPositionId = evt.TenantPositionId,
-                    TenantName = evt.TenantName
+                    TenantPositionId = evt.TenantPositionId
                 },
                 AvailableSlots = available
             };

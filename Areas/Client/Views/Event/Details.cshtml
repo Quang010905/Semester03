@@ -1,152 +1,587 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.EventDetailsVm
 @using System
+
 @{
     ViewData["Title"] = Model.Title;
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
 
+
     Func<string, string> Img = (raw) =>
     {
         if (string.IsNullOrWhiteSpace(raw))
-        {
             return Url.Content("~/images/event-placeholder.png");
-        }
+
         if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-        {
             return raw;
-        }
+
         var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
         s = s.Replace(" ", "%20");
+
         if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase)
             || s.StartsWith("images", StringComparison.OrdinalIgnoreCase)
             || s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
         {
             return Url.Content("~/" + s);
         }
+
         if (raw.StartsWith("/"))
-        {
             return Url.Content("~" + raw);
-        }
+
         return Url.Content("~/Content/Uploads/Events/" + s);
     };
+
+    var isEnded = Model.EndDate.HasValue && Model.EndDate.Value < DateTime.Now;
 }
 
-<style>
-    .event-main-img {
-        height: 360px;
-        object-fit: cover;
-        width: 100%;
-        border-radius: 6px;
-    }
-
-    .event-meta {
-        color: #6c757d;
-        font-size: 0.95rem;
-    }
-
-    .related-card {
-        border: 0;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-    }
-
-        .related-card img {
-            height: 140px;
-            object-fit: cover;
-            width: 100%;
+@section Styles {
+    <style>
+        .event-page {
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-    .related-title {
-        font-size: 1rem;
-        font-weight: 600;
-        margin-bottom: 6px;
-    }
+        .event-main-card {
+            background: #ffffff;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 12px 30px rgba(15,23,42,0.10);
+            border: 1px solid #e5e7eb;
+        }
 
-    .btn-register {
-        padding: 10px 14px;
-        font-weight: 600;
-    }
-</style>
+        .event-main-img-wrapper {
+            border-radius: .9rem;
+            overflow: hidden;
+            margin-bottom: 1.25rem;
+        }
 
-<div class="container py-4">
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="mb-3">
-                <img src="@Img(Model.ImageUrl)" alt="@Model.Title" class="event-main-img w-100" />
-            </div>
+        .event-main-img {
+            width: 100%;
+            height: 360px;
+            object-fit: cover;
+            display: block;
+        }
 
-            <h1 class="mb-2">@Model.Title</h1>
-            <p class="event-meta mb-3">
-                <span>@Model.StartDate.ToString("dd MMM yyyy HH:mm")</span>
-                @if (Model.EndDate.HasValue)
-                {
-                    <span> — @Model.EndDate.Value.ToString("dd MMM yyyy HH:mm")</span>
-                }
-            </p>
+        .event-meta {
+            color: #6b7280;
+            font-size: .9rem;
+        }
 
-            <div class="mb-4">
-                @Html.Raw(Model.Description)
-            </div>
+            .event-meta strong {
+                color: #374151;
+            }
 
-            <div class="d-flex align-items-center gap-2">
-                <a href="@Url.Action("Index", "Event", new { area = "Client" })" class="btn btn-outline-secondary">Quay lại</a>
-                <div class="ms-auto text-muted small">
-                    <div><strong>Slots:</strong> @Model.MaxSlot</div>
-                    <div><strong>Status:</strong> @(Model.Status == 1 ? "Active" : "Inactive")</div>
-                </div>
-            </div>
+        .event-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: .35rem;
+        }
 
-            @if (Model.Related != null && Model.Related.Any())
+        /* Related */
+        .related-title-section {
+            font-weight: 600;
+        }
+
+        .related-card {
+            border: 1px solid #e5e7eb;
+            border-radius: .9rem;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(15,23,42,0.06);
+            transition: transform .18s ease, box-shadow .18s ease;
+            background: #fff;
+        }
+
+            .related-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 14px 32px rgba(15,23,42,0.12);
+            }
+
+            .related-card img {
+                height: 140px;
+                width: 100%;
+                object-fit: cover;
+            }
+
+        .related-title {
+            font-size: .98rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        /* Side info */
+        .event-side-card {
+            background: #ffffff;
+            border-radius: 1rem;
+            padding: 1.25rem;
+            box-shadow: 0 10px 26px rgba(15,23,42,0.08);
+            border: 1px solid #e5e7eb;
+        }
+
+            .event-side-card h6 {
+                font-weight: 600;
+            }
+
+            .event-side-card p {
+                font-size: .9rem;
+                margin-bottom: .25rem;
+            }
+
+        .btn-register {
+            font-weight: 600;
+        }
+
+        .badge-status {
+            font-size: .75rem;
+            padding: .25rem .55rem;
+            border-radius: 999px;
+        }
+
+            .badge-status.active {
+                background: #d1fae5;
+                color: #047857;
+            }
+
+            .badge-status.inactive {
+                background: #fee2e2;
+                color: #b91c1c;
+            }
+
+        /* COMMENT BOX */
+        .comment-box {
+            margin-top: 1.75rem;
+            border-radius: 1rem;
+            background: #ffffff;
+            padding: 1.25rem;
+            box-shadow: 0 10px 26px rgba(15,23,42,0.08);
+            border: 1px solid #e5e7eb;
+        }
+
+        .comment-form-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+            flex-wrap: wrap;
+        }
+
+            .comment-form-header small {
+                color: #64748b;
+                font-size: 0.8rem;
+            }
+
+        .comment-item {
+            border-bottom: 1px solid #e5e7eb;
+            padding: .85rem 0;
+        }
+
+            .comment-item:last-child {
+                border-bottom: none;
+            }
+
+        .comment-user {
+            font-weight: 600;
+            margin-right: .35rem;
+        }
+
+        .comment-time {
+            color: #94a3b8;
+            font-size: .85rem;
+        }
+
+        .comment-text {
+            margin-top: .35rem;
+            font-size: .9rem;
+        }
+
+        .comment-empty {
+            color: #94a3b8;
+            font-size: .9rem;
+        }
+
+        .stars {
+            display: inline-flex;
+            gap: .15rem;
+            align-items: center;
+        }
+
+        .star {
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: #cbd5e1;
+            display: inline-flex;
+            align-items: center;
+            transition: transform .15s ease, color .15s ease;
+        }
+
+            .star.filled,
+            .star.bi-star-fill {
+                color: #ffc107;
+                transform: scale(1.06);
+            }
+
+        .avg-rate-box {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            font-size: .85rem;
+            color: #6b7280;
+        }
+
+            .avg-rate-box .big-rate {
+                font-size: 1.2rem;
+                font-weight: 700;
+                color: #111827;
+            }
+
+        @@media (max-width: 991.98px) {
+            .event-main-img {
+                height: 270px;
+            }
+        }
+    </style>
+}
+
+<div class="event-page container py-4">
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <a href="@Url.Action("Index", "Event", new { area = "Client" })"
+           class="btn btn-outline-secondary btn-sm">
+            &larr; Quay lại danh sách
+        </a>
+
+        <div>
+            @if (isEnded)
             {
-                <hr class="my-4" />
-                <h4 class="mb-3">Sự kiện liên quan</h4>
-
-                <div class="row g-3">
-                    @foreach (var r in Model.Related)
-                    {
-                        <div class="col-12 col-sm-6 col-md-6 col-lg-3">
-                            <div class="card related-card">
-                                <a href="@Url.Action("Details", "Event", new { area = "Client", id = r.Id })" class="d-block">
-                                    <img src="@Img(r.ImageUrl)" class="card-img-top" alt="@r.Title" />
-                                </a>
-                                <div class="card-body p-3">
-                                    <a href="@Url.Action("Details", "Event", new { area = "Client", id = r.Id })" class="text-dark">
-                                        <div class="related-title">@r.Title</div>
-                                    </a>
-                                    <div class="small text-muted mb-2">@r.StartDate?.ToString("dd MMM yyyy")</div>
-                                    <p class="small mb-0 text-truncate">@r.ShortDescription</p>
-                                </div>
-                            </div>
-                        </div>
-                    }
-                </div>
+                <span class="badge-status inactive">Đã kết thúc</span>
+            }
+            else if (Model.Status == 1)
+            {
+                <span class="badge-status active">Đang mở</span>
+            }
+            else
+            {
+                <span class="badge-status inactive">Không hoạt động</span>
             }
         </div>
+    </div>
 
+    <div class="row g-4">
+        <!-- MAIN CONTENT -->
+        <div class="col-lg-8">
+            <div class="event-main-card">
+                <div class="event-main-img-wrapper">
+                    <img src="@Img(Model.ImageUrl)" alt="@Model.Title" class="event-main-img" />
+                </div>
+
+                <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                    <div>
+                        <h1 class="event-title mb-1">@Model.Title</h1>
+
+                        <div class="event-meta">
+                            <div>
+                                <i class="bi bi-calendar-event me-1"></i>
+                                <strong>Ngày bắt đầu:</strong> @Model.StartDate.ToString("dd/MM/yyyy")
+                            </div>
+                            @if (Model.EndDate.HasValue)
+                            {
+                                <div class="mt-1">
+                                    <i class="bi bi-calendar-event me-1"></i>
+                                    <strong>Ngày kết thúc:</strong> @Model.EndDate.Value.ToString("dd/MM/yyyy")
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="text-end">
+                        <div class="event-meta">
+                            <strong>Slots:</strong> @Model.MaxSlot
+                        </div>
+                    </div>
+                </div>
+
+                <hr />
+
+                @if (isEnded)
+                {
+                    <div class="alert alert-warning mb-3">
+                        Sự kiện này đã kết thúc vào ngày
+                        @Model.EndDate?.ToString("dd/MM/yyyy").
+                    </div>
+                }
+
+                <div class="mb-4">
+                    @Html.Raw(Model.Description)
+                </div>
+
+                <div class="d-flex align-items-center gap-2 mb-4">
+                    <a href="@Url.Action("Index", "Event", new { area = "Client" })"
+                       class="btn btn-outline-secondary">
+                        &larr; Quay lại danh sách
+                    </a>
+                </div>
+
+                @* ===== COMMENT BOX ===== *@
+                <div class="comment-box">
+                    <div class="comment-form-header mb-2">
+                        <h6 class="mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-chat-dots"></i>
+                            Bình luận về sự kiện
+                        </h6>
+                        <div class="avg-rate-box">
+                            <span class="big-rate">
+                                @Model.AvgRate.ToString("0.0") / 5
+                            </span>
+                            <span>
+                                (@Model.CommentCount bình luận)
+                            </span>
+                        </div>
+                    </div>
+
+                    <div id="commentFormArea" class="mt-2">
+                        @if (User?.Identity?.IsAuthenticated == true)
+                        {
+                            @Html.AntiForgeryToken()
+                            <div class="mb-2"><strong>Đánh giá của bạn:</strong></div>
+                            <div class="mb-2">
+                                <div id="userStars" class="stars">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        <i class="star bi bi-star" data-value="@i"></i>
+                                    }
+                                </div>
+                            </div>
+                            <textarea id="commentText"
+                                  class="form-control mb-2"
+                                  rows="3"
+                                  placeholder="Viết cảm nhận của bạn về sự kiện..."></textarea>
+                            <div class="d-flex gap-2 align-items-center flex-wrap">
+                                <button id="submitComment" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-send me-1"></i>Gửi bình luận
+                                </button>
+                                <small class="text-muted">Bình luận có thể được kiểm duyệt trước khi hiển thị.</small>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info py-2 mb-2">
+                                Bạn cần
+                                <a href="@Url.Action("Login", "Account", new { area = "Client" })">đăng nhập</a>
+                                để bình luận và đánh giá sự kiện này.
+                            </div>
+                        }
+                    </div>
+
+                    <hr class="my-3" />
+
+                    <div id="commentsList">
+                        @if (Model.Comments != null && Model.Comments.Any())
+                        {
+                            foreach (var c in Model.Comments)
+                            {
+                                <div class="comment-item">
+                                    <div class="d-flex justify-content-between flex-wrap gap-2">
+                                        <div>
+                                            <span class="comment-user">@c.UserName</span>
+                                            <span class="small text-muted">•</span>
+                                            <span class="comment-time">@c.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</span>
+                                        </div>
+                                        <div class="stars" aria-hidden="true">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                var filledClass = c.Rate >= i ? "bi-star-fill filled" : "bi-star";
+                                                <i class="star @filledClass"></i>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="comment-text">
+                                        @Html.Raw(System.Net.WebUtility.HtmlEncode(c.Text))
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="comment-empty">
+                                Chưa có bình luận nào — hãy là người đầu tiên!
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @* ===== RELATED EVENTS (NẾU SAU NÀY CÓ) ===== *@
+                @if (Model.Related != null && Model.Related.Any())
+                {
+                    <hr class="my-4" />
+                    <h5 class="related-title-section mb-3">Sự kiện liên quan</h5>
+
+                    <div class="row g-3">
+                        @foreach (var r in Model.Related)
+                        {
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                                <div class="card related-card h-100">
+                                    <a href="@Url.Action("Details", "Event", new { area = "Client", id = r.Id })"
+                                       class="d-block">
+                                        <img src="@Img(r.ImageUrl)" class="card-img-top" alt="@r.Title" />
+                                    </a>
+                                    <div class="card-body p-2">
+                                        <a href="@Url.Action("Details", "Event", new { area = "Client", id = r.Id })"
+                                           class="text-decoration-none text-dark">
+                                            <div class="related-title text-truncate">@r.Title</div>
+                                        </a>
+                                        <div class="small text-muted mb-1">
+                                            @r.StartDate?.ToString("dd/MM/yyyy") ?? "--"
+                                        </div>
+                                        <p class="small text-muted text-truncate mb-0">
+                                            @r.ShortDescription
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- SIDEBAR -->
         <aside class="col-lg-4">
-            <div class="p-3 bg-white rounded" style="box-shadow:0 6px 20px rgba(0,0,0,0.04);">
+            <div class="event-side-card">
                 <h6 class="mb-3">Thông tin sự kiện</h6>
-                <p class="mb-1">
-                    <strong>Ngày:</strong> @Model.StartDate.ToString("dd MMM yyyy")
-                    @if (Model.EndDate.HasValue)
-                    {
-                        <text> — @Model.EndDate.Value.ToString("dd MMM yyyy")</text>
-                    }
+
+                <p>
+                    <strong>Ngày bắt đầu:</strong>
+                    @Model.StartDate.ToString("dd/MM/yyyy")
                 </p>
-                <p class="mb-1"><strong>Slots:</strong> @Model.MaxSlot</p>
-                <p class="mb-1"><strong>Trạng thái:</strong> @(Model.Status == 1 ? "Đang diễn ra" : "Ngừng")</p>
-                <p class="mb-1">
-                    <strong>Đơn vị tổ chức:</strong>
-                    @(string.IsNullOrWhiteSpace(Model.TenantName) ? "-" : Model.TenantName)
+
+                <p>
+                    <strong>Ngày kết thúc:</strong>
+                    @(Model.EndDate.HasValue? Model.EndDate.Value.ToString("dd/MM/yyyy") : "-")
+                </p>
+
+                <p><strong>Slots:</strong> @Model.MaxSlot</p>
+
+                <p>
+                    <strong>Trạng thái:</strong>
+                    @(isEnded ? "Đã kết thúc" : (Model.Status == 1 ? "Đang mở" : "Không hoạt động"))
+                </p>
+
+                <p>
+                    <strong>Organizer:</strong>
+                    @(Model.TenantPositionId != 0 ? Model.TenantPositionId.ToString() : "-")
                 </p>
 
                 <div class="d-grid mt-3">
-                    <a href="@Url.Action("Register", "EventBooking", new { area = "Client", id = Model.Id })"
-                       class="btn btn-success">
-                        Đăng ký ngay
-                    </a>
+                    @if (isEnded || Model.Status != 1)
+                    {
+                        <button class="btn btn-secondary btn-register" disabled>
+                            Sự kiện đã kết thúc
+                        </button>
+                    }
+                    else
+                    {
+                        <a href="@Url.Action("Register", "EventBooking", new { area = "Client", id = Model.Id })"
+                           class="btn btn-success btn-register">
+                            Đăng ký ngay
+                        </a>
+                    }
                 </div>
             </div>
         </aside>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const starContainer = document.getElementById('userStars');
+            const submitBtn = document.getElementById('submitComment');
+            const textArea = document.getElementById('commentText');
+            let selectedRating = 0;
+
+            if (starContainer) {
+                const stars = starContainer.querySelectorAll('.star');
+
+                function highlight(value) {
+                    stars.forEach(st => {
+                        const v = parseInt(st.dataset.value || '0');
+                        if (v <= value) {
+                            st.classList.remove('bi-star');
+                            st.classList.add('bi-star-fill', 'filled');
+                        } else {
+                            st.classList.remove('bi-star-fill', 'filled');
+                            st.classList.add('bi-star');
+                        }
+                    });
+                }
+
+                stars.forEach(s => {
+                    s.addEventListener('mouseenter', () => highlight(parseInt(s.dataset.value || '0')));
+                    s.addEventListener('mouseleave', () => highlight(selectedRating));
+                    s.addEventListener('click', () => {
+                        selectedRating = parseInt(s.dataset.value || '0');
+                        highlight(selectedRating);
+                    });
+                });
+            }
+
+            if (submitBtn) {
+                submitBtn.addEventListener('click', async function () {
+                    if (!selectedRating || selectedRating <= 0) {
+                        alert('Vui lòng chọn số sao đánh giá.');
+                        return;
+                    }
+                    const text = (textArea?.value || '').trim();
+                    if (!text) {
+                        alert('Vui lòng nhập nội dung bình luận.');
+                        return;
+                    }
+
+                    const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                    const token = tokenInput ? tokenInput.value : '';
+
+                    submitBtn.disabled = true;
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang gửi...';
+
+                    try {
+                        const resp = await fetch('@Url.Action("AddComment", "Event", new { area = "Client" })', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                'RequestVerificationToken': token,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: new URLSearchParams({
+                                eventId: '@Model.Id',
+                                rate: selectedRating.toString(),
+                                text: text
+                            })
+                        });
+
+                        const data = await resp.json();
+                        if (data && data.success) {
+                            alert(data.message || 'Gửi bình luận thành công.');
+
+                            if (textArea) textArea.value = '';
+                            selectedRating = 0;
+                            if (starContainer) {
+                                starContainer.querySelectorAll('.star').forEach(st => {
+                                    st.classList.remove('bi-star-fill', 'filled');
+                                    st.classList.add('bi-star');
+                                });
+                            }
+
+                            window.location.reload();
+                        } else {
+                            alert(data?.message || 'Có lỗi khi gửi bình luận.');
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        alert('Lỗi server. Vui lòng thử lại sau.');
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    }
+                });
+            }
+        });
+    </script>
+}
