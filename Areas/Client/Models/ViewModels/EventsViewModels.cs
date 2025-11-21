@@ -19,7 +19,9 @@ namespace Semester03.Areas.Client.Models.ViewModels
 
         public int? MaxSlot { get; set; }
         public int Status { get; set; }
+
         public int? TenantPositionId { get; set; }
+        public string TenantName { get; set; }        // Tên đơn vị/địa điểm tổ chức
     }
 
     // ==========================
@@ -50,6 +52,8 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public int Status { get; set; }
 
         public int TenantPositionId { get; set; }
+        public string TenantName { get; set; }        // Tên đơn vị/địa điểm tổ chức
+
         public List<EventCardVm> Related { get; set; } = new();
     }
 
@@ -57,17 +61,18 @@ namespace Semester03.Areas.Client.Models.ViewModels
     // BOOKING MODELS
     // ===============================================================
 
-    // For client register page (controller expects this)
+    // Trang đăng ký (hiển thị Event + slot còn trống)
     public class EventRegisterVm
     {
         public EventDetailsVm Event { get; set; }
         public int AvailableSlots { get; set; }
     }
 
-    // Used when submit booking (you may use instead EventBookingVm)
+    // Model submit booking (dùng nếu bạn muốn binding dạng object)
     public class EventBookingVm
     {
         public int EventId { get; set; }
+        public DateTime EventDate { get; set; }       // Ngày tham dự sự kiện (EventBooking_Date – có thể dùng sau)
         public int Slot { get; set; }
 
         public string CustomerName { get; set; }
@@ -77,56 +82,73 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 
-    // Booking success view model (controller expects this)
+    // View hiển thị sau khi booking thành công
     public class EventBookingSuccessVm
     {
         public int BookingId { get; set; }
+        public int? OrderGroup { get; set; }          // Mã nhóm đơn hàng (nếu có)
         public string EventTitle { get; set; }
         public int Quantity { get; set; }
         public decimal Amount { get; set; }
         public string ContactEmail { get; set; }
+
+        public int PaymentStatus { get; set; }        // Trạng thái thanh toán
     }
 
-    // Dùng hiển thị chi tiết booking
+    // Chi tiết một booking (cho user/admin – bạn sẽ dùng sau)
     public class EventBookingDetailsVm
     {
         public int BookingId { get; set; }
         public int EventId { get; set; }
-
         public string EventTitle { get; set; }
         public string EventImage { get; set; }
 
+        public DateTime EventDate { get; set; }       // Ngày tham dự sự kiện
         public int Slot { get; set; }
+        public decimal UnitPrice { get; set; }        // Đơn giá mỗi vé/slot
+        public decimal TotalAmount => UnitPrice * Slot;
+
         public string CustomerName { get; set; }
         public string CustomerPhone { get; set; }
         public string CustomerEmail { get; set; }
 
+        public int PaymentStatus { get; set; }
+        public int? OrderGroup { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 
-    // Dùng hiển thị danh sách booking của user
+    // Danh sách booking của user (Profile – bạn sẽ dùng sau)
     public class UserEventBookingVm
     {
         public int BookingId { get; set; }
         public int EventId { get; set; }
-
         public string EventTitle { get; set; }
         public string EventImage { get; set; }
 
+        public DateTime EventDate { get; set; }
         public int Slot { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal TotalAmount => UnitPrice * Slot;
+
+        public int PaymentStatus { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 
-    // Dành cho Admin (nếu cần)
+    // Dùng cho Admin (nếu muốn – hiện tại không đụng vào Admin controller)
     public class EventBookingListVm
     {
         public int BookingId { get; set; }
         public string EventTitle { get; set; }
-
         public string CustomerName { get; set; }
         public string CustomerPhone { get; set; }
 
+        public DateTime EventDate { get; set; }
         public int Slot { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal TotalAmount => UnitPrice * Slot;
+
+        public int PaymentStatus { get; set; }
+        public int? OrderGroup { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }
