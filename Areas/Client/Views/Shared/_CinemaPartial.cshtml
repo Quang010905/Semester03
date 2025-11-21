@@ -2,73 +2,113 @@
 @model object
 
 @{
-    // Chuẩn hóa nguồn dữ liệu: model hoặc ViewBag.Showtimes
-    IEnumerable<object> shows = null;
-    if (Model is IEnumerable<object> mo) shows = mo;
-    else if (ViewBag.Showtimes is IEnumerable<object> vb) shows = vb;
-    else shows = Enumerable.Empty<object>();
+	// Normalize data source: Model or ViewBag.Showtimes
+	IEnumerable<object> shows = null;
+
+	if (Model is IEnumerable<object> mo) shows = mo;
+	else if (ViewBag.Showtimes is IEnumerable<object> vb) shows = vb;
+	else shows = Enumerable.Empty<object>();
 }
+<style>
+	.cinema-showtime-list li {
+		padding: .1rem 0;
+	}
 
-<ul class="list-unstyled small mb-0">
-    @if (shows.Any())
-    {
-        foreach (var s in shows)
-        {
-            if (s == null)
-            {
-                <li class="mb-2 text-muted">Unknown item</li>
-                ;
-                continue;
-            }
+	.cinema-showtime-link {
+		display: inline-flex;
+		align-items: baseline;
+		gap: .35rem;
+		padding: .2rem .1rem;
+		border-radius: .4rem;
+		transition: background 0.2s ease, transform 0.15s ease;
+	}
 
-            var t = s.GetType();
-            object val = null;
+		.cinema-showtime-link:hover {
+			background: rgba(59, 130, 246, 0.06);
+			transform: translateX(2px);
+		}
 
-            // ID cho link: kiểm tra nhiều tên khả dĩ
-            var pId = t.GetProperty("Id") ?? t.GetProperty("ShowtimeId") ?? t.GetProperty("EventId") ?? t.GetProperty("TenantId");
-            var idVal = pId != null ? pId.GetValue(s) : null;
-            var idRoute = 0;
-            if (idVal != null)
-            {
-                int.TryParse(idVal.ToString(), out idRoute);
-            }
+	.cinema-showtime-title {
+		font-size: .9rem;
+	}
+</style>
 
-            // Title: kiểm tra nhiều tên thuộc tính (Title / Name / MovieTitle / TenantName)
-            string title = "Movie";
-            var pTitle = t.GetProperty("Title") ?? t.GetProperty("Name") ?? t.GetProperty("MovieTitle") ?? t.GetProperty("TenantName");
-            if (pTitle != null && (val = pTitle.GetValue(s)) != null)
-            {
-                title = val.ToString();
-            }
 
-            // Time: có thể là string hoặc DateTime
-            string timeText = "";
-            var pTime = t.GetProperty("Time") ?? t.GetProperty("Showtime") ?? t.GetProperty("StartTime") ?? t.GetProperty("EventStart") ?? t.GetProperty("StartDate");
-            if (pTime != null && (val = pTime.GetValue(s)) != null)
-            {
-                if (val is DateTime dt)
-                {
-                    timeText = dt.ToString("dd MMM yyyy HH:mm");
-                }
-                else
-                {
-                    timeText = val.ToString();
-                }
-            }
+<ul class="list-unstyled small mb-0 cinema-showtime-list">
+	@if (shows.Any())
+	{
+		foreach (var s in shows)
+		{
+			if (s == null)
+			{
+				<li class="mb-2 text-muted">Unknown item</li>
+				;
+				continue;
+			}
 
-            <li class="mb-2">
-                <a class="text-decoration-none" href="@Url.Action("Showtime", "Mall", new { id = idRoute })">
-                    <strong>@title</strong>
-                    @if (!string.IsNullOrEmpty(timeText))
-                    {
-                        <small class="text-muted"> — @timeText</small>
-                    }
-                </a>
-            </li>
-        }
-    }
-    else
-    {
-        <li class="text-muted">No showtimes available</li>
-    }
+			var t = s.GetType();
+			object val = null;
+
+			// ID for link: try multiple possible property names
+			var pId = t.GetProperty("Id")
+			?? t.GetProperty("ShowtimeId")
+			?? t.GetProperty("EventId")
+			?? t.GetProperty("TenantId");
+
+			var idVal = pId != null ? pId.GetValue(s) : null;
+			var idRoute = 0;
+			if (idVal != null)
+			{
+				int.TryParse(idVal.ToString(), out idRoute);
+			}
+
+			// Title: try several property names
+			string title = "Movie";
+			var pTitle = t.GetProperty("Title")
+			?? t.GetProperty("Name")
+			?? t.GetProperty("MovieTitle")
+			?? t.GetProperty("TenantName");
+
+			if (pTitle != null && (val = pTitle.GetValue(s)) != null)
+			{
+				title = val.ToString();
+			}
+
+			// Time: can be string or DateTime
+			string timeText = "";
+			var pTime = t.GetProperty("Time")
+			?? t.GetProperty("Showtime")
+			?? t.GetProperty("StartTime")
+			?? t.GetProperty("EventStart")
+			?? t.GetProperty("StartDate");
+
+			if (pTime != null && (val = pTime.GetValue(s)) != null)
+			{
+				if (val is DateTime dt)
+				{
+					timeText = dt.ToString("dd MMM yyyy HH:mm");
+				}
+				else
+				{
+					timeText = val.ToString();
+				}
+			}
+
+			<li class="mb-2">
+				<a class="text-decoration-none cinema-showtime-link"
+				   href="@Url.Action("Showtime", "Mall", new { id = idRoute })">
+					<strong class="cinema-showtime-title">@title</strong>
+					@if (!string.IsNullOrEmpty(timeText))
+					{
+						<small class="text-muted"> — @timeText</small>
+					}
+				</a>
+			</li>
+		}
+	}
+	else
+	{
+		<li class="text-muted">No showtimes available.</li>
+	}
 </ul>
+

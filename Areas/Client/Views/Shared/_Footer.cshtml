@@ -1,33 +1,125 @@
 ﻿@{
-    var mallName = ViewData["MallName"] ?? "ABCD Mall";
+    var mallName = ViewData["MallName"] ?? "ABCDMall";
 }
-<footer class="pt-5 pb-4 text-muted">
-    <div class="row">
+
+<footer class="pt-5 pb-4 text-muted mall-footer">
+    <div class="row gy-4">
         <div class="col-md-4">
-            <h5>@mallName</h5>
-            <p class="small">Address: @ViewData["MallAddress"] ?? "123 Le Loi, HCMC"</p>
-            <p class="small">Phone: @ViewData["MallPhone"] ?? "0123 456 789"</p>
+            <h5 class="fw-bold text-white">@mallName</h5>
+            <p class="small mb-1 text-footer-light">
+                Address:
+                @((ViewData["MallAddress"] ?? "123 Le Loi, Ho Chi Minh City").ToString())
+            </p>
+            <p class="small mb-0 text-footer-light">
+                Phone:
+                @((ViewData["MallPhone"] ?? "0123 456 789").ToString())
+            </p>
         </div>
 
         <div class="col-md-2">
-            <h6>About</h6>
-            <ul class="list-unstyled small">
-                <li><a href="@Url.Action("About","Home")">About us</a></li>
-                <li><a href="@Url.Action("Contact","Home")">Contact</a></li>
+            <h6 class="text-uppercase text-footer-heading small fw-bold">About</h6>
+            <ul class="list-unstyled small mb-0">
+                <li><a href="@Url.Action("About","Home")" class="footer-link">About us</a></li>
+                <li><a href="@Url.Action("Contact","Home")" class="footer-link">Contact</a></li>
             </ul>
         </div>
 
         <div class="col-md-3">
-            <h6>Support</h6>
-            <ul class="list-unstyled small">
-                <li><a href="@Url.Action("Help","Home")">FAQ</a></li>
-                <li><a href="@Url.Action("Parking","Mall")">Parking</a></li>
+            <h6 class="text-uppercase text-footer-heading small fw-bold">Support</h6>
+            <ul class="list-unstyled small mb-0">
+                <li><a href="@Url.Action("Help","Home")" class="footer-link">FAQ & Help</a></li>
+                <li><a href="@Url.Action("Parking","Mall")" class="footer-link">Parking information</a></li>
             </ul>
         </div>
 
-        <div class="col-md-3 text-end">
-            <small class="d-block">© @(DateTime.Now.Year) @mallName</small>
-            <small class="d-block">Made with ♥</small>
+        <div class="col-md-3 text-md-end">
+            <small class="d-block text-footer-light">
+                © @(DateTime.Now.Year) @mallName
+            </small>
+            <small class="d-block text-footer-light">
+                Crafted with <span class="text-heart">♥</span> for your mall experience.
+            </small>
+            <div class="mt-2">
+                <a href="#" class="footer-social-icon"><i class="bi bi-facebook"></i></a>
+                <a href="#" class="footer-social-icon"><i class="bi bi-instagram"></i></a>
+                <a href="#" class="footer-social-icon"><i class="bi bi-tiktok"></i></a>
+            </div>
         </div>
     </div>
 </footer>
+
+<style>
+    .mall-footer {
+        background: radial-gradient(circle at top, #141633 0, #050816 55%, #020617 100%);
+        border-top: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .text-footer-light {
+        color: #cbd5f5;
+    }
+
+    .text-footer-heading {
+        color: #e5e7eb;
+        letter-spacing: .08em;
+    }
+
+    .footer-link {
+        color: #cbd5f5;
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .1rem 0;
+        position: relative;
+        transition: color 0.2s ease, transform 0.1s ease;
+    }
+
+        .footer-link::before {
+            content: '';
+            width: 0;
+            height: 2px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #ff7a18, #ff4b6e, #ffd166);
+            position: absolute;
+            left: 0;
+            bottom: -2px;
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+
+        .footer-link:hover {
+            color: #fff;
+            transform: translateX(2px);
+        }
+
+            .footer-link:hover::before {
+                width: 70%;
+                opacity: 1;
+            }
+
+    .text-heart {
+        color: #fb7185;
+    }
+
+    .footer-social-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.8);
+        color: #e5e7eb;
+        margin-left: .25rem;
+        margin-right: .25rem;
+        font-size: .9rem;
+        transition: all 0.2s ease;
+        border: 1px solid rgba(148, 163, 184, 0.45);
+    }
+
+        .footer-social-icon:hover {
+            color: #fff;
+            background: radial-gradient(circle, #ff7a18, #ff4b6e);
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 8px 20px rgba(248, 113, 113, 0.45);
+        }
+</style>

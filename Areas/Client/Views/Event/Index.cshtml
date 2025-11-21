@@ -10,52 +10,138 @@
     Func<string, string> Img = (raw) =>
     {
         if (string.IsNullOrWhiteSpace(raw))
-        {
             return Url.Content("~/images/event-placeholder.png");
-        }
+
         if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-        {
             return raw;
-        }
+
         var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
         s = s.Replace(" ", "%20");
-        if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase) || s.StartsWith("images", StringComparison.OrdinalIgnoreCase) || s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
+
+        if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase)
+            || s.StartsWith("images", StringComparison.OrdinalIgnoreCase)
+            || s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
         {
             return Url.Content("~/" + s);
         }
+
         if (raw.StartsWith("/"))
-        {
             return Url.Content("~" + raw);
-        }
+
         return Url.Content("~/Content/Uploads/Events/" + s);
     };
 }
 
-<div class="row g-4">
-    <div class="col-12">
-        <h2>Featured events</h2>
-        <div class="row row-cols-1 row-cols-md-3 g-3">
-            @foreach (var e in Model.Featured ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.EventCardVm>())
-            {
-                <div class="col">
-                    <div class="card h-100 shadow-sm">
-                        <img src="@Img(e.ImageUrl)" class="card-img-top" alt="@e.Title" style="height:160px; object-fit:cover;">
-                        <div class="card-body">
-                            <h5 class="card-title text-truncate">@e.Title</h5>
-                            <p class="card-text small text-muted">@e.ShortDescription</p>
-                            <p class="small text-muted mb-0">@e.StartDate?.ToString("dd MMM yyyy HH:mm") ?? "--"</p>
-                        </div>
-                        <div class="card-footer bg-transparent border-top-0">
-                            <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">Chi tiết</a>
-                        </div>
-                    </div>
-                </div>
+@section Styles {
+    <style>
+        .events-page {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .events-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+            .events-header h2 {
+                font-weight: 700;
+                margin: 0;
             }
+
+            .events-header span {
+                font-size: .9rem;
+                color: #6b7280;
+            }
+
+        .event-featured-card {
+            border-radius: 1rem;
+            background: #ffffff;
+            box-shadow: 0 12px 28px rgba(15,23,42,0.12);
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+        }
+
+            .event-featured-card img {
+                height: 160px;
+                object-fit: cover;
+                width: 100%;
+            }
+
+            .event-featured-card .card-body {
+                padding: .9rem .9rem .8rem;
+            }
+
+            .event-featured-card .card-title {
+                font-size: 1rem;
+                font-weight: 600;
+            }
+
+            .event-featured-card .event-date {
+                font-size: .85rem;
+                color: #6b7280;
+            }
+
+            .event-featured-card .short-text {
+                font-size: .9rem;
+                color: #4b5563;
+            }
+
+        .event-section-title {
+            font-weight: 600;
+            margin-top: 2rem;
+            margin-bottom: .75rem;
+        }
+
+        .events-page .card-footer {
+            background: #ffffff;
+        }
+    </style>
+}
+
+<div class="events-page">
+    <div class="events-header">
+        <div>
+            <h2>Featured events</h2>
+            <span>Hand-picked events happening in the mall</span>
+        </div>
+        <div class="d-none d-md-block text-end text-muted small">
+            @((Model.Featured?.Count() ?? 0) + (Model.Upcoming?.Count() ?? 0)) events in total
         </div>
     </div>
 
-    <div class="col-12">
-        <h4 class="mt-4">Upcoming events</h4>
-        @await Html.PartialAsync("_EventListPartial", Model.Upcoming ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.EventCardVm>())
+    <!-- FEATURED EVENTS GRID -->
+    <div class="row row-cols-1 row-cols-md-3 g-3">
+        @foreach (var e in Model.Featured ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.EventCardVm>())
+        {
+            <div class="col">
+                <div class="card event-featured-card h-100">
+                    <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })" class="d-block">
+                        <img src="@Img(e.ImageUrl)" class="card-img-top" alt="@e.Title" />
+                    </a>
+                    <div class="card-body">
+                        <h5 class="card-title text-truncate">@e.Title</h5>
+                        <p class="short-text text-truncate mb-1">@e.ShortDescription</p>
+                        <p class="event-date mb-0">
+                            <i class="bi bi-calendar-event me-1"></i>
+                            @e.StartDate?.ToString("dd MMM yyyy HH:mm") ?? "--"
+                        </p>
+                    </div>
+                    <div class="card-footer border-0 pt-0 pb-3 px-3">
+                        <a class="btn btn-sm btn-outline-primary"
+                           href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">
+                            Chi tiết
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
+
+    <!-- UPCOMING EVENTS -->
+    <h4 class="event-section-title">Upcoming events</h4>
+    @await Html.PartialAsync("_EventListPartial", Model.Upcoming ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.EventCardVm>())
 </div>

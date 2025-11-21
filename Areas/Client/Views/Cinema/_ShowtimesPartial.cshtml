@@ -1,23 +1,72 @@
 ﻿@model IEnumerable<Semester03.Areas.Client.Models.ViewModels.ShowtimeVm>
 
-<div class="p-3 bg-white border rounded" id="showtimesContainer">
-    <h6>Showtimes (selected date)</h6>
-    @if (!Model.Any())
+@{
+    var list = Model?.ToList() ?? new List<Semester03.Areas.Client.Models.ViewModels.ShowtimeVm>();
+}
+
+<style>
+    .showtimes-panel {
+        border-radius: 1rem;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+    }
+
+    .showtimes-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .cinema-group-title {
+        font-weight: 600;
+    }
+
+    .showtime-chip {
+        border-radius: 999px;
+        background: #f8f9fa;
+        border: 1px solid #e5e7eb;
+        padding: .35rem .85rem;
+        font-size: .85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+        transition: .15s ease;
+    }
+
+        .showtime-chip:hover {
+            text-decoration: none;
+            background: #0d6efd;
+            color: #fff;
+            border-color: #0d6efd;
+            transform: translateY(-2px);
+        }
+</style>
+
+<div class="showtimes-panel p-3">
+    <div class="showtimes-header mb-2">
+        <h6 class="mb-0"><i class="bi bi-clock-history me-1"></i> Showtimes (selected date)</h6>
+        <span class="small text-muted">@list.Count showtime@(list.Count == 1 ? "" : "s")</span>
+    </div>
+
+    @if (!list.Any())
     {
-        <div class="small text-muted">No showtimes for the selected date.</div>
+        <div class="small text-muted">No showtimes available.</div>
     }
     else
     {
-        <div>
-            @foreach (var g in Model.GroupBy(s => s.CinemaName))
+        <div class="d-flex flex-column gap-3 mt-2">
+            @foreach (var g in list.GroupBy(s => s.CinemaName))
             {
-                <div class="mb-2">
-                    <strong>@g.Key</strong>
-                    <div class="d-flex flex-wrap gap-2 mt-1">
+                <div>
+                    <div class="cinema-group-title">@g.Key</div>
+                    <div class="mt-1 d-flex flex-wrap gap-2">
                         @foreach (var s in g)
                         {
-                            <a class="btn btn-outline-secondary btn-sm" href="@Url.Action("SelectSeat","Booking", new { area = "Client", showtimeId = s.Id })">
-                                @s.StartTime.ToLocalTime().ToString("HH:mm") <small class="text-muted">(@s.ScreenName)</small>
+                            <a class="showtime-chip"
+                               href="@Url.Action("SelectSeat", "Booking", new { area = "Client", showtimeId = s.Id })">
+                                @s.StartTime.ToString("HH:mm")
+                                <span class="text-muted small">(@s.ScreenName)</span>
                             </a>
                         }
                     </div>

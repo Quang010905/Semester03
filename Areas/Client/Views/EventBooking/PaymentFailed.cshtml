@@ -1,16 +1,57 @@
 ﻿@{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
-    ViewData["Title"] = "Thanh toán thất bại";
-    var msg = ViewData["Message"] as string ?? "Thanh toán thất bại hoặc bị hủy.";
+    ViewData["Title"] = "Payment Failed";
+    var msg = ViewData["Message"] as string ?? "Payment failed or was cancelled.";
 }
 
-<div class="container py-4">
-    <div class="card p-4">
-        <h3>Thanh toán thất bại</h3>
-        <p class="text-danger">@msg</p>
-        <div class="mt-3">
-            <a class="btn btn-outline-secondary" href="javascript:history.back()">Quay lại</a>
-            <a class="btn btn-primary" href="@Url.Action("Index", "Event", new { area = "Client" })">Xem sự kiện khác</a>
+@section Styles {
+    <style>
+        .fail-wrapper {
+            max-width: 700px;
+            margin: 2.5rem auto;
+        }
+
+        .fail-card {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 26px rgba(0,0,0,0.06);
+            text-align: center;
+        }
+
+        .fail-icon {
+            width: 78px;
+            height: 78px;
+            background: #fee2e2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.6rem;
+            color: #dc2626;
+            margin: 0 auto 1rem;
+        }
+    </style>
+}
+
+<div class="container fail-wrapper">
+    <div class="fail-card">
+        <div class="fail-icon">
+            <i class="bi bi-x-circle-fill"></i>
+        </div>
+
+        <h3 class="mb-3">Payment Failed</h3>
+        <p class="text-danger fw-semibold">@msg</p>
+
+        <div class="mt-4 d-flex justify-content-center gap-2">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                Go back
+            </a>
+
+            <a href="@Url.Action("Index", "Event", new { area = "Client" })"
+               class="btn btn-primary">
+                Browse Events
+            </a>
         </div>
     </div>
 </div>

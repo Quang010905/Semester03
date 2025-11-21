@@ -1,17 +1,59 @@
 ﻿@using System.Linq
+@model object
+
 @{
-    var promos = Model as IEnumerable<string> ?? ViewBag.Promotions as IEnumerable<string> ?? Enumerable.Empty<string>();
+    var promos = Model as IEnumerable<string>
+                 ?? ViewBag.Promotions as IEnumerable<string>
+                 ?? Enumerable.Empty<string>();
 }
+
 @if (promos.Any())
 {
     <ul class="list-unstyled small mb-0">
         @foreach (var p in promos)
         {
-            <li class="mb-2"><a href="@Url.Action("Promotions","Mall")" class="text-decoration-none">@p</a></li>
+            <li class="mb-2">
+                <a href="@Url.Action("Promotions", "Mall")"
+                   class="text-decoration-none d-flex align-items-center promo-item-link">
+                    <span class="promo-dot me-2"></span>
+                    <span class="promo-text">@p</span>
+                </a>
+            </li>
         }
     </ul>
 }
 else
 {
-    <div class="text-muted small">No promotions at the moment</div>
+    <div class="text-muted small">
+        No promotions available at the moment.
+    </div>
 }
+
+<style>
+    .promo-item-link {
+        position: relative;
+        padding: .25rem .35rem;
+        border-radius: .5rem;
+        transition: background 0.2s ease, transform 0.15s ease;
+    }
+
+        .promo-item-link:hover {
+            background: rgba(255, 148, 114, 0.09);
+            transform: translateX(3px);
+        }
+
+    .promo-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: radial-gradient(circle, #ff7a18, #ff4b6e);
+        box-shadow: 0 0 0 4px rgba(255, 123, 103, 0.18);
+        flex-shrink: 0;
+    }
+
+    .promo-text {
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+    }
+</style>

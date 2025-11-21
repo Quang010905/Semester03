@@ -1,21 +1,84 @@
 ﻿@using System.Linq
+@model object
+
 @{
     var modelNotifs = Model as IEnumerable<string>;
-    var notifs = modelNotifs ?? ViewBag.Notifications as IEnumerable<string> ?? Enumerable.Empty<string>();
+    var notifs = modelNotifs
+                 ?? ViewBag.Notifications as IEnumerable<string>
+                 ?? Enumerable.Empty<string>();
 }
 
 <div class="p-2" style="max-height:330px; overflow:auto;">
     @if (notifs.Any())
     {
-        <div class="list-group list-group-flush small">
+        <div class="list-group list-group-flush small notification-list">
             @foreach (var n in notifs)
             {
-                <a href="#" class="list-group-item list-group-item-action">@n</a>
+                <a href="#"
+                   class="list-group-item list-group-item-action notification-item">
+                    <div class="d-flex align-items-start">
+                        <div class="notif-icon-wrapper me-2">
+                            <i class="bi bi-bell-fill notif-icon"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="notif-text">@n</div>
+                            <div class="notif-meta text-muted small">
+                                Just now
+                            </div>
+                        </div>
+                    </div>
+                </a>
             }
         </div>
     }
     else
     {
-        <div class="text-muted small">No notifications</div>
+        <div class="text-muted small text-center py-2">
+            No notifications.
+        </div>
     }
 </div>
+
+<style>
+    .notification-list {
+        border-radius: .75rem;
+    }
+
+    .notification-item {
+        border: none;
+        border-radius: .75rem !important;
+        margin-bottom: .25rem;
+        transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    }
+
+        .notification-item:hover {
+            background: #f8fafc;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+        }
+
+    .notif-icon-wrapper {
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle, #ff7a18, #ff4b6e);
+        box-shadow: 0 8px 16px rgba(255, 75, 110, 0.35);
+        flex-shrink: 0;
+    }
+
+    .notif-icon {
+        font-size: .9rem;
+        color: #fff;
+    }
+
+    .notif-text {
+        font-weight: 500;
+    }
+
+    .notif-meta {
+        font-size: .7rem;
+    }
+</style>

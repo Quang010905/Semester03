@@ -1,68 +1,120 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.EventRegisterVm
 @{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
-    ViewData["Title"] = "Đăng ký sự kiện";
+    ViewData["Title"] = "Register for Event";
     var price = ViewBag.Price as decimal? ?? 0m;
 }
 
-<div class="container py-4">
-    <div class="row">
-        <div class="col-md-8">
-            <h3>@Model.Event.Title</h3>
-            <p class="text-muted">@Model.Event.Description</p>
-            <p>
-                <strong>Thời gian:</strong> @Model.Event.StartDate.ToString("dd/MM/yyyy")
-                @if (Model.Event.EndDate.HasValue)
-                {
-                    <text>- @Model.Event.EndDate.Value.ToString("dd/MM/yyyy")</text>
-                }
-            </p>
-            <p><strong>Số lượng tối đa:</strong> @Model.Event.MaxSlot</p>
-            <p><strong>Còn trống:</strong> @Model.AvailableSlots</p>
-        </div>
-        <div class="col-md-4">
-            <div class="card p-3">
-                <h5>Đặt vé</h5>
+@section Styles {
+    <style>
+        .event-register-page {
+            max-width: 1200px;
+            margin: auto;
+        }
 
-                <form id="registerForm" asp-area="Client" asp-controller="EventBooking" asp-action="CreateBooking" method="post" novalidate>
+        .event-info-card {
+            background: #fff;
+            padding: 1.25rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 26px rgba(0,0,0,0.06);
+            border: 1px solid #e5e7eb;
+        }
+
+        .register-card {
+            background: #fff;
+            border-radius: 1rem;
+            padding: 1.25rem;
+            box-shadow: 0 10px 26px rgba(0,0,0,0.06);
+            border: 1px solid #e5e7eb;
+        }
+
+        #registerAlert {
+            border-radius: .6rem;
+            padding: .75rem 1rem;
+            font-size: .9rem;
+        }
+    </style>
+}
+
+<div class="container py-4 event-register-page">
+
+    <div class="row g-4">
+
+        <!-- EVENT INFO -->
+        <div class="col-md-8">
+            <div class="event-info-card">
+                <h3 class="mb-2">@Model.Event.Title</h3>
+                <p class="text-muted">@Model.Event.Description</p>
+
+                <p>
+                    <strong>Date:</strong>
+                    @Model.Event.StartDate.ToString("dd/MM/yyyy")
+                    @if (Model.Event.EndDate.HasValue)
+                    {
+                        <span> – @Model.Event.EndDate.Value.ToString("dd/MM/yyyy")</span>
+                    }
+                </p>
+
+                <p><strong>Max slots:</strong> @Model.Event.MaxSlot</p>
+                <p><strong>Available:</strong> @Model.AvailableSlots</p>
+            </div>
+        </div>
+
+        <!-- REGISTER FORM -->
+        <div class="col-md-4">
+            <div class="register-card">
+                <h5 class="mb-3">Register</h5>
+
+                <form id="registerForm"
+                      asp-area="Client" asp-controller="EventBooking" asp-action="CreateBooking"
+                      method="post" novalidate>
                     @Html.AntiForgeryToken()
+
                     <input type="hidden" name="eventId" value="@Model.Event.Id" />
+
                     <div class="mb-2">
-                        <label class="form-label">Họ tên</label>
+                        <label class="form-label">Full name</label>
                         <input id="contactName" name="contactName" class="form-control" required />
                     </div>
+
                     <div class="mb-2">
                         <label class="form-label">Email</label>
                         <input id="contactEmail" name="contactEmail" type="email" class="form-control" required />
                     </div>
+
                     <div class="mb-2">
-                        <label class="form-label">Số lượng</label>
-                        <input id="quantity" name="quantity" type="number" min="1" max="@Model.AvailableSlots" value="1" class="form-control" required />
+                        <label class="form-label">Quantity</label>
+                        <input id="quantity" name="quantity" type="number"
+                               min="1" max="@Model.AvailableSlots" value="1"
+                               class="form-control" required />
                     </div>
 
                     @if (price > 0m)
                     {
                         <div class="mb-2">
-                            <label class="form-label">Giá / vé</label>
+                            <label class="form-label">Price per ticket</label>
                             <div id="pricePerTicket">@price.ToString("N0") VND</div>
                         </div>
-                        <div class="d-grid">
-                            <button id="btnSubmit" class="btn btn-primary" type="submit">Đặt và thanh toán</button>
-                        </div>
+
+                        <button id="btnSubmit" class="btn btn-primary w-100" type="submit">
+                            Book & Pay
+                        </button>
                     }
                     else
                     {
-                        <div class="d-grid">
-                            <button id="btnSubmit" class="btn btn-success" type="submit">Đăng ký (miễn phí)</button>
-                        </div>
+                        <button id="btnSubmit" class="btn btn-success w-100" type="submit">
+                            Register (Free)
+                        </button>
                     }
                 </form>
 
                 <div id="registerAlert" class="mt-3" style="display:none;"></div>
             </div>
         </div>
+
     </div>
 </div>
+
 
 @section Scripts {
     <script>
@@ -71,93 +123,76 @@
             const btn = document.getElementById('btnSubmit');
             const alertBox = document.getElementById('registerAlert');
 
-            function showAlert(html, isError = true) {
-                alertBox.innerHTML = html;
-                alertBox.className = isError ? 'alert alert-danger' : 'alert alert-success';
+            function showAlert(msg, isError = true) {
+                alertBox.textContent = msg;
+                alertBox.className = `alert ${isError ? 'alert-danger' : 'alert-success'}`;
                 alertBox.style.display = 'block';
             }
 
             function clearAlert() {
                 alertBox.style.display = 'none';
-                alertBox.innerHTML = '';
+                alertBox.textContent = '';
                 alertBox.className = '';
             }
 
-            form.addEventListener('submit', function (e) {
-                if (!window.fetch) return;
-
+            form.addEventListener('submit', async function (e) {
                 e.preventDefault();
                 clearAlert();
 
-                if (!form.reportValidity || form.reportValidity() === false) {
+                // validation
+                if (!form.checkValidity()) {
+                    form.reportValidity();
                     return;
                 }
 
-                btn.disabled = true;
                 const originalText = btn.innerText;
-                btn.innerText = 'Đang xử lý...';
+                btn.disabled = true;
+                btn.innerText = "Processing...";
 
-                const formData = new FormData(form);
-                const url = '@Url.Action("CreateBooking", "EventBooking", new { area = "Client" })';
+                try {
+                    const formData = new FormData(form);
+                    const resp = await fetch('@Url.Action("CreateBooking", "EventBooking", new { area = "Client" })', {
+                        method: "POST",
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest",
+                            "Accept": "application/json"
+                        },
+                        body: formData,
+                        credentials: "same-origin"
+                    });
 
-                fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    },
-                    body: formData,
-                    credentials: 'same-origin',
-                    redirect: 'follow'
-                })
-                .then(async res => {
-                    if (res.redirected) {
-                        window.location.href = res.url;
-                        return Promise.reject(new Error('Redirected to ' + res.url));
+                    if (resp.redirected) {
+                        window.location.href = resp.url;
+                        return;
                     }
 
-                    const txt = await res.text();
-
-                    if (!res.ok) {
-                        const short = txt.length > 1000 ? txt.substring(0, 1000) + '...' : txt;
-                        throw new Error(short || `Server error ${res.status}`);
-                    }
+                    const text = await resp.text();
+                    let data;
 
                     try {
-                        return JSON.parse(txt);
-                    } catch (ex) {
-                        throw new Error('Server trả về không phải JSON: ' + (txt || '[empty]'));
+                        data = JSON.parse(text);
+                    } catch {
+                        throw new Error("Server returned invalid JSON.");
                     }
-                })
-                .then(data => {
-                    if (!data) throw new Error('Không nhận được dữ liệu phản hồi.');
-                    if (!data.success) throw new Error(data.message || 'Lỗi khi đặt vé.');
 
-                    if (data.url) {
-                        window.location.href = data.url;
+                    if (!data.success) {
+                        throw new Error(data.message || "Booking failed.");
+                    }
+
+                    if (data.url || data.redirectUrl) {
+                        window.location.href = data.url || data.redirectUrl;
                         return;
                     }
 
-                    if (data.redirectUrl) {
-                        window.location.href = data.redirectUrl;
-                        return;
-                    }
-
-                    showAlert('Đặt vé thành công.', false);
-                })
-                .catch(err => {
-                    if (err && err.message && err.message.indexOf('Redirected to') === 0) {
-                        console.info(err.message);
-                        return;
-                    }
-                    console.error(err);
-                    const message = (err && err.message) ? err.message : String(err);
-                    showAlert('Lỗi: ' + message);
-                })
-                .finally(() => {
+                    showAlert("Booking successful!", false);
+                }
+                catch (err) {
+                    showAlert("Error: " + err.message, true);
+                }
+                finally {
                     btn.disabled = false;
                     btn.innerText = originalText;
-                });
+                }
             });
         })();
     </script>
