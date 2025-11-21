@@ -88,7 +88,8 @@ namespace Semester03.Areas.Client.Controllers
                     ImageUrl = evt.ImageUrl,
                     MaxSlot = evt.MaxSlot,
                     Status = evt.Status,
-                    TenantPositionId = evt.TenantPositionId
+                    TenantPositionId = evt.TenantPositionId,
+                    TenantName = evt.TenantName
                 },
                 AvailableSlots = available
             };
@@ -96,13 +97,14 @@ namespace Semester03.Areas.Client.Controllers
             return View("Register", vm);
         }
 
-        // POST: Client/EventBooking/CreateBooking
+        // POST: Client/EventBooking/CreateBooking (AJAX hoặc form thường)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateBooking([FromForm] int eventId,
-                                                       [FromForm] string contactName,
-                                                       [FromForm] string contactEmail,
-                                                       [FromForm] int quantity = 1)
+        public async Task<IActionResult> CreateBooking(
+            [FromForm] int eventId,
+            [FromForm] string contactName,
+            [FromForm] string contactEmail,
+            [FromForm] int quantity = 1)
         {
             try
             {
@@ -117,19 +119,23 @@ namespace Semester03.Areas.Client.Controllers
                     return RedirectToAction("Index", "Event", new { area = "Client" });
                 }
 
+                // Tính slot đã confirm
                 var confirmed = await _bookingRepo.GetConfirmedSlotsForEventAsync(eventId);
                 var maxSlot = evt.MaxSlot;
                 var available = Math.Max(0, maxSlot - confirmed);
                 if (quantity > available)
                 {
                     var msg = $"Không đủ slot. Còn {available} slot.";
-                    _logger.LogInformation("CreateBooking: not enough slots for event {EventId}. Requested {Req}, Available {Avail}", eventId, quantity, available);
+                    _logger.LogInformation(
+                        "CreateBooking: not enough slots for event {EventId}. Requested {Req}, Available {Avail}",
+                        eventId, quantity, available);
+
                     if (IsAjaxRequest()) return Json(new { success = false, message = msg });
                     TempData["BookingError"] = msg;
                     return RedirectToAction("Register", new { area = "Client", id = eventId });
                 }
 
-                // get price from event entity
+                // Lấy giá
                 decimal pricePerTicket = 0m;
                 try
                 {
@@ -153,19 +159,21 @@ namespace Semester03.Areas.Client.Controllers
                 }
 
                 var totalCost = pricePerTicket * quantity;
-                _logger.LogDebug("CreateBooking: event {EventId}, qty {Qty}, price {Price}, total {Total}", eventId, quantity, pricePerTicket, totalCost);
+                _logger.LogDebug("CreateBooking: event {EventId}, qty {Qty}, price {Price}, total {Total}",
+                    eventId, quantity, pricePerTicket, totalCost);
 
                 int? userId = null;
                 var claim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (!string.IsNullOrWhiteSpace(claim) && int.TryParse(claim, out var parsedUser))
                     userId = parsedUser;
 
+                // Lưu tenantId = TenantPositionId như code gốc (FK hơi lệch nhưng tớ không đổi để tránh vỡ)
                 var tenantId = evt.TenantPositionId;
                 var notes = $"ContactName:{contactName};ContactEmail:{contactEmail};Qty:{quantity}";
 
                 if (totalCost <= 0m)
                 {
-                    // Free booking: create and confirm (status 2)
+                    // FREE EVENT – tạo booking và xác nhận luôn
                     var booking = await _bookingRepo.CreateBookingAsync(
                         tenantId: tenantId,
                         userId: userId,
@@ -175,7 +183,7 @@ namespace Semester03.Areas.Client.Controllers
                         notes: notes
                     );
 
-                    // Email in background
+                    // Gửi email (fire & forget)
                     _ = Task.Run(async () =>
                     {
                         try
@@ -188,15 +196,17 @@ namespace Semester03.Areas.Client.Controllers
 
                     if (IsAjaxRequest())
                     {
-                        var redirectUrl = Url.Action("BookingSuccess", "EventBooking", new { area = "Client", id = booking.EventBookingId });
+                        var redirectUrl = Url.Action("BookingSuccess", "EventBooking",
+                            new { area = "Client", id = booking.EventBookingId });
                         return Json(new { success = true, redirectUrl });
                     }
 
-                    return RedirectToAction("BookingSuccess", "EventBooking", new { area = "Client", id = booking.EventBookingId });
+                    return RedirectToAction("BookingSuccess", "EventBooking",
+                        new { area = "Client", id = booking.EventBookingId });
                 }
                 else
                 {
-                    // Paid booking: pending then VNPAY
+                    // Event có phí – tạo booking Pending, rồi redirect sang VNPAY
                     var bookingPending = await _bookingRepo.CreateBookingAsync(
                         tenantId: tenantId,
                         userId: userId,
@@ -210,7 +220,8 @@ namespace Semester03.Areas.Client.Controllers
                     {
                         OrderType = "event-ticket",
                         Amount = (double)totalCost,
-                        OrderDescription = $"Event:{eventId};BookingId:{bookingPending.EventBookingId};Qty:{quantity};Amount:{totalCost}",
+                        OrderDescription =
+                            $"Event:{eventId};BookingId:{bookingPending.EventBookingId};Qty:{quantity};Amount:{totalCost}",
                         Name = $"Event Booking #{bookingPending.EventBookingId} - {evt.Title}"
                     };
 
@@ -218,7 +229,8 @@ namespace Semester03.Areas.Client.Controllers
 
                     if (string.IsNullOrWhiteSpace(url))
                     {
-                        _logger.LogError("VnPay service returned null or empty URL for booking {BookingId}", bookingPending.EventBookingId);
+                        _logger.LogError("VnPay service returned null or empty URL for booking {BookingId}",
+                            bookingPending.EventBookingId);
                         if (IsAjaxRequest()) return Json(new { success = false, message = "Không thể tạo link thanh toán." });
                         TempData["BookingError"] = "Không thể tạo link thanh toán. Vui lòng thử lại sau.";
                         return RedirectToAction("Register", new { area = "Client", id = eventId });
@@ -238,7 +250,7 @@ namespace Semester03.Areas.Client.Controllers
             }
         }
 
-        // VNPAY callback (GET)
+        // VNPAY callback (GET) cho EVENT
         [HttpGet]
         public async Task<IActionResult> PaymentCallbackVnpay()
         {
@@ -246,7 +258,8 @@ namespace Semester03.Areas.Client.Controllers
             {
                 var response = _vnPayService.PaymentExecute(Request.Query);
                 if (response == null)
-                    return RedirectToAction("PaymentFailed", new { area = "Client", message = "Không nhận được phản hồi từ VNPAY" });
+                    return RedirectToAction("PaymentFailed",
+                        new { area = "Client", message = "Không nhận được phản hồi từ VNPAY" });
 
                 int bookingId = 0;
                 var parts = (response.OrderDescription ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries);
@@ -258,12 +271,34 @@ namespace Semester03.Areas.Client.Controllers
                 }
 
                 if (!response.Success)
-                    return RedirectToAction("PaymentFailed", new { area = "Client", message = $"Thanh toán thất bại (code: {response.VnPayResponseCode})" });
+                {
+                    // LOG HISTORY PAYMENT FAILED
+                    if (bookingId > 0)
+                    {
+                        var booking = await _bookingRepo.GetByIdAsync(bookingId);
+                        if (booking != null)
+                        {
+                            await _bookingRepo.AddHistoryAsync(
+                                booking.EventBookingId,
+                                booking.EventBookingEventId,
+                                booking.EventBookingUserId,
+                                "PaymentFailed",
+                                $"Payment failed. VNPAY Code: {response.VnPayResponseCode}",
+                                DateTime.UtcNow.Date,
+                                null
+                            );
+                        }
+                    }
+
+                    return RedirectToAction("PaymentFailed",
+                        new { area = "Client", message = $"Thanh toán thất bại (code: {response.VnPayResponseCode})" });
+                }
 
                 if (bookingId <= 0)
                 {
                     _logger.LogWarning("VNPAY callback: BookingId not found in OrderDescription");
-                    return RedirectToAction("PaymentFailed", new { area = "Client", message = "Không xác định booking." });
+                    return RedirectToAction("PaymentFailed",
+                        new { area = "Client", message = "Không xác định booking." });
                 }
 
                 var marked = await _bookingRepo.MarkBookingPaidAsync(bookingId);
@@ -274,7 +309,11 @@ namespace Semester03.Areas.Client.Controllers
                     var booking = await _bookingRepo.GetByIdAsync(bookingId);
                     if (booking != null && booking.EventBookingUserId > 0)
                     {
-                        await _ticketEmailService.SendTicketsEmailAsync(booking.EventBookingUserId, new System.Collections.Generic.List<int>());
+                        // gửi email
+                        await _ticketEmailService.SendTicketsEmailAsync(
+                            booking.EventBookingUserId,
+                            new System.Collections.Generic.List<int>()
+                        );
                     }
                 }
                 catch (Exception exEmail)
@@ -282,12 +321,14 @@ namespace Semester03.Areas.Client.Controllers
                     _logger.LogError(exEmail, "Error sending booking confirmation email after payment.");
                 }
 
-                return RedirectToAction("BookingSuccess", "EventBooking", new { area = "Client", id = bookingId });
+                return RedirectToAction("BookingSuccess", "EventBooking",
+                    new { area = "Client", id = bookingId });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "PaymentCallbackVnpay error");
-                return RedirectToAction("PaymentFailed", new { area = "Client", message = "Lỗi xử lý VNPAY." });
+                return RedirectToAction("PaymentFailed",
+                    new { area = "Client", message = "Lỗi xử lý VNPAY." });
             }
         }
 
@@ -311,7 +352,8 @@ namespace Semester03.Areas.Client.Controllers
                 EventTitle = evt?.Title ?? $"Event #{booking.EventBookingEventId}",
                 Quantity = ExtractQtyFromNotes(booking.EventBookingNotes),
                 Amount = amount,
-                ContactEmail = ExtractContactEmailFromNotes(booking.EventBookingNotes)
+                ContactEmail = ExtractContactEmailFromNotes(booking.EventBookingNotes),
+                PaymentStatus = booking.EventBookingPaymentStatus ?? 0
             };
 
             return View("BookingSuccess", vm);
@@ -320,9 +362,15 @@ namespace Semester03.Areas.Client.Controllers
         [HttpGet]
         public IActionResult PaymentFailed(string message = "")
         {
-            ViewData["Message"] = string.IsNullOrEmpty(message) ? "Thanh toán thất bại hoặc bị hủy." : message;
+            ViewData["Message"] = string.IsNullOrEmpty(message)
+                ? "Thanh toán thất bại hoặc bị hủy."
+                : message;
             return View("PaymentFailed");
         }
+
+        // ==========================
+        // Helpers
+        // ==========================
 
         // MỞ RỘNG kiểm tra AJAX: X-Requested-With hoặc Accept: application/json hoặc ?ajax=1
         private bool IsAjaxRequest()
@@ -330,11 +378,13 @@ namespace Semester03.Areas.Client.Controllers
             try
             {
                 var xreq = Request.Headers["X-Requested-With"].FirstOrDefault();
-                if (!string.IsNullOrEmpty(xreq) && xreq.Equals("XMLHttpRequest", StringComparison.OrdinalIgnoreCase))
+                if (!string.IsNullOrEmpty(xreq) &&
+                    xreq.Equals("XMLHttpRequest", StringComparison.OrdinalIgnoreCase))
                     return true;
 
                 var accept = Request.Headers["Accept"].FirstOrDefault();
-                if (!string.IsNullOrEmpty(accept) && accept.IndexOf("application/json", StringComparison.OrdinalIgnoreCase) >= 0)
+                if (!string.IsNullOrEmpty(accept) &&
+                    accept.IndexOf("application/json", StringComparison.OrdinalIgnoreCase) >= 0)
                     return true;
 
                 if (Request.Query.ContainsKey("ajax")) return true;
@@ -352,11 +402,13 @@ namespace Semester03.Areas.Client.Controllers
             if (string.IsNullOrWhiteSpace(notes)) return 1;
             try
             {
-                var qpart = notes.Split(';').FirstOrDefault(p => p.Trim().StartsWith("Qty", StringComparison.OrdinalIgnoreCase));
+                var qpart = notes.Split(';')
+                    .FirstOrDefault(p => p.Trim().StartsWith("Qty", StringComparison.OrdinalIgnoreCase));
                 if (qpart == null) return 1;
                 var idx = qpart.IndexOfAny(new[] { ':', '=', ' ' });
                 string val = idx >= 0 ? qpart.Substring(idx + 1).Trim() : qpart.Substring(3).Trim();
-                if (int.TryParse(new string(val.Where(char.IsDigit).ToArray()), out var q)) return Math.Max(1, q);
+                if (int.TryParse(new string(val.Where(char.IsDigit).ToArray()), out var q))
+                    return Math.Max(1, q);
             }
             catch { }
             return 1;
@@ -367,7 +419,8 @@ namespace Semester03.Areas.Client.Controllers
             if (string.IsNullOrWhiteSpace(notes)) return "";
             try
             {
-                var ep = notes.Split(';').FirstOrDefault(p => p.Trim().StartsWith("ContactEmail:", StringComparison.OrdinalIgnoreCase));
+                var ep = notes.Split(';')
+                    .FirstOrDefault(p => p.Trim().StartsWith("ContactEmail:", StringComparison.OrdinalIgnoreCase));
                 if (ep == null) return "";
                 var v = ep.Substring(ep.IndexOf(':') + 1).Trim();
                 return v;
