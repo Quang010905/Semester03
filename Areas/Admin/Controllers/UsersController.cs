@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Semester03.Models.Repositories;
 
 namespace Semester03.Areas.Admin.Controllers
 {
@@ -6,8 +7,16 @@ namespace Semester03.Areas.Admin.Controllers
 
     public class UsersController : Controller
     {
-        public IActionResult Index()
+        private readonly UserRepository _userRepo;
+        public UsersController(UserRepository userRepo)
         {
+            _userRepo = userRepo;   
+        }
+        public async Task<IActionResult> IndexAsync()
+        {
+            var customers = await _userRepo.GetAllCustomersAsync();
+            ViewBag.Customers = customers;
+
             return View();
         }
     }
