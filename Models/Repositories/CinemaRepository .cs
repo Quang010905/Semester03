@@ -15,18 +15,14 @@ namespace Semester03.Models.Repositories
 
         public async Task<List<MovieCardVm>> GetFeaturedMoviesAsync(int top = 3)
         {
-            // NOTE: dùng DateTime.Now để phù hợp với dữ liệu lưu theo local time. 
-            // Nếu DB dùng UTC, đổi về DateTime.UtcNow.
             var now = DateTime.Now;
 
             var nextStarts = from s in _db.TblShowtimes.AsNoTracking()
                              join m in _db.TblMovies.AsNoTracking()
                                  on s.ShowtimeMovieId equals m.MovieId
-                             // chỉ chọn showtime trong tương lai
                              where s.ShowtimeStart >= now
-                             // movie đang trong khoảng hoặc start/end null (treat null start = already started, null end = no end)
-                             && (m.MovieStartDate == null || m.MovieStartDate <= now)
-                             && (m.MovieEndDate == null || m.MovieEndDate >= now)
+                                && (m.MovieStartDate == null || m.M‌​ovieStartDate <= now)
+                                && (m.MovieEndDate == null || m.MovieEndDate >= now)
                              group s by s.ShowtimeMovieId into g
                              select new
                              {
@@ -41,7 +37,6 @@ namespace Semester03.Models.Repositories
                     join m in _db.TblMovies.AsNoTracking() on ns.MovieId equals m.MovieId
                     join scr in _db.TblScreens.AsNoTracking() on s.ShowtimeScreenId equals scr.ScreenId
                     join c in _db.TblCinemas.AsNoTracking() on scr.ScreenCinemaId equals c.CinemaId
-                    // thêm điều kiện an toàn
                     where (m.MovieStartDate == null || m.MovieStartDate <= now)
                           && (m.MovieEndDate == null || m.MovieEndDate >= now)
                     orderby s.ShowtimeStart
@@ -130,7 +125,6 @@ namespace Semester03.Models.Repositories
             }).ToList();
         }
 
-        // Get details + approved comments
         public async Task<MovieDetailsVm> GetMovieDetailsAsync(int movieId)
         {
             var movie = await _db.TblMovies
@@ -169,7 +163,6 @@ namespace Semester03.Models.Repositories
             return movie;
         }
 
-        // Add comment (pending by default)
         public async Task AddCommentAsync(int movieId, int userId, int rate, string text)
         {
             var ent = new TblCustomerComplaint
@@ -178,7 +171,7 @@ namespace Semester03.Models.Repositories
                 CustomerComplaintMovieId = movieId,
                 CustomerComplaintRate = rate,
                 CustomerComplaintDescription = text,
-                CustomerComplaintStatus = 0, 
+                CustomerComplaintStatus = 0,
                 CustomerComplaintCreatedAt = DateTime.UtcNow
             };
 
@@ -186,12 +179,48 @@ namespace Semester03.Models.Repositories
             await _db.SaveChangesAsync();
         }
 
-        // ==========================================================
-        // === ADMIN SETTINGS METHODS ===
-        // === These methods *actually* operate on Tbl_Cinema ===
-        // ==========================================================
+        // ==================== COUPON ====================
 
-        private const int FIXED_CINEMA_ID = 1; //
+        public async Task<(int userPoints, List<CouponVm> coupons)> GetCouponsForUserAsync(int userId)
+        {
+            var now = DateTime.UtcNow;
+
+            var user = await _db.TblUsers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.UsersId == userId);
+
+            if (user == null)
+                return (0, new List<CouponVm>());
+
+            var userPoints = user.UsersPoints ?? 0;
+
+            var coupons = await _db.TblCoupons
+                .AsNoTracking()
+                .Where(c =>
+                    c.CouponIsActive == true &&
+                    c.CouponValidFrom <= now &&
+                    c.CouponValidTo >= now &&
+                    (c.CouponMinimumPointsRequired == null ||
+                     c.CouponMinimumPointsRequired <= userPoints))
+                .Select(c => new CouponVm
+                {
+                    Id = c.CouponId,
+                    Name = c.CouponName,
+                    Description = c.CouponDescription,
+                    DiscountPercent = c.CouponDiscountPercent,
+                    ValidFrom = c.CouponValidFrom,
+                    ValidTo = c.CouponValidTo,
+                    MinimumPointsRequired = c.CouponMinimumPointsRequired
+                })
+                .OrderBy(c => c.ValidTo)
+                .ToListAsync();
+
+            return (userPoints, coupons);
+        }
+
+        // ==================== CINEMA SETTINGS (ADMIN) ====================
+
+        private const int FIXED_CINEMA_ID = 1;
 
         public async Task<TblCinema> GetSettingsAsync()
         {
@@ -199,12 +228,10 @@ namespace Semester03.Models.Repositories
 
             if (cinema == null)
             {
-                // If ID=1 doesn't exist (e.g., empty DB), create it
-                // We use the first record from the seed data as default
                 cinema = new TblCinema
                 {
                     CinemaId = FIXED_CINEMA_ID,
-                    CinemaName = "Galaxy ABCD Mall" //
+                    CinemaName = "Galaxy ABCD Mall"
                 };
                 _db.TblCinemas.Add(cinema);
                 await _db.SaveChangesAsync();
@@ -214,12 +241,9 @@ namespace Semester03.Models.Repositories
 
         public async Task UpdateSettingsAsync(TblCinema cinemaSettings)
         {
-            // Ensure the ID is correct
             cinemaSettings.CinemaId = FIXED_CINEMA_ID;
             _db.Entry(cinemaSettings).State = EntityState.Modified;
             await _db.SaveChangesAsync();
         }
-
-
     }
 }

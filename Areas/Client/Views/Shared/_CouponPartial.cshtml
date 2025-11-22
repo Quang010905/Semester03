@@ -1,0 +1,110 @@
+﻿@using Semester03.Areas.Client.Models.ViewModels
+@model CinemaHomeVm
+
+@if (User?.Identity?.IsAuthenticated == true
+   && Model?.AvailableCoupons != null
+   && Model.AvailableCoupons.Any())
+{
+    <style>
+        .coupon-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .4rem .85rem;
+            border-radius: 999px;
+            background: #fefce8;
+            border: 1px solid #facc15;
+            font-size: .85rem;
+            color: #92400e;
+            cursor: pointer;
+        }
+
+            .coupon-pill i {
+                font-size: 1rem;
+            }
+
+        .coupon-list-item {
+            padding: .2rem 0;
+        }
+
+        .coupon-card-title {
+            font-size: .95rem;
+            font-weight: 600;
+        }
+    </style>
+
+    <!-- PILL nhỏ hiển thị tóm tắt coupon -->
+    <button type="button"
+            class="coupon-pill mb-3"
+            data-bs-toggle="modal"
+            data-bs-target="#couponModal">
+        <i class="bi bi-gift-fill"></i>
+        <span>
+            Bạn có <strong>@Model.UserPoints</strong> điểm –
+            <strong>@Model.AvailableCoupons.Count</strong> coupon khả dụng
+        </span>
+        <span class="text-decoration-underline">Xem chi tiết</span>
+    </button>
+
+    <!-- MODAL chi tiết coupon -->
+    <div class="modal fade" id="couponModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-gift-fill me-2"></i> Coupon khả dụng của bạn
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">
+                        Bạn hiện có <strong>@Model.UserPoints</strong> điểm.
+                        Các coupon bên dưới sẽ được
+                        <strong>tự động áp dụng ở bước thanh toán</strong>
+                        nếu đơn hàng của bạn thỏa điều kiện.
+                    </p>
+
+                    <div class="row g-3">
+                        @foreach (var c in Model.AvailableCoupons)
+                        {
+                            <div class="col-12 col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <div class="coupon-card-title mb-1">@c.Name</div>
+
+                                        <div class="small text-muted mb-1">
+                                            Giảm <strong>@c.DiscountPercent%</strong>
+                                            @if (c.MinimumPointsRequired.HasValue)
+                                            {
+                                                <span>- yêu cầu @c.MinimumPointsRequired điểm</span>
+                                            }
+                                        </div>
+
+                                        <p class="small mb-1">@c.Description</p>
+
+                                        <div class="small text-muted">
+                                            HSD: @c.ValidTo.ToString("dd/MM/yyyy")
+                                        </div>
+                                    </div>
+
+                                    <div class="card-footer bg-white border-0 d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-success-subtle text-success">
+                                            Bạn được áp dụng vì đủ điều kiện khi mua vé xem phim
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    @* Không bắt buộc phải hiển thị gì khi không có coupon *@
+    @* Bạn muốn có thể thêm: <div class="small text-muted mb-2">Bạn chưa có coupon khả dụng.</div> *@
+}

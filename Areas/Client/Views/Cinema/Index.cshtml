@@ -87,20 +87,17 @@
         }
 
         @@media (max-width: 768px) {
-            .carousel-poster
+            .carousel-poster {
+                height: 240px;
+            }
 
-        {
-            height: 240px;
-        }
+            .movie-poster {
+                height: 200px;
+            }
 
-        .movie-poster {
-            height: 200px;
-        }
-
-        .slider-item {
-            min-width: 160px;
-        }
-
+            .slider-item {
+                min-width: 160px;
+            }
         }
     </style>
 }
@@ -108,6 +105,8 @@
 <div class="cinema-home-page py-3">
 
     <h4 class="page-title mb-3">Cinema</h4>
+
+    @* ĐÃ BỎ phần @Html.PartialAsync("_CouponPartial", Model) theo yêu cầu *@
 
     <!-- FEATURED -->
     @if (Model?.Featured?.Any() == true)
@@ -181,43 +180,13 @@
     <!-- NOW SHOWING SLIDER -->
     <h5 class="mb-3">Now showing</h5>
 
-    <div class="slider-wrapper mb-4">
-        <div id="sliderTrack" class="slider-track">
-
-            @foreach (var m in Model.NowShowing)
-            {
-                <div class="slider-item">
-                    <div class="card movie-card">
-
-                        <a href="@Url.Action("Details", "Cinema", new { area="Client", id = m.Id })">
-                            <img src="@Img(m.PosterUrl)" class="movie-poster" />
-                        </a>
-
-                        <div class="card-body p-2">
-                            <div class="small text-muted">
-                                @(m.NextShowtime?.ToString("dd MMM HH:mm") ?? "--")
-                            </div>
-                            <div class="movie-title">@m.Title</div>
-                            <p class="small text-truncate">@m.Description</p>
-                        </div>
-
-                        <div class="card-footer bg-white border-0 d-flex justify-content-between">
-                            <small class="text-muted">@((m.DurationMin ?? 0) + " min")</small>
-                            <a href="@BookHref(m.Id)" class="btn btn-sm btn-primary">Book</a>
-                        </div>
-
-                    </div>
-                </div>
-            }
-
-        </div>
-    </div>
-
-    <!-- GRID -->
-    <div class="row g-3">
+    <div class="row g-3" id="nowShowingGrid">
+        @{
+            var index = 0;
+        }
         @foreach (var m in Model.NowShowing)
         {
-            <div class="col-6 col-md-4 col-lg-3">
+            <div class="col-6 col-md-4 col-lg-3 movie-grid-item" data-index="@index">
                 <div class="card movie-card h-100">
 
                     <a href="@Url.Action("Details", "Cinema", new { area="Client", id = m.Id })">
@@ -245,30 +214,72 @@
 
                 </div>
             </div>
+            index++;
         }
     </div>
+
+    @if (Model.NowShowing != null && Model.NowShowing.Count > 4)
+    {
+        <div class="text-center mt-3">
+            <button type="button" id="btnViewMore" class="btn btn-outline-primary btn-sm">
+                View more
+            </button>
+        </div>
+    }
+
 </div>
 
 @section Scripts {
     <script>
         document.addEventListener("DOMContentLoaded", () => {
+            // ====== SLIDER TỰ CHẠY ======
             const track = document.getElementById("sliderTrack");
-            if (!track) return;
+            if (track) {
+                let pos = 0;
+                function slideStep() {
+                    const step = 240;
+                    const max = Math.max(0, track.scrollWidth - track.clientWidth);
+                    pos += step;
+                    if (pos > max) pos = 0;
+                    track.style.transform = `translateX(-${pos}px)`;
+                }
 
-            let pos = 0;
+                let timer = setInterval(slideStep, 3000);
 
-            function slideStep() {
-                const step = 240;
-                const max = Math.max(0, track.scrollWidth - track.clientWidth);
-                pos += step;
-                if (pos > max) pos = 0;
-                track.style.transform = `translateX(-${pos}px)`;
+                track.parentElement.addEventListener("mouseenter", () => clearInterval(timer));
+                track.parentElement.addEventListener("mouseleave", () => timer = setInterval(slideStep, 3000));
             }
 
-            let timer = setInterval(slideStep, 3000);
+            // ====== VIEW MORE cho GRID "Now showing" ======
+            const STEP = 5;
+            const gridItems = Array.from(document.querySelectorAll(".movie-grid-item"));
+            const btnMore = document.getElementById("btnViewMore");
+            let shown = 5;
 
-            track.parentElement.addEventListener("mouseenter", () => clearInterval(timer));
-            track.parentElement.addEventListener("mouseleave", () => timer = setInterval(slideStep, 3000));
+            function updateGrid() {
+                gridItems.forEach((item, idx) => {
+                    item.style.display = (idx < shown) ? "" : "none";
+                });
+
+                if (btnMore) {
+                    if (shown >= gridItems.length) {
+                        btnMore.style.display = "none";
+                    } else {
+                        btnMore.style.display = "";
+                    }
+                }
+            }
+
+            if (gridItems.length > 0) {
+                updateGrid();
+            }
+
+            if (btnMore) {
+                btnMore.addEventListener("click", () => {
+                    shown += STEP;
+                    updateGrid();
+                });
+            }
         });
 
         function filterMovies() {
