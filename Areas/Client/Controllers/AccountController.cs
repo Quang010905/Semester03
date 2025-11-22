@@ -277,6 +277,27 @@ namespace Semester03.Areas.Client.Controllers
                          kvp => kvp.Value.Errors.Select(e => string.IsNullOrWhiteSpace(e.ErrorMessage) ? e.Exception?.Message ?? "Unknown error" : e.ErrorMessage).ToArray()
                      );
         }
+        [HttpGet]
+public async Task<IActionResult> Profile()
+{
+    // Lấy user ID từ Claims
+    var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+    if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+    {
+        return RedirectToAction("Login", "Account", new { area = "Client" });
+    }
+
+    // Lấy user từ DB
+    var user = await _userRepo.GetByIdAsync(userId);
+    if (user == null)
+    {
+        return NotFound("User not found");
+    }
+
+    return View(user);
+}
+
 
         // ------------------- LOGOUT unchanged -------------------
         [HttpPost]

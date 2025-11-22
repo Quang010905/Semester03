@@ -1,0 +1,108 @@
+﻿@model Semester03.Models.Entities.TblUser
+
+@{
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+    ViewData["Title"] = "Hồ sơ người dùng";
+
+    var displayName = string.IsNullOrWhiteSpace(Model.UsersFullName)
+        ? Model.UsersUsername
+        : Model.UsersFullName;
+
+    var initial = !string.IsNullOrWhiteSpace(displayName)
+        ? displayName.Trim()[0].ToString().ToUpper()
+        : "?";
+
+    var isActive = Model.UsersStatus.GetValueOrDefault(1) == 1;
+    var points = Model.UsersPoints.GetValueOrDefault(0);
+}
+
+<section class="my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="h4 mb-1">
+                <i class="bi bi-person-circle me-2"></i>
+                Hồ sơ tài khoản
+            </h2>
+            <p class="text-muted mb-0">
+                Thông tin tài khoản của bạn tại ABCD Mall
+            </p>
+        </div>
+
+        <span class="badge rounded-pill @(isActive ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary") px-3 py-2">
+            <i class="bi @(isActive ? "bi-check-circle" : "bi-pause-circle") me-1"></i>
+            @(isActive ? "Đang hoạt động" : "Đã vô hiệu hoá")
+        </span>
+    </div>
+
+    <div class="card border-0 shadow-lg mb-4">
+        <div class="card-body p-4">
+            <div class="row g-4 align-items-center">
+                <!-- Cột avatar + info chính -->
+                <div class="col-md-4 border-end">
+                    <div class="d-flex flex-column align-items-center text-center">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center mb-3"
+                             style="width: 96px; height: 96px;
+                                    background: radial-gradient(circle at 30% 10%, #bfdbfe, #2563eb);
+                                    color: #fff;">
+                            <span class="fs-1 fw-semibold">
+                                @initial
+                            </span>
+                        </div>
+
+                        <h5 class="mb-1">@displayName</h5>
+                        <p class="text-muted small mb-2">@Model.UsersEmail</p>
+
+                        <span class="badge rounded-pill bg-light text-secondary d-inline-flex align-items-center">
+                            <i class="bi bi-telephone me-1"></i>
+                            @Model.UsersPhone
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Cột chi tiết -->
+                <div class="col-md-8">
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <div class="p-3 rounded-3 bg-light d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-muted small mb-1">Điểm tích luỹ</div>
+                                    <div class="fs-4 fw-semibold">@points</div>
+                                </div>
+                                <i class="bi bi-stars fs-2 text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-3 rounded-3 bg-light d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-muted small mb-1">Ngày tạo tài khoản</div>
+                                    <div class="fw-semibold">
+                                        @(Model.UsersCreatedAt?.ToString("dd/MM/yyyy") ?? "-")
+                                    </div>
+                                </div>
+                                <i class="bi bi-calendar-event fs-2 text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-3" />
+
+                    <dl class="row mb-0 small">
+                        <dt class="col-sm-4 text-muted">Tên đăng nhập</dt>
+                        <dd class="col-sm-8">@Model.UsersUsername</dd>
+
+                        <dt class="col-sm-4 text-muted">Email</dt>
+                        <dd class="col-sm-8">@Model.UsersEmail</dd>
+
+                        <dt class="col-sm-4 text-muted">Số điện thoại</dt>
+                        <dd class="col-sm-8">@Model.UsersPhone</dd>
+
+                        <dt class="col-sm-4 text-muted">Trạng thái</dt>
+                        <dd class="col-sm-8">
+                            @(isActive ? "Đang hoạt động" : "Đã vô hiệu hoá")
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
