@@ -340,6 +340,7 @@ namespace Semester03.Models.Repositories
                 3 => "Cancelled",
                 _ => "Unknown"
             };
+        }
         private int TryGetQuantityFromBooking(TblEventBooking booking)
         {
             try
