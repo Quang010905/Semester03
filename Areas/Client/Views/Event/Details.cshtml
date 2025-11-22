@@ -5,7 +5,6 @@
     ViewData["Title"] = Model.Title;
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
 
-
     Func<string, string> Img = (raw) =>
     {
         if (string.IsNullOrWhiteSpace(raw))
@@ -30,132 +29,275 @@
         return Url.Content("~/Content/Uploads/Events/" + s);
     };
 
-    var isEnded = Model.EndDate.HasValue && Model.EndDate.Value < DateTime.Now;
+    var isPast = Model.IsPast;
+    var displayAvg = Model.CommentCount > 0 ? Model.AvgRate : 5.0;
 }
 
 @section Styles {
     <style>
-        .event-page {
-            max-width: 1200px;
-            margin: 0 auto;
+        :root {
+            --primary: #0d6efd;
+            --primary-soft: rgba(13, 110, 253, 0.1);
+            --bg-soft: #f8fafc;
+            --text-muted: #64748b;
+            --radius-lg: 1.25rem;
+            --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.08);
         }
+
+        body {
+            background-color: #f1f5f9;
+        }
+
+        .page-wrapper {
+            padding-block: 1.5rem 2.5rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            font-size: 0.9rem;
+            color: #6b7280;
+            text-decoration: none;
+            padding: .35rem .75rem;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.12);
+            transition: all .2s ease;
+        }
+
+            .back-link:hover {
+                color: #111827;
+                background: rgba(148, 163, 184, 0.25);
+                text-decoration: none;
+                transform: translateX(-2px);
+            }
 
         .event-main-card {
             background: #ffffff;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 12px 30px rgba(15,23,42,0.10);
-            border: 1px solid #e5e7eb;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-soft);
+            padding: 1.5rem 1.6rem;
         }
 
-        .event-main-img-wrapper {
-            border-radius: .9rem;
+        .event-header {
+            display: grid;
+            grid-template-columns: 260px 1fr auto;
+            gap: 1.5rem;
+            align-items: stretch;
+        }
+
+        .event-poster {
+            border-radius: 1.25rem;
             overflow: hidden;
-            margin-bottom: 1.25rem;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22);
+            position: relative;
+            background: #020617;
         }
 
-        .event-main-img {
-            width: 100%;
-            height: 360px;
-            object-fit: cover;
-            display: block;
-        }
-
-        .event-meta {
-            color: #6b7280;
-            font-size: .9rem;
-        }
-
-            .event-meta strong {
-                color: #374151;
-            }
-
-        .event-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: .35rem;
-        }
-
-        /* Related */
-        .related-title-section {
-            font-weight: 600;
-        }
-
-        .related-card {
-            border: 1px solid #e5e7eb;
-            border-radius: .9rem;
-            overflow: hidden;
-            box-shadow: 0 8px 20px rgba(15,23,42,0.06);
-            transition: transform .18s ease, box-shadow .18s ease;
-            background: #fff;
-        }
-
-            .related-card:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 14px 32px rgba(15,23,42,0.12);
-            }
-
-            .related-card img {
-                height: 140px;
+            .event-poster img {
                 width: 100%;
+                height: 100%;
+                min-height: 230px;
                 object-fit: cover;
+                display: block;
+                transition: transform .6s ease;
             }
 
-        .related-title {
-            font-size: .98rem;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        /* Side info */
-        .event-side-card {
-            background: #ffffff;
-            border-radius: 1rem;
-            padding: 1.25rem;
-            box-shadow: 0 10px 26px rgba(15,23,42,0.08);
-            border: 1px solid #e5e7eb;
-        }
-
-            .event-side-card h6 {
-                font-weight: 600;
+            .event-poster:hover img {
+                transform: scale(1.05);
             }
 
-            .event-side-card p {
-                font-size: .9rem;
-                margin-bottom: .25rem;
-            }
-
-        .btn-register {
-            font-weight: 600;
-        }
-
-        .badge-status {
-            font-size: .75rem;
-            padding: .25rem .55rem;
+        .event-pill {
+            position: absolute;
+            left: 1rem;
+            top: 1rem;
+            background: rgba(15, 23, 42, .75);
+            backdrop-filter: blur(8px);
+            color: #e5e7eb;
+            padding: 0.3rem .7rem;
             border-radius: 999px;
+            font-size: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
         }
 
-            .badge-status.active {
-                background: #d1fae5;
-                color: #047857;
+        .event-header-main {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .event-header-topline {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .4rem;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: .2rem;
+        }
+
+        .event-title-main {
+            font-size: 1.9rem;
+            font-weight: 800;
+            margin-bottom: .15rem;
+            letter-spacing: -0.03em;
+            color: #0f172a;
+        }
+
+        .event-subline {
+            color: var(--text-muted);
+            font-size: .9rem;
+            margin-bottom: .4rem;
+        }
+
+        .event-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .35rem;
+            margin-bottom: .5rem;
+        }
+
+        .tag-pill {
+            border-radius: 999px;
+            padding: 3px 9px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tag-open {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .tag-upcoming {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .tag-ongoing {
+            background: #d1fae5;
+            color: #047857;
+        }
+
+        .tag-ended {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .tag-quality {
+            background: #fef9c3;
+            color: #a16207;
+        }
+
+        .event-header-meta {
+            font-size: .88rem;
+            color: var(--text-muted);
+        }
+
+            .event-header-meta strong {
+                color: #111827;
             }
 
-            .badge-status.inactive {
+        .rating-panel {
+            text-align: right;
+            min-width: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: space-between;
+        }
+
+        .rating-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+            font-weight: 800;
+            background: linear-gradient(120deg, #ffb347, #ffcc33);
+            color: #111827;
+            padding: .35rem .8rem;
+            border-radius: .9rem;
+            font-size: .95rem;
+            box-shadow: 0 10px 30px rgba(250, 204, 21, 0.4);
+        }
+
+            .rating-pill small {
+                font-size: .75rem;
+                opacity: .85;
+            }
+
+        .rating-stars {
+            display: inline-flex;
+            gap: .1rem;
+            margin-top: .25rem;
+        }
+
+            .rating-stars i {
+                font-size: 1rem;
+                color: #facc15;
+            }
+
+        .rating-count {
+            font-size: .8rem;
+            color: var(--text-muted);
+            margin-top: .1rem;
+        }
+
+        .status-chip {
+            margin-top: .4rem;
+            font-size: .75rem;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+            .status-chip.active {
+                background: #dcfce7;
+                color: #15803d;
+            }
+
+            .status-chip.ended {
                 background: #fee2e2;
                 color: #b91c1c;
             }
 
-        /* COMMENT BOX */
-        .comment-box {
-            margin-top: 1.75rem;
-            border-radius: 1rem;
-            background: #ffffff;
-            padding: 1.25rem;
-            box-shadow: 0 10px 26px rgba(15,23,42,0.08);
-            border: 1px solid #e5e7eb;
+        .event-content-row {
+            margin-top: 1.3rem;
         }
 
-        .comment-form-header {
+        .event-section {
+            background: #ffffff;
+            border-radius: 1rem;
+            padding: 1rem 1.1rem;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 1rem;
+        }
+
+        .event-section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: .6rem;
+            display: flex;
+            align-items: center;
+            gap: .45rem;
+        }
+
+            .event-section-title i {
+                font-size: 1.05rem;
+                color: var(--primary);
+            }
+
+        .event-description {
+            font-size: .94rem;
+            color: #374151;
+        }
+
+        /* comments */
+        .comment-header-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -163,14 +305,44 @@
             flex-wrap: wrap;
         }
 
-            .comment-form-header small {
-                color: #64748b;
-                font-size: 0.8rem;
+        .avg-rate-box {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            font-size: .85rem;
+            color: var(--text-muted);
+        }
+
+            .avg-rate-box .big-rate {
+                font-size: 1.1rem;
+                font-weight: 700;
+                color: #111827;
+            }
+
+        .user-rating-row {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            flex-wrap: wrap;
+            margin-bottom: .35rem;
+        }
+
+        .stars-input .star {
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: #cbd5e1;
+            transition: transform .15s ease, color .15s ease;
+        }
+
+            .stars-input .star.filled,
+            .stars-input .star.bi-star-fill {
+                color: #fbbf24;
+                transform: scale(1.05);
             }
 
         .comment-item {
             border-bottom: 1px solid #e5e7eb;
-            padding: .85rem 0;
+            padding: .75rem 0;
         }
 
             .comment-item:last-child {
@@ -188,175 +360,368 @@
         }
 
         .comment-text {
-            margin-top: .35rem;
+            margin-top: .3rem;
             font-size: .9rem;
         }
 
         .comment-empty {
-            color: #94a3b8;
+            color: var(--text-muted);
             font-size: .9rem;
         }
 
-        .stars {
-            display: inline-flex;
-            gap: .15rem;
-            align-items: center;
+        .comment-stars-readonly i {
+            font-size: 1rem;
+            color: #facc15;
         }
 
-        .star {
-            font-size: 1.3rem;
-            cursor: pointer;
-            color: #cbd5e1;
-            display: inline-flex;
-            align-items: center;
-            transition: transform .15s ease, color .15s ease;
+        /* sidebar */
+        .event-side-card {
+            background: #ffffff;
+            border-radius: 1rem;
+            padding: 1rem 1.1rem;
+            border: 1px solid #e5e7eb;
         }
 
-            .star.filled,
-            .star.bi-star-fill {
-                color: #ffc107;
-                transform: scale(1.06);
-            }
-
-        .avg-rate-box {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            font-size: .85rem;
-            color: #6b7280;
-        }
-
-            .avg-rate-box .big-rate {
-                font-size: 1.2rem;
+            .event-side-card h6 {
                 font-weight: 700;
-                color: #111827;
+                margin-bottom: .75rem;
             }
+
+            .event-side-card p {
+                font-size: .9rem;
+                margin-bottom: .3rem;
+            }
+
+        .btn-register {
+            font-weight: 600;
+        }
+
+        /* upcoming events slider */
+        .upcoming-wrapper {
+            margin-top: .3rem;
+        }
+
+        .upcoming-scroll-outer {
+            position: relative;
+        }
+
+        .upcoming-scroll {
+            display: flex;
+            gap: 0.9rem;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            padding-bottom: .4rem;
+        }
+
+            .upcoming-scroll::-webkit-scrollbar {
+                height: 6px;
+            }
+
+            .upcoming-scroll::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 999px;
+            }
+
+        .upcoming-card {
+            min-width: 250px;
+            max-width: 280px;
+            background: #ffffff;
+            border-radius: .9rem;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 10px 24px rgba(15,23,42,0.08);
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+
+            .upcoming-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 16px 32px rgba(15,23,42,0.14);
+            }
+
+        .upcoming-img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+
+        .upcoming-body {
+            padding: .6rem .75rem .7rem;
+        }
+
+        .upcoming-title {
+            font-size: .92rem;
+            font-weight: 600;
+            margin-bottom: .15rem;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+
+        .upcoming-date {
+            font-size: .8rem;
+            color: var(--text-muted);
+            margin-bottom: .2rem;
+        }
+
+        .upcoming-desc {
+            font-size: .8rem;
+            color: #4b5563;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+
+        .upcoming-nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: .75rem;
+            margin-top: .4rem;
+        }
+
+        .upcoming-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #d1d5db;
+            transition: background .2s ease, transform .2s ease;
+        }
+
+            .upcoming-dot.active {
+                background: #0f172a;
+                transform: scale(1.2);
+            }
+
+        .upcoming-arrow-btn {
+            border-radius: 999px;
+            border: 1px solid #d1d5db;
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            font-size: .9rem;
+        }
 
         @@media (max-width: 991.98px) {
-            .event-main-img {
-                height: 270px;
+            .event-header {
+                grid-template-columns: 1fr;
+            }
+
+            .rating-panel {
+                text-align: left;
+                align-items: flex-start;
             }
         }
     </style>
 }
 
-<div class="event-page container py-4">
-    <div class="mb-3 d-flex justify-content-between align-items-center">
-        <a href="@Url.Action("Index", "Event", new { area = "Client" })"
-           class="btn btn-outline-secondary btn-sm">
-            &larr; Quay lại danh sách
-        </a>
+<div class="container page-wrapper">
+    <a class="back-link mb-3" href="@Url.Action("Index", "Event", new { area = "Client" })">
+        <i class="bi bi-arrow-left"></i> Back to events
+    </a>
 
-        <div>
-            @if (isEnded)
-            {
-                <span class="badge-status inactive">Đã kết thúc</span>
-            }
-            else if (Model.Status == 1)
-            {
-                <span class="badge-status active">Đang mở</span>
-            }
-            else
-            {
-                <span class="badge-status inactive">Không hoạt động</span>
-            }
-        </div>
-    </div>
+    <div class="event-main-card">
+        <!-- HEADER -->
+        <div class="event-header">
+            <div class="event-poster">
+                <img src="@Img(Model.ImageUrl)" alt="@Model.Title" />
+                <div class="event-pill">
+                    <i class="bi bi-calendar-event"></i>
+                    <span>Event</span>
+                </div>
+            </div>
 
-    <div class="row g-4">
-        <!-- MAIN CONTENT -->
-        <div class="col-lg-8">
-            <div class="event-main-card">
-                <div class="event-main-img-wrapper">
-                    <img src="@Img(Model.ImageUrl)" alt="@Model.Title" class="event-main-img" />
+            <div class="event-header-main">
+                <div class="event-header-topline">
+                    <span>@Model.StartDate.ToString("dd/MM/yyyy")</span>
+                    @if (Model.EndDate.HasValue)
+                    {
+                        <span>– @Model.EndDate.Value.ToString("dd/MM/yyyy")</span>
+                    }
                 </div>
 
-                <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                <div class="event-title-main">@Model.Title</div>
+
+                <div class="event-subline">
+                    Sự kiện tại ABCD Mall với nhiều hoạt động thú vị. Tham gia để trải nghiệm mua sắm
+                    và giải trí cùng bạn bè và gia đình.
+                </div>
+
+                <div class="event-tags">
+                    @if (!isPast && Model.Status == 1)
+                    {
+                        <span class="tag-pill tag-open">
+                            <i class="bi bi-check-circle"></i> Đang mở đăng ký
+                        </span>
+                    }
+                    @if (Model.IsOngoing && Model.Status == 1)
+                    {
+                        <span class="tag-pill tag-ongoing">
+                            <i class="bi bi-broadcast"></i> Đang diễn ra
+                        </span>
+                    }
+                    else if (Model.IsUpcoming && Model.Status == 1)
+                    {
+                        <span class="tag-pill tag-upcoming">
+                            <i class="bi bi-calendar2-event"></i> Sắp diễn ra
+                        </span>
+                    }
+                    else if (Model.IsPast)
+                    {
+                        <span class="tag-pill tag-ended">
+                            <i class="bi bi-flag-fill"></i> Đã kết thúc
+                        </span>
+                    }
+
+                    <span class="tag-pill tag-quality">
+                        <i class="bi bi-stars"></i> Quality event
+                    </span>
+                </div>
+
+                <div class="event-header-meta">
                     <div>
-                        <h1 class="event-title mb-1">@Model.Title</h1>
+                        <strong>Thời gian:</strong>
+                        @Model.StartDate.ToString("dd/MM/yyyy HH:mm")
+                        @if (Model.EndDate.HasValue)
+                        {
+                            <text> – @Model.EndDate.Value.ToString("dd/MM/yyyy HH:mm")</text>
+                        }
+                    </div>
+                    <div>
+                        <strong>Slots:</strong> @Model.MaxSlot
+                    </div>
+                </div>
+            </div>
 
-                        <div class="event-meta">
-                            <div>
-                                <i class="bi bi-calendar-event me-1"></i>
-                                <strong>Ngày bắt đầu:</strong> @Model.StartDate.ToString("dd/MM/yyyy")
-                            </div>
-                            @if (Model.EndDate.HasValue)
+            <div class="rating-panel">
+                <div>
+                    <div class="rating-pill">
+                        @displayAvg.ToString("0.0") <small>/5</small>
+                    </div>
+                    <div class="rating-stars">
+                        @{
+                            var avgStar = displayAvg;
+                            for (int i = 1; i <= 5; i++)
                             {
-                                <div class="mt-1">
-                                    <i class="bi bi-calendar-event me-1"></i>
-                                    <strong>Ngày kết thúc:</strong> @Model.EndDate.Value.ToString("dd/MM/yyyy")
-                                </div>
+                                if (avgStar >= i)
+                                {
+                                    <i class="bi bi-star-fill"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-star"></i>
+                                }
                             }
+                        }
+                    </div>
+                    <div class="rating-count">
+                        @(Model.CommentCount > 0 ? $"{Model.CommentCount} review(s)" : "No reviews yet")
+                    </div>
+                </div>
+
+                <div>
+                    @{
+                        string statusText;
+                        string statusClass = "status-chip";
+                        if (Model.IsPast)
+                        {
+                            statusText = "Đã kết thúc";
+                            statusClass += " ended";
+                        }
+                        else if (Model.IsOngoing && Model.Status == 1)
+                        {
+                            statusText = "Đang diễn ra";
+                            statusClass += " active";
+                        }
+                        else if (Model.IsUpcoming && Model.Status == 1)
+                        {
+                            statusText = "Sắp diễn ra";
+                            statusClass += " active";
+                        }
+                        else if (Model.Status == 1)
+                        {
+                            statusText = "Đang mở";
+                            statusClass += " active";
+                        }
+                        else
+                        {
+                            statusText = "Không hoạt động";
+                        }
+                    }
+                    <div class="@statusClass">@statusText</div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-3" />
+
+        <!-- MAIN CONTENT -->
+        <div class="row event-content-row g-4">
+            <div class="col-lg-8">
+                <!-- details -->
+                <section class="event-section">
+                    <div class="event-section-title">
+                        <i class="bi bi-info-circle"></i>
+                        <span>Event details</span>
+                    </div>
+                    <div class="event-description">
+                        @Html.Raw(Model.Description)
+                    </div>
+                </section>
+
+                <!-- comments -->
+                <section class="event-section">
+                    <div class="event-section-title">
+                        <i class="bi bi-chat-right-text"></i>
+                        <span>Comments &amp; ratings</span>
+                    </div>
+
+                    <div class="comment-header-row mb-2">
+                        <div>
+                            <div class="user-rating-row">
+                                <span class="fw-semibold">Your rating:</span>
+                                @if (User?.Identity?.IsAuthenticated == true)
+                                {
+                                    <div id="userStars" class="stars-input">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            <i class="star bi bi-star" data-value="@i"></i>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">
+                                        Bạn cần đăng nhập để đánh giá.
+                                    </span>
+                                }
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="text-end">
-                        <div class="event-meta">
-                            <strong>Slots:</strong> @Model.MaxSlot
-                        </div>
-                    </div>
-                </div>
-
-                <hr />
-
-                @if (isEnded)
-                {
-                    <div class="alert alert-warning mb-3">
-                        Sự kiện này đã kết thúc vào ngày
-                        @Model.EndDate?.ToString("dd/MM/yyyy").
-                    </div>
-                }
-
-                <div class="mb-4">
-                    @Html.Raw(Model.Description)
-                </div>
-
-                <div class="d-flex align-items-center gap-2 mb-4">
-                    <a href="@Url.Action("Index", "Event", new { area = "Client" })"
-                       class="btn btn-outline-secondary">
-                        &larr; Quay lại danh sách
-                    </a>
-                </div>
-
-                @* ===== COMMENT BOX ===== *@
-                <div class="comment-box">
-                    <div class="comment-form-header mb-2">
-                        <h6 class="mb-0 d-flex align-items-center gap-2">
-                            <i class="bi bi-chat-dots"></i>
-                            Bình luận về sự kiện
-                        </h6>
                         <div class="avg-rate-box">
-                            <span class="big-rate">
-                                @Model.AvgRate.ToString("0.0") / 5
-                            </span>
-                            <span>
-                                (@Model.CommentCount bình luận)
-                            </span>
+                            <span class="big-rate">@displayAvg.ToString("0.0") / 5</span>
+                            <span>(@Model.CommentCount bình luận)</span>
                         </div>
                     </div>
 
-                    <div id="commentFormArea" class="mt-2">
+                    <div id="commentFormArea" class="mb-2">
                         @if (User?.Identity?.IsAuthenticated == true)
                         {
                             @Html.AntiForgeryToken()
-                            <div class="mb-2"><strong>Đánh giá của bạn:</strong></div>
-                            <div class="mb-2">
-                                <div id="userStars" class="stars">
-                                    @for (int i = 1; i <= 5; i++)
-                                    {
-                                        <i class="star bi bi-star" data-value="@i"></i>
-                                    }
-                                </div>
-                            </div>
                             <textarea id="commentText"
                                   class="form-control mb-2"
                                   rows="3"
-                                  placeholder="Viết cảm nhận của bạn về sự kiện..."></textarea>
+                                  placeholder="Chia sẻ trải nghiệm của bạn về sự kiện..."></textarea>
                             <div class="d-flex gap-2 align-items-center flex-wrap">
                                 <button id="submitComment" class="btn btn-primary btn-sm">
                                     <i class="bi bi-send me-1"></i>Gửi bình luận
                                 </button>
-                                <small class="text-muted">Bình luận có thể được kiểm duyệt trước khi hiển thị.</small>
+                                <small class="text-muted">
+                                    Bình luận có thể được kiểm duyệt trước khi hiển thị.
+                                </small>
                             </div>
                         }
                         else
@@ -383,11 +748,11 @@
                                             <span class="small text-muted">•</span>
                                             <span class="comment-time">@c.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</span>
                                         </div>
-                                        <div class="stars" aria-hidden="true">
+                                        <div class="comment-stars-readonly">
                                             @for (int i = 1; i <= 5; i++)
                                             {
-                                                var filledClass = c.Rate >= i ? "bi-star-fill filled" : "bi-star";
-                                                <i class="star @filledClass"></i>
+                                                var cls = c.Rate >= i ? "bi-star-fill" : "bi-star";
+                                                <i class="star @cls"></i>
                                             }
                                         </div>
                                     </div>
@@ -404,93 +769,121 @@
                             </div>
                         }
                     </div>
-                </div>
+                </section>
 
-                @* ===== RELATED EVENTS (NẾU SAU NÀY CÓ) ===== *@
+                <!-- upcoming events slider -->
                 @if (Model.Related != null && Model.Related.Any())
                 {
-                    <hr class="my-4" />
-                    <h5 class="related-title-section mb-3">Sự kiện liên quan</h5>
+                    <section class="event-section upcoming-wrapper">
+                        <div class="event-section-title">
+                            <i class="bi bi-grid-3x3-gap"></i>
+                            <span>Upcoming events</span>
+                        </div>
 
-                    <div class="row g-3">
-                        @foreach (var r in Model.Related)
-                        {
-                            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                                <div class="card related-card h-100">
-                                    <a href="@Url.Action("Details", "Event", new { area = "Client", id = r.Id })"
-                                       class="d-block">
-                                        <img src="@Img(r.ImageUrl)" class="card-img-top" alt="@r.Title" />
-                                    </a>
-                                    <div class="card-body p-2">
-                                        <a href="@Url.Action("Details", "Event", new { area = "Client", id = r.Id })"
-                                           class="text-decoration-none text-dark">
-                                            <div class="related-title text-truncate">@r.Title</div>
-                                        </a>
-                                        <div class="small text-muted mb-1">
-                                            @r.StartDate?.ToString("dd/MM/yyyy") ?? "--"
+                        <div class="upcoming-scroll-outer">
+                            <div class="upcoming-scroll" id="upcomingEventsScroll">
+                                @foreach (var ev in Model.Related)
+                                {
+                                    var url = Url.Action("Details", "Event", new { area = "Client", id = ev.Id });
+                                    <div class="upcoming-card" onclick="location.href='@url'">
+                                        <img src="@Img(ev.ImageUrl)" class="upcoming-img" alt="@ev.Title" />
+                                        <div class="upcoming-body">
+                                            <div class="upcoming-title" title="@ev.Title">@ev.Title</div>
+                                            <div class="upcoming-date">
+                                                <i class="bi bi-calendar-event"></i>
+                                                @ev.StartDate?.ToString("dd/MM/yyyy HH:mm")
+                                            </div>
+                                            <div class="upcoming-desc">@ev.ShortDescription</div>
                                         </div>
-                                        <p class="small text-muted text-truncate mb-0">
-                                            @r.ShortDescription
-                                        </p>
                                     </div>
-                                </div>
+                                }
                             </div>
-                        }
-                    </div>
+
+                            <div class="upcoming-nav mt-2">
+                                <button type="button"
+                                        class="btn btn-sm btn-light upcoming-arrow-btn"
+                                        id="upcomingPrevBtn">
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+
+                                <div id="upcomingDots" class="d-flex gap-1"></div>
+
+                                <button type="button"
+                                        class="btn btn-sm btn-light upcoming-arrow-btn"
+                                        id="upcomingNextBtn">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
                 }
             </div>
-        </div>
 
-        <!-- SIDEBAR -->
-        <aside class="col-lg-4">
-            <div class="event-side-card">
-                <h6 class="mb-3">Thông tin sự kiện</h6>
+            <!-- SIDEBAR -->
+            <aside class="col-lg-4">
+                <div class="event-side-card">
+                    <h6>Thông tin sự kiện</h6>
 
-                <p>
-                    <strong>Ngày bắt đầu:</strong>
-                    @Model.StartDate.ToString("dd/MM/yyyy")
-                </p>
+                    <p>
+                        <strong>Ngày bắt đầu:</strong>
+                        @Model.StartDate.ToString("dd/MM/yyyy HH:mm")
+                    </p>
 
-                <p>
-                    <strong>Ngày kết thúc:</strong>
-                    @(Model.EndDate.HasValue? Model.EndDate.Value.ToString("dd/MM/yyyy") : "-")
-                </p>
+                    <p>
+                        <strong>Ngày kết thúc:</strong>
+                        @(Model.EndDate.HasValue? Model.EndDate.Value.ToString("dd/MM/yyyy HH:mm") : "-")
+                    </p>
 
-                <p><strong>Slots:</strong> @Model.MaxSlot</p>
+                    <p><strong>Slots:</strong> @Model.MaxSlot</p>
 
-                <p>
-                    <strong>Trạng thái:</strong>
-                    @(isEnded ? "Đã kết thúc" : (Model.Status == 1 ? "Đang mở" : "Không hoạt động"))
-                </p>
+                    <p>
+                        <strong>Trạng thái:</strong>
+                        @{
+                            string statusTextSide;
+                            if (Model.IsPast)
+                                statusTextSide = "Đã kết thúc";
+                            else if (Model.IsOngoing && Model.Status == 1)
+                                statusTextSide = "Đang diễn ra";
+                            else if (Model.IsUpcoming && Model.Status == 1)
+                                statusTextSide = "Sắp diễn ra";
+                            else if (Model.Status == 1)
+                                statusTextSide = "Đang mở";
+                            else
+                                statusTextSide = "Không hoạt động";
+                        }
+                        @statusTextSide
+                    </p>
 
-                <p>
-                    <strong>Organizer:</strong>
-                    @(Model.TenantPositionId != 0 ? Model.TenantPositionId.ToString() : "-")
-                </p>
+                    <p>
+                        <strong>Organizer:</strong>
+                        @(Model.TenantPositionId != 0 ? Model.TenantPositionId.ToString() : "-")
+                    </p>
 
-                <div class="d-grid mt-3">
-                    @if (isEnded || Model.Status != 1)
-                    {
-                        <button class="btn btn-secondary btn-register" disabled>
-                            Sự kiện đã kết thúc
-                        </button>
-                    }
-                    else
-                    {
-                        <a href="@Url.Action("Register", "EventBooking", new { area = "Client", id = Model.Id })"
-                           class="btn btn-success btn-register">
-                            Đăng ký ngay
-                        </a>
-                    }
+                    <div class="d-grid mt-3">
+                        @if (Model.IsPast || Model.Status != 1)
+                        {
+                            <button class="btn btn-secondary btn-register" disabled>
+                                Sự kiện đã kết thúc
+                            </button>
+                        }
+                        else
+                        {
+                            <a href="@Url.Action("Register", "EventBooking", new { area = "Client", id = Model.Id })"
+                               class="btn btn-success btn-register">
+                                Đăng ký ngay
+                            </a>
+                        }
+                    </div>
                 </div>
-            </div>
-        </aside>
+            </aside>
+        </div>
     </div>
 </div>
 
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // ⭐ rating input
             const starContainer = document.getElementById('userStars');
             const submitBtn = document.getElementById('submitComment');
             const textArea = document.getElementById('commentText');
@@ -559,7 +952,6 @@
                         const data = await resp.json();
                         if (data && data.success) {
                             alert(data.message || 'Gửi bình luận thành công.');
-
                             if (textArea) textArea.value = '';
                             selectedRating = 0;
                             if (starContainer) {
@@ -568,7 +960,6 @@
                                     st.classList.add('bi-star');
                                 });
                             }
-
                             window.location.reload();
                         } else {
                             alert(data?.message || 'Có lỗi khi gửi bình luận.');
@@ -581,6 +972,53 @@
                         submitBtn.innerHTML = originalText;
                     }
                 });
+            }
+
+            // 🔁 upcoming events slider
+            const scrollEl = document.getElementById('upcomingEventsScroll');
+            const dotsContainer = document.getElementById('upcomingDots');
+            const prevBtn = document.getElementById('upcomingPrevBtn');
+            const nextBtn = document.getElementById('upcomingNextBtn');
+
+            if (scrollEl && dotsContainer) {
+                const cards = scrollEl.querySelectorAll('.upcoming-card');
+                const perPage = 3;
+                const pageCount = Math.max(1, Math.ceil(cards.length / perPage));
+                let currentPage = 0;
+
+                // create dots
+                for (let i = 0; i < pageCount; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'upcoming-dot' + (i === 0 ? ' active' : '');
+                    dot.dataset.page = i;
+                    dotsContainer.appendChild(dot);
+                    dot.addEventListener('click', () => goToPage(i));
+                }
+
+                function updateDots() {
+                    dotsContainer.querySelectorAll('.upcoming-dot').forEach(d => {
+                        d.classList.toggle('active', parseInt(d.dataset.page) === currentPage);
+                    });
+                }
+
+                function goToPage(page) {
+                    currentPage = Math.max(0, Math.min(pageCount - 1, page));
+                    const firstCard = cards[0];
+                    if (!firstCard) return;
+                    const cardWidth = firstCard.offsetWidth + 14; // width + gap
+                    scrollEl.scrollTo({
+                        left: currentPage * cardWidth * perPage,
+                        behavior: 'smooth'
+                    });
+                    updateDots();
+                }
+
+                if (prevBtn) {
+                    prevBtn.addEventListener('click', () => goToPage(currentPage - 1));
+                }
+                if (nextBtn) {
+                    nextBtn.addEventListener('click', () => goToPage(currentPage + 1));
+                }
             }
         });
     </script>
