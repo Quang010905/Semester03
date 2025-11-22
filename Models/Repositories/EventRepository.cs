@@ -18,51 +18,54 @@ namespace Semester03.Models.Repositories
         }
 
         // ===============================
-        // SỰ KIỆN NỔI BẬT (ĐÃ KẾT THÚC)
-        // Sắp theo: AvgRate ↓, CommentCount ↓, EndDate ↓
+        // SỰ KIỆN ĐÃ DIỄN RA (PAST) – CÓ PHÂN TRANG
+        // EventEnd < NOW
         // ===============================
-        public async Task<List<EventCardVm>> GetFeaturedEventsAsync(int top = 10)
+        public async Task<PagedResult<EventCardVm>> GetPastEventsAsync(int pageIndex, int pageSize)
         {
             var now = DateTime.Now;
 
-            var q = _context.TblEvents
+            if (pageIndex < 1) pageIndex = 1;
+            if (pageSize < 1) pageSize = 9;
+
+            var baseQuery = _context.TblEvents
                 .AsNoTracking()
-                .Where(e => e.EventStatus == 1 && e.EventEnd < now) // ĐÃ KẾT THÚC
-                .Select(e => new
-                {
-                    Event = e,
+                .Where(e => e.EventStatus == 1 && e.EventEnd < now);
 
-                    AvgRate = _context.TblCustomerComplaints
-                        .Where(c => c.CustomerComplaintEventId == e.EventId
-                                    && c.CustomerComplaintStatus == 1)
-                        .Average(c => (double?)c.CustomerComplaintRate) ?? 0,
+            var totalItems = await baseQuery.CountAsync();
 
-                    CommentCount = _context.TblCustomerComplaints
-                        .Count(c => c.CustomerComplaintEventId == e.EventId
-                                    && c.CustomerComplaintStatus == 1)
-                })
-                .OrderByDescending(x => x.AvgRate)
-                .ThenByDescending(x => x.CommentCount)
-                .ThenByDescending(x => x.Event.EventEnd)
-                .Take(top)
-                .Select(x => new EventCardVm
+            var items = await baseQuery
+                .OrderByDescending(e => e.EventEnd) // Mới kết thúc trước
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .Select(e => new EventCardVm
                 {
-                    Id = x.Event.EventId,
-                    Title = x.Event.EventName,
-                    ShortDescription = x.Event.EventDescription,
-                    StartDate = x.Event.EventStart,
-                    EndDate = x.Event.EventEnd,
-                    ImageUrl = string.IsNullOrEmpty(x.Event.EventImg)
+                    Id = e.EventId,
+                    Title = e.EventName,
+                    ShortDescription = string.IsNullOrEmpty(e.EventDescription)
+                        ? ""
+                        : (e.EventDescription.Length > 200
+                            ? e.EventDescription.Substring(0, 197) + "..."
+                            : e.EventDescription),
+                    StartDate = e.EventStart,
+                    EndDate = e.EventEnd,
+                    ImageUrl = string.IsNullOrEmpty(e.EventImg)
                         ? "/images/event-placeholder.png"
-                        : x.Event.EventImg,
-                    MaxSlot = x.Event.EventMaxSlot,
-                    Status = (int)x.Event.EventStatus,
-                    TenantPositionId = x.Event.EventTenantPositionId
-                });
+                        : e.EventImg,
+                    MaxSlot = e.EventMaxSlot,
+                    Status = (int)e.EventStatus,
+                    TenantPositionId = e.EventTenantPositionId
+                })
+                .ToListAsync();
 
-            return await q.ToListAsync();
+            return new PagedResult<EventCardVm>
+            {
+                Items = items,
+                PageIndex = pageIndex,
+                PageSize = pageSize,
+                TotalItems = totalItems
+            };
         }
-
 
         // ===============================
         // SỰ KIỆN SẮP / ĐANG DIỄN RA
@@ -85,10 +88,14 @@ namespace Semester03.Models.Repositories
                         Title = e.EventName,
                         ShortDescription = string.IsNullOrEmpty(e.EventDescription)
                             ? ""
-                            : (e.EventDescription.Length > 200 ? e.EventDescription.Substring(0, 197) + "..." : e.EventDescription),
+                            : (e.EventDescription.Length > 200
+                                ? e.EventDescription.Substring(0, 197) + "..."
+                                : e.EventDescription),
                         StartDate = e.EventStart,
                         EndDate = e.EventEnd,
-                        ImageUrl = string.IsNullOrEmpty(e.EventImg) ? "/images/event-placeholder.png" : e.EventImg,
+                        ImageUrl = string.IsNullOrEmpty(e.EventImg)
+                            ? "/images/event-placeholder.png"
+                            : e.EventImg,
                         MaxSlot = e.EventMaxSlot,
                         Status = (int)e.EventStatus,
                         TenantPositionId = e.EventTenantPositionId
@@ -104,6 +111,7 @@ namespace Semester03.Models.Repositories
                 // swallow intentionally; return defaults below
             }
 
+            // fallback nếu DB có vấn đề
             var defaults = new List<EventCardVm>(top);
             for (int i = 1; i <= top; i++)
             {
@@ -124,7 +132,6 @@ namespace Semester03.Models.Repositories
             return defaults;
         }
 
-
         // ===============================
         // EVENT DETAILS + COMMENT
         // ===============================
@@ -137,18 +144,24 @@ namespace Semester03.Models.Repositories
             if (e == null)
                 return null;
 
+            var now = DateTime.Now;
+
             var query = _context.TblCustomerComplaints
                 .AsNoTracking()
                 .Where(c => c.CustomerComplaintEventId == eventId);
 
             if (currentUserId.HasValue)
             {
+                // User hiện tại thấy:
+                // - comment đã duyệt
+                // - comment của chính mình (kể cả chưa duyệt)
                 query = query.Where(c =>
                     c.CustomerComplaintStatus == 1 ||
                     c.CustomerComplaintCustomerUserId == currentUserId.Value);
             }
             else
             {
+                // Khách vãng lai chỉ thấy comment đã duyệt
                 query = query.Where(c => c.CustomerComplaintStatus == 1);
             }
 
@@ -186,13 +199,45 @@ namespace Semester03.Models.Repositories
             };
 
             vm.CommentCount = vm.Comments.Count;
-            vm.AvgRate = vm.CommentCount > 0 ? vm.Comments.Average(c => c.Rate) : 0;
+            // 👉 Khi chưa có ai bình luận, mặc định 5 sao
+            vm.AvgRate = vm.CommentCount > 0 ? vm.Comments.Average(c => c.Rate) : 5;
 
-            vm.Related = new List<EventCardVm>();
+            // Flag trạng thái
+            vm.IsActive = e.EventStatus == 1;
+            vm.IsPast = e.EventEnd < now;
+            vm.IsOngoing = e.EventStart <= now && e.EventEnd >= now;
+            vm.IsUpcoming = e.EventStart > now;
+
+            // Sự kiện liên quan: các event active, chưa kết thúc, khác id
+            vm.Related = await _context.TblEvents
+                .AsNoTracking()
+                .Where(x => x.EventId != e.EventId
+                            && x.EventStatus == 1
+                            && x.EventEnd >= now)
+                .OrderBy(x => x.EventStart)
+                .Take(4)
+                .Select(x => new EventCardVm
+                {
+                    Id = x.EventId,
+                    Title = x.EventName,
+                    ShortDescription = string.IsNullOrEmpty(x.EventDescription)
+                        ? ""
+                        : (x.EventDescription.Length > 200
+                            ? x.EventDescription.Substring(0, 197) + "..."
+                            : x.EventDescription),
+                    StartDate = x.EventStart,
+                    EndDate = x.EventEnd,
+                    ImageUrl = string.IsNullOrEmpty(x.EventImg)
+                        ? "/images/event-placeholder.png"
+                        : x.EventImg,
+                    MaxSlot = x.EventMaxSlot,
+                    Status = (int)x.EventStatus,
+                    TenantPositionId = x.EventTenantPositionId
+                })
+                .ToListAsync();
 
             return vm;
         }
-
 
         // CRUD Admin
         public async Task<IEnumerable<TblEvent>> GetAllAsync()

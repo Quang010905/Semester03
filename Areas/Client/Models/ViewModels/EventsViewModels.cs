@@ -4,6 +4,26 @@ using System.Collections.Generic;
 namespace Semester03.Areas.Client.Models.ViewModels
 {
     // ==========================
+    // PagedResult dùng chung
+    // ==========================
+    public class PagedResult<T>
+    {
+        public List<T> Items { get; set; } = new();
+
+        /// <summary>Trang hiện tại (1-based)</summary>
+        public int PageIndex { get; set; }
+
+        /// <summary>Số item / trang</summary>
+        public int PageSize { get; set; }
+
+        /// <summary>Tổng số item</summary>
+        public int TotalItems { get; set; }
+
+        public int TotalPages =>
+            PageSize == 0 ? 0 : (int)Math.Ceiling((double)TotalItems / PageSize);
+    }
+
+    // ==========================
     // EVENT CARD (for list)
     // ==========================
     public class EventCardVm
@@ -23,12 +43,17 @@ namespace Semester03.Areas.Client.Models.ViewModels
     }
 
     // ==========================
-    // HOME VM
+    // HOME VM (DÙNG CHO INDEX)
     // ==========================
+    // ❌ Bỏ Featured
+    // ✅ Có: Upcoming + Past (phân trang)
     public class EventHomeVm
     {
-        public List<EventCardVm> Featured { get; set; } = new();
+        // Sự kiện sắp / đang diễn ra
         public List<EventCardVm> Upcoming { get; set; } = new();
+
+        // Sự kiện đã diễn ra (có phân trang)
+        public PagedResult<EventCardVm> Past { get; set; } = new();
     }
 
     // ==========================
@@ -57,6 +82,12 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public List<CommentVm> Comments { get; set; } = new();
         public double AvgRate { get; set; }
         public int CommentCount { get; set; }
+
+        // === FLAG TRẠNG THÁI THEO THỜI GIAN & HOẠT ĐỘNG ===
+        public bool IsPast { get; set; }       // Đã kết thúc
+        public bool IsOngoing { get; set; }    // Đang diễn ra
+        public bool IsUpcoming { get; set; }   // Sắp diễn ra
+        public bool IsActive { get; set; }     // EventStatus == 1
     }
 
     // ===============================================================
@@ -90,7 +121,7 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public string EventTitle { get; set; }
         public int Quantity { get; set; }
         public decimal Amount { get; set; }
-        public int PaymentStatus { get; set; } 
+        public int PaymentStatus { get; set; }
         public string ContactEmail { get; set; }
     }
 

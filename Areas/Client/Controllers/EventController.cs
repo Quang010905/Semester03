@@ -26,17 +26,23 @@ namespace Semester03.Areas.Client.Controllers
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<IActionResult> Index()
+        // Trang danh sách sự kiện
+        // - Sự kiện sắp diễn ra (Upcoming)
+        // - Sự kiện đã diễn ra (Past) + pagination
+        public async Task<IActionResult> Index(int page = 1)
         {
+            const int PageSize = 9; // 3 cột * 3 hàng
+
             ViewData["Title"] = "Events";
             ViewData["MallName"] = ViewData["MallName"] ?? "ABCD Mall";
 
             var vm = new EventHomeVm
             {
-                Featured = await _repo.GetFeaturedEventsAsync(6),
-                Upcoming = await _repo.GetUpcomingEventsAsync()
+                Upcoming = await _repo.GetUpcomingEventsAsync(),
+                Past = await _repo.GetPastEventsAsync(page, PageSize)
             };
 
+            // Dùng cho sidebar / section khác nếu cần
             ViewBag.Events = vm.Upcoming ?? new List<EventCardVm>();
 
             return View(vm);
@@ -61,7 +67,7 @@ namespace Semester03.Areas.Client.Controllers
             return View(ev);
         }
 
-        // ⭐ COMMENT EVENT – AJAX giống Store/Product
+        // ⭐ COMMENT EVENT – AJAX
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddComment(int eventId, int rate, string text)
@@ -71,7 +77,9 @@ namespace Semester03.Areas.Client.Controllers
                 return Json(new { success = false, message = "Bạn phải đăng nhập để bình luận." });
             }
 
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userIdClaim = User.FindFirst(ClaimsIdentity.DefaultNameClaimType)?.Value
+                              ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
             if (!int.TryParse(userIdClaim, out var userId))
             {
                 return Json(new { success = false, message = "Không xác định được người dùng." });
