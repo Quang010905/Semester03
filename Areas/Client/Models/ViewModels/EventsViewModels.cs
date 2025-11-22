@@ -50,7 +50,13 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public int Status { get; set; }
 
         public int TenantPositionId { get; set; }
+
         public List<EventCardVm> Related { get; set; } = new();
+
+        // === COMMENT CHO EVENT (dùng chung CommentVm với Movie) ===
+        public List<CommentVm> Comments { get; set; } = new();
+        public double AvgRate { get; set; }
+        public int CommentCount { get; set; }
     }
 
     // ===============================================================
@@ -84,6 +90,7 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public string EventTitle { get; set; }
         public int Quantity { get; set; }
         public decimal Amount { get; set; }
+        public int PaymentStatus { get; set; } 
         public string ContactEmail { get; set; }
     }
 

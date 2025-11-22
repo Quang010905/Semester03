@@ -8,12 +8,7 @@
         </span>
         <span class="tab-title">Partner account</span>
     </a>
-    <a href="#" class="browser-tab">
-        <span class="tab-icon">
-            <i class="fas fa-journal-whills"></i>
-        </span>
-        <span class="tab-title">Employee account</span>
-    </a>
+
     <a href="#" class="browser-tab">
         <span class="tab-icon">
             <i class="fas fa-shopping-cart"></i>
@@ -24,19 +19,56 @@
         <span class="tab-icon">
             <i class="fas fa-shopping-cart"></i>
         </span>
-        <span class="tab-title">Restore</span>
+        <span class="tab-title">Inactive</span>
     </a>
 </div>
+
+<!-- TAB: CUSTOMER ACCOUNT -->
+<div id="customer-tab-content" style="padding: 20px; display: none;">
+    <h3>Customer Accounts</h3>
+
+    <table class="table table-bordered table-hover mt-3">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Fullname</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Points</th>
+                <th>Created</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var c in ViewBag.Customers)
+            {
+                <tr>
+                    <td>@c.Id</td>
+                    <td>@c.Username</td>
+                    <td>@c.FullName</td>
+                    <td>@c.Email</td>
+                    <td>@c.Phone</td>
+                    <td>@c.Point</td>
+                    <td>@c.CreatedAt.ToString("dd/MM/yyyy")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+
+
 
 
 <style>
     body {
         font-family: Arial, sans-serif;
         margin: 0;
-        background-color: #f1f3f4; /* Màu nền của thanh tab */
+        background-color: #f1f3f4; 
     }
 
-    /* Thanh chứa các tab */
+    
     .browser-tab-bar {
         display: flex;
         align-items: flex-end; /* Quan trọng để các tab "dính" vào đường phân cách dưới */
@@ -97,7 +129,6 @@
         /* Có thể dùng clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); để cắt góc nếu cần */
     }
 
-        /* Tab đang hoạt động (đang mở) */
         .browser-tab.active {
             background-color: #fff; /* Màu trắng cho tab đang hoạt động */
             color: #202124;
@@ -183,5 +214,20 @@
                 undoTab.classList.add('active');
             });
         }
+    });
+
+
+
+    const partnerTab = document.querySelectorAll(".browser-tab")[0];
+    const customerTab = document.querySelectorAll(".browser-tab")[1];
+
+    const customerContent = document.getElementById("customer-tab-content");
+
+    customerTab.addEventListener("click", function () {
+        customerContent.style.display = "block";
+    });
+
+    partnerTab.addEventListener("click", function () {
+        customerContent.style.display = "none";
     });
 </script>

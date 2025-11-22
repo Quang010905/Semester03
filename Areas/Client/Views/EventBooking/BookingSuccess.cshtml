@@ -1,23 +1,70 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.EventBookingSuccessVm
 @{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
-    ViewData["Title"] = "Đặt vé thành công";
+    ViewData["Title"] = "Booking Successful";
 }
 
-<div class="container py-4">
-    <div class="card p-4">
-        <h3>Đặt vé thành công</h3>
-        <p>Mã đặt vé: <strong>#@Model.BookingId</strong></p>
-        <p>Sự kiện: <strong>@Model.EventTitle</strong></p>
-        <p>Số lượng: <strong>@Model.Quantity</strong></p>
-        <p>Tổng tiền: <strong>@Model.Amount.ToString("N0") VND</strong></p>
-
-        @if (!string.IsNullOrWhiteSpace(Model.ContactEmail))
-        {
-            <p>Biên nhận đã được gửi tới: <strong>@Model.ContactEmail</strong></p>
+@section Styles {
+    <style>
+        .success-wrapper {
+            max-width: 760px;
+            margin: 2.5rem auto;
         }
-        <div class="mt-3">
-            <a class="btn btn-primary" href="@Url.Action("Index", "Event", new { area = "Client" })">Quay về danh sách sự kiện</a>
+
+        .success-card {
+            background: #fff;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 10px 28px rgba(15,23,42,0.06);
+            text-align: center;
+        }
+
+        .success-icon {
+            width: 78px;
+            height: 78px;
+            background: #e8fbee;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 2.6rem;
+            color: #16a34a;
+            box-shadow: 0 6px 12px rgba(22,163,74,0.25);
+        }
+
+        .success-details p strong {
+            font-weight: 700;
+        }
+    </style>
+}
+
+<div class="container success-wrapper">
+    <div class="success-card">
+
+        <div class="success-icon">
+            <i class="bi bi-check-circle-fill"></i>
+        </div>
+
+        <h3 class="mb-3">Event Booking Successful</h3>
+
+        <div class="success-details text-start mx-auto" style="max-width:380px;">
+            <p><strong>Booking ID:</strong> #@Model.BookingId</p>
+            <p><strong>Event:</strong> @Model.EventTitle</p>
+            <p><strong>Quantity:</strong> @Model.Quantity</p>
+            <p><strong>Total amount:</strong> @Model.Amount.ToString("N0") VND</p>
+
+            @if (!string.IsNullOrWhiteSpace(Model.ContactEmail))
+            {
+                <p><strong>Receipt sent to:</strong> @Model.ContactEmail</p>
+            }
+        </div>
+
+        <div class="mt-4">
+            <a class="btn btn-primary"
+               href="@Url.Action("Index", "Event", new { area = "Client" })">
+                Back to Events
+            </a>
         </div>
     </div>
 </div>

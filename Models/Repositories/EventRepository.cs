@@ -1,255 +1,221 @@
 ﻿using Semester03.Areas.Client.Models.ViewModels;
 using Semester03.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
-namespace Semester03.Models.Repositories;
-public class EventRepository
+namespace Semester03.Models.Repositories
 {
-    private readonly AbcdmallContext _context;
-
-    public EventRepository(AbcdmallContext context)
+    public class EventRepository
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
-    }
+        private readonly AbcdmallContext _context;
 
-    public async Task<List<EventCardVm>> GetFeaturedEventsAsync(int top = 3)
-    {
-        var now = DateTime.Now;
-
-        var q = _context.TblEvents
-            .AsNoTracking()
-            .Where(e => e.EventStart >= now && e.EventStatus == 1)
-            .OrderBy(e => e.EventStart)
-            .Take(top)
-            .Select(e => new EventCardVm
-            {
-                Id = e.EventId,
-                Title = e.EventName,
-                ShortDescription = string.IsNullOrEmpty(e.EventDescription) ? "" :
-                    (e.EventDescription.Length > 200 ? e.EventDescription.Substring(0, 197) + "..." : e.EventDescription),
-                StartDate = e.EventStart,
-                EndDate = e.EventEnd,
-                ImageUrl = string.IsNullOrEmpty(e.EventImg) ? "/images/event-placeholder.png" : e.EventImg,
-                MaxSlot = e.EventMaxSlot,
-                Status = (int)e.EventStatus,
-                TenantPositionId = e.EventTenantPositionId
-            });
-
-        return await q.ToListAsync();
-    }
-
-    public async Task<List<EventCardVm>> GetUpcomingEventsAsync(int top = 6)
-    {
-        var now = DateTime.Now;
-
-        try
+        public EventRepository(AbcdmallContext context)
         {
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+        }
+
+        // ===============================
+        // SỰ KIỆN NỔI BẬT (ĐÃ KẾT THÚC)
+        // Sắp theo: AvgRate ↓, CommentCount ↓, EndDate ↓
+        // ===============================
+        public async Task<List<EventCardVm>> GetFeaturedEventsAsync(int top = 10)
+        {
+            var now = DateTime.Now;
+
             var q = _context.TblEvents
                 .AsNoTracking()
-                .Where(e => e.EventEnd >= now && e.EventStatus == 1)
+                .Where(e => e.EventStatus == 1 && e.EventEnd < now) // ĐÃ KẾT THÚC
+                .Select(e => new
+                {
+                    Event = e,
+
+                    AvgRate = _context.TblCustomerComplaints
+                        .Where(c => c.CustomerComplaintEventId == e.EventId
+                                    && c.CustomerComplaintStatus == 1)
+                        .Average(c => (double?)c.CustomerComplaintRate) ?? 0,
+
+                    CommentCount = _context.TblCustomerComplaints
+                        .Count(c => c.CustomerComplaintEventId == e.EventId
+                                    && c.CustomerComplaintStatus == 1)
+                })
+                .OrderByDescending(x => x.AvgRate)
+                .ThenByDescending(x => x.CommentCount)
+                .ThenByDescending(x => x.Event.EventEnd)
+                .Take(top)
+                .Select(x => new EventCardVm
+                {
+                    Id = x.Event.EventId,
+                    Title = x.Event.EventName,
+                    ShortDescription = x.Event.EventDescription,
+                    StartDate = x.Event.EventStart,
+                    EndDate = x.Event.EventEnd,
+                    ImageUrl = string.IsNullOrEmpty(x.Event.EventImg)
+                        ? "/images/event-placeholder.png"
+                        : x.Event.EventImg,
+                    MaxSlot = x.Event.EventMaxSlot,
+                    Status = (int)x.Event.EventStatus,
+                    TenantPositionId = x.Event.EventTenantPositionId
+                });
+
+            return await q.ToListAsync();
+        }
+
+
+        // ===============================
+        // SỰ KIỆN SẮP / ĐANG DIỄN RA
+        // EventEnd >= NOW
+        // ===============================
+        public async Task<List<EventCardVm>> GetUpcomingEventsAsync(int top = 12)
+        {
+            var now = DateTime.Now;
+
+            var q = _context.TblEvents
+                .AsNoTracking()
+                .Where(e => e.EventStatus == 1 && e.EventEnd >= now)
                 .OrderBy(e => e.EventStart)
                 .Take(top)
                 .Select(e => new EventCardVm
                 {
                     Id = e.EventId,
                     Title = e.EventName,
-                    ShortDescription = string.IsNullOrEmpty(e.EventDescription)
-                        ? ""
-                        : (e.EventDescription.Length > 200 ? e.EventDescription.Substring(0, 197) + "..." : e.EventDescription),
+                    ShortDescription = e.EventDescription,
                     StartDate = e.EventStart,
                     EndDate = e.EventEnd,
-                    ImageUrl = string.IsNullOrEmpty(e.EventImg) ? "/images/event-placeholder.png" : e.EventImg,
+                    ImageUrl = string.IsNullOrEmpty(e.EventImg)
+                        ? "/images/event-placeholder.png"
+                        : e.EventImg,
                     MaxSlot = e.EventMaxSlot,
                     Status = (int)e.EventStatus,
                     TenantPositionId = e.EventTenantPositionId
                 });
 
-            var list = await q.ToListAsync();
-
-            if (list != null && list.Any())
-                return list;
-        }
-        catch (Exception)
-        {
-            // swallow intentionally; return defaults below
+            return await q.ToListAsync();
         }
 
-        var defaults = new List<EventCardVm>(top);
-        for (int i = 1; i <= top; i++)
+
+        // ===============================
+        // EVENT DETAILS + COMMENT
+        // ===============================
+        public async Task<EventDetailsVm> GetEventByIdAsync(int eventId, int? currentUserId = null)
         {
-            defaults.Add(new EventCardVm
+            var e = await _context.TblEvents
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.EventId == eventId);
+
+            if (e == null)
+                return null;
+
+            var query = _context.TblCustomerComplaints
+                .AsNoTracking()
+                .Where(c => c.CustomerComplaintEventId == eventId);
+
+            if (currentUserId.HasValue)
             {
-                Id = 0,
-                Title = $"Sự kiện sắp tới #{i}",
-                ShortDescription = "Thông tin sự kiện sẽ được cập nhật sớm nhất.",
-                StartDate = now.AddDays(i),
-                EndDate = now.AddDays(i).AddHours(2),
-                ImageUrl = "/images/event-placeholder.png",
-                MaxSlot = 0,
-                Status = 0,
-                TenantPositionId = 0
-            });
-        }
-
-        return defaults;
-    }
-
-    public async Task<EventDetailsVm> GetEventByIdAsync(int eventId)
-    {
-        var e = await _context.TblEvents
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.EventId == eventId);
-
-        if (e == null) return null;
-
-        var vm = new EventDetailsVm
-        {
-            Id = e.EventId,
-            Title = e.EventName,
-            Description = e.EventDescription,
-            StartDate = e.EventStart,
-            EndDate = e.EventEnd,
-            ImageUrl = string.IsNullOrEmpty(e.EventImg) ? "/images/event-placeholder.png" : e.EventImg,
-            MaxSlot = e.EventMaxSlot,
-            Status = (int)e.EventStatus,
-            TenantPositionId = e.EventTenantPositionId // assuming it's int
-        };
-
-        // Lấy Sự kiện liên quan: nếu tenantId != 0 thì lấy, ngược lại bỏ qua
-        try
-        {
-            if (e.EventTenantPositionId != 0)
-            {
-                vm.Related = await GetRelatedEventsAsync(e.EventTenantPositionId, eventId, 8);
+                query = query.Where(c =>
+                    c.CustomerComplaintStatus == 1 ||
+                    c.CustomerComplaintCustomerUserId == currentUserId.Value);
             }
             else
             {
-                vm.Related = new List<EventCardVm>();
+                query = query.Where(c => c.CustomerComplaintStatus == 1);
             }
-        }
-        catch
-        {
-            vm.Related = new List<EventCardVm>();
-        }
 
-        return vm;
-    }
+            var comments = await (
+                from c in query
+                join u in _context.TblUsers.AsNoTracking()
+                    on c.CustomerComplaintCustomerUserId equals u.UsersId into gj
+                from user in gj.DefaultIfEmpty()
+                orderby c.CustomerComplaintCreatedAt descending
+                select new CommentVm
+                {
+                    Id = c.CustomerComplaintId,
+                    UserId = c.CustomerComplaintCustomerUserId,
+                    UserName = user != null
+                        ? (string.IsNullOrWhiteSpace(user.UsersFullName) ? user.UsersUsername : user.UsersFullName)
+                        : "Ẩn danh",
+                    Rate = c.CustomerComplaintRate,
+                    Text = c.CustomerComplaintDescription,
+                    CreatedAt = c.CustomerComplaintCreatedAt
+                }
+            ).ToListAsync();
 
-
-    /// <summary>
-    /// Lấy các sự kiện liên quan (cùng tenant). Loại bỏ event hiện tại (excludeId).
-    /// </summary>
-    public async Task<List<EventCardVm>> GetRelatedEventsAsync(int tenantId, int excludeId, int take = 4)
-    {
-        var now = DateTime.Now;
-
-        var q = _context.TblEvents
-            .AsNoTracking()
-            .Where(e => e.EventTenantPositionId == tenantId && e.EventId != excludeId && e.EventStatus == 1 && e.EventEnd >= now)
-            .OrderBy(e => e.EventStart)
-            .Take(take)
-            .Select(e => new EventCardVm
+            var vm = new EventDetailsVm
             {
                 Id = e.EventId,
                 Title = e.EventName,
-                ShortDescription = string.IsNullOrEmpty(e.EventDescription) ? "" :
-                    (e.EventDescription.Length > 120 ? e.EventDescription.Substring(0, 117) + "..." : e.EventDescription),
+                Description = e.EventDescription,
                 StartDate = e.EventStart,
                 EndDate = e.EventEnd,
                 ImageUrl = string.IsNullOrEmpty(e.EventImg) ? "/images/event-placeholder.png" : e.EventImg,
                 MaxSlot = e.EventMaxSlot,
                 Status = (int)e.EventStatus,
-                TenantPositionId = e.EventTenantPositionId
-            });
+                TenantPositionId = e.EventTenantPositionId,
+                Comments = comments
+            };
 
-        var list = await q.ToListAsync();
+            vm.CommentCount = vm.Comments.Count;
+            vm.AvgRate = vm.CommentCount > 0 ? vm.Comments.Average(c => c.Rate) : 0;
 
-        // Nếu không có related theo tenant, fallback lấy upcoming khác
-        if (list == null || !list.Any())
-        {
-            var fallback = await _context.TblEvents
-                .AsNoTracking()
-                .Where(e => e.EventId != excludeId && e.EventStatus == 1 && e.EventEnd >= now)
-                .OrderBy(e => e.EventStart)
-                .Take(take)
-                .Select(e => new EventCardVm
-                {
-                    Id = e.EventId,
-                    Title = e.EventName,
-                    ShortDescription = string.IsNullOrEmpty(e.EventDescription) ? "" :
-                        (e.EventDescription.Length > 120 ? e.EventDescription.Substring(0, 117) + "..." : e.EventDescription),
-                    StartDate = e.EventStart,
-                    EndDate = e.EventEnd,
-                    ImageUrl = string.IsNullOrEmpty(e.EventImg) ? "/images/event-placeholder.png" : e.EventImg,
-                    MaxSlot = e.EventMaxSlot,
-                    Status = (int)e.EventStatus,
-                    TenantPositionId = e.EventTenantPositionId
-                })
-                .ToListAsync();
+            vm.Related = new List<EventCardVm>();
 
-            return fallback ?? new List<EventCardVm>();
+            return vm;
         }
 
-        return list;
-    }
 
-    // ==========================================================
-    // ADMIN CRUD METHODS 
-    // ==========================================================
-
-    public async Task<IEnumerable<TblEvent>> GetAllAsync()
-    {
-        // Include related position data
-        return await _context.TblEvents
-            .Include(e => e.EventTenantPosition)
-            .OrderByDescending(e => e.EventStart)
-            .ToListAsync();
-    }
-
-    public async Task<TblEvent> GetByIdAdminAsync(int id)
-    {
-        // Use this one for Admin (GetEventByIdAsync is already used by Client)
-        return await _context.TblEvents
-            .Include(e => e.EventTenantPosition)
-            .Include(e => e.TblEventBookings)
-            .FirstOrDefaultAsync(e => e.EventId == id);
-    }
-
-    public async Task<TblEvent> AddAsync(TblEvent entity)
-    {
-        _context.TblEvents.Add(entity);
-        await _context.SaveChangesAsync();
-        return entity;
-    }
-
-    public async Task UpdateAsync(TblEvent entity)
-    {
-        _context.Entry(entity).State = EntityState.Modified;
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task DeleteAsync(int id)
-    {
-        var entity = await _context.TblEvents.FindAsync(id);
-        if (entity != null)
+        // CRUD Admin
+        public async Task<IEnumerable<TblEvent>> GetAllAsync()
         {
-            _context.TblEvents.Remove(entity);
+            return await _context.TblEvents
+                .Include(e => e.EventTenantPosition)
+                .OrderByDescending(e => e.EventStart)
+                .ToListAsync();
+        }
+
+        public async Task<TblEvent> GetByIdAdminAsync(int id)
+        {
+            return await _context.TblEvents
+                .Include(e => e.EventTenantPosition)
+                .Include(e => e.TblEventBookings)
+                .FirstOrDefaultAsync(e => e.EventId == id);
+        }
+
+        public async Task<TblEvent> AddAsync(TblEvent entity)
+        {
+            _context.TblEvents.Add(entity);
+            await _context.SaveChangesAsync();
+            return entity;
+        }
+
+        public async Task UpdateAsync(TblEvent entity)
+        {
+            _context.Entry(entity).State = EntityState.Modified;
             await _context.SaveChangesAsync();
         }
-    }
-    
-    public async Task<bool> UpdateStatusAsync(int eventId, int status)
-    {
-        var evt = await _context.TblEvents.FindAsync(eventId);
-        if (evt == null)
+
+        public async Task DeleteAsync(int id)
         {
-            return false;
+            var evt = await _context.TblEvents.FindAsync(id);
+
+            if (evt != null)
+            {
+                _context.TblEvents.Remove(evt);
+                await _context.SaveChangesAsync();
+            }
         }
 
-        evt.EventStatus = status;
-        _context.TblEvents.Update(evt);
-        await _context.SaveChangesAsync();
-        return true;
-    }
+        public async Task<bool> UpdateStatusAsync(int eventId, int status)
+        {
+            var evt = await _context.TblEvents.FindAsync(eventId);
 
+            if (evt == null) return false;
+
+            evt.EventStatus = status;
+            _context.Update(evt);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+    }
 }

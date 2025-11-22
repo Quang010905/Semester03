@@ -1,76 +1,111 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.BookTicketVm
 @{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+    ViewData["Title"] = "Book tickets";
 }
 
 @section Styles {
     <style>
+        .movie-shell {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .movie-head {
+            display: flex;
+            gap: 1.1rem;
+            align-items: flex-start;
+        }
+
+            .movie-head img {
+                width: 96px;
+                height: 140px;
+                object-fit: cover;
+                border-radius: .75rem;
+                box-shadow: 0 16px 32px rgba(15,23,42,0.55);
+            }
+
         .week-days {
             display: flex;
-            gap: .5rem;
-            overflow: auto;
+            gap: .6rem;
+            overflow-x: auto;
             padding-bottom: .5rem;
         }
 
         .day-card {
             min-width: 110px;
             text-align: center;
-            padding: .6rem;
-            border-radius: .5rem;
+            padding: .55rem .6rem;
+            border-radius: .9rem;
             cursor: pointer;
             border: 1px solid transparent;
+            background: #f3f4f6;
+            font-size: .85rem;
+            transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, border-color 0.12s ease;
         }
 
+            .day-card .fw-semibold {
+                font-size: .9rem;
+            }
+
             .day-card.selected {
-                background: #0d6efd;
+                background: linear-gradient(135deg, #0d6efd, #6366f1);
                 color: #fff;
-                border-color: rgba(0,0,0,0.05);
-                box-shadow: 0 6px 18px rgba(13,110,253,0.12);
+                border-color: transparent;
+                box-shadow: 0 10px 28px rgba(37,99,235,0.4);
             }
 
         .showtime-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill,minmax(160px,1fr));
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: .75rem;
             margin-top: 1rem;
         }
 
         .showtime-slot {
-            padding: .6rem;
-            border-radius: .5rem;
-            border: 1px solid #e9ecef;
+            padding: .7rem .6rem .75rem;
+            border-radius: .9rem;
+            border: 1px solid #e5e7eb;
             text-align: center;
-            cursor: pointer;
-            background: #fff;
+            background: #ffffff;
+            transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
         }
 
             .showtime-slot:hover {
-                box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+                box-shadow: 0 12px 30px rgba(15,23,42,0.16);
                 transform: translateY(-3px);
+                border-color: #0d6efd;
             }
 
-        .movie-head {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
+        @@media (max-width: 576px) {
+            .movie-head {
+                flex-direction: row;
+            }
         }
-
-            .movie-head img {
-                width: 90px;
-                height: 130px;
-                object-fit: cover;
-                border-radius: .25rem;
-            }
     </style>
 }
 
-<div class="container py-4">
+<div class="container py-4 movie-shell">
     <div class="mb-3 movie-head">
-        <img src="@Url.Content(Model.Movie?.PosterUrl ?? "~/Admin/img/download (5).jpg")" alt="@Model.Movie?.Title" class="rounded shadow-sm" style="width:90px;height:130px;object-fit:cover;" />
+        <img src="@Url.Content(Model.Movie?.PosterUrl ?? "~/Admin/img/download (5).jpg")"
+             alt="@Model.Movie?.Title"
+             class="rounded shadow-sm" />
         <div>
             <h3 class="mb-1">@Model.Movie?.Title</h3>
-            <div class="text-muted">Time: @(Model.Movie?.DurationMin?.ToString() ?? "--")</div>
-            <div class="mt-2">@Model.Movie?.Description</div>
+            <div class="text-muted">
+                Duration:
+                @if (Model.Movie?.DurationMin != null)
+                {
+                    @Model.Movie.DurationMin
+                    }
+                else
+                {
+                    @("--")
+                }
+            </div>
+            <div class="mt-2 small">
+                @Model.Movie?.Description
+            </div>
         </div>
     </div>
 
@@ -92,7 +127,7 @@
         <div id="showtimeContent"></div>
 
         <script>
-            (function(){
+            (function () {
                 const movieId = @Model.Movie?.Id ?? 0;
                 const container = document.getElementById('showtimeContent');
                 const loading = document.getElementById('loadingInitial');
@@ -101,16 +136,24 @@
                     loading.style.display = '';
                     container.innerHTML = '';
                     fetch('@Url.Action("GetShowtimes", "Booking", new { area = "Client" })' + '?movieId=' + movieId + '&date=' + date)
-                        .then(r => { if (!r.ok) throw new Error('Failed'); return r.text(); })
+                        .then(r => {
+                            if (!r.ok) throw new Error('Failed to load showtimes.');
+                            return r.text();
+                        })
                         .then(html => container.innerHTML = html)
-                        .catch(err => { container.innerHTML = '<div class="text-danger p-3">Không thể tải suất chiếu.</div>'; console.error(err); })
-                        .finally(()=> loading.style.display='none');
+                        .catch(err => {
+                            container.innerHTML = '<div class="text-danger p-3">Unable to load showtimes.</div>';
+                            console.error(err);
+                        })
+                        .finally(() => loading.style.display = 'none');
                 }
 
                 const selDay = document.querySelector('.day-card.selected');
-                if (selDay) loadFor(selDay.getAttribute('data-date'));
+                if (selDay) {
+                    loadFor(selDay.getAttribute('data-date'));
+                }
 
-                document.getElementById('weekDays').addEventListener('click', function(e){
+                document.getElementById('weekDays').addEventListener('click', function (e) {
                     const card = e.target.closest('.day-card');
                     if (!card) return;
                     document.querySelectorAll('.day-card').forEach(c => c.classList.remove('selected'));

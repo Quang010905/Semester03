@@ -27,6 +27,8 @@ public partial class TblTenant
 
     public virtual ICollection<TblTenantPosition> TblTenantPositions { get; set; } = new List<TblTenantPosition>();
 
+    public virtual ICollection<TblTenantPromotion> TblTenantPromotions { get; set; } = new List<TblTenantPromotion>();
+
     public virtual TblTenantType TenantType { get; set; } = null!;
 
     public virtual TblUser TenantUser { get; set; } = null!;

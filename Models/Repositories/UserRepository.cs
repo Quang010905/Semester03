@@ -162,5 +162,31 @@ namespace Semester03.Models.Repositories
                 })
                 .FirstOrDefaultAsync();
         }
+
+
+        //========================== Huỳnh Như ==========================
+        public async Task<List<User>> GetAllCustomersAsync()
+        {
+            return await _context.TblUsers
+                .Where(x => x.UsersRoleId == 4)  // customer
+                .Select(x => new User
+                {
+                    Id = x.UsersId,
+                    Username = x.UsersUsername,
+                    Password = x.UsersPassword,
+                    FullName = x.UsersFullName,
+                    Email = x.UsersEmail,
+                    Phone = x.UsersPhone,
+                    Role = x.UsersRoleId,
+                    Point = x.UsersPoints ?? 0,
+                    CreatedAt = (DateTime)x.UsersCreatedAt,
+                    UpdatedAt = (DateTime)x.UsersUpdatedAt,
+                })
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
+        }
+
+
+
     }
 }

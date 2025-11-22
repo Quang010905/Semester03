@@ -1,0 +1,62 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "/Areas/Partner/Views/Shared/_LayoutPartner.cshtml";
+    ViewData["Title"] = "Partner Dashboard";
+}
+
+<div style="margin-left:20px; margin-right: 50px">
+    <h2>Edit Category</h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+
+    @if (ViewBag.itemCategory != null)
+    {
+        Semester03.Areas.Partner.Models.Category cate =
+        (Semester03.Areas.Partner.Models.Category)ViewBag.itemCategory;
+
+        <form action="@Url.Action("UpdateCategory", "Category")" method="post" enctype="multipart/form-data">
+            <div class="form-group mb-3">
+                <label>Name</label>
+                <input type="text" class="form-control" name="CategoryName" value="@cate.Name" style="width: 300px;" required />
+            </div>
+            <input type="text" value="@cate.TenantId" name="TenantId" />
+            <input type="text" value="@cate.Id" name="CategoryId"/>
+            <div class="form-group mb-3">
+                <label for="upFile">Image</label>
+                <img src="@Url.Content("~/uploads/" + cate.Image)" style="max-width: 200px; max-height: 200px; display: block; margin-bottom: 10px;" />
+                <input type="file" class="form-control-file" id="upFile" name="upFile" />
+                <input type="hidden" name="OldImage" value="@cate.Image" />
+            </div>
+            <div class="form-group mb-3">
+                <label>Status</label><br />
+                <input type="checkbox" name="CategoryStatus" value="1" @(cate.Status == 1 ? "checked" : "") />
+                <label class="form-check-label" for="Active">Enable</label>
+            </div>
+
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="@Url.Action("Index", "Category", new{id = cate.TenantId})" class="btn btn-secondary">Back</a>
+            </div>
+        </form>
+    }
+</div>
