@@ -3,6 +3,9 @@
 *@
 @inject Semester03.Models.Repositories.TenantRepository _tenantRepo
 @inject Semester03.Models.Repositories.EventRepository _event_repo
+@using Semester03.Areas.Client.Models.ViewModels
+@inject Semester03.Models.Repositories.TenantRepository _tenantRepo
+@inject Semester03.Models.Repositories.EventRepository _event_repo
 @{
     var hideCenterMainFlag = (ViewData["HideCenterMain"] as bool?) ?? false;
     var routeController = (ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty);
@@ -547,15 +550,6 @@
                     </div>
 
                     <aside class="sidebar-col">
-                        <div class="mb-4">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <h6 class="mb-0">Categories</h6>
-                                <a class="small" href="@Url.Action("Categories", "Mall", new { area = "Client" })">
-                                    View all
-                                </a>
-                            </div>
-                            @await Html.PartialAsync("_CategoriesPartial")
-                        </div>
 
                         @{
                             // Get top upcoming events for sidebar
@@ -586,15 +580,21 @@
                             };
                         }
 
-                        <div class="mb-4">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <h6 class="mb-0">Upcoming events</h6>
-                                <a class="nav-link p-0 small text-primary"
-                                   href="@Url.Action("Index", "Event", new { area = "Client" })">
-                                    View all
-                                </a>
+                        @if (ViewData.Model is CinemaHomeVm cinemaModel)
+                        {
+                            <div class="mb-4">
+                                <div class="p-3 bg-white rounded shadow-sm">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <h6 class="mb-0">Coupon</h6>
+                                    </div>
+                                    @await Html.PartialAsync("_CouponPartial", cinemaModel)
+                                </div>
                             </div>
+                        }
 
+                        <div class="mb-4">
+                            <div class="d-flex align-items-center justify-content-between mb-2"></div>
+                            <h6>Event</h6>
                             <!-- Vertical scroll box -->
                             <div class="slider-wrapper small-event-slider mb-2">
                                 <div class="slider-track">
@@ -627,16 +627,6 @@
                                     }
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <h6 class="mb-0">Cinema</h6>
-                                <a class="small" href="@Url.Action("Cinema", "Mall", new { area = "Client" })">
-                                    Showtimes
-                                </a>
-                            </div>
-                            @await Html.PartialAsync("_CinemaPartial")
                         </div>
 
                         <div class="mb-4">

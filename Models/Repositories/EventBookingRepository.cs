@@ -101,7 +101,7 @@ namespace Semester03.Models.Repositories
 
             var entity = new TblEventBooking
             {
-                EventBookingTenantId = tenantId,
+                EventBookingTenantPositionId = tenantId,
                 EventBookingUserId = userId ?? 0,
                 EventBookingEventId = eventId,
                 EventBookingTotalCost = totalCost,
