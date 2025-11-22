@@ -34,6 +34,7 @@
                         <th>Discount</th>
                         <th>Valid From</th>
                         <th>Valid To</th>
+                        <th>Points</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -53,6 +54,9 @@
                             </td>
                             <td>
                                 @item.CouponValidTo.ToString("g")
+                            </td>
+                            <td>
+                                @(item.CouponMinimumPointsRequired.HasValue? item.CouponMinimumPointsRequired.ToString() : "Free")
                             </td>
                             <td>
                                 @if (item.CouponIsActive == true)

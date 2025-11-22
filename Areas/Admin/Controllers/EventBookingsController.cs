@@ -42,7 +42,7 @@ namespace Semester03.Areas.Admin.Controllers
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
-            var booking = await _bookingRepo.GetByIdAsync(id.Value);
+            var booking = await _bookingRepo.GetByIdWithHistoryAsync(id.Value);
             if (booking == null) return NotFound();
             return View(booking);
         }
@@ -53,7 +53,8 @@ namespace Semester03.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateStatus(int id, int paymentStatus)
         {
-            var result = await _bookingRepo.UpdatePaymentStatusAsync(id, paymentStatus);
+            int adminId = 1;
+            var result = await _bookingRepo.UpdateStatusByAdminAsync(id, paymentStatus, adminId);
 
             if (result)
             {

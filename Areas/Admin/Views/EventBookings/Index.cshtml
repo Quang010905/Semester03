@@ -17,12 +17,13 @@
             <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                 <thead>
                     <tr>
-                        <th>Booking ID</th>
+                        <th>ID</th>
                         <th>Event</th>
-                        <th>Tenant</th>
                         <th>Customer</th>
-                        <th>Cost</th>
-                        <th>Payment Status</th>
+                        <th>Date</th>
+                        <th>Qty</th>
+                        <th>Total</th>
+                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -31,37 +32,34 @@
                     {
                         <tr>
                             <td>@item.EventBookingId</td>
+                            <td>@item.EventBookingEvent?.EventName</td>
+                            <td>@item.EventBookingUser?.UsersFullName</td>
+
                             <td>
-                                @item.EventBookingEvent?.EventName
+                                @item.EventBookingDate?.ToString("dd/MM")
                             </td>
                             <td>
-                                @item.EventBookingTenant?.TenantName
+                                @item.EventBookingQuantity
                             </td>
                             <td>
-                                @item.EventBookingUser?.UsersFullName
+                                @item.EventBookingTotalCost?.ToString("N0")
                             </td>
                             <td>
-                                @if (item.EventBookingTotalCost.HasValue)
-                                {
-                                    @item.EventBookingTotalCost.Value.ToString("C", new System.Globalization.CultureInfo("en-US"))
-                                }
-                            </td>
-                            <td>
-                                @if (item.EventBookingPaymentStatus == 1) // 1 = Paid
+                                @if (item.EventBookingPaymentStatus == 1)
                                 {
                                     <span class="badge badge-success">Paid</span>
                                 }
-                                else if (item.EventBookingPaymentStatus == 2) // 2 = Free
+                                else if (item.EventBookingPaymentStatus == 2)
                                 {
                                     <span class="badge badge-info">Free</span>
                                 }
-                                else // 0 = Unpaid
+                                else
                                 {
                                     <span class="badge badge-warning">Unpaid</span>
                                 }
                             </td>
                             <td>
-                                <a asp-action="Details" asp-route-id="@item.EventBookingId" class="btn btn-info btn-sm">Details / Manage</a>
+                                <a asp-action="Details" asp-route-id="@item.EventBookingId" class="btn btn-info btn-sm">Details</a>
                             </td>
                         </tr>
                     }

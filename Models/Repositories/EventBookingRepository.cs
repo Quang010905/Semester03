@@ -297,6 +297,49 @@ namespace Semester03.Models.Repositories
             return 1;
         }
 
+        public async Task<TblEventBooking> GetByIdWithHistoryAsync(int id)
+        {
+            return await GetFullBookingQuery()
+                .Include(b => b.TblEventBookingHistories.OrderByDescending(h => h.EventBookingHistoryCreatedAt))
+                .FirstOrDefaultAsync(b => b.EventBookingId == id);
+        }
+
+        public async Task<bool> UpdateStatusByAdminAsync(int bookingId, int newStatus, int adminId)
+        {
+            var booking = await _db.TblEventBookings.FindAsync(bookingId);
+            if (booking == null) return false;
+
+            string oldStatusLabel = GetStatusLabel(booking.EventBookingPaymentStatus ?? 0);
+            string newStatusLabel = GetStatusLabel(newStatus);
+
+            booking.EventBookingPaymentStatus = newStatus;
+            _db.TblEventBookings.Update(booking);
+
+            var history = new TblEventBookingHistory
+            {
+                EventBookingHistoryBookingId = booking.EventBookingId,
+                EventBookingHistoryEventId = booking.EventBookingEventId,
+                EventBookingHistoryUserId = adminId, // always = 1 
+                EventBookingHistoryAction = "UpdateStatus",
+                EventBookingHistoryDetails = $"Status changed from '{oldStatusLabel}' to '{newStatusLabel}'",
+                EventBookingHistoryCreatedAt = DateTime.UtcNow
+            };
+            _db.TblEventBookingHistories.Add(history);
+
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        private string GetStatusLabel(int status)
+        {
+            return status switch
+            {
+                0 => "Unpaid",
+                1 => "Paid",
+                2 => "Free",
+                3 => "Cancelled",
+                _ => "Unknown"
+            };
         private int TryGetQuantityFromBooking(TblEventBooking booking)
         {
             try

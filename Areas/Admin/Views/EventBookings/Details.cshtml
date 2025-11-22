@@ -24,30 +24,46 @@
             </div>
             <div class="card-body">
                 <dl class="row">
-                    <dt class="col-sm-3">Event</dt>
-                    <dd class="col-sm-9">@Model.EventBookingEvent?.EventName</dd>
-
-                    <dt class="col-sm-3">Tenant</dt>
-                    <dd class="col-sm-9">@Model.EventBookingTenant?.TenantName</dd>
-
-                    <dt class="col-sm-3">Date Booked</dt>
-                    <dd class="col-sm-9">
-                        @if (Model.EventBookingCreatedDate.HasValue)
-                        {
-                            @Model.EventBookingCreatedDate.Value.ToString("yyyy-MM-dd HH:mm")
-                        }
+                    <dt class="col-sm-4">Event Name</dt>
+                    <dd class="col-sm-8 font-weight-bold text-primary">
+                        @Model.EventBookingEvent?.EventName
                     </dd>
 
-                    <dt class="col-sm-3">Total Cost</dt>
-                    <dd class="col-sm-9">
+                    <dt class="col-sm-4">Event Date (Attending)</dt>
+                    <dd class="col-sm-8">
+                        @Model.EventBookingDate?.ToString("dd/MM/yyyy")
+                    </dd>
+
+                    <dt class="col-sm-4">Ticket Quantity</dt>
+                    <dd class="col-sm-8">
+                        @Model.EventBookingQuantity tickets
+                    </dd>
+
+                    <dt class="col-sm-4">Unit Price</dt>
+                    <dd class="col-sm-8">
+                        @Model.EventBookingUnitPrice?.ToString("C", new System.Globalization.CultureInfo("en-US"))
+                    </dd>
+
+                    <hr class="w-100" />
+
+                    <dt class="col-sm-4">Total Cost</dt>
+                    <dd class="col-sm-8 font-weight-bold text-success">
                         @if (Model.EventBookingTotalCost.HasValue)
                         {
                             @Model.EventBookingTotalCost.Value.ToString("C", new System.Globalization.CultureInfo("en-US"))
                         }
                     </dd>
 
-                    <dt class="col-sm-3">Notes</dt>
-                    <dd class="col-sm-9">@Html.DisplayFor(model => model.EventBookingNotes)</dd>
+                    <dt class="col-sm-4">Booking Created At</dt>
+                    <dd class="col-sm-8">
+                        @if (Model.EventBookingCreatedDate.HasValue)
+                        {
+                            @Model.EventBookingCreatedDate.Value.ToString("yyyy-MM-dd HH:mm")
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4">Notes</dt>
+                    <dd class="col-sm-8">@Html.DisplayFor(model => model.EventBookingNotes)</dd>
                 </dl>
             </div>
         </div>
@@ -90,5 +106,58 @@
             <button type="submit" class="btn btn-primary">Update Status</button>
             <a asp-action="Index" class="btn btn-secondary">Back to List</a>
         </form>
+    </div>
+</div>
+<div class="card shadow mb-4 mt-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-secondary">
+            <i class="fas fa-history mr-1"></i> History / Audit Log
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm" width="100%" cellspacing="0">
+                <thead class="thead-light">
+                    <tr>
+                        <th style="width: 20%">Time</th>
+                        <th style="width: 20%">Action</th>
+                        <th>Details</th>
+                        <th style="width: 15%">User</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.TblEventBookingHistories != null && Model.TblEventBookingHistories.Any())
+                    {
+                        foreach (var log in Model.TblEventBookingHistories)
+                        {
+                            <tr>
+                                <td>@log.EventBookingHistoryCreatedAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td><span class="badge badge-light border">@log.EventBookingHistoryAction</span></td>
+                                <td>@log.EventBookingHistoryDetails</td>
+                                <td>
+                                    @if (log.EventBookingHistoryUserId == 1)
+                                    {
+                                        <span>Admin (System)</span>
+                                    }
+                                    else
+                                    {
+
+                                        <span>User #@log.EventBookingHistoryUserId</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4" class="text-center text-muted font-italic py-3">
+                                No history recorded for this booking.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>

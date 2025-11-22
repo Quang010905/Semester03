@@ -92,7 +92,7 @@
             </dt>
             <dd class="col-sm-10 mb-3">
                 <img src="@(string.IsNullOrEmpty(Model.EventImg) ? "~/Content/Uploads/noimage.png" : "/Content/Uploads/Events/" + Model.EventImg)"
-                     alt="@Model.EventName" style="max-width: 300px; border-radius: 5px;" />
+                     alt="@Model.EventName" style="max-width: 300px; border-radius: 5px;" onerror="this.onerror=null; this.src='/Content/Uploads/noimage.png';" />
             </dd>
             <dt class="col-sm-2">
                 Event Name

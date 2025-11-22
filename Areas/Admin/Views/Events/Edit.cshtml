@@ -29,7 +29,7 @@
                         <img id="imagePreview"
                              src="@(string.IsNullOrEmpty(Model.EventImg) ? "~/Content/Uploads/noimage.png" : "/Content/Uploads/Events/" + Model.EventImg)"
                              alt="Current Image"
-                             style="max-width: 200px; border-radius: 5px; margin-bottom: 10px;" />
+                             style="max-width: 200px; border-radius: 5px; margin-bottom: 10px;" onerror="this.onerror=null; this.src='/Content/Uploads/noimage.png';" />
 
                         <input type="file" name="imageFile" id="imageFile" class="form-control" accept="image/*" />
                         <span asp-validation-for="EventImg" class="text-danger"></span>

@@ -44,7 +44,7 @@
                         <img id="imagePreview"
                              src="@(string.IsNullOrEmpty(Model.MovieImg) ? "~/Content/Uploads/noimage.png" : "/Content/Uploads/Movies/" + Model.MovieImg)"
                              alt="Current Poster"
-                             style="max-width: 200px; border-radius: 5px; margin-bottom: 10px;" />
+                             style="max-width: 200px; border-radius: 5px; margin-bottom: 10px;" onerror="this.onerror=null; this.src='/Content/Uploads/noimage.png';" />
 
                         <input type="file" name="imageFile" id="imageFile" class="form-control" accept="image/*" />
                     </div>
