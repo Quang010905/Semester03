@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
+
 namespace Semester03.Models.ViewModels
 {
     public class TenantDetailsViewModel
@@ -55,21 +56,6 @@ namespace Semester03.Models.ViewModels
     }
 
 
-
-
-
-
-    public class TenantPromotionVm
-    {
-        public int Id { get; set; }
-        public string Title { get; set; } = "";
-        public string? Img { get; set; }
-        public decimal? DiscountPercent { get; set; }
-        public decimal? DiscountAmount { get; set; }
-        public decimal? MinBillAmount { get; set; }
-        public string Description { get; set; } = "";
-        public DateTime? Start { get; set; }
-        public DateTime? End { get; set; }
-    }
+  
 
 }

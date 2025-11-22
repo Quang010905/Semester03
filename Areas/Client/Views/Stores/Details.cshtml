@@ -649,10 +649,10 @@
 
                                         <div class="promotion-time">
                                             <i class="bi bi-calendar3"></i>
-                                            @p.Start?.ToString("dd/MM/yyyy")
-                                            @if (p.End.HasValue)
+                                            @p.PromotionStart?.ToString("dd/MM/yyyy")
+                                            @if (p.PromotionEnd.HasValue)
                                             {
-                                                @: – @p.End?.ToString("dd/MM/yyyy")
+                                                @: – @p.PromotionEnd?.ToString("dd/MM/yyyy")
                                             }
                                         </div>
                                     </div>
