@@ -1,4 +1,4 @@
-@* _LayoutClient.cshtml
+﻿@* _LayoutClient.cshtml
    Full layout for Mall website - Modern Premium + Colorful Shopping
 *@
 @inject Semester03.Models.Repositories.TenantRepository _tenantRepo
@@ -401,7 +401,32 @@
                 </nav>
 
                 <div class="d-flex align-items-center gap-2">
-                    <!-- Notifications dropdown -->
+
+                    @* Chỉ hiện icon profile khi đã đăng nhập *@
+                    @if (User?.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="dropdown me-2">
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    id="profileDropdown"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                <i class="bi bi-person-circle"></i>
+                            </button>
+
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                                <li class="dropdown-item text-muted">Profile</li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="@Url.Action("Profile", "Account", new { area = "Client" })">
+                                        View Profile
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+
+                    <!-- Notifications dropdown (giữ nguyên, chỉ còn 1 bản) -->
                     <div class="dropdown">
                         <button class="btn btn-sm btn-outline-secondary position-relative"
                                 id="notifDropdown"
@@ -436,11 +461,12 @@
                         {
                             var name = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
                             ?? User.Identity.Name ?? "User";
+
                             <div class="user-badge" id="userBadge">
                                 <span class="small text-muted">Hello,</span>
                                 <strong class="me-2">@name</strong>
 
-                                <!-- IDs are unique to avoid conflicts -->
+                                <!-- Giữ nguyên form logout + JS -->
                                 <form id="headerLogoutForm"
                                       method="post"
                                       asp-area="Client"
@@ -466,6 +492,7 @@
                         }
                     </div>
                 </div>
+
             </div>
         </div>
 
