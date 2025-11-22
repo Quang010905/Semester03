@@ -1,10 +1,16 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Semester03.Models.Repositories;
 
 namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
-    public class HomeController : Controller
+    public class HomeController : ClientBaseController
     {
+
+        public HomeController(TenantTypeRepository tenantTypeRepo) : base(tenantTypeRepo)
+        {
+        }
+
         // GET: / hoặc /Home/Index
         public IActionResult Index()
         {

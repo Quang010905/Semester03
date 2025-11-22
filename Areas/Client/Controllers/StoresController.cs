@@ -11,20 +11,18 @@ using System.Threading.Tasks;
 namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
-    public class StoresController : Controller
+    public class StoresController : ClientBaseController
     {
         private readonly TenantRepository _tenantRepo;
-        private readonly TenantTypeRepository _tenantTypeRepo;
         private readonly AbcdmallContext _context;
 
-        // Inject TenantRepository, TenantTypeRepository and DbContext
         public StoresController(
             TenantRepository tenantRepo,
-            TenantTypeRepository tenantTypeRepo,
-            AbcdmallContext context)
+            TenantTypeRepository tenantTypeRepo, // 👈 phải có
+            AbcdmallContext context
+        ) : base(tenantTypeRepo) // 👈 gọi base
         {
             _tenantRepo = tenantRepo;
-            _tenantTypeRepo = tenantTypeRepo;
             _context = context;
         }
 
@@ -33,13 +31,11 @@ namespace Semester03.Areas.Client.Controllers
         // =======================
         public async Task<IActionResult> Index(int? typeId, string search)
         {
-            // Lấy stores (giữ nguyên phương thức hiện tại của bạn)
             var stores = _tenantRepo.GetStores(typeId, search);
 
-            // Lấy tenant types bằng repository (async)
-            var tenantTypes = await _tenantTypeRepo.GetAllAsync();
-
+            var tenantTypes = await base._tenantTypeRepo.GetAllAsync(); // ✅ dùng lại nếu cần
             string currentTypeName = "Stores";
+
             if (typeId.HasValue)
             {
                 var t = tenantTypes.Find(tt => tt.Id == typeId.Value);
@@ -62,9 +58,8 @@ namespace Semester03.Areas.Client.Controllers
             var model = _tenantRepo.GetTenantDetails(id);
             if (model == null) return NotFound();
 
-            // Gán luôn danh mục sản phẩm (nếu repo có phương thức này)
-            // Nếu phương thức trả về null hoặc không tồn tại, bạn có thể thay bằng truy vấn trực tiếp qua _context.
-            model.ProductCategories = _tenantRepo.GetProductCategoriesByTenant(id) ?? new List<ProductCategoryVm>();
+            model.ProductCategories = _tenantRepo.GetProductCategoriesByTenant(id)
+                                        ?? new List<ProductCategoryVm>();
 
             return View(model);
         }
@@ -79,7 +74,6 @@ namespace Semester03.Areas.Client.Controllers
             if (!User.Identity.IsAuthenticated)
                 return Unauthorized(new { success = false, message = "Bạn cần đăng nhập." });
 
-            // lấy userId từ claim
             if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out int userId))
             {
                 return BadRequest(new { success = false, message = "Không xác định được user." });

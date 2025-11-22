@@ -4,11 +4,14 @@ using Semester03.Models.Repositories;
 namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
-    public class FeaturedStoresController : Controller
+    public class FeaturedStoresController : ClientBaseController
     {
         private readonly TenantRepository _tenantRepo;
 
-        public FeaturedStoresController(TenantRepository tenantRepo)
+        public FeaturedStoresController(
+            TenantTypeRepository tenantTypeRepo,    // thêm dòng này
+            TenantRepository tenantRepo
+        ) : base(tenantTypeRepo)                   // gọi base
         {
             _tenantRepo = tenantRepo;
         }

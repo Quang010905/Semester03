@@ -17,7 +17,7 @@ namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
     [Route("Client/[controller]/[action]")]
-    public class BookingController : Controller
+    public class BookingController : ClientBaseController
     {
         private readonly ShowtimeRepository _showRepo;
         private readonly MovieRepository _movieRepo;
@@ -28,13 +28,15 @@ namespace Semester03.Areas.Client.Controllers
         private readonly TicketEmailService _ticketEmailService;
 
         public BookingController(
+            TenantTypeRepository tenantTypeRepo,   // <- THÊM DÒNG NÀY
             ShowtimeRepository showRepo,
             MovieRepository movieRepo,
             SeatRepository seatRepo,
             IVnPayService vnPayService,
             AbcdmallContext context,
             ILogger<BookingController> logger,
-            TicketEmailService ticketEmailService)
+            TicketEmailService ticketEmailService
+        ) : base(tenantTypeRepo)  // <- GỌI BASE
         {
             _showRepo = showRepo;
             _movieRepo = movieRepo;
@@ -44,6 +46,7 @@ namespace Semester03.Areas.Client.Controllers
             _logger = logger;
             _ticketEmailService = ticketEmailService;
         }
+
 
         [HttpGet]
         public IActionResult BookTicket(int movieId)

@@ -94,6 +94,9 @@ namespace Semester03.Models.Repositories
 
             double? avgRate = comments.Any() ? comments.Average(c => c.Rate) : null;
 
+
+            var promotions = GetTenantPromotions(tenantId);
+
             return new TenantDetailsViewModel
             {
                 TenantId = tenant.TenantId,
@@ -105,7 +108,8 @@ namespace Semester03.Models.Repositories
                     ? $"{tenant.TblTenantPositions.First().TenantPositionLocation}, Floor {tenant.TblTenantPositions.First().TenantPositionFloor}"
                     : "",
                 AvgRate = avgRate,
-                Comments = comments
+                Comments = comments,
+                Promotions = promotions
             };
         }
 
@@ -289,5 +293,36 @@ namespace Semester03.Models.Repositories
                 .Where(c => !char.IsWhiteSpace(c))
                 .ToArray());
         }
+
+
+
+        //hàm lấy Promotions
+        public List<TenantPromotionVm> GetTenantPromotions(int tenantId)
+        {
+            var now = DateTime.Now;
+
+            return _context.TblTenantPromotions
+                .Where(p => p.TenantPromotionTenantId == tenantId
+                    && p.TenantPromotionStatus == 1
+                    && p.TenantPromotionStart <= now
+                    && (p.TenantPromotionEnd == null || p.TenantPromotionEnd >= now))
+                .OrderBy(p => p.TenantPromotionEnd)
+                .Select(p => new TenantPromotionVm
+                {
+                    Id = p.TenantPromotionId,
+                    Title = p.TenantPromotionTitle,
+                    Img = p.TenantPromotionImg,
+                    DiscountPercent = p.TenantPromotionDiscountPercent,
+                    DiscountAmount = p.TenantPromotionDiscountAmount,
+                    MinBillAmount = p.TenantPromotionMinBillAmount,
+                    Description = p.TenantPromotionDescription,
+                    Start = p.TenantPromotionStart,
+                    End = p.TenantPromotionEnd
+                })
+                .ToList();
+        }
+
+
+
     }
 }
