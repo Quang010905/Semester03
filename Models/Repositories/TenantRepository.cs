@@ -316,12 +316,15 @@ namespace Semester03.Models.Repositories
                     DiscountAmount = p.TenantPromotionDiscountAmount,
                     MinBillAmount = p.TenantPromotionMinBillAmount,
                     Description = p.TenantPromotionDescription,
-                    Start = p.TenantPromotionStart,
-                    End = p.TenantPromotionEnd
+                    PromotionStart = p.TenantPromotionStart,
+                    PromotionEnd = p.TenantPromotionEnd,
                 })
                 .ToList();
         }
 
+
+
+       
 
 
     }
