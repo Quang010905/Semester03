@@ -58,7 +58,7 @@ namespace Semester03.Areas.Admin.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
-            [Bind("CouponName,CouponDescription,CouponDiscountPercent,CouponValidFrom,CouponValidTo,CouponIsActive")] TblCoupon tblCoupon)
+            [Bind("CouponName,CouponDescription,CouponDiscountPercent,CouponValidFrom,CouponValidTo,CouponIsActive,CouponMinimumPointsRequired")] TblCoupon tblCoupon)
         {
             // --- Business Logic Validation ---
             if (tblCoupon.CouponDiscountPercent <= 0)
@@ -73,7 +73,11 @@ namespace Semester03.Areas.Admin.Controllers
             {
                 ModelState.AddModelError("CouponValidFrom", "Valid From date cannot be in the past.");
             }
-            // --- END VALIDATION ---
+            if (tblCoupon.CouponMinimumPointsRequired.HasValue && tblCoupon.CouponMinimumPointsRequired < 0)
+            {
+                ModelState.AddModelError("CouponMinimumPointsRequired", "Minimum Points cannot be negative.");
+            }
+            // === END NEW VALIDATION ===
 
             if (ModelState.IsValid)
             {
@@ -96,11 +100,11 @@ namespace Semester03.Areas.Admin.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id,
-            [Bind("CouponId,CouponName,CouponDescription,CouponDiscountPercent,CouponValidFrom,CouponValidTo,CouponIsActive")] TblCoupon tblCoupon)
+            [Bind("CouponId,CouponName,CouponDescription,CouponDiscountPercent,CouponValidFrom,CouponValidTo,CouponIsActive,CouponMinimumPointsRequired")] TblCoupon tblCoupon)
         {
             if (id != tblCoupon.CouponId) return NotFound();
 
-            // --- ADDED: Business Logic Validation ---
+            // --- Business Logic Validation ---
             if (tblCoupon.CouponDiscountPercent <= 0)
             {
                 ModelState.AddModelError("CouponDiscountPercent", "Discount Percent must be greater than 0.");
@@ -110,6 +114,10 @@ namespace Semester03.Areas.Admin.Controllers
                 ModelState.AddModelError("CouponValidTo", "Valid To date must be after Valid From date.");
             }
             // (We allow editing 'ValidFrom' to a past date, in case the coupon is already active)
+            if (tblCoupon.CouponMinimumPointsRequired.HasValue && tblCoupon.CouponMinimumPointsRequired < 0)
+            {
+                ModelState.AddModelError("CouponMinimumPointsRequired", "Minimum Points cannot be negative.");
+            }
             // --- END VALIDATION ---
 
             if (ModelState.IsValid)

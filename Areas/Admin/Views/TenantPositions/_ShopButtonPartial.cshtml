@@ -1,19 +1,55 @@
 ﻿@model Semester03.Models.Entities.TblTenantPosition
 
 @{
-    string statusClass = (Model.TenantPositionStatus == 0) ? "unit-vacant" : "unit-occupied";
-    string name = (Model.TenantPositionStatus == 0) ? "VACANT" : Model.TenantPositionAssignedTenant?.TenantName;
+    bool isCinema = (Model.TenantPositionAssignedCinemaId != null);
+
+    string statusClass = "unit-vacant";
+    string name = "VACANT";
+    string icon = "fa-plus-circle";
+
+    if (isCinema)
+    {
+        statusClass = "unit-cinema"; 
+        name = "CINEMA";
+        icon = "fa-film";
+    }
+    else if (Model.TenantPositionAssignedTenantId != null)
+    {
+        statusClass = "unit-occupied";
+        name = Model.TenantPositionAssignedTenant?.TenantName;
+        icon = "fa-store";
+    }
+
     string shortName = (name != null && name.Length > 12) ? name.Substring(0, 10) + ".." : name;
     string tooltip = $"{Model.TenantPositionLocation}: {name}";
 }
 
-<a asp-action="Details" asp-route-id="@Model.TenantPositionId"
-   class="shop-unit @statusClass"
-   title="@tooltip">
-    <div style="font-size:9px; opacity:0.7;">@Model.TenantPositionLocation</div>
-    <div class="mt-1 font-weight-bold">@shortName</div>
-    @if (Model.TenantPositionStatus == 0)
-    {
-        <i class="fas fa-plus-circle mt-1 opacity-50"></i>
-    }
-</a>
+@if (isCinema)
+{
+    <div class="shop-unit @statusClass"
+         title="Cinema Area (Fixed)"
+         style="background-color: #2c3e50; color: white; border-color: #1a252f; cursor: default;">
+        <div style="font-size:9px; opacity:0.7;">@Model.TenantPositionLocation</div>
+        <div class="mt-1 font-weight-bold">@shortName</div>
+        <i class="fas @icon mt-1"></i>
+    </div>
+}
+else
+{
+    <a asp-action="Edit" asp-route-id="@Model.TenantPositionId"
+       class="shop-unit @statusClass"
+       title="@tooltip">
+        <div style="font-size:9px; opacity:0.7;">@Model.TenantPositionLocation</div>
+        <div class="mt-1 font-weight-bold">@shortName</div>
+
+        @if (Model.TenantPositionStatus == 0)
+        {
+            <i class="fas fa-plus-circle mt-1 opacity-50"></i>
+        }
+        else
+        {
+
+            <i class="fas @icon mt-1"></i>
+        }
+    </a>
+}
