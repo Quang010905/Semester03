@@ -392,6 +392,7 @@
                             var desc = pos.Tenant?.Tenant_Description ?? "";
                             var loc = pos.TenantPosition_Location ?? "";
                             var area = pos.TenantPosition_Area_M2.ToString("0.#");
+                            int? tenantId = pos.Tenant?.Tenant_Id;
 
                             <a href="#"
                                class="shop-unit @(occ ? "unit-occupied" : "unit-vacant")"
@@ -402,7 +403,9 @@
                                data-floor="@floor"
                                data-area="@area"
                                data-status="@pos.TenantPosition_Status"
-                               data-details-url="@Url.Action("Details", "Map", new { area = "Client", id = pos.TenantPosition_ID })">
+                               data-details-url="@(occ && tenantId.HasValue
+                              ? Url.Action("Details", "Stores", new { area = "Client", id = tenantId.Value })
+                              : "")">
 
                                 <div class="unit-title">@(!string.IsNullOrEmpty(loc) ? loc : $"Unit {pos.TenantPosition_ID}")</div>
                                 <div class="unit-tenant">@((occ ? tenantName : "Vacant"))</div>
@@ -466,9 +469,10 @@
                             var desc = pos.Tenant?.Tenant_Description ?? "";
                             var loc = pos.TenantPosition_Location ?? "";
                             var area = pos.TenantPosition_Area_M2.ToString("0.#");
+                            int? tenantId = pos.Tenant?.Tenant_Id;
 
                             <a href="#"
-                               class="shop-unit @(occ?"unit-occupied":"unit-vacant")"
+                               class="shop-unit @(occ ? "unit-occupied" : "unit-vacant")"
                                data-tenant-name="@tenantName"
                                data-tenant-img="@tenantImg"
                                data-tenant-desc="@desc"
@@ -476,7 +480,9 @@
                                data-floor="@floor"
                                data-area="@area"
                                data-status="@pos.TenantPosition_Status"
-                               data-details-url="@Url.Action("Details", "Map", new { area = "Client", id = pos.TenantPosition_ID })">
+                               data-details-url="@(occ && tenantId.HasValue
+                              ? Url.Action("Details", "Stores", new { area = "Client", id = tenantId.Value })
+                              : "")">
 
                                 <div class="unit-title">@(!string.IsNullOrEmpty(loc) ? loc : $"Unit {pos.TenantPosition_ID}")</div>
                                 <div class="unit-tenant">@((occ ? tenantName : "Vacant"))</div>

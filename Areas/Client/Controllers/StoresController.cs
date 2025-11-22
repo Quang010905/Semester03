@@ -18,22 +18,23 @@ namespace Semester03.Areas.Client.Controllers
 
         public StoresController(
             TenantRepository tenantRepo,
-            TenantTypeRepository tenantTypeRepo, // 👈 phải có
+            TenantTypeRepository tenantTypeRepo,
             AbcdmallContext context
-        ) : base(tenantTypeRepo) // 👈 gọi base
+        ) : base(tenantTypeRepo)
         {
             _tenantRepo = tenantRepo;
             _context = context;
         }
 
         // =======================
-        // 1️⃣ Trang danh sách stores
+        // 1️⃣ Store listing page
         // =======================
+        [HttpGet]
         public async Task<IActionResult> Index(int? typeId, string search)
         {
             var stores = _tenantRepo.GetStores(typeId, search);
 
-            var tenantTypes = await base._tenantTypeRepo.GetAllAsync(); // ✅ dùng lại nếu cần
+            var tenantTypes = await base._tenantTypeRepo.GetAllAsync();
             string currentTypeName = "Stores";
 
             if (typeId.HasValue)
@@ -50,7 +51,7 @@ namespace Semester03.Areas.Client.Controllers
         }
 
         // =======================
-        // 2️⃣ Trang chi tiết store
+        // 2️⃣ Store details page
         // =======================
         [HttpGet]
         public IActionResult Details(int id)
@@ -61,22 +62,23 @@ namespace Semester03.Areas.Client.Controllers
             model.ProductCategories = _tenantRepo.GetProductCategoriesByTenant(id)
                                         ?? new List<ProductCategoryVm>();
 
+            // Comments, AvgRate, Promotions... nên được fill trong GetTenantDetails
             return View(model);
         }
 
         // =======================
-        // 3️⃣ Thêm bình luận tenant (AJAX)
+        // 3️⃣ Add tenant comment (AJAX)
         // =======================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult AddComment(int tenantId, int rate, string text)
         {
             if (!User.Identity.IsAuthenticated)
-                return Unauthorized(new { success = false, message = "Bạn cần đăng nhập." });
+                return Unauthorized(new { success = false, message = "You need to log in." });
 
             if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out int userId))
             {
-                return BadRequest(new { success = false, message = "Không xác định được user." });
+                return BadRequest(new { success = false, message = "Cannot determine current user." });
             }
 
             bool success = _tenantRepo.AddTenantComment(tenantId, userId, rate, text);
@@ -84,12 +86,14 @@ namespace Semester03.Areas.Client.Controllers
             return Json(new
             {
                 success,
-                message = success ? "Bình luận đã gửi, chờ duyệt." : "Có lỗi xảy ra."
+                message = success
+                    ? "Your comment has been submitted and is waiting for approval."
+                    : "An error occurred while submitting your comment."
             });
         }
 
         // =======================
-        // 4️⃣ Lấy sản phẩm theo danh mục (AJAX)
+        // 4️⃣ Get products by category (AJAX)
         // =======================
         [HttpGet]
         public IActionResult GetProductsByCategory(int categoryId)
