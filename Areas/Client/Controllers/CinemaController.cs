@@ -8,10 +8,15 @@ using Semester03.Models.Repositories;
 namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
-    public class CinemaController : Controller
+    public class CinemaController : ClientBaseController
     {
         private readonly CinemaRepository _repo;
-        public CinemaController(CinemaRepository repo) => _repo = repo;
+
+        public CinemaController(CinemaRepository repo, TenantTypeRepository tenantTypeRepo)
+            : base(tenantTypeRepo)
+        {
+            _repo = repo;
+        }
 
         public async Task<IActionResult> Index()
         {

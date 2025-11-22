@@ -11,15 +11,19 @@ using System.Threading.Tasks;
 namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
-    public class EventController : Controller
+    public class EventController : ClientBaseController
     {
         private readonly EventRepository _repo;
         private readonly AbcdmallContext _context;
 
-        public EventController(EventRepository repo, AbcdmallContext context)
+        public EventController(
+            TenantTypeRepository tenantTypeRepo,
+            EventRepository repo,
+            AbcdmallContext context
+        ) : base(tenantTypeRepo)
         {
-            _repo = repo;
-            _context = context;
+            _repo = repo ?? throw new ArgumentNullException(nameof(repo));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public async Task<IActionResult> Index()

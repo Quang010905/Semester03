@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
-    public class EventBookingController : Controller
+    public class EventBookingController : ClientBaseController
     {
         private readonly AbcdmallContext _context;
         private readonly EventRepository _eventRepo;
@@ -23,12 +23,14 @@ namespace Semester03.Areas.Client.Controllers
         private readonly ILogger<EventBookingController> _logger;
 
         public EventBookingController(
+            TenantTypeRepository tenantTypeRepo,         // ⭐ THÊM DÒNG NÀY
             AbcdmallContext context,
             EventRepository eventRepo,
             EventBookingRepository bookingRepo,
             IVnPayService vnPayService,
             TicketEmailService ticketEmailService,
-            ILogger<EventBookingController> logger)
+            ILogger<EventBookingController> logger
+        ) : base(tenantTypeRepo)                        // ⭐ GỌI BASE()
         {
             _context = context;
             _eventRepo = eventRepo;
