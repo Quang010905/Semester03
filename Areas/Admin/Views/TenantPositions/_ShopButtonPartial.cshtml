@@ -18,6 +18,21 @@
         statusClass = "unit-occupied";
         name = Model.TenantPositionAssignedTenant?.TenantName;
         icon = "fa-store";
+        if (Model.PositionLeaseEnd.HasValue)
+        {
+            var daysLeft = (Model.PositionLeaseEnd.Value - DateTime.Now).Days;
+
+            if (daysLeft < 0)
+            {
+                statusClass = "unit-expired"; 
+                icon = "fa-exclamation-circle";
+            }
+            else if (daysLeft <= 30)
+            {
+                statusClass = "unit-expiring"; 
+                icon = "fa-clock";
+            }
+        }
     }
 
     string shortName = (name != null && name.Length > 12) ? name.Substring(0, 10) + ".." : name;

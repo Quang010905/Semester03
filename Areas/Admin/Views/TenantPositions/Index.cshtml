@@ -170,41 +170,59 @@
         background-color: white;
         position: relative;
         min-width: 40px;
+        height: 100%;
     }
 
         .shop-unit:hover {
             transform: scale(1.1);
             z-index: 10;
-            border: 1px solid #4e73df;
             box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            border: 1px solid #4e73df;
         }
 
+    /* === STATUS COLORS === */
+    /* 1. Vacant (Green) */
     .unit-vacant {
-        background-color: #d4edda;
-        color: #155724;
+        background-color: #e8f5e9;
+        color: #1b5e20;
+        border-bottom: 3px solid #4caf50;
     }
 
+    /* 2. Occupied (Blue) */
     .unit-occupied {
-        background-color: #cce5ff;
-        color: #004085;
+        background-color: #e3f2fd;
+        color: #0d47a1;
+        border-bottom: 3px solid #2196f3;
     }
 
-    .unit-add {
+    /* 3. Cinema (Dark) */
+    .unit-cinema {
+        background-color: #343a40;
+        color: #f8f9fa;
+        border-bottom: 3px solid #000;
+    }
+
+    /* 4. Expiring Soon (Yellow) */
+    .unit-expiring {
+        background-color: #fff3cd;
+        color: #856404;
+        border-bottom: 3px solid #ffc107;
+    }
+
+    /* 5. Expired (Red) */
+    .unit-expired {
+        background-color: #f8d7da;
+        color: #721c24;
+        border-bottom: 3px solid #dc3545;
+    }
+
+    /* Void/Empty Slot */
+    .unit-void {
         flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: #fff;
-        color: #e3e6f0;
-        border-right: 1px dashed #d1d3e2;
-        font-size: 1.2rem;
-        text-decoration: none !important;
+        background-color: #f8f9fa;
+        border-right: 1px dashed #dee2e6;
+        cursor: default;
     }
-
-        .unit-add:hover {
-            color: #4e73df;
-            background-color: #f8f9fc;
-        }
 </style>
 
 <h1 class="h3 mb-2 text-gray-800">Mall Floor Plan</h1>
