@@ -29,8 +29,6 @@ public partial class TblTenantPosition
 
     public DateTime? PositionLeaseEnd { get; set; }
 
-    public virtual ICollection<TblEventBooking> TblEventBookings { get; set; } = new List<TblEventBooking>();
-
     public virtual ICollection<TblEvent> TblEvents { get; set; } = new List<TblEvent>();
 
     public virtual TblTenant? TenantPositionAssignedTenant { get; set; }
