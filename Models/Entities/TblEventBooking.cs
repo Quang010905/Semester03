@@ -7,7 +7,7 @@ public partial class TblEventBooking
 {
     public int EventBookingId { get; set; }
 
-    public int EventBookingTenantPositionId { get; set; }
+    public int EventBookingTenantId { get; set; }
 
     public int EventBookingUserId { get; set; }
 
@@ -32,8 +32,6 @@ public partial class TblEventBooking
     public DateTime? EventBookingCreatedDate { get; set; }
 
     public virtual TblEvent EventBookingEvent { get; set; } = null!;
-
-    public virtual TblTenantPosition EventBookingTenantPosition { get; set; } = null!;
 
     public virtual ICollection<TblEventBookingHistory> TblEventBookingHistories { get; set; } = new List<TblEventBookingHistory>();
 
