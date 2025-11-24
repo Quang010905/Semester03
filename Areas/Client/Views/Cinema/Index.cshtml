@@ -1,4 +1,6 @@
-﻿@using System.Net
+﻿@using System
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
 @model Semester03.Areas.Client.Models.ViewModels.CinemaHomeVm
 
 @{
@@ -7,14 +9,65 @@
 
     Func<string, string> Img = (raw) =>
     {
-        if (string.IsNullOrWhiteSpace(raw))
-            return Url.Content("~/images/movie-placeholder.png");
+        // fallback image trong wwwroot/Content/Uploads/noimage.png
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
 
-        if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-            return raw;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
 
-        var s = raw.Replace("wwwroot/", "").TrimStart('~', '/').Replace(" ", "%20");
-        return Url.Content("~/" + s);
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            // normalize và lấy filename
+            var file = raw.Replace("\\", "/").Trim();
+
+            // nếu raw chứa "Content/Uploads/Movies", lấy filename cuối cùng
+            var keyword = "Content/Uploads/Movies";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
+
+            // nếu raw chứa "wwwroot/" hoặc "~/" hoặc bắt đầu bằng '/', loại bỏ
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+
+            // lấy IWebHostEnvironment để kiểm tra file thực tế trên đĩa
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                // nếu không lấy được env thì trả đường dẫn URL theo mặc định
+                return Url.Content("~/Content/Uploads/Movies/" + Uri.EscapeDataString(file));
+            }
+
+            // DÙNG System.IO.Path.Combine để tránh xung đột tên Path
+            var physical = System.IO.Path.Combine(env.WebRootPath ?? "wwwroot", "Content", "Uploads", "Movies", file);
+
+            if (System.IO.File.Exists(physical))
+            {
+                return Url.Content("~/Content/Uploads/Movies/" + Uri.EscapeDataString(file));
+            }
+            else
+            {
+                return noImageUrl;
+            }
+        }
+        catch
+        {
+            return Url.Content("~/Content/Uploads/noimage.png");
+        }
     };
 
     Func<int, string> BookHref = (id) =>
@@ -103,31 +156,24 @@
 }
 
 <div class="cinema-home-page py-3">
-
     <h4 class="page-title mb-3">Cinema</h4>
-
-    @* ĐÃ BỎ phần @Html.PartialAsync("_CouponPartial", Model) theo yêu cầu *@
 
     <!-- FEATURED -->
     @if (Model?.Featured?.Any() == true)
     {
         <div id="featuredCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
             <div class="carousel-inner">
-
                 @for (int i = 0; i < Model.Featured.Count; i++)
                 {
                     var f = Model.Featured[i];
                     var active = i == 0 ? "active" : "";
-
                     <div class="carousel-item @active">
                         <div class="row g-4 align-items-center">
-
                             <div class="col-lg-7">
                                 <a href="@Url.Action("Details", "Cinema", new { area="Client", id=f.Id })">
                                     <img src="@Img(f.PosterUrl)" class="carousel-poster" />
                                 </a>
                             </div>
-
                             <div class="col-lg-5">
                                 <h2>@f.Title</h2>
                                 <p class="text-muted">@f.Description</p>
@@ -136,25 +182,20 @@
                                     @if (f.NextShowtime.HasValue)
                                     {
                                         <span>@f.NextShowtime.Value.ToString("dd MMM yyyy HH:mm")</span>
-                                        <span class="ms-2 text-muted">
-                                            (@String.Format("{0:N0}", f.NextPrice) VND)
-                                        </span>
+                                        <span class="ms-2 text-muted">(@String.Format("{0:N0}", f.NextPrice) VND)</span>
                                     }
                                     else
                                     {
                                         <span class="text-muted">Not scheduled</span>
                                     }
                                 </p>
-
                                 <a href="@BookHref(f.Id)" class="btn btn-primary">
                                     <i class="bi bi-ticket-perforated me-1"></i> Book ticket
                                 </a>
                             </div>
-
                         </div>
                     </div>
                 }
-
             </div>
 
             <button class="carousel-control-prev" type="button" data-bs-target="#featuredCarousel" data-bs-slide="prev">
@@ -177,7 +218,7 @@
         </form>
     </div>
 
-    <!-- NOW SHOWING SLIDER -->
+    <!-- NOW SHOWING GRID -->
     <h5 class="mb-3">Now showing</h5>
 
     <div class="row g-3" id="nowShowingGrid">
@@ -188,7 +229,6 @@
         {
             <div class="col-6 col-md-4 col-lg-3 movie-grid-item" data-index="@index">
                 <div class="card movie-card h-100">
-
                     <a href="@Url.Action("Details", "Cinema", new { area="Client", id = m.Id })">
                         <img src="@Img(m.PosterUrl)" class="movie-poster" />
                     </a>
@@ -211,50 +251,28 @@
                             <button class="btn btn-sm btn-secondary" disabled>No showtime</button>
                         }
                     </div>
-
                 </div>
             </div>
             index++;
         }
     </div>
 
-    @if (Model.NowShowing != null && Model.NowShowing.Count > 4)
+    @if (Model.NowShowing != null && Model.NowShowing.Count > 8)
     {
         <div class="text-center mt-3">
-            <button type="button" id="btnViewMore" class="btn btn-outline-primary btn-sm">
-                View more
-            </button>
+            <button type="button" id="btnViewMore" class="btn btn-outline-primary btn-sm">View more</button>
         </div>
     }
-
 </div>
 
 @section Scripts {
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            // ====== SLIDER TỰ CHẠY ======
-            const track = document.getElementById("sliderTrack");
-            if (track) {
-                let pos = 0;
-                function slideStep() {
-                    const step = 240;
-                    const max = Math.max(0, track.scrollWidth - track.clientWidth);
-                    pos += step;
-                    if (pos > max) pos = 0;
-                    track.style.transform = `translateX(-${pos}px)`;
-                }
-
-                let timer = setInterval(slideStep, 3000);
-
-                track.parentElement.addEventListener("mouseenter", () => clearInterval(timer));
-                track.parentElement.addEventListener("mouseleave", () => timer = setInterval(slideStep, 3000));
-            }
-
             // ====== VIEW MORE cho GRID "Now showing" ======
-            const STEP = 5;
+            const STEP = 8; // mỗi lần bấm hiện thêm 8 phim
             const gridItems = Array.from(document.querySelectorAll(".movie-grid-item"));
             const btnMore = document.getElementById("btnViewMore");
-            let shown = 5;
+            let shown = 8; // hiển thị 8 phim ban đầu
 
             function updateGrid() {
                 gridItems.forEach((item, idx) => {
@@ -262,11 +280,7 @@
                 });
 
                 if (btnMore) {
-                    if (shown >= gridItems.length) {
-                        btnMore.style.display = "none";
-                    } else {
-                        btnMore.style.display = "";
-                    }
+                    btnMore.style.display = (shown >= gridItems.length) ? "none" : "";
                 }
             }
 
@@ -278,18 +292,21 @@
                 btnMore.addEventListener("click", () => {
                     shown += STEP;
                     updateGrid();
+                    // tùy chọn: cuộn nhẹ xuống phần vừa hiện thêm để người dùng thấy
+                    if (shown - STEP < gridItems.length) {
+                        const firstNew = gridItems[shown - STEP];
+                        if (firstNew) firstNew.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
                 });
             }
         });
 
         function filterMovies() {
             const q = document.getElementById("movieSearch").value.toLowerCase();
-
             document.querySelectorAll(".movie-card").forEach(card => {
                 const title = (card.querySelector(".movie-title")?.innerText || "").toLowerCase();
                 const wrapper = card.closest(".col-6, .slider-item");
                 if (!wrapper) return;
-
                 wrapper.style.display = title.includes(q) ? "" : "none";
             });
         }
