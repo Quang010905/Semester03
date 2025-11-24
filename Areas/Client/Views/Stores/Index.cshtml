@@ -205,5 +205,23 @@
                 </div>
             </div>
         }
+
+        <!-- PAGINATION -->
+        @if (ViewBag.TotalPages > 1)
+        {
+            <nav class="d-flex justify-content-center mt-4">
+                <ul class="pagination">
+                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                    {
+                        <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
+                            <a class="page-link"
+                               href="@Url.Action("Index", "Stores", new { typeId = ViewBag.CurrentTypeId, search = ViewBag.SearchQuery, page = i })">
+                                @i
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
     </div>
 </div>

@@ -30,9 +30,20 @@ namespace Semester03.Areas.Client.Controllers
         // 1️⃣ Store listing page
         // =======================
         [HttpGet]
-        public async Task<IActionResult> Index(int? typeId, string search)
+        [HttpGet]
+        public async Task<IActionResult> Index(int? typeId, string search, int page = 1)
         {
-            var stores = _tenantRepo.GetStores(typeId, search);
+            int pageSize = 18;
+
+            var storesQuery = _tenantRepo.GetStores(typeId, search).AsQueryable();
+
+            int totalItems = storesQuery.Count();
+
+            var stores = storesQuery
+                .OrderBy(s => s.TenantName)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
 
             var tenantTypes = await base._tenantTypeRepo.GetAllAsync();
             string currentTypeName = "Stores";
@@ -46,9 +57,13 @@ namespace Semester03.Areas.Client.Controllers
             ViewBag.CurrentTypeName = currentTypeName;
             ViewBag.TenantTypes = tenantTypes;
             ViewBag.SearchQuery = search ?? "";
+            ViewBag.TotalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+            ViewBag.CurrentPage = page;
+            ViewBag.CurrentTypeId = typeId;
 
             return View(stores);
         }
+
 
         // =======================
         // 2️⃣ Store details page
