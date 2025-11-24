@@ -17,6 +17,10 @@ namespace Semester03.Areas.Admin.Controllers
             var customers = await _userRepo.GetAllCustomersAsync();
             ViewBag.Customers = customers;
 
+
+            var partners = await _userRepo.GetAllPartnersAsync();
+            ViewBag.Partner = partners;
+
             return View();
         }
     }

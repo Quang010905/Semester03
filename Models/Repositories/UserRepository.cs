@@ -168,7 +168,7 @@ namespace Semester03.Models.Repositories
         public async Task<List<User>> GetAllCustomersAsync()
         {
             return await _context.TblUsers
-                .Where(x => x.UsersRoleId == 4)  // customer
+                .Where(x => x.UsersRoleId == 3)  // customer
                 .Select(x => new User
                 {
                     Id = x.UsersId,
@@ -185,6 +185,32 @@ namespace Semester03.Models.Repositories
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
         }
+
+
+
+
+        public async Task<List<User>> GetAllPartnersAsync()
+        {
+            return await _context.TblUsers
+                .Where(x => x.UsersRoleId == 2)  // partner
+                .Select(x => new User
+                {
+                    Id = x.UsersId,
+                    Username = x.UsersUsername,
+                    Password = x.UsersPassword,
+                    FullName = x.UsersFullName,
+                    Email = x.UsersEmail,
+                    Phone = x.UsersPhone,
+                    Role = x.UsersRoleId,
+                    Point = x.UsersPoints ?? 0,
+                    CreatedAt = (DateTime)x.UsersCreatedAt,
+                    UpdatedAt = (DateTime)x.UsersUpdatedAt,
+                })
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
+        }
+
+
 
 
 
