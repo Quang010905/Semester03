@@ -11,14 +11,16 @@ namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
     [Authorize]
-    public class TicketController : Controller
+    public class TicketController : ClientBaseController
     {
         private readonly TicketRepository _ticketRepo;
         private readonly EventBookingRepository _eventBookingRepo;
 
         public TicketController(
+            TenantTypeRepository tenantTypeRepo,      // 👈 thêm để truyền vào base
             TicketRepository ticketRepo,
-            EventBookingRepository eventBookingRepo)
+            EventBookingRepository eventBookingRepo
+        ) : base(tenantTypeRepo)                     // 👈 gọi constructor của controller cha
         {
             _ticketRepo = ticketRepo;
             _eventBookingRepo = eventBookingRepo;
@@ -28,6 +30,7 @@ namespace Semester03.Areas.Client.Controllers
         {
             return int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
         }
+
 
         // ===============================================
         //        🎟  VÉ CỦA TÔI — 2 TAB LỚN
