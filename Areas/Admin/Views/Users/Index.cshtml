@@ -26,6 +26,10 @@
 <!-- TAB: CUSTOMER ACCOUNT -->
 <div id="customer-tab-content" style="padding: 20px; display: none;">
     <h3>Customer Accounts</h3>
+    <div class="search-container">
+        <input type="text" placeholder="Search..." class="search-customer-input">
+        <i class="fa fa-search search-icon"></i>
+    </div>
 
     <table class="table table-bordered table-hover mt-3">
         <thead>
@@ -61,6 +65,73 @@
 
 
 
+
+
+
+
+
+<!-- TAB: PARTNER ACCOUNT -->
+<div id="partner-tab-content" style="padding: 20px; display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3>Partner Accounts</h3>
+
+        <button class="btn btn-primary">
+            Tenant
+        </button>
+    </div>
+    <div class="search-container">
+        <input type="text" placeholder="Search..." class="search-partner-input">
+        <i class="fa fa-search search-icon"></i>
+    </div>
+
+    <table class="table table-bordered table-hover mt-3">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Fullname</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Points</th>
+                <th>Created</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var c in ViewBag.Partner)
+            {
+                <tr>
+                    <td>@c.Id</td>
+                    <td>@c.Username</td>
+                    <td>@c.FullName</td>
+                    <td>@c.Email</td>
+                    <td>@c.Phone</td>
+                    <td>@c.Point</td>
+                    <td>@c.CreatedAt.ToString("dd/MM/yyyy")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <style>
     body {
         font-family: Arial, sans-serif;
@@ -69,6 +140,10 @@
     }
 
     
+
+
+
+    /* =========================================tab's css========================================= */
     .browser-tab-bar {
         display: flex;
         align-items: flex-end; /* Quan trọng để các tab "dính" vào đường phân cách dưới */
@@ -154,80 +229,118 @@
         text-overflow: ellipsis; /* Hiển thị dấu ... khi tiêu đề quá dài */
     }
 
-    /* Nút đóng (x) */
-    .tab-close {
-        margin-left: 15px;
-        font-size: 18px;
-        font-weight: 300;
-        line-height: 1;
-        cursor: pointer;
-        padding: 0 2px;
-        border-radius: 50%;
-        transition: background-color 0.1s;
+    /* =========================================end tab's css========================================= */
+
+
+
+    /* =========================================search box's css======================================== */
+
+
+    .search-container {
+        position: relative;
+        width: 280px;
     }
 
-        .tab-close:hover {
-            background-color: #dadce0; /* Màu nền khi di chuột vào nút đóng */
+    .search-partner-input {
+        width: 100%;
+        padding: 10px 40px 10px 15px;
+        border-radius: 25px;
+        border: 1px solid #ccc;
+        transition: 0.3s;
+    }
+
+        .search-input:focus {
+            border-color: #4e73df;
+            box-shadow: 0 0 5px rgba(78,115,223,0.5);
         }
+
+    .search-icon {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #888;
+    }
+
+    .search-customer-input {
+        width: 100%;
+        padding: 10px 40px 10px 15px;
+        border-radius: 25px;
+        border: 1px solid #ccc;
+        transition: 0.3s;
+    }
+
+
+    /* =========================================end search box's css======================================== */
+
 
 
    </style>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // 1. Chọn TẤT CẢ các tab thông thường
-        const tabs = document.querySelectorAll('.browser-tab');
+document.addEventListener("DOMContentLoaded", () => {
 
-        // 🚨 BƯỚC SỬA: KHAI BÁO biến undoTab
-        const undoTab = document.querySelector('.undo-tab');
+    const tabs = document.querySelectorAll(".browser-tab");
+    const partnerTab = tabs[0];
+    const customerTab = tabs[1];
+    const inactiveTab = document.querySelector(".undo-tab");
 
-        // Logic cho các tab thông thường (Partner, Employee, Customer)
-        tabs.forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                e.preventDefault();
-
-                // Xóa 'active' khỏi tất cả các tab thông thường
-                tabs.forEach(t => {
-                    t.classList.remove('active');
-                });
-
-                // 🚨 BƯỚC SỬA: Đảm bảo xóa 'active' khỏi undo-tab khi chọn tab khác
-                if (undoTab) {
-                    undoTab.classList.remove('active');
-                }
-
-                // Thêm 'active' cho tab vừa được click
-                tab.classList.add('active');
-            });
-        });
-
-        // Logic RIÊNG cho undo-tab (Restore)
-        if (undoTab) {
-            undoTab.addEventListener('click', (e) => {
-                e.preventDefault();
-
-                // Xóa 'active' khỏi tất cả các tab thông thường
-                tabs.forEach(t => {
-                    t.classList.remove('active');
-                });
-
-                // Thêm trạng thái active để nó chuyển sang màu đỏ
-                undoTab.classList.add('active');
-            });
-        }
-    });
-
-
-
-    const partnerTab = document.querySelectorAll(".browser-tab")[0];
-    const customerTab = document.querySelectorAll(".browser-tab")[1];
-
+    const partnerContent = document.getElementById("partner-tab-content");
     const customerContent = document.getElementById("customer-tab-content");
+    // const inactiveContent = document.getElementById("inactive-tab-content"); // nếu có
 
-    customerTab.addEventListener("click", function () {
-        customerContent.style.display = "block";
-    });
+    // An toàn: nếu phần tử không tồn tại thì không làm gì
+    function safeHide(el) { if (el) el.style.display = "none"; }
+    function safeShow(el) { if (el) el.style.display = "block"; }
 
-    partnerTab.addEventListener("click", function () {
-        customerContent.style.display = "none";
-    });
+    function hideAllContent() {
+        safeHide(partnerContent);
+        safeHide(customerContent);
+        // safeHide(inactiveContent);
+    }
+
+    function deactivateAllTabs() {
+        tabs.forEach(t => t.classList.remove("active"));
+        if (inactiveTab) inactiveTab.classList.remove("active");
+    }
+
+    // Nếu tab tồn tại thì đăng ký sự kiện
+    if (partnerTab) {
+        partnerTab.addEventListener("click", (e) => {
+            e.preventDefault();
+            deactivateAllTabs();
+            hideAllContent();
+
+            partnerTab.classList.add("active");   // -> làm tab sáng lên (theo CSS .browser-tab.active)
+            safeShow(partnerContent);
+        });
+    }
+
+    if (customerTab) {
+        customerTab.addEventListener("click", (e) => {
+            e.preventDefault();
+            deactivateAllTabs();
+            hideAllContent();
+
+            customerTab.classList.add("active");  // -> làm tab sáng lên
+            safeShow(customerContent);
+        });
+    }
+
+    if (inactiveTab) {
+        inactiveTab.addEventListener("click", (e) => {
+            e.preventDefault();
+            deactivateAllTabs();
+            hideAllContent();
+
+            inactiveTab.classList.add("active");  // -> .undo-tab.active sẽ hiển thị màu đỏ theo CSS
+            // safeShow(inactiveContent); // bỏ ra nếu bạn có nội dung inactive
+        });
+    }
+
+    // Mặc định khi load: hiển thị Partner và đánh active
+    deactivateAllTabs();
+    hideAllContent();
+    if (partnerTab) partnerTab.classList.add("active");
+    safeShow(partnerContent);
+});
 </script>
