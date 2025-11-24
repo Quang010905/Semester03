@@ -417,13 +417,44 @@
                             </button>
 
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+
                                 <li>
                                     <a class="dropdown-item"
                                        href="@Url.Action("Profile", "Profile", new { area = "Client" })">
                                         View Profile
                                     </a>
                                 </li>
+
+                                <!-- ⭐ NEW: My Tickets -->
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="@Url.Action("MyTickets", "Ticket", new { area = "Client" })">
+                                        Vé của tôi
+                                    </a>
+                                </li>
+
+                                <!-- ⭐ NEW: My Complaints -->
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="@Url.Action("MyComplaints", "Complaint", new { area = "Client" })">
+                                        Khiếu nại
+                                    </a>
+                                </li>
+
+                                <li><hr class="dropdown-divider" /></li>
+
+                                <li>
+                                    <form method="post"
+                                          asp-area="Client"
+                                          asp-controller="Account"
+                                          asp-action="Logout"
+                                          class="m-0">
+                                        @Html.AntiForgeryToken()
+                                        <button class="dropdown-item text-danger">Logout</button>
+                                    </form>
+                                </li>
                             </ul>
+
                         </div>
                     }
 
