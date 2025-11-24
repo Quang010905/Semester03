@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Semester03.Models.Repositories;
 using Semester03.Areas.Client.Models.ViewModels;
@@ -10,11 +10,14 @@ namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
     [Authorize]
-    public class TicketDetailController : Controller
+    public class TicketDetailController : ClientBaseController
     {
         private readonly TicketRepository _ticketRepo;
 
-        public TicketDetailController(TicketRepository ticketRepo)
+        public TicketDetailController(
+            TenantTypeRepository tenantTypeRepo,   // 👈 thêm vào để truyền cho controller cha
+            TicketRepository ticketRepo
+        ) : base(tenantTypeRepo)                  // 👈 gọi constructor cha
         {
             _ticketRepo = ticketRepo;
         }
@@ -23,6 +26,7 @@ namespace Semester03.Areas.Client.Controllers
         {
             return int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
         }
+
 
         public async Task<IActionResult> Index(int id)
         {
