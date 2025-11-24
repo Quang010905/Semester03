@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Semester03.Areas.Client.Models.ViewModels;
 using Semester03.Models.Entities;
@@ -34,7 +35,8 @@ namespace Semester03.Models.Repositories
                         s.SeatCol,
                         ss.ShowtimeSeatStatus,
                         ss.ShowtimeSeatReservedByUserId,
-                        ss.ShowtimeSeatReservedAt
+                        ss.ShowtimeSeatReservedAt,
+                        s.SeatIsActive // <-- thêm cột Seat_IsActive từ Tbl_Seat
                     };
 
             var list = q.OrderBy(x => x.SeatRow).ThenBy(x => x.SeatCol).ToList();
@@ -47,7 +49,8 @@ namespace Semester03.Models.Repositories
                 Col = x.SeatCol,
                 Status = string.IsNullOrEmpty(x.ShowtimeSeatStatus) ? "available" : x.ShowtimeSeatStatus,
                 ReservedByUserId = x.ShowtimeSeatReservedByUserId,
-                ReservedAt = x.ShowtimeSeatReservedAt
+                ReservedAt = x.ShowtimeSeatReservedAt,
+                IsActive = x.SeatIsActive ?? true 
             }).ToList();
 
             var maxCol = seats.Any() ? seats.Max(s => s.Col) : 10;
@@ -73,6 +76,7 @@ namespace Semester03.Models.Repositories
             if (showtimeSeatIds == null || !showtimeSeatIds.Any())
                 return (succeeded, failed);
 
+            // Lấy danh sách available **và** chỉ những ghế có Seat_IsActive = 1 (không hư)
             var available = _db.TblShowtimeSeats
                 .AsNoTracking()
                 .Where(ss => ss.ShowtimeSeatShowtimeId == showtimeId
@@ -81,7 +85,12 @@ namespace Semester03.Models.Repositories
                                  || ss.ShowtimeSeatStatus.Trim() == ""
                                  || ss.ShowtimeSeatStatus.ToLower() == "available"
                                  || ss.ShowtimeSeatStatus.ToLower() == "free"))
-                .Select(ss => ss.ShowtimeSeatId)
+                .Join(_db.TblSeats.AsNoTracking(),
+                      ss => ss.ShowtimeSeatSeatId,
+                      s => s.SeatId,
+                      (ss, s) => new { ss.ShowtimeSeatId, SeatIsActive = s.SeatIsActive })
+                .Where(x => x.SeatIsActive == true) // CHẶN những ghế đang hư (SeatIsActive == false)
+                .Select(x => x.ShowtimeSeatId)
                 .ToList();
 
             succeeded = available;
