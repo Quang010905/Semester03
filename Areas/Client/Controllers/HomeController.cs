@@ -21,6 +21,11 @@ namespace Semester03.Areas.Client.Controllers
             return View(); // Trả về view Areas/Client/Views/Home/Index.cshtml
         }
 
+        public IActionResult Contact()
+        {
+            return View();
+        }
+
         // POST: /Home/SetLanguage
         [HttpPost]
         [ValidateAntiForgeryToken]
