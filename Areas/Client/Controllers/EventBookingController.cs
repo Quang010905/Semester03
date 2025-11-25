@@ -223,6 +223,7 @@ namespace Semester03.Areas.Client.Controllers
 
                 var payModel = new Semester03.Areas.Client.Models.Vnpay.PaymentInformationModel
                 {
+                    // 🔴 RẤT QUAN TRỌNG: dùng OrderType riêng cho event
                     OrderType = "event-ticket",
                     Amount = (double)totalCost,
                     OrderDescription =
@@ -253,7 +254,9 @@ namespace Semester03.Areas.Client.Controllers
         // =====================================================================================
         // VNPAY CALLBACK
         // =====================================================================================
-        [HttpGet]
+
+        // Khớp với "https://localhost:7054/Client/EventBooking/PaymentCallbackVnpay"
+        [HttpGet("/Client/EventBooking/PaymentCallbackVnpay")]
         public async Task<IActionResult> PaymentCallbackVnpay()
         {
             try
@@ -277,11 +280,17 @@ namespace Semester03.Areas.Client.Controllers
                     return RedirectToAction("PaymentFailed");
 
                 var marked = await _bookingRepo.MarkBookingPaidAsync(bookingId);
+                if (!marked)
+                {
+                    _logger.LogWarning("PaymentCallbackVnpay: MarkBookingPaidAsync({BookingId}) failed", bookingId);
+                    return RedirectToAction("PaymentFailed", new { message = "Không tìm thấy booking hoặc không cập nhật được trạng thái thanh toán." });
+                }
 
                 return RedirectToAction("BookingSuccess", new { id = bookingId });
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "PaymentCallbackVnpay error");
                 return RedirectToAction("PaymentFailed");
             }
         }
