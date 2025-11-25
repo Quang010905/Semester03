@@ -3,16 +3,42 @@
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
     ViewData["Title"] = "Register for Event";
     var price = ViewBag.Price as decimal? ?? 0m;
-    // sử dụng ảnh fallback đã upload
+
+    // hàm lấy ảnh (the function you asked to add)
+    Func<string, string> Img = (raw) =>
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return Url.Content("~/images/event-placeholder.png");
+
+        if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            return raw;
+
+        var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
+        s = s.Replace(" ", "%20");
+
+        if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase)
+            || s.StartsWith("images", StringComparison.OrdinalIgnoreCase)
+            || s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
+        {
+            return Url.Content("~/" + s);
+        }
+
+        if (raw.StartsWith("/"))
+            return Url.Content("~" + raw);
+
+        return Url.Content("~/Content/Uploads/Events/" + s);
+    };
+
+    // fallback local file you uploaded (we'll use this when Event.ImageUrl is empty)
+    var localFallback = "/mnt/data/42367463-3aa2-497c-8350-8f22d9917819.png";
     var imgSrc = string.IsNullOrWhiteSpace(Model?.Event?.ImageUrl)
-        ? "/mnt/data/56814a41-eb93-4531-805f-eae1a91255ab.png"
-        : (Model.Event.ImageUrl.StartsWith("http", System.StringComparison.OrdinalIgnoreCase)
-            ? Model.Event.ImageUrl
-            : Model.Event.ImageUrl);
+        ? localFallback
+        : Img(Model.Event.ImageUrl);
 }
 
 @section Styles {
     <style>
+        /* (keep your styles - shortened here for brevity) */
         :root {
             --card-bg: #fff;
             --muted: #6b7280;
@@ -34,12 +60,9 @@
         }
 
         @@media (max-width: 991.98px) {
-            .grid
-
-        {
-            grid-template-columns: 1fr;
-        }
-
+            .grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .event-card {
@@ -58,12 +81,9 @@
         }
 
         @@media (max-width: 575.98px) {
-            .event-hero
-
-        {
-            grid-template-columns: 1fr;
-        }
-
+            .event-hero {
+                grid-template-columns: 1fr;
+            }
         }
 
         .event-img {
@@ -127,7 +147,6 @@
                 margin-right: .35rem;
             }
 
-        /* RIGHT booking card */
         .booking-card {
             position: sticky;
             top: 1.6rem;
@@ -200,15 +219,11 @@
             display: none;
         }
 
-        /* mobile spacing fix for sticky */
         @@media (max-width: 991.98px) {
-            .booking-card
-
-        {
-            position: relative;
-            top: 0;
-        }
-
+            .booking-card {
+                position: relative;
+                top: 0;
+            }
         }
     </style>
 }
@@ -276,11 +291,42 @@
 
             <div class="event-details">
                 <div class="small-muted"><strong>Thành phần tổ chức:</strong></div>
-                <div class="mb-2">@(!string.IsNullOrWhiteSpace(Model.Event.TenantPositionId.ToString()) ? "Shop / Tenant" : "-")</div>
 
-                <div class="small-muted"><strong>Ghi chú:</strong></div>
-                <div class="mb-0" style="color:#374151;">Bạn sẽ nhận email xác nhận khi booking thành công. Với sự kiện có phí, hệ thống sẽ chuyển bạn sang cổng thanh toán.</div>
+                @{
+                    // Lấy tên shop trực tiếp từ Event. Nếu null/empty, hiển thị '-'
+                    var shop = !string.IsNullOrWhiteSpace(Model.Event?.OrganizerShopName)
+                    ? Model.Event.OrganizerShopName
+                    : "-";
+
+                    // Vị trí/tầng nếu có
+                    var location = !string.IsNullOrWhiteSpace(Model.Event?.PositionLocation)
+                    ? Model.Event.PositionLocation
+                    : null; // Removed reference to TenantPosition_Location
+                    int? floor = Model.Event?.PositionFloor; // Removed reference to TenantPosition_Floor
+                }
+
+                <div class="mb-2">@shop</div>
+
+                @if (!string.IsNullOrWhiteSpace(location) || floor.HasValue)
+                {
+                    <div class="mt-1 small-muted">
+                        @if (!string.IsNullOrWhiteSpace(location))
+                        {
+                            <div><strong>Vị trí:</strong> @location</div>
+                        }
+                        @if (floor.HasValue)
+                        {
+                            <div><strong>Tầng:</strong> @floor.Value</div>
+                        }
+                    </div>
+                }
+
+                <div class="small-muted mt-3"><strong>Ghi chú:</strong></div>
+                <div class="mb-0" style="color:#374151;">
+                    Bạn sẽ nhận email xác nhận khi booking thành công. Với sự kiện có phí, hệ thống sẽ chuyển bạn sang cổng thanh toán.
+                </div>
             </div>
+
         </div>
 
         <!-- RIGHT: Booking form -->
@@ -442,16 +488,13 @@
                         throw new Error(data.message || 'Booking thất bại.');
                     }
 
-                    // nếu trả url thanh toán hoặc redirectUrl thì chuyển luôn
                     if (data.url || data.redirectUrl) {
                         window.location.href = data.url || data.redirectUrl;
                         return;
                     }
 
-                    // thành công: cập nhật UI
                     showAlert('Đăng ký thành công!', false);
 
-                    // giảm available (client side)
                     const newAvailable = Math.max(0, available - requested);
                     availableEl.textContent = newAvailable;
                     maxSlotsEl.textContent = newAvailable;
