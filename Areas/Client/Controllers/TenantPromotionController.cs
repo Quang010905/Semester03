@@ -1,106 +1,35 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Semester03.Models.Entities;
+using Microsoft.AspNetCore.Mvc;
 using Semester03.Models.Repositories;
 using Semester03.Models.ViewModels;
-
 
 namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
     public class TenantPromotionController : ClientBaseController
     {
-        private readonly AbcdmallContext _context;
+        private readonly TenantPromotionRepository _promotionRepo;
 
         public TenantPromotionController(
-            TenantTypeRepository tenantTypeRepo,   // 👈 thêm để truyền cho base
-            AbcdmallContext context
-        ) : base(tenantTypeRepo)                  // 👈 gọi constructor cha
+            TenantTypeRepository tenantTypeRepo,
+            TenantPromotionRepository promotionRepo
+        ) : base(tenantTypeRepo)
         {
-            _context = context;
+            _promotionRepo = promotionRepo;
         }
-
 
         // LIST PAGE
         public IActionResult Index(int? tenantId, int page = 1)
         {
-            int pageSize = 8;
-
-            var query = _context.TblTenantPromotions
-                .Include(x => x.TenantPromotionTenant)
-                .OrderByDescending(x => x.TenantPromotionStart)
-                .AsQueryable();
-
-            if (tenantId.HasValue)
-                query = query.Where(x => x.TenantPromotionTenantId == tenantId);
-
-            var today = DateTime.Now;
-
-            var activeList = query
-                .Where(p => p.TenantPromotionEnd >= today)
-                .Select(p => new TenantPromotionVm
-                {
-                    Id = p.TenantPromotionId,
-                    Title = p.TenantPromotionTitle,
-                    Img = p.TenantPromotionImg,
-                    PromotionStart = p.TenantPromotionStart,
-                    PromotionEnd = p.TenantPromotionEnd,
-                    DiscountAmount = p.TenantPromotionDiscountAmount,
-                    DiscountPercent = p.TenantPromotionDiscountPercent
-                });
-
-            int totalItems = activeList.Count();
-            var items = activeList.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-            var expired = query
-                .Where(p => p.TenantPromotionEnd < today)
-                .OrderByDescending(p => p.TenantPromotionEnd)
-                .Select(p => new TenantPromotionVm
-                {
-                    Id = p.TenantPromotionId,
-                    Title = p.TenantPromotionTitle,
-                    Img = p.TenantPromotionImg,
-                    PromotionEnd = p.TenantPromotionEnd,
-                }).ToList();
-
-            var vm = new TenantPromotionListVm
-            {
-                SelectedTenantId = tenantId,
-                Tenants = _context.TblTenants.ToList(),
-                ActivePromotions = items,
-                ExpiredPromotions = expired,
-                Page = page,
-                PageSize = pageSize,
-                TotalItems = totalItems
-            };
-
+            // Chỉ gọi repository, tất cả logic query + phân trang đã ở repo
+            var vm = _promotionRepo.GetPromotions(tenantId, page);
             return View(vm);
         }
-
-
 
         // DETAIL PAGE
         public IActionResult Detail(int id)
         {
-            var p = _context.TblTenantPromotions
-                .Include(x => x.TenantPromotionTenant)
-                .FirstOrDefault(x => x.TenantPromotionId == id);
-
-            if (p == null) return NotFound();
-
-            var vm = new TenantPromotionVm
-            {
-                Id = p.TenantPromotionId,
-                Title = p.TenantPromotionTitle,
-                Img = p.TenantPromotionImg,
-                Description = p.TenantPromotionDescription,
-                PromotionStart = p.TenantPromotionStart,
-                PromotionEnd = p.TenantPromotionEnd,
-                DiscountAmount = p.TenantPromotionDiscountAmount,
-                DiscountPercent = p.TenantPromotionDiscountPercent,
-                MinBillAmount = p.TenantPromotionMinBillAmount
-            };
-
+            var vm = _promotionRepo.GetPromotionDetail(id);
+            if (vm == null) return NotFound();
             return View(vm);
         }
     }
