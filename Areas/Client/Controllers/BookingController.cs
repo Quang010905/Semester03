@@ -17,7 +17,7 @@ namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
     [Route("Client/[controller]/[action]")]
-    public class BookingController : Controller
+    public class BookingController : ClientBaseController
     {
         private readonly ShowtimeRepository _showRepo;
         private readonly MovieRepository _movieRepo;
@@ -28,13 +28,15 @@ namespace Semester03.Areas.Client.Controllers
         private readonly TicketEmailService _ticketEmailService;
 
         public BookingController(
+            TenantTypeRepository tenantTypeRepo,   // <- THÊM DÒNG NÀY
             ShowtimeRepository showRepo,
             MovieRepository movieRepo,
             SeatRepository seatRepo,
             IVnPayService vnPayService,
             AbcdmallContext context,
             ILogger<BookingController> logger,
-            TicketEmailService ticketEmailService)
+            TicketEmailService ticketEmailService
+        ) : base(tenantTypeRepo)  // <- GỌI BASE
         {
             _showRepo = showRepo;
             _movieRepo = movieRepo;
@@ -44,6 +46,7 @@ namespace Semester03.Areas.Client.Controllers
             _logger = logger;
             _ticketEmailService = ticketEmailService;
         }
+
 
         [HttpGet]
         public IActionResult BookTicket(int movieId)
@@ -156,7 +159,7 @@ namespace Semester03.Areas.Client.Controllers
             var showtime = _context.TblShowtimes
                 .Include(s => s.ShowtimeMovie)
                 .Include(s => s.ShowtimeScreen)
-                .ThenInclude(sc => sc.ScreenCinema)
+                    .ThenInclude(sc => sc.ScreenCinema)
                 .FirstOrDefault(s => s.ShowtimeId == showtimeId);
 
             if (showtime == null)
@@ -189,23 +192,135 @@ namespace Semester03.Areas.Client.Controllers
                 ShowtimeStart = showtime.ShowtimeStart,
                 SelectedSeats = seatLabels,
                 SeatPrice = showtime.ShowtimePrice,
-                TotalAmount = (showtime.ShowtimePrice) * seatLabels.Count
+                TotalAmount = showtime.ShowtimePrice * seatLabels.Count
             };
+
+            // --- Load coupon đang active & trong thời gian ---
+            var now = DateTime.Now;
+            var coupons = _context.TblCoupons
+                .Where(c => !((c.CouponIsActive ?? false) == false
+                              || c.CouponValidFrom > now
+                              || c.CouponValidTo < now))
+                .Select(c => new CouponDto
+                {
+                    Id = c.CouponId,
+                    Name = c.CouponName,
+                    DiscountPercent = c.CouponDiscountPercent,
+                    MinimumPointsRequired = c.CouponMinimumPointsRequired,
+                    ValidFrom = c.CouponValidFrom,
+                    ValidTo = c.CouponValidTo,
+                    IsActive = c.CouponIsActive ?? false
+                })
+                .ToList();
+
+            vm.AvailableCoupons = coupons;
+
+            // user points (nếu đăng nhập)
+            int userPoints = 0;
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (int.TryParse(claim, out var userId))
+                {
+                    var u = _context.TblUsers.FirstOrDefault(x => x.UsersId == userId);
+                    if (u != null) userPoints = u.UsersPoints ?? 0;
+                }
+            }
+            vm.UserPoints = userPoints;
 
             return View("ConfirmBooking", vm);
         }
 
+        // =========================
+        //  TẠO URL VNPAY (TÍNH GIẢM GIÁ Ở SERVER)
+        // =========================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreatePaymentUrlVnpay([FromForm] int showtimeId, [FromForm] string seatIds, [FromForm] decimal amount)
+        public async Task<IActionResult> CreatePaymentUrlVnpay(
+            [FromForm] int showtimeId,
+            [FromForm] string seatIds,
+            [FromForm] decimal amount,   // giữ tham số nhưng KHÔNG dùng làm chuẩn
+            [FromForm] int? couponId)
         {
             try
             {
+                int? buyerId = null;
+                if (User?.Identity?.IsAuthenticated == true)
+                {
+                    var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    if (int.TryParse(claim, out var id)) buyerId = id;
+                }
+
+                // 1. Parse seatIds thành list int
+                var showtimeSeatIdList = (seatIds ?? "")
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => int.TryParse(s.Trim(), out var v) ? v : 0)
+                    .Where(v => v > 0)
+                    .ToList();
+
+                if (!showtimeSeatIdList.Any())
+                    return Json(new { success = false, message = "Không có ghế hợp lệ để thanh toán." });
+
+                // 2. Lấy showtime để biết giá ghế
+                var showtime = await _context.TblShowtimes
+                    .FirstOrDefaultAsync(s => s.ShowtimeId == showtimeId);
+
+                if (showtime == null)
+                    return Json(new { success = false, message = "Suất chiếu không tồn tại." });
+
+                // 3. Tổng tiền gốc (chưa giảm)
+                decimal originalTotal = showtime.ShowtimePrice * showtimeSeatIdList.Count;
+
+                decimal discountAmount = 0m;
+                decimal finalAmount = originalTotal;
+
+                // 4. Nếu có coupon → validate + tính giảm giá
+                if (couponId.HasValue && couponId.Value > 0)
+                {
+                    var coupon = await _context.TblCoupons
+                        .FirstOrDefaultAsync(c => c.CouponId == couponId.Value && (c.CouponIsActive ?? false));
+                    if (coupon == null)
+                        return Json(new { success = false, message = "Mã giảm giá không hợp lệ." });
+
+                    var now = DateTime.Now;
+                    if (coupon.CouponValidFrom > now || coupon.CouponValidTo < now)
+                        return Json(new { success = false, message = "Mã đã hết hạn hoặc chưa hiệu lực." });
+
+                    if (!buyerId.HasValue)
+                        return Json(new { success = false, message = "Vui lòng đăng nhập để sử dụng mã giảm giá." });
+
+                    var user = await _context.TblUsers.FirstOrDefaultAsync(u => u.UsersId == buyerId.Value);
+                    if (user == null)
+                        return Json(new { success = false, message = "Người dùng không tồn tại." });
+
+                    if (coupon.CouponMinimumPointsRequired.HasValue &&
+                        (user.UsersPoints ?? 0) < coupon.CouponMinimumPointsRequired.Value)
+                        return Json(new { success = false, message = "Bạn không đủ điểm để sử dụng mã này." });
+
+                    // Chỉ cho dùng nếu CHƯA có trong Tbl_CouponUser
+                    var used = await _context.TblCouponUsers
+                        .AnyAsync(x => x.CouponId == couponId.Value && x.UsersId == buyerId.Value);
+                    if (used)
+                        return Json(new { success = false, message = "Bạn đã sử dụng mã này rồi." });
+
+                    // TÍNH GIẢM GIÁ TỪ originalTotal
+                    discountAmount = Math.Floor(originalTotal * (coupon.CouponDiscountPercent / 100m));
+                    finalAmount = Math.Max(0m, originalTotal - discountAmount);
+                }
+
+                // 5. Gửi sang VNPAY số tiền ĐÃ GIẢM
                 var model = new Semester03.Areas.Client.Models.Vnpay.PaymentInformationModel
                 {
                     OrderType = "movie-ticket",
-                    Amount = (double)amount,
-                    OrderDescription = $"Showtime:{showtimeId};Seats:{seatIds};Amount:{amount}",
+                    Amount = (double)finalAmount,
+                    // Lưu đầy đủ thông tin để callback & PaymentSuccess dùng lại
+                    OrderDescription =
+                        $"Showtime:{showtimeId};" +
+                        $"Seats:{string.Join(",", showtimeSeatIdList)};" +
+                        $"Original:{originalTotal.ToString(CultureInfo.InvariantCulture)};" +
+                        $"Discount:{discountAmount.ToString(CultureInfo.InvariantCulture)};" +
+                        $"Final:{finalAmount.ToString(CultureInfo.InvariantCulture)};" +
+                        $"Coupon:{(couponId.HasValue ? couponId.Value.ToString() : "")}",
                     Name = $"Booking for Showtime {showtimeId}"
                 };
 
@@ -223,6 +338,9 @@ namespace Semester03.Areas.Client.Controllers
             }
         }
 
+        // =========================
+        //  CALLBACK VNPAY
+        // =========================
         [HttpGet]
         public IActionResult PaymentCallbackVnpay()
         {
@@ -232,6 +350,11 @@ namespace Semester03.Areas.Client.Controllers
 
             int showtimeId = 0;
             string seatIds = "";
+            int? couponId = null;
+
+            decimal originalAmount = 0m;
+            decimal discountAmount = 0m;
+            decimal finalAmount = 0m;
 
             var parts = (response.OrderDescription ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries);
             foreach (var p in parts)
@@ -241,6 +364,20 @@ namespace Semester03.Areas.Client.Controllers
                     int.TryParse(trimmed.Substring("Showtime:".Length).Trim(), out showtimeId);
                 else if (trimmed.StartsWith("Seats:", StringComparison.OrdinalIgnoreCase))
                     seatIds = trimmed.Substring("Seats:".Length).Trim();
+                else if (trimmed.StartsWith("Original:", StringComparison.OrdinalIgnoreCase))
+                    decimal.TryParse(trimmed.Substring("Original:".Length).Trim(),
+                        NumberStyles.Any, CultureInfo.InvariantCulture, out originalAmount);
+                else if (trimmed.StartsWith("Discount:", StringComparison.OrdinalIgnoreCase))
+                    decimal.TryParse(trimmed.Substring("Discount:".Length).Trim(),
+                        NumberStyles.Any, CultureInfo.InvariantCulture, out discountAmount);
+                else if (trimmed.StartsWith("Final:", StringComparison.OrdinalIgnoreCase))
+                    decimal.TryParse(trimmed.Substring("Final:".Length).Trim(),
+                        NumberStyles.Any, CultureInfo.InvariantCulture, out finalAmount);
+                else if (trimmed.StartsWith("Coupon:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var raw = trimmed.Substring("Coupon:".Length).Trim();
+                    if (int.TryParse(raw, out var c)) couponId = c;
+                }
             }
 
             if (!response.Success)
@@ -253,21 +390,37 @@ namespace Semester03.Areas.Client.Controllers
                 });
             }
 
-            return RedirectToAction("PaymentSuccess", new { showtimeId = showtimeId, seatIds = seatIds });
+            return RedirectToAction("PaymentSuccess", new
+            {
+                showtimeId,
+                seatIds,
+                couponId,
+                originalAmount,
+                discountAmount,
+                finalAmount
+            });
         }
 
-
+        // =========================
+        //  PAYMENT SUCCESS
+        // =========================
         [HttpGet]
-        public async Task<IActionResult> PaymentSuccess(int showtimeId, string seatIds)
+        public async Task<IActionResult> PaymentSuccess(
+            int showtimeId,
+            string seatIds,
+            int? couponId,
+            decimal originalAmount = 0m,
+            decimal discountAmount = 0m,
+            decimal finalAmount = 0m)
         {
-            // parse seatIds (can be ShowtimeSeat IDs or Seat labels)
             var rawParts = (seatIds ?? "")
                 .Split(',', StringSplitOptions.RemoveEmptyEntries)
                 .Select(s => s.Trim())
                 .Where(s => !string.IsNullOrEmpty(s))
                 .ToList();
 
-            var parsedIds = rawParts.Select(s => int.TryParse(s, out var v) ? v : 0).Where(v => v > 0).ToList();
+            var parsedIds = rawParts.Select(s => int.TryParse(s, out var v) ? v : 0)
+                                    .Where(v => v > 0).ToList();
             List<int> showtimeSeatIds = new List<int>();
 
             try
@@ -299,9 +452,12 @@ namespace Semester03.Areas.Client.Controllers
                 {
                     ViewData["SeatLabels"] = new List<string>();
                     ViewData["ShowtimeId"] = showtimeId;
+                    ViewData["OriginalAmount"] = 0m;
+                    ViewData["DiscountAmount"] = 0m;
                     ViewData["TotalAmount"] = 0m;
                     ViewData["PricePerSeat"] = 0m;
                     ViewData["ShowtimeSeatIds"] = "";
+                    ViewData["PointsAwarded"] = 0;
                     return View();
                 }
 
@@ -319,7 +475,8 @@ namespace Semester03.Areas.Client.Controllers
                     }
                 }
 
-                var showtime = await _context.TblShowtimes.FirstOrDefaultAsync(s => s.ShowtimeId == showtimeId);
+                var showtime = await _context.TblShowtimes
+                    .FirstOrDefaultAsync(s => s.ShowtimeId == showtimeId);
                 decimal pricePerSeat = showtime?.ShowtimePrice ?? 0m;
 
                 int? buyerId = null;
@@ -331,32 +488,39 @@ namespace Semester03.Areas.Client.Controllers
                 }
                 else
                 {
-                    // Fallback 1: pending cookie (best when using external payment gateway)
-                    if (Request.Cookies.TryGetValue("GigaMall_PendingBuyerId", out var pendingIdStr) && int.TryParse(pendingIdStr, out var pendingId))
+                    if (Request.Cookies.TryGetValue("GigaMall_PendingBuyerId", out var pendingIdStr)
+                        && int.TryParse(pendingIdStr, out var pendingId))
                     {
                         buyerId = pendingId;
                         _logger.LogInformation("PaymentSuccess: buyerId from GigaMall_PendingBuyerId cookie = {BuyerId}", buyerId);
 
-                        // remove the pending cookie immediately
-                        Response.Cookies.Append("GigaMall_PendingBuyerId", "", new Microsoft.AspNetCore.Http.CookieOptions
-                        {
-                            Expires = DateTimeOffset.UtcNow.AddDays(-1),
-                            Path = "/"
-                        });
+                        Response.Cookies.Append("GigaMall_PendingBuyerId", "",
+                            new Microsoft.AspNetCore.Http.CookieOptions
+                            {
+                                Expires = DateTimeOffset.UtcNow.AddDays(-1),
+                                Path = "/"
+                            });
                     }
-                    else if (Request.Cookies.TryGetValue("GigaMall_LastUserId", out var lastUserIdStr) && int.TryParse(lastUserIdStr, out var lastUserId))
+                    else if (Request.Cookies.TryGetValue("GigaMall_LastUserId", out var lastUserIdStr)
+                             && int.TryParse(lastUserIdStr, out var lastUserId))
                     {
-                        // Fallback 2: last user id cookie set at login/register
                         buyerId = lastUserId;
                         _logger.LogInformation("PaymentSuccess: buyerId from GigaMall_LastUserId cookie = {BuyerId}", buyerId);
                     }
                     else
                     {
-                        _logger.LogWarning("PaymentSuccess: No buyerId found via claim or cookies. Email will not be sent automatically.");
+                        _logger.LogWarning(
+                            "PaymentSuccess: No buyerId found via claim or cookies. Email will not be sent automatically.");
                     }
                 }
 
                 var seatMappingsResult = new List<(int ShowtimeSeatId, string SeatLabel)>();
+
+                // biến tổng/giảm/sau giảm hiệu lực (ưu tiên giá trị từ callback)
+                decimal effectiveOriginalAmount = originalAmount;
+                decimal effectiveFinalAmount = finalAmount;
+                decimal effectiveDiscountAmount = discountAmount;
+                int pointsAwarded = 0;
 
                 var conn = _context.Database.GetDbConnection();
                 await using (conn)
@@ -369,7 +533,6 @@ namespace Semester03.Areas.Client.Controllers
                         {
                             string inClause = string.Join(",", showtimeSeatIds);
 
-                            // 1) Read showtime seat rows
                             var showtimeSeatRows = new List<(int ShowtimeSeatId, int SeatId, int ShowtimeId)>();
                             using (var cmd = conn.CreateCommand())
                             {
@@ -396,13 +559,15 @@ namespace Semester03.Areas.Client.Controllers
                                 await dbTx.RollbackAsync();
                                 ViewData["SeatLabels"] = new List<string>();
                                 ViewData["ShowtimeId"] = showtimeId;
+                                ViewData["OriginalAmount"] = 0m;
+                                ViewData["DiscountAmount"] = 0m;
                                 ViewData["TotalAmount"] = 0m;
                                 ViewData["PricePerSeat"] = pricePerSeat;
                                 ViewData["ShowtimeSeatIds"] = "";
+                                ViewData["PointsAwarded"] = 0;
                                 return View();
                             }
 
-                            // 2) Load seat labels
                             var seatIdDistinct = showtimeSeatRows.Select(x => x.SeatId).Distinct().ToList();
                             var seatIdListStr = string.Join(",", seatIdDistinct);
                             var seatLabelsById = new Dictionary<int, string>();
@@ -426,15 +591,28 @@ namespace Semester03.Areas.Client.Controllers
                             }
 
                             var seatMappings = showtimeSeatRows
-                                .Select(r => new { r.ShowtimeSeatId, Label = seatLabelsById.ContainsKey(r.SeatId) ? seatLabelsById[r.SeatId] : "", r.ShowtimeId })
+                                .Select(r => new
+                                {
+                                    r.ShowtimeSeatId,
+                                    Label = seatLabelsById.ContainsKey(r.SeatId) ? seatLabelsById[r.SeatId] : "",
+                                    r.ShowtimeId
+                                })
                                 .ToList();
 
                             var labels = seatMappings.Select(m => m.Label).ToList();
-                            var totalAmount = pricePerSeat * labels.Count;
+                            var seatCount = labels.Count;
+                            var baseTotal = pricePerSeat * seatCount;
 
-                            seatMappingsResult = seatMappings.Select(m => (m.ShowtimeSeatId, m.Label)).ToList();
+                            // Nếu callback không gửi (0) thì fallback sang baseTotal
+                            if (effectiveOriginalAmount <= 0) effectiveOriginalAmount = baseTotal;
+                            if (effectiveFinalAmount <= 0) effectiveFinalAmount = baseTotal;
+                            if (effectiveDiscountAmount <= 0) effectiveDiscountAmount = effectiveOriginalAmount - effectiveFinalAmount;
+                            if (effectiveDiscountAmount < 0) effectiveDiscountAmount = 0m;
 
-                            // existing tickets
+                            seatMappingsResult = seatMappings
+                                .Select(m => (m.ShowtimeSeatId, m.Label))
+                                .ToList();
+
                             var existingTicketSeatIds = new HashSet<int>();
                             using (var cmd = conn.CreateCommand())
                             {
@@ -456,7 +634,6 @@ namespace Semester03.Areas.Client.Controllers
                                 reader.Close();
                             }
 
-                            // update showtime seats
                             using (var cmd = conn.CreateCommand())
                             {
                                 cmd.Transaction = dbTx;
@@ -470,17 +647,32 @@ namespace Semester03.Areas.Client.Controllers
                                     WHERE ShowtimeSeat_ID IN ({inClause})
                                 ";
 
-                                var pStatus = cmd.CreateParameter(); pStatus.ParameterName = "@status"; pStatus.Value = "sold"; cmd.Parameters.Add(pStatus);
-                                var pNow = cmd.CreateParameter(); pNow.ParameterName = "@now"; pNow.Value = DateTime.UtcNow; cmd.Parameters.Add(pNow);
-                                var pReservedBy = cmd.CreateParameter(); pReservedBy.ParameterName = "@reservedBy";
-                                pReservedBy.Value = (object?)buyerId ?? DBNull.Value; cmd.Parameters.Add(pReservedBy);
-                                var pReservedAt = cmd.CreateParameter(); pReservedAt.ParameterName = "@reservedAt"; pReservedAt.Value = (object?)DateTime.UtcNow ?? DBNull.Value; cmd.Parameters.Add(pReservedAt);
+                                var pStatus = cmd.CreateParameter();
+                                pStatus.ParameterName = "@status";
+                                pStatus.Value = "sold";
+                                cmd.Parameters.Add(pStatus);
+
+                                var pNow = cmd.CreateParameter();
+                                pNow.ParameterName = "@now";
+                                pNow.Value = DateTime.Now;
+                                cmd.Parameters.Add(pNow);
+
+                                var pReservedBy = cmd.CreateParameter();
+                                pReservedBy.ParameterName = "@reservedBy";
+                                pReservedBy.Value = (object?)buyerId ?? DBNull.Value;
+                                cmd.Parameters.Add(pReservedBy);
+
+                                var pReservedAt = cmd.CreateParameter();
+                                pReservedAt.ParameterName = "@reservedAt";
+                                pReservedAt.Value = (object?)DateTime.Now ?? DBNull.Value;
+                                cmd.Parameters.Add(pReservedAt);
 
                                 await cmd.ExecuteNonQueryAsync();
                             }
 
-                            // insert tickets if not exist
-                            var toInsert = seatMappings.Where(m => !existingTicketSeatIds.Contains(m.ShowtimeSeatId)).ToList();
+                            var toInsert = seatMappings
+                                .Where(m => !existingTicketSeatIds.Contains(m.ShowtimeSeatId))
+                                .ToList();
 
                             if (toInsert.Any())
                             {
@@ -497,27 +689,51 @@ namespace Semester03.Areas.Client.Controllers
                                             (@showtimeSeatId, @buyerId, @status, @price, @purchasedAt)
                                     ";
 
-                                    var pShowtimeSeatId = cmd.CreateParameter(); pShowtimeSeatId.ParameterName = "@showtimeSeatId"; pShowtimeSeatId.Value = m.ShowtimeSeatId; cmd.Parameters.Add(pShowtimeSeatId);
-                                    var pBuyerId = cmd.CreateParameter(); pBuyerId.ParameterName = "@buyerId"; pBuyerId.Value = (object?)buyerId ?? DBNull.Value; cmd.Parameters.Add(pBuyerId);
-                                    var pStatus2 = cmd.CreateParameter(); pStatus2.ParameterName = "@status"; pStatus2.Value = "sold"; cmd.Parameters.Add(pStatus2);
-                                    var pPrice = cmd.CreateParameter(); pPrice.ParameterName = "@price"; pPrice.Value = (object)pricePerSeat ?? DBNull.Value; cmd.Parameters.Add(pPrice);
-                                    var pPurchasedAt = cmd.CreateParameter(); pPurchasedAt.ParameterName = "@purchasedAt"; pPurchasedAt.Value = DateTime.UtcNow; cmd.Parameters.Add(pPurchasedAt);
+                                    var pShowtimeSeatId = cmd.CreateParameter();
+                                    pShowtimeSeatId.ParameterName = "@showtimeSeatId";
+                                    pShowtimeSeatId.Value = m.ShowtimeSeatId;
+                                    cmd.Parameters.Add(pShowtimeSeatId);
+
+                                    var pBuyerId = cmd.CreateParameter();
+                                    pBuyerId.ParameterName = "@buyerId";
+                                    pBuyerId.Value = (object?)buyerId ?? DBNull.Value;
+                                    cmd.Parameters.Add(pBuyerId);
+
+                                    var pStatus2 = cmd.CreateParameter();
+                                    pStatus2.ParameterName = "@status";
+                                    pStatus2.Value = "sold";
+                                    cmd.Parameters.Add(pStatus2);
+
+                                    var pPrice = cmd.CreateParameter();
+                                    pPrice.ParameterName = "@price";
+                                    pPrice.Value = (object)pricePerSeat ?? DBNull.Value;
+                                    cmd.Parameters.Add(pPrice);
+
+                                    var pPurchasedAt = cmd.CreateParameter();
+                                    pPurchasedAt.ParameterName = "@purchasedAt";
+                                    pPurchasedAt.Value = DateTime.Now;
+                                    cmd.Parameters.Add(pPurchasedAt);
 
                                     var inserted = await cmd.ExecuteNonQueryAsync();
                                     ticketsInserted += inserted;
                                 }
 
-                                _logger.LogInformation("Inserted {Count} new ticket(s) for showtime {ShowtimeId}", toInsert.Count, showtimeId);
+                                _logger.LogInformation("Inserted {Count} new ticket(s) for showtime {ShowtimeId}",
+                                    toInsert.Count, showtimeId);
                             }
                             else
                             {
-                                _logger.LogInformation("No new tickets to insert for showtime {ShowtimeId}: tickets already exist for provided seats.", showtimeId);
+                                _logger.LogInformation(
+                                    "No new tickets to insert for showtime {ShowtimeId}: tickets already exist for provided seats.",
+                                    showtimeId);
                             }
 
-                            // award points to user (if buyerId)
+                            // Điểm thưởng dựa trên số tiền thực trả (effectiveFinalAmount)
                             if (buyerId.HasValue)
                             {
-                                var points = (int)Math.Floor(totalAmount / 100m);
+                                var points = (int)Math.Floor(effectiveFinalAmount / 100m);
+                                pointsAwarded = points;
+
                                 if (points > 0)
                                 {
                                     using var cmd = conn.CreateCommand();
@@ -529,69 +745,129 @@ namespace Semester03.Areas.Client.Controllers
                                             Users_UpdatedAt = @now
                                         WHERE Users_ID = @userId
                                     ";
-                                    var pPoints = cmd.CreateParameter(); pPoints.ParameterName = "@points"; pPoints.Value = points; cmd.Parameters.Add(pPoints);
-                                    var pNow2 = cmd.CreateParameter(); pNow2.ParameterName = "@now"; pNow2.Value = DateTime.UtcNow; cmd.Parameters.Add(pNow2);
-                                    var pUserId = cmd.CreateParameter(); pUserId.ParameterName = "@userId"; pUserId.Value = buyerId.Value; cmd.Parameters.Add(pUserId);
+                                    var pPoints = cmd.CreateParameter();
+                                    pPoints.ParameterName = "@points";
+                                    pPoints.Value = points;
+                                    cmd.Parameters.Add(pPoints);
+
+                                    var pNow2 = cmd.CreateParameter();
+                                    pNow2.ParameterName = "@now";
+                                    pNow2.Value = DateTime.Now;
+                                    cmd.Parameters.Add(pNow2);
+
+                                    var pUserId = cmd.CreateParameter();
+                                    pUserId.ParameterName = "@userId";
+                                    pUserId.Value = buyerId.Value;
+                                    cmd.Parameters.Add(pUserId);
 
                                     var updated = await cmd.ExecuteNonQueryAsync();
                                     if (updated > 0)
                                     {
-                                        _logger.LogInformation("Awarded {Points} points to user {UserId}", points, buyerId.Value);
+                                        _logger.LogInformation("Awarded {Points} points to user {UserId}", points,
+                                            buyerId.Value);
                                     }
                                     else
                                     {
-                                        _logger.LogWarning("Failed to award points: user {UserId} not found.", buyerId.Value);
+                                        _logger.LogWarning(
+                                            "Failed to award points: user {UserId} not found.", buyerId.Value);
                                     }
                                 }
                             }
 
                             await dbTx.CommitAsync();
 
-                            // --- SAU KHI COMMIT: gửi mail (await để log lỗi nếu có) ---
+                            // Sau khi commit: ghi nhận coupon usage nếu có
+                            if (couponId.HasValue && couponId.Value > 0 && buyerId.HasValue)
+                            {
+                                try
+                                {
+                                    var exists = await _context.TblCouponUsers
+                                        .AnyAsync(x => x.CouponId == couponId.Value && x.UsersId == buyerId.Value);
+                                    if (!exists)
+                                    {
+                                        await _context.Database.ExecuteSqlRawAsync(
+                                            "INSERT INTO dbo.Tbl_CouponUser (Coupon_ID, Users_ID) VALUES ({0}, {1})",
+                                            couponId.Value, buyerId.Value
+                                        );
+                                        _logger.LogInformation("Coupon {CouponId} marked used by user {UserId}",
+                                            couponId.Value, buyerId.Value);
+                                    }
+                                }
+                                catch (Exception exCoupon)
+                                {
+                                    _logger.LogError(exCoupon,
+                                        "Error recording coupon usage for user {UserId}", buyerId);
+                                }
+                            }
+
+                            // Sau commit: gởi mail
                             try
                             {
                                 if (buyerId.HasValue)
                                 {
-                                    _logger.LogInformation("PaymentSuccess: Calling SendTicketsEmailAsync for user {UserId}", buyerId.Value);
-                                    await _ticketEmailService.SendTicketsEmailAsync(buyerId.Value, showtimeSeatIds);
+                                    _logger.LogInformation(
+                                        "PaymentSuccess: Calling SendTicketsEmailAsync for user {UserId}",
+                                        buyerId.Value);
+
+                                    // dùng overload mới: gửi kèm tổng gốc/giảm/cuối để email hiển thị đúng
+                                    await _ticketEmailService.SendTicketsEmailAsync(
+                                        buyerId.Value,
+                                        showtimeSeatIds,
+                                        effectiveOriginalAmount,
+                                        effectiveDiscountAmount,
+                                        effectiveFinalAmount);
                                 }
                                 else
                                 {
-                                    _logger.LogWarning("PaymentSuccess: buyerId is null, skipping SendTicketsEmailAsync. Consider storing buyer info or passing email in return.");
+                                    _logger.LogWarning(
+                                        "PaymentSuccess: buyerId is null, skipping SendTicketsEmailAsync.");
                                 }
                             }
                             catch (Exception exEmail)
                             {
-                                _logger.LogError(exEmail, "Error sending ticket email after successful commit for user {UserId}", buyerId);
+                                _logger.LogError(exEmail,
+                                    "Error sending ticket email after successful commit for user {UserId}", buyerId);
                             }
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex, "Error while finalizing payment and writing seats/tickets - rolling back.");
-                            try { await dbTx.RollbackAsync(); } catch (Exception rbEx) { _logger.LogError(rbEx, "Error while rolling back transaction."); }
+                            _logger.LogError(ex,
+                                "Error while finalizing payment and writing seats/tickets - rolling back.");
+                            try { await dbTx.RollbackAsync(); }
+                            catch (Exception rbEx)
+                            {
+                                _logger.LogError(rbEx, "Error while rolling back transaction.");
+                            }
 
                             ViewData["PaymentProcessingError"] = ex.Message;
                             ViewData["SeatLabels"] = new List<string>();
                             ViewData["ShowtimeId"] = showtimeId;
+                            ViewData["OriginalAmount"] = 0m;
+                            ViewData["DiscountAmount"] = 0m;
                             ViewData["TotalAmount"] = 0m;
                             ViewData["PricePerSeat"] = pricePerSeat;
                             ViewData["ShowtimeSeatIds"] = "";
+                            ViewData["PointsAwarded"] = 0;
                             return View();
                         }
                         finally
                         {
                             await conn.CloseAsync();
                         }
-                    } // end using transaction
-                } // end using conn
+                    }
+                }
 
+                // Sau transaction: build ViewData cho view PaymentSuccess
                 var seatLabelList = seatMappingsResult.Select(x => x.SeatLabel).ToList();
 
                 ViewData["SeatLabels"] = seatLabelList;
                 ViewData["ShowtimeId"] = showtimeId;
-                ViewData["TotalAmount"] = pricePerSeat * seatLabelList.Count;
+                ViewData["OriginalAmount"] = effectiveOriginalAmount;
+                ViewData["DiscountAmount"] = effectiveDiscountAmount;
+                ViewData["TotalAmount"] = effectiveFinalAmount;
                 ViewData["PricePerSeat"] = pricePerSeat;
                 ViewData["ShowtimeSeatIds"] = string.Join(",", showtimeSeatIds);
+                ViewData["PointsAwarded"] = pointsAwarded;
 
                 return View();
             }
@@ -601,9 +877,12 @@ namespace Semester03.Areas.Client.Controllers
                 ViewData["PaymentProcessingError"] = ex.Message;
                 ViewData["SeatLabels"] = new List<string>();
                 ViewData["ShowtimeId"] = showtimeId;
+                ViewData["OriginalAmount"] = 0m;
+                ViewData["DiscountAmount"] = 0m;
                 ViewData["TotalAmount"] = 0m;
                 ViewData["PricePerSeat"] = 0m;
                 ViewData["ShowtimeSeatIds"] = "";
+                ViewData["PointsAwarded"] = 0;
                 return View();
             }
         }
@@ -631,6 +910,7 @@ namespace Semester03.Areas.Client.Controllers
 
             try
             {
+                // gửi lại email không cần thông tin giảm giá -> overload cũ
                 await _ticketEmailService.SendTicketsEmailAsync(userId, ids);
                 return Ok(new { success = true, message = "Email sent (or queued) to user." });
             }
@@ -641,13 +921,66 @@ namespace Semester03.Areas.Client.Controllers
             }
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult ValidateCouponAjax(
+            [FromForm] int couponId,
+            [FromForm] int showtimeId,
+            [FromForm] string seatIds,
+            [FromForm] decimal amount)
+        {
+            try
+            {
+                if (User?.Identity?.IsAuthenticated != true)
+                    return Unauthorized(new { success = false, message = "Vui lòng đăng nhập để sử dụng mã giảm giá." });
+
+                var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(claim, out var userId))
+                    return Unauthorized(new { success = false, message = "Không xác thực được người dùng." });
+
+                var coupon = _context.TblCoupons
+                    .FirstOrDefault(c => c.CouponId == couponId && (c.CouponIsActive ?? false));
+                if (coupon == null)
+                    return BadRequest(new { success = false, message = "Mã không tồn tại hoặc không hoạt động." });
+
+                var now = DateTime.Now;
+                if (coupon.CouponValidFrom > now || coupon.CouponValidTo < now)
+                    return BadRequest(new { success = false, message = "Mã chưa có hiệu lực hoặc đã hết hạn." });
+
+                var user = _context.TblUsers.FirstOrDefault(u => u.UsersId == userId);
+                if (user == null)
+                    return Unauthorized(new { success = false, message = "Không tìm thấy người dùng." });
+
+                if (coupon.CouponMinimumPointsRequired.HasValue &&
+                    (user.UsersPoints ?? 0) < coupon.CouponMinimumPointsRequired.Value)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message =
+                            $"Bạn không đủ điểm để sử dụng mã này. Cần {coupon.CouponMinimumPointsRequired} điểm."
+                    });
+
+                var used = _context.TblCouponUsers.Any(x => x.CouponId == couponId && x.UsersId == userId);
+                if (used)
+                    return BadRequest(new { success = false, message = "Bạn đã sử dụng mã này rồi." });
+
+                decimal disc = Math.Floor(amount * (coupon.CouponDiscountPercent / 100m));
+                decimal newTotal = Math.Max(0m, amount - disc);
+
+                return Ok(new { success = true, discountAmount = disc, newTotal = newTotal });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ValidateCouponAjax error");
+                return StatusCode(500, new { success = false, message = "Lỗi server khi kiểm tra mã giảm giá." });
+            }
+        }
 
         [HttpGet]
         public async Task<IActionResult> PaymentFailed(int showtimeId, string seatIds, string message = "")
         {
             try
             {
-                // Giải phóng ghế đã được giữ mà chưa thanh toán
                 var seatIdList = (seatIds ?? "")
                     .Split(',', StringSplitOptions.RemoveEmptyEntries)
                     .Select(s => int.TryParse(s.Trim(), out var v) ? v : 0)
@@ -665,13 +998,14 @@ namespace Semester03.Areas.Client.Controllers
                         seat.ShowtimeSeatStatus = "available";
                         seat.ShowtimeSeatReservedByUserId = default;
                         seat.ShowtimeSeatReservedAt = default(DateTime);
-                        seat.ShowtimeSeatUpdatedAt = DateTime.UtcNow;
+                        seat.ShowtimeSeatUpdatedAt = DateTime.Now;
                     }
 
                     await _context.SaveChangesAsync();
                 }
 
-                _logger.LogInformation("Payment failed. Released {Count} seat(s) for showtime {ShowtimeId}", seatIdList.Count, showtimeId);
+                _logger.LogInformation("Payment failed. Released {Count} seat(s) for showtime {ShowtimeId}",
+                    seatIdList.Count, showtimeId);
 
                 ViewData["ErrorMessage"] = string.IsNullOrEmpty(message)
                     ? "Thanh toán thất bại hoặc bị hủy. Ghế đã được giải phóng."
@@ -687,6 +1021,5 @@ namespace Semester03.Areas.Client.Controllers
                 return View("PaymentFailed");
             }
         }
-
     }
 }

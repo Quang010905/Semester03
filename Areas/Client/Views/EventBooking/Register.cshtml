@@ -1,66 +1,387 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.EventRegisterVm
 @{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
-    ViewData["Title"] = "Đăng ký sự kiện";
+    ViewData["Title"] = "Register for Event";
     var price = ViewBag.Price as decimal? ?? 0m;
+
+    // hàm lấy ảnh (the function you asked to add)
+    Func<string, string> Img = (raw) =>
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return Url.Content("~/images/event-placeholder.png");
+
+        if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            return raw;
+
+        var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
+        s = s.Replace(" ", "%20");
+
+        if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase)
+            || s.StartsWith("images", StringComparison.OrdinalIgnoreCase)
+            || s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
+        {
+            return Url.Content("~/" + s);
+        }
+
+        if (raw.StartsWith("/"))
+            return Url.Content("~" + raw);
+
+        return Url.Content("~/Content/Uploads/Events/" + s);
+    };
+
+    // fallback local file you uploaded (we'll use this when Event.ImageUrl is empty)
+    var localFallback = "/mnt/data/42367463-3aa2-497c-8350-8f22d9917819.png";
+    var imgSrc = string.IsNullOrWhiteSpace(Model?.Event?.ImageUrl)
+        ? localFallback
+        : Img(Model.Event.ImageUrl);
 }
 
-<div class="container py-4">
-    <div class="row">
-        <div class="col-md-8">
-            <h3>@Model.Event.Title</h3>
-            <p class="text-muted">@Model.Event.Description</p>
-            <p>
-                <strong>Thời gian:</strong> @Model.Event.StartDate.ToString("dd/MM/yyyy")
-                @if (Model.Event.EndDate.HasValue)
-                {
-                    <text>- @Model.Event.EndDate.Value.ToString("dd/MM/yyyy")</text>
-                }
-            </p>
-            <p><strong>Số lượng tối đa:</strong> @Model.Event.MaxSlot</p>
-            <p><strong>Còn trống:</strong> @Model.AvailableSlots</p>
-        </div>
-        <div class="col-md-4">
-            <div class="card p-3">
-                <h5>Đặt vé</h5>
+@section Styles {
+    <style>
+        /* (keep your styles - shortened here for brevity) */
+        :root {
+            --card-bg: #fff;
+            --muted: #6b7280;
+            --accent: #16a34a;
+            --radius: 1rem;
+            --shadow-soft: 0 12px 30px rgba(15,23,42,0.06);
+        }
 
-                <form id="registerForm" asp-area="Client" asp-controller="EventBooking" asp-action="CreateBooking" method="post" novalidate>
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="eventId" value="@Model.Event.Id" />
-                    <div class="mb-2">
-                        <label class="form-label">Họ tên</label>
-                        <input id="contactName" name="contactName" class="form-control" required />
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label">Email</label>
-                        <input id="contactEmail" name="contactEmail" type="email" class="form-control" required />
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label">Số lượng</label>
-                        <input id="quantity" name="quantity" type="number" min="1" max="@Model.AvailableSlots" value="1" class="form-control" required />
+        .register-wrapper {
+            max-width: 1200px;
+            margin: 2.2rem auto;
+            padding: 0 1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 1.6rem;
+        }
+
+        @@media (max-width: 991.98px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .event-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 1.4rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid #eef2f7;
+        }
+
+        .event-hero {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 1rem;
+            align-items: start;
+        }
+
+        @@media (max-width: 575.98px) {
+            .event-hero {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .event-img {
+            width: 100%;
+            border-radius: .9rem;
+            overflow: hidden;
+            min-height: 160px;
+            box-shadow: 0 10px 28px rgba(2,6,23,0.06);
+        }
+
+            .event-img img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            }
+
+        .event-info h2 {
+            margin: 0;
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .event-info .sub {
+            color: var(--muted);
+            margin-top: .25rem;
+            font-size: .95rem;
+        }
+
+        .meta-row {
+            display: flex;
+            gap: 1rem;
+            margin-top: .7rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .meta-pill {
+            background: #f1f5f9;
+            padding: .35rem .6rem;
+            border-radius: 999px;
+            font-size: .85rem;
+            color: #0f172a;
+        }
+
+        .stat-list {
+            display: flex;
+            gap: 1.2rem;
+            margin-top: .9rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            font-size: .95rem;
+            color: var(--muted);
+        }
+
+            .stat-item strong {
+                color: #111827;
+                margin-right: .35rem;
+            }
+
+        .booking-card {
+            position: sticky;
+            top: 1.6rem;
+            background: linear-gradient(180deg,#ffffff,#fbfdff);
+            border-radius: var(--radius);
+            padding: 1.2rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid #eef2f7;
+        }
+
+        .booking-title {
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-bottom: .6rem;
+            color: #0f172a;
+        }
+
+        .form-row {
+            margin-bottom: .7rem;
+        }
+
+        .form-label {
+            font-size: .9rem;
+            color: #374151;
+            margin-bottom: .25rem;
+            display: block;
+        }
+
+        .price-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: .6rem .75rem;
+            border-radius: .6rem;
+            background: #f8fafc;
+            border: 1px solid #eef2f7;
+            margin-bottom: .7rem;
+            font-weight: 700;
+        }
+
+        .total-box {
+            margin-top: .6rem;
+            padding: .7rem;
+            border-radius: .6rem;
+            background: linear-gradient(90deg,#f8fff6,#f0fff1);
+            border: 1px solid #dceddd;
+            font-weight: 800;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .small-muted {
+            font-size: .85rem;
+            color: var(--muted);
+        }
+
+        .btn-primary, .btn-success {
+            width: 100%;
+            padding: .6rem .9rem;
+            font-size: 1rem;
+            border-radius: .6rem;
+            font-weight: 700;
+        }
+
+        .alert-inline {
+            margin-top: .6rem;
+            padding: .5rem .75rem;
+            border-radius: .6rem;
+            display: none;
+        }
+
+        @@media (max-width: 991.98px) {
+            .booking-card {
+                position: relative;
+                top: 0;
+            }
+        }
+    </style>
+}
+
+<div class="register-wrapper">
+    <div class="grid">
+
+        <!-- LEFT: Event info -->
+        <div class="event-card">
+            <div class="event-hero">
+                <div class="event-img">
+                    <img src="@imgSrc" alt="@Model.Event.Title" />
+                </div>
+
+                <div class="event-info">
+                    <h2>@Model.Event.Title</h2>
+                    <div class="sub">@Model.Event.Description</div>
+
+                    <div class="meta-row">
+                        @if (!Model.Event.IsPast && Model.Event.Status == 1)
+                        {
+                            <div class="meta-pill">Đang mở đăng ký</div>
+                        }
+                        else if (Model.Event.IsOngoing && Model.Event.Status == 1)
+                        {
+                            <div class="meta-pill">Đang diễn ra</div>
+                        }
+                        else if (Model.Event.IsUpcoming && Model.Event.Status == 1)
+                        {
+                            <div class="meta-pill">Sắp diễn ra</div>
+                        }
+                        else if (Model.Event.IsPast)
+                        {
+                            <div class="meta-pill">Đã kết thúc</div>
+                        }
+
+                        <div class="meta-pill">
+                            @Model.Event.StartDate.ToString("dd/MM/yyyy")
+                            @if (Model.Event.EndDate.HasValue)
+                            {
+                                <span>– @Model.Event.EndDate.Value.ToString("dd/MM/yyyy")</span>
+                            }
+                        </div>
                     </div>
 
-                    @if (price > 0m)
-                    {
-                        <div class="mb-2">
-                            <label class="form-label">Giá / vé</label>
-                            <div id="pricePerTicket">@price.ToString("N0") VND</div>
+                    <div class="stat-list">
+                        <div class="stat-item"><strong>Max slots:</strong> @Model.Event.MaxSlot</div>
+                        <div class="stat-item"><strong>Available:</strong> <span id="availableSlots">@Model.AvailableSlots</span></div>
+                        <div class="stat-item">
+                            <strong>Giá vé:</strong>
+                            @if (price > 0m)
+                            {
+                                @($"{price:N0} VND")
+                            }
+                            else
+                            {
+                                <span>Miễn phí</span>
+                            }
                         </div>
-                        <div class="d-grid">
-                            <button id="btnSubmit" class="btn btn-primary" type="submit">Đặt và thanh toán</button>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="d-grid">
-                            <button id="btnSubmit" class="btn btn-success" type="submit">Đăng ký (miễn phí)</button>
-                        </div>
-                    }
-                </form>
-
-                <div id="registerAlert" class="mt-3" style="display:none;"></div>
+                    </div>
+                </div>
             </div>
+
+            <hr style="margin:1.1rem 0;" />
+
+            <div class="event-details">
+                <div class="small-muted"><strong>Thành phần tổ chức:</strong></div>
+
+                @{
+                    // Lấy tên shop trực tiếp từ Event. Nếu null/empty, hiển thị '-'
+                    var shop = !string.IsNullOrWhiteSpace(Model.Event?.OrganizerShopName)
+                    ? Model.Event.OrganizerShopName
+                    : "-";
+
+                    // Vị trí/tầng nếu có
+                    var location = !string.IsNullOrWhiteSpace(Model.Event?.PositionLocation)
+                    ? Model.Event.PositionLocation
+                    : null; // Removed reference to TenantPosition_Location
+                    int? floor = Model.Event?.PositionFloor; // Removed reference to TenantPosition_Floor
+                }
+
+                <div class="mb-2">@shop</div>
+
+                @if (!string.IsNullOrWhiteSpace(location) || floor.HasValue)
+                {
+                    <div class="mt-1 small-muted">
+                        @if (!string.IsNullOrWhiteSpace(location))
+                        {
+                            <div><strong>Vị trí:</strong> @location</div>
+                        }
+                        @if (floor.HasValue)
+                        {
+                            <div><strong>Tầng:</strong> @floor.Value</div>
+                        }
+                    </div>
+                }
+
+                <div class="small-muted mt-3"><strong>Ghi chú:</strong></div>
+                <div class="mb-0" style="color:#374151;">
+                    Bạn sẽ nhận email xác nhận khi booking thành công. Với sự kiện có phí, hệ thống sẽ chuyển bạn sang cổng thanh toán.
+                </div>
+            </div>
+
         </div>
+
+        <!-- RIGHT: Booking form -->
+        <aside class="booking-card" aria-labelledby="bookingTitle">
+            <div class="booking-title" id="bookingTitle">Đăng ký tham gia</div>
+
+            <form id="registerForm" method="post"
+                  asp-area="Client" asp-controller="EventBooking" asp-action="CreateBooking" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="eventId" value="@Model.Event.Id" />
+                <input type="hidden" id="priceValue" value="@price" />
+
+                <div class="form-row">
+                    <label class="form-label" for="contactName">Họ và tên</label>
+                    <input id="contactName" name="contactName" class="form-control" required placeholder="Nguyễn Văn A" />
+                </div>
+
+                <div class="form-row">
+                    <label class="form-label" for="contactEmail">Email</label>
+                    <input id="contactEmail" name="contactEmail" type="email" class="form-control" required placeholder="email@domain.com" />
+                </div>
+
+                <div class="form-row">
+                    <label class="form-label" for="quantity">Số lượng</label>
+                    <input id="quantity" name="quantity" type="number" min="1" max="@Model.AvailableSlots" value="1" class="form-control" required />
+                    <div class="small-muted mt-1">Tối đa <strong id="maxSlots">@Model.AvailableSlots</strong> vé</div>
+                </div>
+
+                @if (price > 0m)
+                {
+                    <div class="price-box">
+                        <div>Giá / vé</div>
+                        <div id="priceLabel">@price.ToString("N0") VND</div>
+                    </div>
+
+                    <div class="total-box" aria-live="polite">
+                        <div>Tổng</div>
+                        <div id="totalLabel">@((price * 1).ToString("N0")) VND</div>
+                    </div>
+
+                    <div class="form-row mt-3">
+                        <button id="btnSubmit" type="submit" class="btn btn-primary">Book & Pay</button>
+                    </div>
+                }
+                else
+                {
+                    <div class="form-row">
+                        <button id="btnSubmit" type="submit" class="btn btn-success">Register (Free)</button>
+                    </div>
+                }
+
+                <div id="registerAlert" class="alert-inline"></div>
+            </form>
+        </aside>
+
     </div>
 </div>
 
@@ -70,94 +391,124 @@
             const form = document.getElementById('registerForm');
             const btn = document.getElementById('btnSubmit');
             const alertBox = document.getElementById('registerAlert');
+            const qty = document.getElementById('quantity');
+            const priceValue = parseFloat(document.getElementById('priceValue').value || '0');
+            const totalLabel = document.getElementById('totalLabel');
+            const availableEl = document.getElementById('availableSlots');
+            const maxSlotsEl = document.getElementById('maxSlots');
 
-            function showAlert(html, isError = true) {
-                alertBox.innerHTML = html;
-                alertBox.className = isError ? 'alert alert-danger' : 'alert alert-success';
+            function showAlert(msg, isError = true) {
+                alertBox.textContent = msg;
                 alertBox.style.display = 'block';
+                alertBox.style.color = isError ? '#9b1c1c' : '#065f46';
+                alertBox.style.background = isError ? 'rgba(254,226,226,0.6)' : 'rgba(220,253,230,0.7)';
+                alertBox.style.border = isError ? '1px solid rgba(239,68,68,0.15)' : '1px solid rgba(16,185,129,0.15)';
             }
 
             function clearAlert() {
                 alertBox.style.display = 'none';
-                alertBox.innerHTML = '';
-                alertBox.className = '';
+                alertBox.textContent = '';
+                alertBox.style.background = '';
+                alertBox.style.border = '';
             }
 
-            form.addEventListener('submit', function (e) {
-                if (!window.fetch) return;
+            function updateTotal() {
+                const q = Math.max(1, parseInt(qty.value || '1'));
+                const total = priceValue * q;
+                if (totalLabel) {
+                    totalLabel.textContent = (total > 0 ? total.toLocaleString('en-US') + ' VND' : 'Miễn phí');
+                }
+            }
 
+            // init
+            if (qty) {
+                const max = parseInt(qty.max || '1');
+                if (max < 1) qty.max = 1;
+                qty.addEventListener('input', () => {
+                    let v = parseInt(qty.value || '1');
+                    if (isNaN(v) || v < 1) v = 1;
+                    if (v > parseInt(qty.max)) {
+                        v = parseInt(qty.max);
+                        showAlert('Số lượng vượt quá số slot còn lại.', true);
+                    } else {
+                        clearAlert();
+                    }
+                    qty.value = v;
+                    updateTotal();
+                });
+            }
+
+            updateTotal();
+
+            form.addEventListener('submit', async function (e) {
                 e.preventDefault();
                 clearAlert();
 
-                if (!form.reportValidity || form.reportValidity() === false) {
+                if (!form.checkValidity()) {
+                    form.reportValidity();
                     return;
                 }
 
+                // client-side available check
+                const requested = parseInt(qty.value || '1');
+                const available = parseInt(availableEl.textContent || '0');
+                if (requested > available) {
+                    showAlert(`Không đủ slot. Còn ${available} slot.`, true);
+                    return;
+                }
+
+                const original = btn.innerHTML;
                 btn.disabled = true;
-                const originalText = btn.innerText;
-                btn.innerText = 'Đang xử lý...';
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Đang xử lý...';
 
-                const formData = new FormData(form);
-                const url = '@Url.Action("CreateBooking", "EventBooking", new { area = "Client" })';
+                try {
+                    const fd = new FormData(form);
+                    const resp = await fetch('@Url.Action("CreateBooking", "EventBooking", new { area = "Client" })', {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: fd,
+                        credentials: 'same-origin'
+                    });
 
-                fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    },
-                    body: formData,
-                    credentials: 'same-origin',
-                    redirect: 'follow'
-                })
-                .then(async res => {
-                    if (res.redirected) {
-                        window.location.href = res.url;
-                        return Promise.reject(new Error('Redirected to ' + res.url));
-                    }
-
-                    const txt = await res.text();
-
-                    if (!res.ok) {
-                        const short = txt.length > 1000 ? txt.substring(0, 1000) + '...' : txt;
-                        throw new Error(short || `Server error ${res.status}`);
-                    }
-
-                    try {
-                        return JSON.parse(txt);
-                    } catch (ex) {
-                        throw new Error('Server trả về không phải JSON: ' + (txt || '[empty]'));
-                    }
-                })
-                .then(data => {
-                    if (!data) throw new Error('Không nhận được dữ liệu phản hồi.');
-                    if (!data.success) throw new Error(data.message || 'Lỗi khi đặt vé.');
-
-                    if (data.url) {
-                        window.location.href = data.url;
+                    if (resp.redirected) {
+                        window.location.href = resp.url;
                         return;
                     }
 
-                    if (data.redirectUrl) {
-                        window.location.href = data.redirectUrl;
+                    const text = await resp.text();
+                    let data;
+                    try { data = JSON.parse(text); } catch {
+                        throw new Error('Server trả về dữ liệu không hợp lệ.');
+                    }
+
+                    if (!data.success) {
+                        throw new Error(data.message || 'Booking thất bại.');
+                    }
+
+                    if (data.url || data.redirectUrl) {
+                        window.location.href = data.url || data.redirectUrl;
                         return;
                     }
 
-                    showAlert('Đặt vé thành công.', false);
-                })
-                .catch(err => {
-                    if (err && err.message && err.message.indexOf('Redirected to') === 0) {
-                        console.info(err.message);
-                        return;
-                    }
+                    showAlert('Đăng ký thành công!', false);
+
+                    const newAvailable = Math.max(0, available - requested);
+                    availableEl.textContent = newAvailable;
+                    maxSlotsEl.textContent = newAvailable;
+                    qty.max = newAvailable > 0 ? newAvailable : 1;
+                    qty.value = 1;
+                    updateTotal();
+
+                } catch (err) {
                     console.error(err);
-                    const message = (err && err.message) ? err.message : String(err);
-                    showAlert('Lỗi: ' + message);
-                })
-                .finally(() => {
+                    showAlert('Lỗi: ' + (err.message || 'Có lỗi xảy ra'), true);
+                } finally {
                     btn.disabled = false;
-                    btn.innerText = originalText;
-                });
+                    btn.innerHTML = original;
+                }
             });
         })();
     </script>

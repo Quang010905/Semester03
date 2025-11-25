@@ -2,7 +2,7 @@
 
 @if (Model == null || !Model.Any())
 {
-    <div class="alert alert-info">Không có suất chiếu trong ngày này.</div>
+    <div class="alert alert-info mb-0">No showtimes available for this day.</div>
 }
 else
 {
@@ -10,7 +10,7 @@ else
         @foreach (var s in Model)
         {
             <div class="showtime-slot" data-id="@s.Id" data-start="@s.StartTime.ToString("o")">
-                <div class="fw-semibold">@s.StartTime.ToLocalTime().ToString("HH:mm")</div>
+                <div class="fw-semibold">@s.StartTime.ToString("HH:mm")</div>
                 <div class="small text-muted">
                     @s.ScreenName
                     @if (!string.IsNullOrEmpty(s.CinemaName))
@@ -20,7 +20,10 @@ else
                 </div>
                 <div class="mt-1">@String.Format("{0:N0}", s.Price) VND</div>
                 <div class="mt-2">
-                    <a class="btn btn-sm btn-primary w-100" href="@Url.Action("SelectSeat","Booking", new { area="Client", showtimeId = s.Id })">Choose</a>
+                    <a class="btn btn-sm btn-primary w-100"
+                       href="@Url.Action("SelectSeat","Booking", new { area="Client", showtimeId = s.Id })">
+                        Select
+                    </a>
                 </div>
             </div>
         }

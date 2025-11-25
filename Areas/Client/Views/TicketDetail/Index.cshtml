@@ -1,0 +1,149 @@
+﻿@model Semester03.Areas.Client.Models.ViewModels.TicketDetailVm
+
+@{
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+    ViewData["Title"] = "Thông tin vé xem phim";
+
+    var dayOfWeek = Model.Showtime.ToString("dddd", new System.Globalization.CultureInfo("vi-VN"));
+}
+
+<style>
+    .ticket-wrapper {
+        max-width: 700px;
+        margin: auto;
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        overflow: hidden;
+    }
+
+    .ticket-header {
+        padding: 20px;
+        background: #ffe0e9;
+        font-weight: 700;
+        font-size: 1.3rem;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .ticket-header i {
+            cursor: pointer;
+        }
+
+    .ticket-poster {
+        width: 100%;
+        height: 300px;
+        object-fit: cover;
+    }
+
+    .ticket-body {
+        padding: 20px;
+        background: #fff;
+    }
+
+    .ticket-label {
+        font-size: .9rem;
+        color: #666;
+    }
+
+    .ticket-value {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #000;
+    }
+
+    .qr-box {
+        text-align: center;
+        margin-top: 15px;
+    }
+
+        .qr-box img {
+            width: 180px;
+            height: 180px;
+            border-radius: 12px;
+            background: white;
+        }
+
+    .stamp-used {
+        width: 240px;
+        opacity: 0.7;
+        position: absolute;
+        right: 20px;
+        top: 350px;
+        transform: rotate(-20deg);
+    }
+
+    .ticket-section {
+        margin-top: 15px;
+        padding: 15px;
+        background: #fafafa;
+        border-radius: 12px;
+        border: 1px solid #eee;
+    }
+</style>
+
+<div class="ticket-wrapper mt-4 mb-4 position-relative">
+
+    <div class="ticket-header">
+        <a href="javascript:history.back()">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        Thông tin vé xem phim
+    </div>
+
+    <img src="@Model.MovieImg" class="ticket-poster" />
+
+    @if (Model.IsUsed)
+    {
+        <img src="/images/stamp_used.png" class="stamp-used" />
+    }
+
+    <div class="ticket-body">
+
+        <div class="ticket-value mb-1">@Model.MovieTitle</div>
+        <div class="ticket-label mb-3">@Model.Genre - @Model.Duration phút</div>
+
+        <div class="ticket-section">
+            <div class="ticket-label">Mã đặt vé:</div>
+            <div class="ticket-value">@Model.TicketId</div>
+
+            <div class="ticket-label mt-3">Thời gian:</div>
+            <div class="ticket-value" style="color:#e00063">
+                @Model.Showtime.ToString("HH:mm") - @Model.EndTime.ToString("HH:mm")
+            </div>
+            <div class="ticket-value">
+                @dayOfWeek, @Model.Showtime.ToString("dd/MM/yyyy")
+            </div>
+
+            <div class="qr-box mt-3">
+                <img src="@Model.QRCodeUrl" />
+            </div>
+
+            <div class="ticket-label mt-2 text-center">
+                Đưa mã này cho nhân viên soát vé để vào rạp
+            </div>
+        </div>
+
+        <div class="ticket-section">
+            <div class="row text-center">
+                <div class="col">
+                    <div class="ticket-label">Phòng chiếu</div>
+                    <div class="ticket-value">@Model.Screen</div>
+                </div>
+                <div class="col">
+                    <div class="ticket-label">Số ghế</div>
+                    <div class="ticket-value">@Model.Seat</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ticket-section">
+            <div class="ticket-label">Rạp chiếu</div>
+            <div class="ticket-value">@Model.TheaterName</div>
+            <div>@Model.TheaterAddress</div>
+        </div>
+    </div>
+
+</div>

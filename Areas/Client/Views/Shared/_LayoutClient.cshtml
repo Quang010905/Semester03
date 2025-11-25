@@ -1,655 +1,737 @@
-@*
-  _LayoutClient.cshtml
-  Full layout for Mall website - VIP Pro style
-  - Responsive, animated, modern design
-  - AJAX logout
+﻿@* _LayoutClient.cshtml
+   Full layout for Mall website - Modern Premium + Colorful Shopping
 *@
 @inject Semester03.Models.Repositories.TenantRepository _tenantRepo
 @inject Semester03.Models.Repositories.EventRepository _event_repo
+@using Semester03.Areas.Client.Models.ViewModels
+@inject Semester03.Models.Repositories.TenantRepository _tenantRepo
+@inject Semester03.Models.Repositories.EventRepository _event_repo
 @{
-	var hideCenterMainFlag = (ViewData["HideCenterMain"] as bool?) ?? false;
-	var routeController = (ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty);
-	var routeAction = (ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty);
+    var hideCenterMainFlag = (ViewData["HideCenterMain"] as bool?) ?? false;
+    var routeController = (ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty);
+    var routeAction = (ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty);
 
-	var isCinemaIndexRoute = string.Equals(routeController, "Cinema", System.StringComparison.OrdinalIgnoreCase)
-								&& string.Equals(routeAction, "Index", System.StringComparison.OrdinalIgnoreCase);
+    var isCinemaIndexRoute =
+        string.Equals(routeController, "Cinema", System.StringComparison.OrdinalIgnoreCase)
+        && string.Equals(routeAction, "Index", System.StringComparison.OrdinalIgnoreCase);
 
-	// Chỉ ẩn khi developer bật flag và route hiện tại là Cinema/Index
-	var hideCenterMain = hideCenterMainFlag && isCinemaIndexRoute;
+    // Only hide hero+main when flag is true and current route is Cinema/Index
+    var hideCenterMain = hideCenterMainFlag && isCinemaIndexRoute;
 }
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<title>@ViewData["Title"] - @(ViewData["MallName"])</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - @(ViewData["MallName"])</title>
 
-	<!-- Bootstrap 5 CSS -->
-	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
-	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
-	<style>
-		:root {
-			--main-max-width: 1600px;
-			--primary-color: #0d6efd;
-			--secondary-color: #6c757d;
-			--accent-gradient: linear-gradient(90deg, #ff7a18, #af002d);
-			--card-radius: 0.75rem;
-			--shadow-lg: 0 4px 20px rgba(0,0,0,0.08);
-			--transition: all 0.3s ease-in-out;
-		}
+    <style>
+        :root {
+            --main-max-width: 1600px;
+            --primary-color: #2563eb;
+            --secondary-color: #6b7280;
+            --accent-gradient: linear-gradient(135deg, #ff7a18, #ff4b6e, #ffd166);
+            --card-radius: 0.95rem;
+            --shadow-lg: 0 18px 45px rgba(15, 23, 42, 0.12);
+            --transition: all 0.25s ease-in-out;
+        }
 
-		body {
-			font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-			background-color: #f8fafc;
-			color: #212529;
-		}
+        body {
+            font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            background: radial-gradient(circle at top, #fef3c7 0, #ffe4e6 26%, #eff6ff 55%, #f9fafb 100%);
+            color: #111827;
+        }
 
-		a, a:hover, a:focus {
-			text-decoration: none;
-		}
+        a, a:hover, a:focus {
+            text-decoration: none;
+        }
 
-		.hero {
-			background: linear-gradient(90deg, rgba(2,0,36,0.6), rgba(9,9,121,0.2)), url('/images/hero-default.jpg') center/cover no-repeat;
-			color: #fff;
-			min-height: 360px;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			text-align: center;
-			padding: 2rem 0;
-			border-radius: var(--card-radius);
-			box-shadow: var(--shadow-lg);
-		}
+        /* Top hero style used if any page uses generic hero class */
+        .hero {
+            background: linear-gradient(120deg, rgba(37, 99, 235, 0.7), rgba(236, 72, 153, 0.55)), url('/images/hero-default.jpg') center/cover no-repeat;
+            color: #fff;
+            min-height: 360px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem 0;
+            border-radius: var(--card-radius);
+            box-shadow: var(--shadow-lg);
+        }
 
-		.search-box {
-			background: rgba(255,255,255,0.95);
-			padding: .6rem 1rem;
-			border-radius: var(--card-radius);
-			box-shadow: var(--shadow-lg);
-			transition: var(--transition);
-		}
+        .search-box {
+            background: rgba(255, 255, 255, 0.98);
+            padding: .6rem 1rem;
+            border-radius: 999px;
+            box-shadow: 0 14px 45px rgba(15, 23, 42, 0.12);
+            transition: var(--transition);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
 
-			.search-box:hover {
-				box-shadow: 0 6px 25px rgba(0,0,0,0.12);
-			}
+            .search-box:hover {
+                box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
+                transform: translateY(-1px);
+            }
 
-		.mall-nav .nav-link {
-			color: #333;
-			font-weight: 500;
-			transition: var(--transition);
-		}
+        .mall-nav .nav-link {
+            color: #0f172a;
+            font-weight: 500;
+            transition: var(--transition);
+            position: relative;
+            padding-bottom: .3rem;
+        }
 
-			.mall-nav .nav-link:hover,
-			.mall-nav .nav-link.active {
-				color: var(--primary-color);
-				font-weight: 600;
-			}
+            .mall-nav .nav-link::after {
+                content: '';
+                position: absolute;
+                left: 0;
+                bottom: 0;
+                width: 0;
+                height: 2px;
+                border-radius: 999px;
+                background-image: var(--accent-gradient);
+                transition: width 0.2s ease;
+            }
 
-		.store-card {
-			border-radius: var(--card-radius);
-			overflow: hidden;
-			transition: var(--transition);
-		}
+            .mall-nav .nav-link:hover::after,
+            .mall-nav .nav-link.active::after {
+                width: 75%;
+            }
 
-			.store-card img {
-				object-fit: cover;
-				height: 160px;
-				width: 100%;
-				transition: var(--transition);
-			}
+            .mall-nav .nav-link:hover,
+            .mall-nav .nav-link.active {
+                color: #111827;
+                font-weight: 600;
+            }
 
-			.store-card:hover img {
-				transform: scale(1.05);
-			}
+        .store-card {
+            border-radius: var(--card-radius);
+            overflow: hidden;
+        }
 
-			.store-card:hover {
-				box-shadow: var(--shadow-lg);
-			}
+            .store-card img {
+                object-fit: cover;
+                height: 160px;
+                width: 100%;
+            }
 
-		.category-icon {
-			width: 56px;
-			height: 56px;
-			object-fit: cover;
-			border-radius: var(--card-radius);
-			transition: var(--transition);
-		}
+        .category-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--card-radius);
+        }
 
-			.category-icon:hover {
-				transform: scale(1.1);
-			}
+        .badge-promo {
+            background: var(--accent-gradient);
+            color: #fff;
+        }
 
-		.badge-promo {
-			background: var(--accent-gradient);
-			color: #fff;
-		}
+        footer {
+            background: #020617;
+            color: #cbd5f5;
+            padding: 3rem 0;
+            font-size: 0.9rem;
+        }
 
-		footer {
-			background: #0b1221;
-			color: #cfe3ff;
-			padding: 3rem 0;
-			font-size: 0.9rem;
-		}
+        .sticky-top-shadow {
+            box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
+        }
 
-		.sticky-top-shadow {
-			box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-		}
+        .content-maxwide {
+            max-width: var(--main-max-width);
+            margin: auto;
+            padding: 0 1rem;
+        }
 
-		.content-maxwide {
-			max-width: var(--main-max-width);
-			margin: auto;
-			padding: 0 1rem;
-		}
+        .user-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+        }
 
-		.user-badge {
-			display: inline-flex;
-			align-items: center;
-			gap: .5rem;
-		}
+        .hover-scale:hover {
+            transform: scale(1.03);
+            transition: var(--transition);
+        }
 
-		.hover-scale:hover {
-			transform: scale(1.03);
-			transition: var(--transition);
-		}
+        #featuredStoresCarousel .carousel-inner {
+            padding: 0 1rem;
+        }
 
-		.carousel-indicators [data-bs-target] {
-			background-color: var(--primary-color);
-			opacity: 0.7;
-		}
+        #featuredStoresCarousel .carousel-control-prev,
+        #featuredStoresCarousel .carousel-control-next {
+            width: 3%;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.7;
+        }
 
-			.carousel-indicators [data-bs-target].active {
-				opacity: 1;
-			}
+            #featuredStoresCarousel .carousel-control-prev:hover,
+            #featuredStoresCarousel .carousel-control-next:hover {
+                opacity: 1;
+            }
 
-		#featuredStoresCarousel .carousel-inner {
-			padding: 0 1rem;
-		}
+        #featuredStoresCarousel .carousel-control-prev-icon,
+        #featuredStoresCarousel .carousel-control-next-icon {
+            background-size: 2rem 2rem;
+        }
 
-		#featuredStoresCarousel .carousel-control-prev,
-		#featuredStoresCarousel .carousel-control-next {
-			width: 3%;
-			top: 50%;
-			transform: translateY(-50%);
-			opacity: 0.7;
-		}
+        input, select, button {
+            transition: var(--transition);
+        }
 
-			#featuredStoresCarousel .carousel-control-prev:hover,
-			#featuredStoresCarousel .carousel-control-next:hover {
-				opacity: 1;
-			}
+            button:hover {
+                transform: translateY(-1px);
+            }
 
-		#featuredStoresCarousel .carousel-control-prev-icon,
-		#featuredStoresCarousel .carousel-control-next-icon {
-			background-size: 2rem 2rem;
-		}
+        @@media (max-width: 767px) {
+            .hero {
+                min-height: 220px;
+                padding: 1rem 0;
+            }
 
-		input, select, button {
-			transition: var(--transition);
-		}
+            .mall-nav {
+                flex-direction: column;
+                gap: .25rem;
+            }
+        }
 
-			button:hover {
-				transform: scale(1.02);
-			}
+        @@media (min-width: 1200px) {
+            .col-lg-10 {
+                flex: 0 0 83.333333%;
+                max-width: 83.333333%;
+            }
 
-		@@media (max-width: 767px) {
-			.hero {
-				min-height: 220px;
-				padding: 1rem 0;
-			}
+            .col-lg-2 {
+                flex: 0 0 16.666667%;
+                max-width: 16.666667%;
+            }
+        }
 
-			.mall-nav {
-				flex-direction: column;
-				gap: .25rem;
-			}
-		}
+        @@media (min-width: 1600px) {
+            :root {
+                --main-max-width: 1800px;
+            }
+        }
 
-		@@media (min-width: 1200px) {
-			.col-lg-10 {
-				flex: 0 0 83.333333%;
-				max-width: 83.333333%;
-			}
+        @@media (min-width: 768px) {
+            .mall-nav .dropdown:hover > .dropdown-menu {
+                display: block;
+                margin-top: 0;
+            }
 
-			.col-lg-2 {
-				flex: 0 0 16.666667%;
-				max-width: 16.666667%;
-			}
-		}
+            .mall-nav .dropdown-menu {
+                pointer-events: auto;
+            }
+        }
 
-		@@media (min-width: 1600px) {
-			:root {
-				--main-max-width: 1800px;
-			}
-		}
+        /* layout grid: main + sidebar */
+        .layout-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 340px;
+            gap: 1.25rem;
+            align-items: start;
+        }
 
-		@@media (min-width: 768px) {
-			.mall-nav .dropdown:hover > .dropdown-menu {
-				display: block;
-				margin-top: 0;
-			}
+            .layout-grid .main-col {
+                align-self: start;
+            }
 
-			.mall-nav .dropdown-menu {
-				pointer-events: auto;
-			}
-		}
+            .layout-grid .sidebar-col {
+                width: 340px;
+            }
 
-		/* layout grid: main + sidebar */
-		.layout-grid {
-			display: grid;
-			grid-template-columns: minmax(0, 1fr) 340px;
-			gap: 1.25rem;
-			align-items: start;
-		}
+        @@media (max-width: 991px) {
+            .layout-grid {
+                grid-template-columns: 1fr;
+            }
 
-			.layout-grid .main-col {
-				align-self: start;
-			}
+                .layout-grid .sidebar-col {
+                    width: auto;
+                }
+        }
 
-			.layout-grid .sidebar-col {
-				width: 340px;
-			}
+        /* Upcoming events vertical scroll box */
+        .small-event-slider {
+            height: 520px;
+            max-height: 520px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: .6rem;
+            background: #ffffff;
+            border-radius: .9rem;
+            box-shadow: 0 16px 45px rgba(15, 23, 42, 0.10);
+        }
 
-		@@media (max-width: 991px) {
-			.layout-grid {
-				grid-template-columns: 1fr;
-			}
+            .small-event-slider .slider-track {
+                display: block;
+            }
 
-				.layout-grid .sidebar-col {
-					width: auto;
-				}
-		}
+            .small-event-slider .slider-item {
+                display: block;
+                margin-bottom: .75rem;
+            }
 
-		/* ===== Upcoming events: vertical scroll inside box ===== */
-		.small-event-slider {
-			height: 520px; /* fixed height so inner scroll is visible */
-			max-height: 520px;
-			overflow-y: auto; /* vertical scroll inside the box */
-			-webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
-			padding: .6rem;
-			background: #fff;
-			border-radius: .75rem;
-			box-shadow: 0 8px 28px rgba(2,6,23,0.06);
-		}
+            .small-event-slider .small-card {
+                display: flex;
+                gap: .75rem;
+                align-items: flex-start;
+                padding: .55rem;
+                border-radius: .75rem;
+                transition: transform .12s ease, box-shadow .12s ease, background .15s ease;
+                background: linear-gradient(135deg, #f9fafb, #ffffff);
+                border: 1px solid rgba(226, 232, 240, 0.8);
+            }
 
-			.small-event-slider .slider-track {
-				display: block;
-			}
+                .small-event-slider .small-card:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 22px 45px rgba(15, 23, 42, 0.16);
+                    background: #ffffff;
+                }
 
-			.small-event-slider .slider-item {
-				display: block;
-				margin-bottom: .75rem;
-			}
+            .small-event-slider .small-poster {
+                width: 120px;
+                height: 90px;
+                object-fit: cover;
+                border-radius: .75rem;
+                flex-shrink: 0;
+                box-shadow: 0 14px 30px rgba(15, 23, 42, 0.35);
+            }
 
-			.small-event-slider .small-card {
-				display: flex;
-				gap: .75rem;
-				align-items: flex-start;
-				padding: .5rem;
-				border-radius: .5rem;
-				transition: transform .12s ease, box-shadow .12s ease;
-				background: transparent;
-			}
+            .small-event-slider .small-card-body {
+                flex: 1;
+            }
 
-				.small-event-slider .small-card:hover {
-					transform: translateY(-4px);
-					box-shadow: 0 10px 26px rgba(2,6,23,0.06);
-					background: #fff;
-				}
+            .small-event-slider .small-title {
+                font-size: .95rem;
+                font-weight: 700;
+                margin-bottom: .25rem;
+            }
 
-			.small-event-slider .small-poster {
-				width: 120px;
-				height: 90px;
-				object-fit: cover;
-				border-radius: .5rem;
-				flex-shrink: 0;
-			}
+            .small-event-slider .small-meta {
+                color: #6b7280;
+                font-size: .82rem;
+                margin-bottom: .5rem;
+            }
 
-			.small-event-slider .small-card-body {
-				flex: 1;
-			}
+        @@media (min-width: 768px) {
+            .small-event-slider::-webkit-scrollbar {
+                width: 10px;
+            }
 
-			.small-event-slider .small-title {
-				font-size: .95rem;
-				font-weight: 700;
-				margin-bottom: .25rem;
-			}
+            .small-event-slider::-webkit-scrollbar-thumb {
+                background: rgba(148, 163, 184, 0.6);
+                border-radius: 999px;
+            }
 
-			.small-event-slider .small-meta {
-				color: #6b7280;
-				font-size: .85rem;
-				margin-bottom: .5rem;
-			}
+            .small-event-slider {
+                scrollbar-gutter: stable;
+            }
+        }
 
-		/* Desktop scrollbar style to provide visual affordance */
-		@@media (min-width: 768px) {
-			.small-event-slider::-webkit-scrollbar {
-				width: 10px;
-			}
+        @@media (max-width: 767px) {
+            .small-event-slider {
+                height: auto;
+                max-height: none;
+                overflow-y: visible;
+                padding: .5rem 0;
+                box-shadow: none;
+            }
 
-			.small-event-slider::-webkit-scrollbar-thumb {
-				background: rgba(0,0,0,0.08);
-				border-radius: 8px;
-			}
+                .small-event-slider .small-card {
+                    padding: .35rem;
+                }
 
-			.small-event-slider {
-				scrollbar-gutter: stable;
-			}
-		}
+            .layout-grid .sidebar-col {
+                order: 2;
+            }
+        }
+    </style>
 
-		/* On small screens, let slider auto height (no fixed height) to avoid taking too much space */
-		@@media (max-width: 767px) {
-			.small-event-slider {
-				height: auto;
-				max-height: none;
-				overflow-y: visible;
-				padding: .5rem 0;
-				box-shadow: none;
-			}
-
-				.small-event-slider .small-card {
-					padding: .35rem;
-				}
-
-			.layout-grid .sidebar-col {
-				order: 2;
-			}
-			/* keep sidebar below main on small screens */
-		}
-	</style>
-
-	@RenderSection("Styles", required: false)
+    @RenderSection("Styles", required: false)
 </head>
 <body>
-	<!-- Header / Topbar -->
-	<header class="bg-white sticky-top sticky-top-shadow">
-		<div class="container">
-			<div class="d-flex align-items-center justify-content-between py-2">
-				<div class="d-flex align-items-center">
-					<a class="d-flex align-items-center text-decoration-none" href="@Url.Action("Index", "Home", new { area = "Client" })">
-						<img src="/images/logo.png" alt="logo" style="height:48px; width:auto;" />
-						<div class="ms-2">
-							<div style="font-weight:700; font-size:1.05rem;">@ViewData["MallName"]</div>
-							<small class="text-muted">@(ViewData["MallAddress"] ?? "123 Main Street")</small>
-						</div>
-					</a>
-				</div>
+    <!-- Header / Topbar -->
+    <header class="bg-white sticky-top sticky-top-shadow">
+        <div class="container">
+            <div class="d-flex align-items-center justify-content-between py-2">
+                <div class="d-flex align-items-center">
+                    <a class="d-flex align-items-center text-decoration-none"
+                       href="@Url.Action("Index", "Home", new { area = "Client" })">
+                        <img src="/images/logo.png" alt="logo" style="height:48px; width:auto;" />
+                        <div class="ms-2">
+                            <div style="font-weight:700; font-size:1.05rem;">
+                                @ViewData["MallName"]
+                            </div>
+                            <small class="text-muted">
+                                @(ViewData["MallAddress"] ?? "123 Main Street")
+                            </small>
+                        </div>
+                    </a>
+                </div>
 
-				<nav class="d-none d-md-flex align-items-center gap-3 mall-nav">
-					<div class="nav-item dropdown">
-						<a class="nav-link" href="@Url.Action("Index", "Stores", new { area = "Client" })" id="storesDropdown" role="button">Stores</a>
-						<ul class="dropdown-menu" aria-labelledby="storesDropdown">
-							@foreach (var type in ViewBag.StoreTypes as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>())
-							{
-								<li>
-									<a class="dropdown-item" href="@Url.Action("Index", "Stores", new { area = "Client", typeId = type.Id })">@type.Name</a>
-								</li>
-							}
-						</ul>
-					</div>
-					<a class="nav-link" href="@Url.Action("Index", "Cinema", new { area = "Client" })">Cinema</a>
-					<a class="nav-link" href="@Url.Action("Index", "Map", new { area = "Client" })">Map</a>
-					<a class="nav-link" href="@Url.Action("Entertainment", "Mall", new { area = "Client" })">Entertainment</a>
-					<a class="nav-link" href="@Url.Action("Index", "Event", new { area = "Client" })">Events</a>
-					<a class="nav-link" href="@Url.Action("Promotions", "Mall", new { area = "Client" })">Promotions</a>
-					<a class="nav-link" href="@Url.Action("Contact", "Home", new { area = "Client" })">Contact</a>
-				</nav>
+                <nav class="d-none d-md-flex align-items-center gap-3 mall-nav">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link" href="@Url.Action("Index", "Stores", new { area = "Client" })"
+                           id="storesDropdown" role="button">
+                            Stores
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="storesDropdown">
+                            @foreach (var type in ViewBag.StoreTypes as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>())
+                            {
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="@Url.Action("Index", "Stores", new { area = "Client", typeId = type.Id })">
+                                        @type.Name
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                    <a class="nav-link" href="@Url.Action("Index", "Cinema", new { area = "Client" })">Cinema</a>
+                    <a class="nav-link" href="@Url.Action("Index", "Map", new { area = "Client" })">Map</a>
+                    <a class="nav-link" href="@Url.Action("Entertainment", "Mall", new { area = "Client" })">Entertainment</a>
+                    <a class="nav-link" href="@Url.Action("Index", "Event", new { area = "Client" })">Events</a>
+                    <a class="nav-link" href="@Url.Action("Index", "TenantPromotion", new { area = "Client" })">Promotions</a>
+                    <a class="nav-link" href="@Url.Action("Contact", "Home", new { area = "Client" })">Contact</a>
+                </nav>
 
-				<div class="d-flex align-items-center gap-2">
-					<!-- Notifications dropdown -->
-					<div class="dropdown">
-						<button class="btn btn-sm btn-outline-secondary position-relative" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-							<i class="bi bi-bell"></i>
-							@if (ViewBag.UnreadNotificationsCount != null && (int)ViewBag.UnreadNotificationsCount > 0)
-							{
-								<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">@ViewBag.UnreadNotificationsCount</span>
-							}
-						</button>
-						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notifDropdown" style="width:320px;">
-							<li class="dropdown-header">Notifications</li>
-							<li>@await Html.PartialAsync("_NotificationsPartial")</li>
-							<li><hr class="dropdown-divider" /></li>
-							<li><a class="dropdown-item text-center" href="@Url.Action("Notifications", "Account", new { area = "Client" })">View all</a></li>
-						</ul>
-					</div>
+                <div class="d-flex align-items-center gap-2">
 
-					<!-- Account area -->
-					<div id="accountArea">
-						@if (User?.Identity?.IsAuthenticated == true)
-						{
-							var name = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? User.Identity.Name ?? "User";
-							<div class="user-badge" id="userBadge">
-								<span class="small text-muted">Xin chào,</span>
-								<strong class="me-2">@name</strong>
+                    @* Chỉ hiện icon profile khi đã đăng nhập *@
+                    @if (User?.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="dropdown me-2">
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    id="profileDropdown"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                <i class="bi bi-person-circle"></i>
+                            </button>
 
-								<!-- NOTE: dùng id headerLogoutForm/headerLogoutBtn để tránh trùng id -->
-								<form id="headerLogoutForm" method="post"
-									  asp-area="Client" asp-controller="Account" asp-action="Logout"
-									  class="m-0 d-inline">
-									@Html.AntiForgeryToken()
-									<button id="headerLogoutBtn" type="button" class="btn btn-sm btn-outline-secondary">Logout</button>
-								</form>
-							</div>
-						}
-						else
-						{
-							<a id="loginLink" class="btn btn-sm btn-outline-primary" href="@Url.Action("Login", "Account", new { area = "Client" })">Login</a>
-						}
-					</div>
-				</div>
-			</div>
-		</div>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
 
-		<!-- Secondary nav (search) -->
-		<nav class="bg-light border-top border-bottom">
-			<div class="container d-flex align-items-center py-2 gap-3">
-				<form class="flex-grow-1" method="get" action="@Url.Action("Search", "Mall", new { area = "Client" })" role="search">
-					<div class="input-group search-box">
-						<input type="search" name="q" class="form-control" placeholder="Search stores, food, events, movies..." aria-label="Search" value="@(ViewData["SearchQuery"] ?? "")" />
-						<select name="type" class="form-select d-none d-lg-block" style="max-width:220px;">
-							<option value="">All</option>
-							<option value="store">Store</option>
-							<option value="dining">Dining</option>
-							<option value="event">Event</option>
-							<option value="movie">Movie</option>
-							<option value="promo">Promotion</option>
-						</select>
-						<button class="btn btn-primary" type="submit">Search</button>
-					</div>
-				</form>
-			</div>
-		</nav>
-	</header>
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="@Url.Action("Profile", "Profile", new { area = "Client" })">
+                                        View Profile
+                                    </a>
+                                </li>
 
-	@* Nếu hideCenterMain = true và route là Cinema/Index thì layout sẽ không render phần Hero + Main (vùng chứa RenderBody) *@
-	@if (!hideCenterMain)
-	{
-		<!-- Hero area -->
-		<section>@await Html.PartialAsync("_Hero")</section>
+                                <!-- ⭐ NEW: My Tickets -->
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="@Url.Action("MyTickets", "Ticket", new { area = "Client" })">
+                                        Vé của tôi
+                                    </a>
+                                </li>
 
-		<!-- Main content -->
-		<main class="container-fluid my-4">
-			<div class="content-maxwide">
-				<div class="layout-grid">
-					<div class="main-col">
-						@RenderBody()
-					</div>
+                                <!-- ⭐ NEW: My Complaints -->
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="@Url.Action("MyComplaints", "Complaint", new { area = "Client" })">
+                                        Khiếu nại
+                                    </a>
+                                </li>
 
-					<aside class="sidebar-col">
-						<div class="mb-4">
-							<div class="d-flex align-items-center justify-content-between mb-2">
-								<h6 class="mb-0">Categories</h6>
-								<a class="small" href="@Url.Action("Categories", "Mall", new { area = "Client" })">All</a>
-							</div>
-							@await Html.PartialAsync("_CategoriesPartial")
-						</div>
+                                <li><hr class="dropdown-divider" /></li>
 
-						@{
-							// Lấy top upcoming events để hiển thị trong sidebar
-							var topEvents = await _event_repo.GetUpcomingEventsAsync(12);
+                                <li>
+                                    <form method="post"
+                                          asp-area="Client"
+                                          asp-controller="Account"
+                                          asp-action="Logout"
+                                          class="m-0">
+                                        @Html.AntiForgeryToken()
+                                        <button class="dropdown-item text-danger">Logout</button>
+                                    </form>
+                                </li>
+                            </ul>
 
-							// helper để chuẩn hóa đường dẫn ảnh (dùng chung với các view khác)
-							Func<string, string> Img = (raw) =>
-							{
-								if (string.IsNullOrWhiteSpace(raw))
-								{
-									return Url.Content("~/images/event-placeholder.png");
-								}
+                        </div>
+                    }
 
-								// Nếu là URL tuyệt đối (http/https) -> trả thẳng
-								if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-								{
-									return raw;
-								}
+                    <!-- Notifications dropdown (giữ nguyên, chỉ còn 1 bản) -->
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary position-relative"
+                                id="notifDropdown"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                            <i class="bi bi-bell"></i>
+                            @if (ViewBag.UnreadNotificationsCount != null && (int)ViewBag.UnreadNotificationsCount > 0)
+                            {
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    @ViewBag.UnreadNotificationsCount
+                                </span>
+                            }
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end"
+                            aria-labelledby="notifDropdown"
+                            style="width:320px;">
+                            <li class="dropdown-header">Notifications</li>
+                            <li>@await Html.PartialAsync("_NotificationsPartial")</li>
+                            <li><hr class="dropdown-divider" /></li>
+                            <li>
+                                <a class="dropdown-item text-center"
+                                   href="@Url.Action("Notifications", "Account", new { area = "Client" })">
+                                    View all notifications
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
 
-								// Loại bỏ wwwroot/ nếu có và bỏ ~ hoặc / ở đầu
-								var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
+                    <!-- Account area -->
+                    <div id="accountArea">
+                        @if (User?.Identity?.IsAuthenticated == true)
+                        {
+                            var name = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
+                            ?? User.Identity.Name ?? "User";
 
-								// Encode spaces (không encode '/')
-								s = s.Replace(" ", "%20");
+                            <div class="user-badge" id="userBadge">
+                                <span class="small text-muted">Hello,</span>
+                                <strong class="me-2">@name</strong>
 
-								// Nếu đã bắt đầu bằng "Content/..." (DB lưu đường dẫn tương đối từ wwwroot)
-								if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase))
-								{
-									return Url.Content("~/" + s);
-								}
+                                <!-- Giữ nguyên form logout + JS -->
+                                <form id="headerLogoutForm"
+                                      method="post"
+                                      asp-area="Client"
+                                      asp-controller="Account"
+                                      asp-action="Logout"
+                                      class="m-0 d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button id="headerLogoutBtn"
+                                            type="button"
+                                            class="btn btn-sm btn-outline-secondary">
+                                        Logout
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                        else
+                        {
+                            <a id="loginLink"
+                               class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                               href="@Url.Action("Login", "Account", new { area = "Client" })">
+                                Login
+                            </a>
+                        }
+                    </div>
+                </div>
 
-								// Nếu bắt đầu với "images/..." hoặc admin path
-								if (s.StartsWith("images", StringComparison.OrdinalIgnoreCase) || s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
-								{
-									return Url.Content("~/" + s);
-								}
+            </div>
+        </div>
 
-								// Nếu raw bắt đầu bằng '/' -> dùng trực tiếp
-								if (raw.StartsWith("/"))
-								{
-									return Url.Content("~" + raw);
-								}
+        <!-- Secondary nav (search) -->
+        <nav class="bg-light border-top border-bottom">
+            <div class="container d-flex align-items-center py-2 gap-3">
+                <form class="flex-grow-1"
+                      method="get"
+                      action="@Url.Action("Search", "Mall", new { area = "Client" })"
+                      role="search">
+                    <div class="input-group search-box">
+                        <span class="input-group-text bg-transparent border-0 ps-1 pe-0">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="search"
+                               name="q"
+                               class="form-control border-0"
+                               placeholder="Search stores, dining, events, movies..."
+                               aria-label="Search"
+                               value="@(ViewData["SearchQuery"] ?? "")" />
+                        <select name="type"
+                                class="form-select d-none d-lg-block border-0"
+                                style="max-width:220px;">
+                            <option value="">All</option>
+                            <option value="store">Store</option>
+                            <option value="dining">Dining</option>
+                            <option value="event">Event</option>
+                            <option value="movie">Movie</option>
+                            <option value="promo">Promotion</option>
+                        </select>
+                        <button class="btn btn-primary rounded-pill px-4" type="submit">
+                            Search
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </nav>
+    </header>
 
-								// Mặc định: coi như filename lưu trong wwwroot/Content/Uploads/Events/
-								return Url.Content("~/Content/Uploads/Events/" + s);
-							};
-						}
+    @* When hideCenterMain = true and route is Cinema/Index, layout skips Hero + Main *@
+    @if (!hideCenterMain)
+    {
+        <!-- Hero area -->
+        <section>
+            @await Html.PartialAsync("_Hero")
+        </section>
 
-						<div class="mb-4">
-							<div class="d-flex align-items-center justify-content-between mb-2">
-								<h6 class="mb-0">Upcoming events</h6>
-								<a class="nav-link" href="@Url.Action("Index", "Event", new { area = "Client" })">Events</a>
-							</div>
+        <!-- Main content -->
+        <main class="container-fluid my-4">
+            <div class="content-maxwide">
+                <div class="layout-grid">
+                    <div class="main-col">
+                        @RenderBody()
+                    </div>
 
-							<!-- vertical scroll box -->
-							<div class="slider-wrapper small-event-slider mb-2">
-								<div class="slider-track">
-									@foreach (var e in topEvents ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.EventCardVm>())
-									{
-										var imgUrl = Img(e.ImageUrl);
-										var start = e.StartDate.HasValue ? e.StartDate.Value.ToString("dd MMM HH:mm") : "--";
-										<div class="slider-item">
-											<div class="card movie-card event-card position-relative h-100 small-card">
-												<img src="@imgUrl"
-													 class="movie-poster card-img-top small-poster"
-													 alt="@(e.Title ?? "Event")" />
-												<div class="small-card-body" style="flex:1">
-													<div class="small-title">@(!string.IsNullOrWhiteSpace(e.Title) ? e.Title : "Event")</div>
-													<div class="small-meta text-muted">@start</div>
-													<div class="mt-2">
-														<a class="btn btn-sm btn-light" href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">View</a>
-													</div>
-												</div>
-											</div>
-										</div>
-									}
-								</div>
-							</div>
-						</div>
+                    <aside class="sidebar-col">
 
-						<div class="mb-4">
-							<div class="d-flex align-items-center justify-content-between mb-2">
-								<h6 class="mb-0">Cinema</h6>
-								<a class="small" href="@Url.Action("Cinema", "Mall", new { area = "Client" })">Showtimes</a>
-							</div>
-							@await Html.PartialAsync("_CinemaPartial")
-						</div>
+                        @{
+                            // Get top upcoming events for sidebar
+                            var topEvents = await _event_repo.GetUpcomingEventsAsync(12);
 
-						<div class="mb-4">
-							<div class="p-3 bg-light rounded">
-								<h6>Promotions</h6>
-								<ul class="list-unstyled small mb-0">@await Html.PartialAsync("_PromotionsPartial")</ul>
-							</div>
-						</div>
-					</aside>
-				</div>
-			</div>
-		</main>
-	}
+                            Func<string, string> Img = (raw) =>
+                            {
+                                if (string.IsNullOrWhiteSpace(raw))
+                                    return Url.Content("~/images/event-placeholder.png");
 
-	<!-- Footer -->
-	<footer class="mt-5">
-		<div class="container">@await Html.PartialAsync("_Footer")</div>
-	</footer>
+                                if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                                    return raw;
 
-	<!-- Bootstrap JS -->
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+                                var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
+                                s = s.Replace(" ", "%20");
 
-	<script>
-		(function () {
-			// Các id phải trùng với phần HTML ở trên
-			var logoutBtn = document.getElementById('headerLogoutBtn');
-			var logoutForm = document.getElementById('headerLogoutForm');
-			var accountArea = document.getElementById('accountArea');
+                                if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase))
+                                    return Url.Content("~/" + s);
 
-			if (!logoutBtn || !logoutForm || !accountArea) return;
+                                if (s.StartsWith("images", StringComparison.OrdinalIgnoreCase) ||
+                                    s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
+                                    return Url.Content("~/" + s);
 
-			// URL tuyệt đối tạo bởi server (an toàn hơn lấy từ form.action)
-			var logoutUrl = '@Url.Action("Logout", "Account", new { area = "Client" })';
+                                if (raw.StartsWith("/"))
+                                    return Url.Content("~" + raw);
 
-			logoutBtn.addEventListener('click', function () {
-				try {
-					// Lấy antiforgery token input (tên mặc định: __RequestVerificationToken)
-					var tokenInput = logoutForm.querySelector('input[name="__RequestVerificationToken"]');
-					var tokenValue = tokenInput ? tokenInput.value : null;
+                                return Url.Content("~/Content/Uploads/Events/" + s);
+                            };
+                        }
 
-					// Build body (urlencoded)
-					var params = new URLSearchParams();
-					if (tokenValue) params.append('__RequestVerificationToken', tokenValue);
+                        @if (ViewData.Model is CinemaHomeVm cinemaModel)
+                        {
+                            <div class="mb-4">
+                                <div class="p-3 bg-white rounded shadow-sm">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <h6 class="mb-0">Coupon</h6>
+                                    </div>
+                                    @await Html.PartialAsync("_CouponPartial", cinemaModel)
+                                </div>
+                            </div>
+                        }
 
-					// ALSO send token in header (ASP.NET Core supports header approach too)
-					var headers = {
-						'Content-Type': 'application/x-www-form-urlencoded',
-						'X-Requested-With': 'XMLHttpRequest'
-					};
-					if (tokenValue) headers['RequestVerificationToken'] = tokenValue;
+                        <div class="mb-4">
+                            <div class="d-flex align-items-center justify-content-between mb-2"></div>
+                            <h6>Event</h6>
+                            <!-- Vertical scroll box -->
+                            <div class="slider-wrapper small-event-slider mb-2">
+                                <div class="slider-track">
+                                    @foreach (var e in topEvents ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.EventCardVm>())
+                                    {
+                                        var imgUrl = Img(e.ImageUrl);
+                                        var start = e.StartDate.HasValue
+                                        ? e.StartDate.Value.ToString("dd MMM HH:mm")
+                                        : "--";
 
-					fetch(logoutUrl, {
-						method: 'POST',
-						credentials: 'same-origin',
-						headers: headers,
-						body: params.toString()
-					}).then(function (resp) {
-						// Nếu server trả 200/204 -> thành công, reload để server render header mới
-						if (resp.ok) {
-							// optional: clear any client-side stored user UI quickly (not required)
-							// accountArea.innerHTML = '<a id="loginLink" class="btn btn-sm btn-outline-primary" href="@Url.Action("Login", "Account", new { area = "Client" })">Login</a>';
-							// Sau khi sign-out server-side, reload để header reflect state
-							window.location.reload();
-							return;
-						}
+                                        <div class="slider-item">
+                                            <div class="card movie-card event-card position-relative h-100 small-card">
+                                                <img src="@imgUrl"
+                                                     class="movie-poster card-img-top small-poster"
+                                                     alt="@(e.Title ?? "Event")" />
+                                                <div class="small-card-body" style="flex:1">
+                                                    <div class="small-title">
+                                                        @(!string.IsNullOrWhiteSpace(e.Title) ? e.Title : "Event")
+                                                    </div>
+                                                    <div class="small-meta text-muted">@start</div>
+                                                    <div class="mt-2">
+                                                        <a class="btn btn-sm btn-light rounded-pill px-3"
+                                                           href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">
+                                                            View details
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
 
-						// Nếu server trả lỗi (token invalid / 405 / etc) -- fallback: submit form (normal POST)
-						console.warn('AJAX logout failed (status ' + resp.status + '), falling back to normal submit');
-						logoutForm.submit();
-					}).catch(function (err) {
-						console.error('AJAX logout error:', err);
-						logoutForm.submit();
-					});
-				} catch (e) {
-					console.error('Logout script exception', e);
-					logoutForm.submit();
-				}
-			});
-		})();
-	</script>
+                        <div class="mb-4">
+                            <div class="p-3 bg-light rounded">
+                                <h6>Promotions</h6>
+                                @* Removed extra <ul> wrapper to avoid nested UL *@
+                                @await Html.PartialAsync("_PromotionsPartial")
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </main>
+    }
 
-	@RenderSection("Scripts", required: false)
+    <!-- Footer -->
+    <footer class="mt-5">
+        <div class="container">
+            @await Html.PartialAsync("_Footer")
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- AJAX logout handling -->
+    <script>
+        (function () {
+            var logoutBtn = document.getElementById('headerLogoutBtn');
+            var logoutForm = document.getElementById('headerLogoutForm');
+
+            if (!logoutBtn || !logoutForm) return;
+
+            var logoutUrl = '@Url.Action("Logout", "Account", new { area = "Client" })';
+
+            logoutBtn.addEventListener('click', function () {
+                try {
+                    var tokenInput = logoutForm.querySelector('input[name="__RequestVerificationToken"]');
+                    var tokenValue = tokenInput ? tokenInput.value : null;
+
+                    var params = new URLSearchParams();
+                    if (tokenValue) params.append('__RequestVerificationToken', tokenValue);
+
+                    var headers = {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    };
+                    if (tokenValue) headers['RequestVerificationToken'] = tokenValue;
+
+                    fetch(logoutUrl, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: headers,
+                        body: params.toString()
+                    }).then(function (resp) {
+                        if (resp.ok) {
+                            window.location.reload();
+                            return;
+                        }
+
+                        console.warn('AJAX logout failed (status ' + resp.status + '), falling back to normal submit');
+                        logoutForm.submit();
+                    }).catch(function (err) {
+                        console.error('AJAX logout error:', err);
+                        logoutForm.submit();
+                    });
+                } catch (e) {
+                    console.error('Logout script exception', e);
+                    logoutForm.submit();
+                }
+            });
+        })();
+    </script>
+
+    @RenderSection("Scripts", required: false)
 </body>
 </html>

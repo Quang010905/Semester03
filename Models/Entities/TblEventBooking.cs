@@ -38,4 +38,5 @@ public partial class TblEventBooking
     public virtual TblTenant EventBookingTenant { get; set; } = null!;
 
     public virtual TblUser EventBookingUser { get; set; } = null!;
+
 }

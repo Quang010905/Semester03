@@ -111,14 +111,14 @@ namespace Semester03.Areas.Client.Controllers
             var authProperties = new AuthenticationProperties
             {
                 IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+                ExpiresUtc = DateTimeOffset.Now.AddDays(7)
             };
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
 
             var userIdCookieOptions = new CookieOptions
             {
-                Expires = DateTimeOffset.UtcNow.AddDays(30),
+                Expires = DateTimeOffset.Now.AddDays(30),
                 HttpOnly = false,
                 Secure = Request.IsHttps,
                 SameSite = SameSiteMode.Lax,
@@ -227,14 +227,14 @@ namespace Semester03.Areas.Client.Controllers
                 var authProperties = new AuthenticationProperties
                 {
                     IsPersistent = true,
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+                    ExpiresUtc = DateTimeOffset.Now.AddDays(7)
                 };
 
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
 
                 var userIdCookieOptions = new CookieOptions
                 {
-                    Expires = DateTimeOffset.UtcNow.AddDays(30),
+                    Expires = DateTimeOffset.Now.AddDays(30),
                     HttpOnly = false,
                     Secure = Request.IsHttps,
                     SameSite = SameSiteMode.Lax,
@@ -297,7 +297,7 @@ namespace Semester03.Areas.Client.Controllers
             Response.Cookies.Delete(authCookieName);
             Response.Cookies.Append(authCookieName, "", new CookieOptions
             {
-                Expires = DateTimeOffset.UtcNow.AddDays(-1),
+                Expires = DateTimeOffset.Now.AddDays(-1),
                 HttpOnly = true,
                 Secure = Request.IsHttps,
                 Path = "/",
@@ -307,7 +307,7 @@ namespace Semester03.Areas.Client.Controllers
             Response.Cookies.Delete("GigaMall_LastUserId");
             Response.Cookies.Append("GigaMall_LastUserId", "", new CookieOptions
             {
-                Expires = DateTimeOffset.UtcNow.AddDays(-1),
+                Expires = DateTimeOffset.Now.AddDays(-1),
                 HttpOnly = false,
                 Secure = Request.IsHttps,
                 Path = "/",

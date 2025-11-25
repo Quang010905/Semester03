@@ -1,4 +1,4 @@
-﻿namespace Semester03.Models.ViewModels
+﻿namespace Semester03.Areas.Client.Models.ViewModels
 {
     public class FeaturedStoreViewModel
     {
@@ -8,5 +8,7 @@
         public string TenantDescription { get; set; } = "";
         public string TenantTypeName { get; set; } = "";
         public string Position { get; set; } = "";
+        public double Rating { get; set; } // thêm dòng này
+
     }
 }

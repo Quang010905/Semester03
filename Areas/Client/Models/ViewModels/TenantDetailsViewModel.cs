@@ -1,33 +1,50 @@
 ﻿using System;
 using System.Collections.Generic;
 
+
 namespace Semester03.Models.ViewModels
 {
     public class TenantDetailsViewModel
     {
         public int TenantId { get; set; }
+
         public string TenantName { get; set; } = "";
-        public string? TenantImg { get; set; }      // hình ảnh cửa hàng
+        public string? TenantImg { get; set; }        // store image
         public string TenantDescription { get; set; } = "";
         public string TenantTypeName { get; set; } = "";
+
+        /// <summary>
+        /// Store location / unit code (e.g. "F1-A03").
+        /// </summary>
         public string Position { get; set; } = "";
 
-        // ✅ Rating trung bình
-        public double? AvgRate { get; set; }           // có thể null nếu chưa có comment
+        /// <summary>
+        /// Average rating (1–5). Can be null if no comments.
+        /// </summary>
+        public double? AvgRate { get; set; }
 
-        // ✅ Danh mục sản phẩm
-        public List<ProductCategoryVm> ProductCategories { get; set; } = new List<ProductCategoryVm>();
+        /// <summary>
+        /// Product categories of this tenant.
+        /// </summary>
+        public List<ProductCategoryVm> ProductCategories { get; set; } = new();
 
-        // ✅ Danh sách bình luận
-        public List<CustomerCommentVm> Comments { get; set; } = new List<CustomerCommentVm>();
+        /// <summary>
+        /// List of customer comments.
+        /// </summary>
+        public List<CustomerCommentVm> Comments { get; set; } = new();
+
+        /// <summary>
+        /// Current promotions of this tenant.
+        /// </summary>
+        public List<TenantPromotionVm> Promotions { get; set; } = new();
     }
 
     public class CustomerCommentVm
     {
-        public string UserName { get; set; } = "";  // tên người comment
-        public string Text { get; set; } = "";      // nội dung comment
-        public int Rate { get; set; }               // điểm rating
-        public DateTime? CreatedAt { get; set; }    // ngày comment
+        public string UserName { get; set; } = "";
+        public string Text { get; set; } = "";
+        public int Rate { get; set; }
+        public DateTime? CreatedAt { get; set; }
     }
 
     public class ProductVm
@@ -38,14 +55,12 @@ namespace Semester03.Models.ViewModels
         public decimal? Price { get; set; }
     }
 
-
-
-
-
     public class ProductCategoryVm
     {
         public int Id { get; set; }
         public string Name { get; set; } = "";
-        public string? Img { get; set; }            // ảnh đại diện danh mục
+        public string? Img { get; set; }
     }
+
+
 }

@@ -11,12 +11,16 @@ using System.Collections.Generic;
 namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
-    public class MapController : Controller
+    public class MapController : ClientBaseController
     {
         private readonly TenantPositionRepository _posRepo;
         private readonly IWebHostEnvironment _env;
 
-        public MapController(TenantPositionRepository posRepo, IWebHostEnvironment env)
+        public MapController(
+            TenantTypeRepository tenantTypeRepo,
+            TenantPositionRepository posRepo,
+            IWebHostEnvironment env
+        ) : base(tenantTypeRepo)
         {
             _posRepo = posRepo ?? throw new ArgumentNullException(nameof(posRepo));
             _env = env ?? throw new ArgumentNullException(nameof(env));

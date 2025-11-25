@@ -22,6 +22,14 @@ namespace Semester03.Areas.Admin.Controllers
             _context = context;
         }
 
+        // --- HELPER: Populate BOTH Dropdowns ---
+        private void PopulateDropdowns(object selectedTenant = null, object selectedCinema = null)
+        {
+            var tenants = _context.TblTenants.Where(t => t.TenantStatus == 1).OrderBy(t => t.TenantName);
+            ViewData["TenantList"] = new SelectList(tenants, "TenantId", "TenantName", selectedTenant);
+
+        }
+
         // GET: Admin/TenantPositions
         public async Task<IActionResult> Index(string search, int? floor, int? status)
         {
@@ -55,6 +63,7 @@ namespace Semester03.Areas.Admin.Controllers
 
             if (position == null) return NotFound();
 
+
             return View(position);
         }
 
@@ -67,14 +76,14 @@ namespace Semester03.Areas.Admin.Controllers
             if (id == null) return NotFound();
             var position = await _posRepo.GetEntityByIdAsync(id.Value);
             if (position == null) return NotFound();
-
-            // Populate Dropdown: Show "Active" tenants
-            var tenants = _context.TblTenants
-                .Where(t => t.TenantStatus == 1)
-                .OrderBy(t => t.TenantName);
-
-            ViewData["TenantList"] = new SelectList(tenants, "TenantId", "TenantName", position.TenantPositionAssignedTenantId);
-
+            
+            if (position.TenantPositionAssignedCinemaId != null)
+            {
+                TempData["Error"] = "This is a fixed Cinema unit and cannot be edited.";
+                return RedirectToAction(nameof(Index));
+            }
+            
+            PopulateDropdowns(position.TenantPositionAssignedTenantId);
             return View(position);
         }
 
@@ -85,23 +94,23 @@ namespace Semester03.Areas.Admin.Controllers
         {
             if (id != tblPosition.TenantPositionId) return NotFound();
 
+            tblPosition.TenantPositionAssignedCinemaId = null;
+
             // We don't validate the navigation property
             ModelState.Remove("TenantPositionAssignedTenant");
+            ModelState.Remove("TenantPositionAssignedCinema");
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    // === BUSINESS LOGIC: AUTO STATUS ===
-                    // If a tenant is assigned, set status to 1 (Occupied).
-                    // If no tenant (null), set status to 0 (Vacant).
                     if (tblPosition.TenantPositionAssignedTenantId != null)
                     {
-                        tblPosition.TenantPositionStatus = 1;
+                        tblPosition.TenantPositionStatus = 1; // Occupied
                     }
                     else
                     {
-                        tblPosition.TenantPositionStatus = 0;
+                        tblPosition.TenantPositionStatus = 0; // Vacant
                     }
 
                     await _posRepo.UpdateAsync(tblPosition);
@@ -115,9 +124,7 @@ namespace Semester03.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Reload dropdown if validation fails
-            var tenants = _context.TblTenants.Where(t => t.TenantStatus == 1).OrderBy(t => t.TenantName);
-            ViewData["TenantList"] = new SelectList(tenants, "TenantId", "TenantName", tblPosition.TenantPositionAssignedTenantId);
+            PopulateDropdowns(tblPosition.TenantPositionAssignedTenantId, tblPosition.TenantPositionAssignedCinemaId);
             return View(tblPosition);
         }
     }

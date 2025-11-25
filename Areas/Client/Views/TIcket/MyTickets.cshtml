@@ -1,0 +1,348 @@
+﻿@model Semester03.Areas.Client.Models.ViewModels.MyTicketsPageVm
+
+@{
+    ViewData["Title"] = "Vé của tôi";
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+
+    var now = DateTime.Now;
+
+    var futureMovies = Model.MovieTickets.Where(t => t.Status == "Sắp chiếu").ToList();
+    var pastMovies = Model.MovieTickets.Where(t => t.Status == "Đã xem").ToList();
+    var cancelledMovies = Model.MovieTickets.Where(t => t.Status == "Đã hủy").ToList();
+}
+
+<style>
+    .big-tab-bar {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 22px;
+    }
+
+    .big-tab-btn {
+        padding: 12px 26px;
+        border-radius: 14px;
+        background: #e2e8f0;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+        .big-tab-btn.active {
+            background: #2563eb;
+            color: white;
+        }
+
+    .subtab-bar {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .subtab-btn {
+        padding: 8px 20px;
+        border-radius: 20px;
+        background: #e5e7eb;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+        .subtab-btn.active {
+            background: #2563eb;
+            color: white;
+        }
+
+    .ticket-card {
+        background: #1e293b;
+        color: white;
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .ticket-img {
+        width: 100%;
+        height: 170px;
+        object-fit: cover;
+    }
+
+    .ticket-body {
+        padding: 12px;
+    }
+
+    .ticket-title {
+        font-size: .95rem;
+        font-weight: 800;
+    }
+
+    .ticket-time {
+        font-size: .85rem;
+        color: #dbeafe;
+    }
+
+    .badge-status {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: .7rem;
+        font-weight: 700;
+        display: inline-block;
+    }
+
+    .badge-upcoming {
+        background: #2563eb;
+    }
+
+    .badge-watched {
+        background: #16a34a;
+    }
+
+    .badge-cancelled {
+        background: #dc2626;
+    }
+
+    .empty-box {
+        background: #cffafe;
+        padding: 14px;
+        border-radius: 10px;
+        color: #075985;
+    }
+</style>
+
+<script>
+    function showBigTab(tab) {
+        movieTab.style.display = tab === 'movie' ? 'block' : 'none';
+        eventTab.style.display = tab === 'event' ? 'block' : 'none';
+        btnBigMovie.classList.toggle("active", tab === 'movie');
+        btnBigEvent.classList.toggle("active", tab === 'event');
+    }
+
+    function showMovieSubTab(sub) {
+        movieFuture.style.display    = sub === 'future'    ? 'block' : 'none';
+        moviePast.style.display      = sub === 'past'      ? 'block' : 'none';
+        movieCancelled.style.display = sub === 'cancelled' ? 'block' : 'none';
+
+        btnMovieFuture.classList.toggle("active", sub === 'future');
+        btnMoviePast.classList.toggle("active", sub === 'past');
+        btnMovieCancelled.classList.toggle("active", sub === 'cancelled');
+    }
+</script>
+
+<div class="container my-4">
+
+    <h2 class="fw-bold mb-4">🎟 Vé của tôi</h2>
+
+    <!-- TAB LỚN -->
+    <div class="big-tab-bar">
+        <button id="btnBigMovie" class="big-tab-btn active" onclick="showBigTab('movie')">🎬 Vé xem phim</button>
+        <button id="btnBigEvent" class="big-tab-btn" onclick="showBigTab('event')">🎉 Vé sự kiện</button>
+    </div>
+
+    <!-- ================================================= -->
+    <!--              TAB 1 — PHIM -->
+    <!-- ================================================= -->
+    <div id="movieTab">
+
+        <div class="subtab-bar">
+            <button id="btnMovieFuture" class="subtab-btn active" onclick="showMovieSubTab('future')">Sắp xem</button>
+            <button id="btnMoviePast" class="subtab-btn" onclick="showMovieSubTab('past')">Đã xem</button>
+            <button id="btnMovieCancelled" class="subtab-btn" onclick="showMovieSubTab('cancelled')">Đã hủy</button>
+        </div>
+
+        <!-- ========================= -->
+        <!-- ⭐ SẮP XEM -->
+        <!-- ========================= -->
+        <div id="movieFuture">
+            @if (!futureMovies.Any())
+            {
+                <div class="empty-box">Không có vé sắp xem.</div>
+            }
+            else
+            {
+                <div class="row g-4">
+                    @foreach (var t in futureMovies)
+                    {
+                        var poster = "/images/movie-placeholder.jpg";
+
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <div class="ticket-card">
+
+                                <img src="@poster" class="ticket-img" />
+
+                                <div class="ticket-body">
+
+                                    <span class="badge-status badge-upcoming">SẮP CHIẾU</span>
+
+                                    <div class="ticket-title">@t.MovieTitle</div>
+
+                                    <div class="ticket-time">@t.Showtime.ToString("dd/MM/yyyy")</div>
+                                    <div class="ticket-time">@t.Showtime.ToString("HH:mm")</div>
+
+                                    <a href="@Url.Action("Index", "TicketDetail", new { area = "Client", id = t.TicketId })"
+                                       class="btn btn-primary btn-sm w-100 mt-2">Xem chi tiết</a>
+
+                                    @if (t.Showtime > now.AddDays(1))
+                                    {
+                                        <form method="post"
+                                              action="@Url.Action("CancelTicket", "Ticket", new { area = "Client", id = t.TicketId })">
+                                            @Html.AntiForgeryToken()
+                                            <button class="btn btn-danger btn-sm w-100 mt-2">Hủy vé</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-secondary btn-sm w-100 mt-2" disabled>Hủy vé (khóa 24h)</button>
+                                    }
+
+                                </div>
+
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- ========================= -->
+        <!-- ⭐ ĐÃ XEM -->
+        <!-- ========================= -->
+        <div id="moviePast" style="display:none;">
+            @if (!pastMovies.Any())
+            {
+                <div class="empty-box">Bạn chưa xem phim nào.</div>
+            }
+            else
+            {
+                <div class="row g-4">
+                    @foreach (var t in pastMovies)
+                    {
+                        var poster = "/images/movie-placeholder.jpg";
+
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <div class="ticket-card">
+
+                                <img src="@poster" class="ticket-img" />
+
+                                <div class="ticket-body">
+
+                                    <span class="badge-status badge-watched">ĐÃ XEM</span>
+
+                                    <div class="ticket-title">@t.MovieTitle</div>
+
+                                    <div class="ticket-time">@t.Showtime.ToString("dd/MM/yyyy")</div>
+                                    <div class="ticket-time">@t.Showtime.ToString("HH:mm")</div>
+
+                                    <a href="@Url.Action("Index", "TicketDetail", new { area = "Client", id = t.TicketId })"
+                                       class="btn btn-outline-light btn-sm w-100 mt-2">
+                                        Xem lại vé
+                                    </a>
+
+                                </div>
+
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- ========================= -->
+        <!-- ⭐ ĐÃ HỦY -->
+        <!-- ========================= -->
+        <div id="movieCancelled" style="display:none;">
+            @if (!cancelledMovies.Any())
+            {
+                <div class="empty-box">Bạn chưa hủy vé nào.</div>
+            }
+            else
+            {
+                <div class="row g-4">
+                    @foreach (var t in cancelledMovies)
+                    {
+                        var poster = "/images/movie-placeholder.jpg";
+
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <div class="ticket-card" style="opacity:.55;">
+
+                                <img src="@poster" class="ticket-img" />
+
+                                <div class="ticket-body">
+
+                                    <span class="badge-status badge-cancelled">ĐÃ HỦY</span>
+
+                                    <div class="ticket-title">@t.MovieTitle</div>
+
+                                    <div class="ticket-time">@t.Showtime.ToString("dd/MM/yyyy")</div>
+                                    <div class="ticket-time">@t.Showtime.ToString("HH:mm")</div>
+
+                                    <a href="@Url.Action("Index", "TicketDetail", new { area = "Client", id = t.TicketId })"
+                                       class="btn btn-outline-danger btn-sm w-100 mt-2">
+                                        Xem lại vé
+                                    </a>
+
+                                </div>
+
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+    </div>
+
+
+
+
+    <!-- ================================================= -->
+    <!--              TAB 2 — SỰ KIỆN -->
+    <!-- ================================================= -->
+    <div id="eventTab" style="display:none;">
+
+        @if (!Model.EventTickets.Any())
+        {
+            <div class="empty-box">Bạn chưa đặt vé sự kiện nào.</div>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var e in Model.EventTickets)
+                {
+                    var poster = string.IsNullOrWhiteSpace(e.EventImage)
+                    ? "/images/event-placeholder.png"
+                    : $"/images/events/{e.EventImage}";
+
+                    <div class="col-6 col-md-4 col-lg-3">
+
+                        <div class="ticket-card">
+
+                            <img src="@poster" class="ticket-img" />
+
+                            <div class="event-body">
+
+                                <span class="badge-status @(e.Status == "Sắp diễn ra" ? "badge-upcoming" : e.Status == "Đã diễn ra" ? "badge-watched" : "badge-cancelled")">
+                                    @e.Status.ToUpper()
+                                </span>
+
+                                <div class="ticket-title">@e.EventName</div>
+
+                                <!-- EventStart là DateTime -->
+                                <div class="ticket-time">@e.EventStart.ToString("dd/MM/yyyy HH:mm")</div>
+
+                                <div class="ticket-time">Số lượng: @e.Quantity</div>
+                                <div class="ticket-time">Tổng tiền: @e.TotalCost.ToString("N0") đ</div>
+
+                                <a href="@Url.Action("Details", "EventBooking", new { area = "Client", id = e.BookingId })"
+                                   class="btn btn-primary btn-sm w-100 mt-2">
+                                    Xem chi tiết
+                                </a>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+</div>

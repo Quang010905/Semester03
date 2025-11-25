@@ -192,7 +192,8 @@ namespace Semester03.Models.Repositories
         public async Task<IEnumerable<TblTenantPosition>> GetAllAdminEntitiesAsync(string search = null, int? floor = null, int? status = null)
         {
             var query = _db.TblTenantPositions
-                .Include(p => p.TenantPositionAssignedTenant) //
+                .Include(p => p.TenantPositionAssignedTenant)
+                .Include(p => p.TenantPositionAssignedCinema)
                 .AsQueryable();
 
             // 1. Filter by Floor
@@ -213,7 +214,8 @@ namespace Semester03.Models.Repositories
                 search = search.ToLower();
                 query = query.Where(p =>
                     p.TenantPositionLocation.ToLower().Contains(search) ||
-                    (p.TenantPositionAssignedTenant != null && p.TenantPositionAssignedTenant.TenantName.ToLower().Contains(search))
+                    (p.TenantPositionAssignedTenant != null && p.TenantPositionAssignedTenant.TenantName.ToLower().Contains(search)) ||
+                    (p.TenantPositionAssignedCinema != null && p.TenantPositionAssignedCinema.CinemaName.ToLower().Contains(search))
                 );
             }
 
@@ -227,6 +229,7 @@ namespace Semester03.Models.Repositories
         {
             return await _db.TblTenantPositions
                 .Include(p => p.TenantPositionAssignedTenant)
+                .Include(p => p.TenantPositionAssignedCinema)
                 .FirstOrDefaultAsync(p => p.TenantPositionId == id);
         }
     }

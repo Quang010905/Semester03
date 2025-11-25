@@ -1,120 +1,189 @@
 ﻿@{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
-    ViewData["Title"] = "Thanh toán thành công";
+    ViewData["Title"] = "Payment successful";
 
     var seatLabels = ViewData["SeatLabels"] as List<string> ?? new List<string>();
     var showtimeId = ViewData["ShowtimeId"]?.ToString();
-    var totalAmount = (decimal)(ViewData["TotalAmount"] ?? 0m);
+    var totalAmount = (decimal)(ViewData["TotalAmount"] ?? 0m);         // after discount
     var pricePerSeat = (decimal)(ViewData["PricePerSeat"] ?? 0m);
+
+    var originalAmount = (decimal)(ViewData["OriginalAmount"] ?? totalAmount);
+    var discountAmount = (decimal)(ViewData["DiscountAmount"] ?? 0m);
+    var pointsAwarded = (int)(ViewData["PointsAwarded"] ?? 0m);
+
     var processingError = ViewData["PaymentProcessingError"] as string;
     var showtimeSeatIds = ViewData["ShowtimeSeatIds"] as string ?? "";
 }
-
 @Html.AntiForgeryToken()
 
 @section Styles {
     <style>
-        .success-container {
-            max-width: 700px;
+        .success-shell {
+            max-width: 760px;
             margin: 3rem auto;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(20,40,80,0.08);
-            padding: 2rem;
+        }
+
+        .success-container {
+            background: radial-gradient(circle at top,#e0f2fe 0,#ffffff 55%);
+            border-radius: 20px;
+            box-shadow: 0 18px 50px rgba(15,23,42,0.18);
+            padding: 2.4rem 2.1rem 2rem;
             text-align: center;
+            border: 1px solid rgba(148,163,184,0.35);
         }
 
         .success-icon {
-            width: 80px;
-            height: 80px;
+            width: 86px;
+            height: 86px;
             border-radius: 50%;
-            background: #e8f9f0;
+            background: radial-gradient(circle, #22c55e 0, #16a34a 45%, #14532d 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 1rem auto;
-            color: #28a745;
-            font-size: 2.5rem;
+            margin: 0 auto 1.1rem auto;
+            color: #fff;
+            font-size: 2.6rem;
+            box-shadow: 0 16px 40px rgba(22,163,74,0.6);
         }
 
         .success-title {
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: #222;
-            margin-bottom: .5rem;
+            font-size: 1.7rem;
+            font-weight: 750;
+            color: #0f172a;
+            margin-bottom: .25rem;
+        }
+
+        .success-desc {
+            font-size: .95rem;
+            color: #6b7280;
+        }
+
+        .ticket-summary {
+            text-align: left;
+            margin-top: 1.8rem;
+            border-radius: 16px;
+            background: #f9fafb;
+            padding: 1.2rem 1.25rem;
+            box-shadow: inset 0 0 0 1px rgba(209,213,219,0.6);
         }
 
         .badge-seat {
             display: inline-block;
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: .6rem;
-            padding: .35rem .65rem;
-            margin: .125rem;
+            background: #eff6ff;
+            border: 1px solid #60a5fa;
+            border-radius: .75rem;
+            padding: .32rem .7rem;
+            margin: .12rem;
             font-weight: 600;
-            color: #333;
+            color: #0f172a;
+            font-size: .83rem;
         }
 
         .total-amount {
             font-size: 1.25rem;
             font-weight: 700;
-            color: #d63384;
+            color: #e11d48;
         }
 
         .error-box {
-            background: #fff3f2;
-            border: 1px solid #ffd6d0;
-            color: #b02a37;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
             padding: .75rem 1rem;
-            border-radius: .5rem;
-            margin-bottom: 1rem;
+            border-radius: .8rem;
+            margin: 1rem 0 .5rem;
+            font-size: .9rem;
         }
 
         #emailStatus {
             margin-top: 1rem;
+            font-size: .88rem;
         }
     </style>
 }
 
-<div class="success-container">
-    <div class="success-icon"><i class="bi bi-check-lg"></i></div>
-    <div class="success-title">Thanh toán thành công!</div>
-    <div class="success-desc">Cảm ơn bạn đã đặt vé. Vé điện tử của bạn sẽ được gửi đến email của bạn.</div>
-
-    @if (!string.IsNullOrEmpty(processingError))
-    {
-        <div class="error-box">
-            <strong>Lưu ý:</strong> @processingError
+<div class="success-shell">
+    <div class="success-container">
+        <div class="success-icon">
+            <i class="bi bi-check-lg"></i>
         </div>
-    }
+        <div class="success-title">Payment successful</div>
+        <div class="success-desc">
+            Thank you for your booking. Your e-ticket will be sent to your email address shortly.
+        </div>
 
-    <div class="ticket-summary text-start mt-3">
-        <h6 class="fw-bold mb-3">Thông tin vé</h6>
-        <div class="mb-2"><strong>Mã suất chiếu:</strong> @showtimeId</div>
-        <div class="mb-2">
-            <strong>Ghế:</strong>
-            @if (seatLabels.Any())
-            {
-                foreach (var s in seatLabels)
+        @if (!string.IsNullOrEmpty(processingError))
+        {
+            <div class="error-box">
+                <strong>Note:</strong> @processingError
+            </div>
+        }
+
+        <div class="ticket-summary">
+            <h6 class="fw-bold mb-3">Ticket details</h6>
+
+            <div class="mb-2">
+                <strong>Showtime ID:</strong> @showtimeId
+            </div>
+
+            <div class="mb-2">
+                <strong>Seats:</strong>
+                @if (seatLabels.Any())
                 {
-                    <span class="badge-seat">@s</span>
+                    foreach (var s in seatLabels)
+                    {
+                        <span class="badge-seat">@s</span>
+                    }
                 }
-            }
-            else
+                else
+                {
+                    <span class="text-muted">Unknown</span>
+                }
+            </div>
+
+            <div class="mb-2">
+                <strong>Price per seat:</strong> @pricePerSeat.ToString("N0") VND
+            </div>
+
+            @if (discountAmount > 0)
             {
-                <span class="text-muted">Không xác định</span>
+                <div class="mb-2">
+                    <strong>Subtotal (before discount):</strong> @originalAmount.ToString("N0") VND
+                </div>
+                <div class="mb-2">
+                    <strong>Discount:</strong> -@discountAmount.ToString("N0") VND
+                </div>
             }
-        </div>
-        <div class="mb-2"><strong>Giá mỗi ghế:</strong> @pricePerSeat.ToString("N0") VND</div>
-        <div class="mb-2"><strong>Tổng thanh toán:</strong> <span class="total-amount">@totalAmount.ToString("N0") VND</span></div>
 
-        <div id="emailStatus" class="alert alert-info p-2 mt-3">
-            Đang gửi vé tới email của bạn...
-        </div>
-    </div>
+            <div class="mb-2">
+                <strong>Total paid:</strong>
+                <span class="total-amount">@totalAmount.ToString("N0") VND</span>
+            </div>
 
-    <div class="actions d-flex justify-content-center gap-3 mt-4">
-        <a href="@Url.Action("Index","Cinema", new { area = "Client" })" class="btn btn-primary"><i class="bi bi-house-door me-2"></i>Về trang chủ</a>
+            @if (pointsAwarded > 0)
+            {
+                <div class="mb-2">
+                    <strong>Reward points earned:</strong> @pointsAwarded
+                </div>
+            }
+
+            <div id="emailStatus" class="alert alert-info p-2 mt-3">
+                Sending your tickets to your email…
+            </div>
+
+            <button id="btnResend"
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm mt-2">
+                <i class="bi bi-arrow-clockwise me-1"></i> Resend email
+            </button>
+        </div>
+
+        <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
+            <a href="@Url.Action("Index","Cinema", new { area = "Client" })"
+               class="btn btn-primary">
+                <i class="bi bi-film me-2"></i>Back to cinema
+            </a>
+        </div>
     </div>
 </div>
 
@@ -125,26 +194,27 @@
             if (icon) {
                 icon.style.transform = "scale(0)";
                 icon.style.transition = "transform 0.3s ease";
-                setTimeout(() => icon.style.transform = "scale(1)", 100);
+                setTimeout(() => icon.style.transform = "scale(1)", 80);
             }
 
             const showtimeSeatIds = "@(showtimeSeatIds)";
             const emailStatus = document.getElementById("emailStatus");
             const btnResend = document.getElementById("btnResend");
-            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : "";
 
             async function sendEmail() {
                 if (!showtimeSeatIds) {
                     emailStatus.className = "alert alert-warning p-2";
-                    emailStatus.innerText = "Không có thông tin ghế để gửi email.";
+                    emailStatus.innerText = "No seat information available to send email.";
                     return;
                 }
 
                 emailStatus.className = "alert alert-info p-2";
-                emailStatus.innerText = "Đang gửi vé tới email của bạn...";
+                emailStatus.innerText = "Sending your tickets to your email…";
 
                 const form = new FormData();
-                form.append("__RequestVerificationToken", token);
+                if (token) form.append("__RequestVerificationToken", token);
                 form.append("showtimeSeatIds", showtimeSeatIds);
 
                 try {
@@ -157,26 +227,27 @@
                     const data = await res.json();
                     if (data.success) {
                         emailStatus.className = "alert alert-success p-2";
-                        emailStatus.innerText = "Email đã được gửi. Vui lòng kiểm tra hộp thư (hoặc mục Spam).";
+                        emailStatus.innerText = "Email sent. Please check your inbox (and spam folder).";
                     } else {
                         emailStatus.className = "alert alert-danger p-2";
-                        emailStatus.innerText = data.message || "Gửi email thất bại.";
+                        emailStatus.innerText = data.message || "Failed to send email.";
                     }
                 } catch (err) {
                     console.error(err);
                     emailStatus.className = "alert alert-danger p-2";
-                    emailStatus.innerText = "Lỗi khi gửi email: " + err.message;
+                    emailStatus.innerText = "Error while sending email: " + err.message;
                 }
             }
 
-            // Gửi tự động khi load trang
+            // auto-send on page load
             setTimeout(sendEmail, 800);
 
-            // Nút gửi lại
-            btnResend.addEventListener("click", e => {
-                e.preventDefault();
-                sendEmail();
-            });
+            if (btnResend) {
+                btnResend.addEventListener("click", e => {
+                    e.preventDefault();
+                    sendEmail();
+                });
+            }
         });
     </script>
 }

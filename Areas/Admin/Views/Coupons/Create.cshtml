@@ -53,6 +53,13 @@
                     </div>
 
                     <div class="form-group">
+                        <label asp-for="CouponMinimumPointsRequired" class="control-label">Minimum Points Required</label>
+                        <input asp-for="CouponMinimumPointsRequired" class="form-control" type="number" min="0" />
+                        <span asp-validation-for="CouponMinimumPointsRequired" class="text-danger"></span>
+                        <small class="form-text text-muted">Leave empty if this coupon is free for everyone.</small>
+                    </div>
+
+                    <div class="form-group">
                         <label asp-for="CouponIsActive" class="control-label">Status</label>
                         <div>
                             <div class="form-check form-check-inline">

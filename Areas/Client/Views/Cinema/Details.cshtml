@@ -1,112 +1,123 @@
-﻿@model Semester03.Areas.Client.Models.ViewModels.MovieDetailsVm
+﻿@using System
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
+@model Semester03.Areas.Client.Models.ViewModels.MovieDetailsVm
+
 @{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+
     Func<string, string> Img = (raw) =>
     {
-        if (string.IsNullOrWhiteSpace(raw)) return Url.Content("~/images/movie-placeholder.png");
-        var s = raw.Replace("wwwroot/", "").TrimStart('~', '/').Replace(" ", "%20");
-        return Url.Content("~/" + s);
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            var file = raw.Replace("\\", "/").Trim();
+
+            var keyword = "Content/Uploads/Movies";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
+
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                return Url.Content("~/Content/Uploads/Movies/" + Uri.EscapeDataString(file));
+            }
+
+            // DÙNG System.IO.Path.Combine để tránh xung đột với bất kỳ tên biến Path nào
+            var physical = System.IO.Path.Combine(env.WebRootPath ?? "wwwroot", "Content", "Uploads", "Movies", file);
+
+            if (System.IO.File.Exists(physical))
+            {
+                return Url.Content("~/Content/Uploads/Movies/" + Uri.EscapeDataString(file));
+            }
+            else
+            {
+                return noImageUrl;
+            }
+        }
+        catch
+        {
+            return Url.Content("~/Content/Uploads/noimage.png");
+        }
     };
+
     var poster = Img(Model.PosterUrl);
 
-    // Helper để tạo href cho nút Book: nếu đã đăng nhập -> BookTicket, ngược lại -> Login với returnUrl
     Func<int, string> BookHref = (movieId) =>
     {
         if (User?.Identity?.IsAuthenticated == true)
-        {
-            return Url.Action("BookTicket", "Booking", new { area = "Client", movieId = movieId });
-        }
-        else
-        {
-            var target = Url.Action("BookTicket", "Booking", new { area = "Client", movieId = movieId });
-            return Url.Action("Login", "Account", new { area = "Client", returnUrl = target });
-        }
+            return Url.Action("BookTicket", "Booking", new { area = "Client", movieId });
+
+        var target = Url.Action("BookTicket", "Booking", new { area = "Client", movieId });
+        return Url.Action("Login", "Account", new { area = "Client", returnUrl = target });
     };
 }
 
 @section Styles {
     <style>
+        .movie-detail-page {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
         .movie-hero {
             display: grid;
-            grid-template-columns: 360px 1fr;
+            grid-template-columns: 320px minmax(0, 1fr);
             gap: 2rem;
-            align-items: start;
+            align-items: flex-start;
         }
 
         .movie-poster {
             border-radius: 1rem;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(2,6,23,0.12);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+            background: #fff;
         }
 
             .movie-poster img {
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
-                display: block;
             }
 
-        .movie-meta {
-            padding-top: .25rem;
-        }
-
         .movie-title {
-            font-size: 1.8rem;
+            font-size: 2rem;
             font-weight: 700;
             margin-bottom: .25rem;
-            letter-spacing: -0.5px;
         }
 
         .movie-sub {
             color: #6b7280;
-            margin-bottom: .5rem;
+            margin-bottom: .35rem;
+            font-size: .95rem;
         }
 
-        /* stars */
-        .stars {
-            display: flex;
-            gap: .25rem;
-            align-items: center;
+        .movie-info-small {
+            color: #6b7280;
+            font-size: .85rem;
+            margin-bottom: .75rem;
         }
-
-        .star {
-            font-size: 1.6rem;
-            cursor: pointer;
-            transition: transform .12s ease, color .12s ease;
-            color: #cbd5e1; /* gray for empty */
-            display: inline-flex;
-            align-items: center;
-        }
-
-            /* active or filled star */
-            .star.active,
-            .star.filled,
-            .star.bi-star-fill {
-                color: #ffc107; /* yellow */
-                transform: scale(1.08);
-            }
-
-            /* Force SVG path to use currentColor for fill so star appears solid */
-            .star > svg path,
-            .star > svg polygon,
-            .star > svg circle {
-                /* For filled star (bi-star-fill), ensure fill uses currentColor */
-                fill: none !important;
-                stroke: currentColor !important;
-            }
-
-            /* For icons with class bi-star-fill (solid), override to fill */
-            .star.bi-star-fill > svg path {
-                fill: currentColor !important;
-                stroke: none !important;
-            }
-
-            /* When star has 'active' or 'filled' we also force fill */
-            .star.active > svg path,
-            .star.filled > svg path {
-                fill: currentColor !important;
-                stroke: none !important;
-            }
 
         .rate-badge {
             font-weight: 700;
@@ -114,19 +125,57 @@
             color: #111;
             padding: .25rem .6rem;
             border-radius: .5rem;
+            font-size: .85rem;
+            box-shadow: 0 4px 14px rgba(250,204,21,0.4);
+        }
+
+        .stars {
+            display: flex;
+            gap: .2rem;
+        }
+
+        .star {
+            font-size: 1.35rem;
+            cursor: pointer;
+            color: #d1d5db;
+            transition: .12s ease;
+        }
+
+            .star.filled, .star.bi-star-fill {
+                color: #fbbf24;
+                transform: scale(1.06);
+            }
+
+        .btn-primary-ghost {
+            background: linear-gradient(90deg,#0d6efd,#4f46e5);
+            border: none;
+            color: #fff !important;
+            padding: .55rem 1.2rem;
+            border-radius: .6rem;
+            font-weight: 600;
+            box-shadow: 0 6px 20px rgba(37,99,235,0.22);
+        }
+
+        .synopsis-card {
+            background: #fff;
+            padding: 1rem 1.25rem;
+            border-radius: 1rem;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.05);
         }
 
         .comment-box {
-            margin-top: 1rem;
-            border-radius: .75rem;
+            margin-top: 1.5rem;
             background: #fff;
-            padding: 1rem;
-            box-shadow: 0 6px 20px rgba(2,6,23,0.06);
+            border-radius: 1rem;
+            padding: 1.3rem;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.05);
         }
 
         .comment-item {
-            border-bottom: 1px solid #f1f5f9;
-            padding: .75rem 0;
+            border-bottom: 1px solid #e5e7eb;
+            padding: .8rem 0;
         }
 
             .comment-item:last-child {
@@ -135,24 +184,15 @@
 
         .comment-user {
             font-weight: 600;
-            margin-right: .5rem;
+            margin-right: .35rem;
         }
 
         .comment-time {
-            color: #94a3b8;
-            font-size: .85rem;
+            font-size: .82rem;
+            color: #9ca3af;
         }
 
-        .btn-primary-ghost {
-            background: linear-gradient(90deg,#0d6efd,#4f46e5);
-            border: none;
-            color: #fff;
-            padding: .6rem 1rem;
-            border-radius: .6rem;
-            box-shadow: 0 8px 30px rgba(13,110,253,0.12);
-        }
-
-        @@media (max-width: 991px) {
+        @@media (max-width: 992px) {
             .movie-hero {
                 grid-template-columns: 1fr;
             }
@@ -160,79 +200,78 @@
     </style>
 }
 
-<div class="py-3">
-    <a class="btn btn-outline-secondary btn-sm mb-3" href="@Url.Action("Index","Cinema", new { area = "Client" })">&larr; Back</a>
+<div class="container py-4 movie-detail-page">
+    <a class="btn btn-outline-secondary btn-sm mb-3" href="@Url.Action("Index","Cinema", new { area = "Client" })">&larr; Back to cinema</a>
 
     <div class="movie-hero">
+        <!-- Poster -->
         <div class="movie-poster">
             <img src="@poster" alt="@Model.Title" />
         </div>
 
-        <div class="movie-meta">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <div class="movie-title">@Model.Title</div>
-                    <div class="movie-sub">@Model.Genre &middot; @Model.Director</div>
-                    <div class="small text-muted">@Model.DurationMin min &middot; @((Model.StartDate.HasValue) ? Model.StartDate.Value.ToString("dd MMM yyyy") : "--")</div>
-                </div>
+        <!-- Info -->
+        <div>
+            <div class="movie-title">@Model.Title</div>
 
-                <div class="text-end">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="rate-badge">@((Model.Rate ?? 0).ToString()) <small class="text-muted">/5</small></div>
-                        <div class="stars" aria-hidden="true">
-                            @for (int i = 1; i <= 5; i++)
-                            {
-                                var isFilled = (Model.Rate.HasValue && Model.Rate.Value >= i);
-                                var cls = "star " + (isFilled ? "bi-star-fill filled" : "bi-star");
-                                <i class="@cls" data-value="@i" title="@i estrela(s)"></i>
-                            }
-                        </div>
-                    </div>
-                    <div class="mt-2">
-                        <a class="btn btn-primary-ghost" href="@BookHref(Model.Id)">Book Tickets</a>
-                    </div>
+            <div class="movie-sub">
+                @Model.Genre
+                @if (!string.IsNullOrWhiteSpace(Model.Director))
+                {
+                    <span> • Directed by @Model.Director</span>
+                }
+            </div>
+
+            <div class="movie-info-small mb-2">
+                @(Model.DurationMin ?? 0) min • @(Model.StartDate?.ToString("dd MMM yyyy") ?? "--")
+            </div>
+
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <div class="rate-badge">@((Model.Rate ?? 0).ToString("0.0")) <small>/5</small></div>
+                <div class="stars">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        var filled = Model.Rate.HasValue && Model.Rate.Value >= i;
+                        <i class="star @(filled ? "bi-star-fill filled" : "bi-star")"></i>
+                    }
                 </div>
             </div>
 
-            <hr />
+            <a href="@BookHref(Model.Id)" class="btn btn-primary-ghost mb-4"><i class="bi bi-ticket-perforated me-1"></i> Book tickets</a>
 
-            <h5>Mô tả</h5>
-            <p class="text-muted">@Model.Description</p>
+            <div class="synopsis-card">
+                <h5 class="mb-2">Synopsis</h5>
+                <p class="text-muted mb-0">@Model.Description</p>
+            </div>
 
-            <!-- Bình luận & rating -->
             <div class="comment-box">
-                <h6>Bình luận & đánh giá</h6>
-                <div id="commentFormArea" class="mt-2">
-                    @if (User?.Identity?.IsAuthenticated == true)
-                    {
-                        @Html.AntiForgeryToken()
-                        <div class="mb-2"><strong>Đánh giá của bạn:</strong></div>
-                        <div class="mb-2">
-                            <div id="userStars" class="stars">
-                                @for (int i = 1; i <= 5; i++)
-                                {
-                                    <i class="star bi bi-star" data-value="@i"></i>
-                                }
-                            </div>
-                        </div>
-                        <div class="mb-2">
-                            <textarea id="commentText" class="form-control" rows="3" placeholder="Viết bình luận của bạn..."></textarea>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button id="submitComment" class="btn btn-primary">Gửi bình luận</button>
-                            <small class="text-muted align-self-center">Bình luận sẽ xuất hiện sau khi được duyệt (status = 1).</small>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="alert alert-info py-2">Bạn cần <a href="@Url.Action("Login","Account", new { area = "Client", returnUrl = Url.Action("Details", "Cinema", new { area = "Client", id = Model.Id }) })">đăng nhập</a> để bình luận.</div>
-                    }
-                </div>
+                <h6>Comments & Rating</h6>
+
+                @if (User?.Identity?.IsAuthenticated == true)
+                {
+                    @Html.AntiForgeryToken()
+                    <div class="mb-2 mt-2"><strong>Your rating:</strong></div>
+                    <div id="userStars" class="stars mb-3">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <i class="star bi bi-star" data-value="@i"></i>
+                        }
+                    </div>
+
+                    <textarea id="commentText" class="form-control mb-2" rows="3" placeholder="Write your comment..."></textarea>
+                    <button id="submitComment" class="btn btn-primary btn-sm">Submit</button>
+                }
+                else
+                {
+                    <div class="alert alert-info mt-2">
+                        Please
+                        <a href="@Url.Action("Login", "Account", new { area = "Client", returnUrl = Url.Action("Details","Cinema", new { area = "Client", id = Model.Id }) })">sign in</a>
+                        to leave a comment.
+                    </div>
+                }
 
                 <hr />
 
                 <div id="commentsList">
-                    @* Hiển thị bình luận đã duyệt (repository đã lọc status = 1). *@
                     @if (Model.Comments != null && Model.Comments.Any())
                     {
                         foreach (var c in Model.Comments)
@@ -241,24 +280,23 @@
                                 <div class="d-flex justify-content-between">
                                     <div>
                                         <span class="comment-user">@c.UserName</span>
-                                        <span class="small text-muted">•</span>
-                                        <span class="comment-time">@((c.CreatedAt.HasValue) ? c.CreatedAt.Value.ToString("dd MMM yyyy HH:mm") : "")</span>
+                                        <span class="comment-time">@c.CreatedAt?.ToString("dd MMM yyyy HH:mm")</span>
                                     </div>
-                                    <div class="stars" aria-hidden="true">
+                                    <div class="stars">
                                         @for (int i = 1; i <= 5; i++)
                                         {
-                                            var filledClass = c.Rate >= i ? "bi-star-fill filled" : "bi-star";
-                                            <i class="star @filledClass"></i>
+                                            var filled = c.Rate >= i;
+                                            <i class="star @(filled ? "bi-star-fill filled" : "bi-star")"></i>
                                         }
                                     </div>
                                 </div>
-                                <div class="mt-1">@Html.Raw(System.Net.WebUtility.HtmlEncode(c.Text))</div>
+                                <div class="mt-1">@Html.Raw(c.Text)</div>
                             </div>
                         }
                     }
                     else
                     {
-                        <div class="text-muted">Chưa có bình luận nào — bạn có thể là người đầu tiên!</div>
+                        <div class="text-muted">No comments yet.</div>
                     }
                 </div>
             </div>
@@ -268,99 +306,54 @@
 
 @section Scripts {
     <script>
-        (function () {
-            // Tương tác ngôi sao cho user's rating
-            const stars = document.querySelectorAll('#userStars .star');
+        (() => {
+            const starEls = document.querySelectorAll('#userStars .star');
             let selected = 0;
 
-            // helper toggles classes bi-star <-> bi-star-fill and active/filled
-            function setStarState(el, filled) {
-                if (filled) {
-                    el.classList.remove('bi-star');
-                    el.classList.add('bi-star-fill', 'filled', 'active');
-                } else {
-                    el.classList.remove('bi-star-fill', 'filled', 'active');
-                    el.classList.add('bi-star');
-                }
-            }
-
-            function highlight(v) {
-                stars.forEach(st => {
-                    const val = +st.dataset.value;
-                    setStarState(st, val <= v);
+            function apply(v) {
+                starEls.forEach(el => {
+                    const val = Number(el.dataset.value);
+                    el.classList.remove('bi-star', 'bi-star-fill', 'filled');
+                    if (val <= v) el.classList.add('bi-star-fill', 'filled');
+                    else el.classList.add('bi-star');
                 });
             }
 
-            stars.forEach(s => {
-                s.addEventListener('mouseenter', () => {
-                    const v = +s.dataset.value;
-                    highlight(v);
+            starEls.forEach(el => {
+                el.addEventListener('mouseenter', () => apply(Number(el.dataset.value)));
+                el.addEventListener('mouseleave', () => apply(selected));
+                el.addEventListener('click', () => {
+                    selected = Number(el.dataset.value);
+                    apply(selected);
                 });
-                s.addEventListener('mouseleave', () => {
-                    highlight(selected);
-                });
-                s.addEventListener('click', () => {
-                    selected = +s.dataset.value;
-                    highlight(selected);
-                });
-
-                // ensure initial empty state
-                setStarState(s, false);
             });
 
-            // submit comment via AJAX (fetch)
-            const submitBtn = document.getElementById('submitComment');
-            if (submitBtn) {
-                submitBtn.addEventListener('click', async function () {
-                    const text = document.getElementById('commentText').value.trim();
-                    if (selected <= 0) { alert('Vui lòng chọn số sao (rating).'); return; }
-                    if (!text) { alert('Vui lòng nhập nội dung bình luận.'); return; }
+            const btn = document.getElementById('submitComment');
+            if (!btn) return;
 
-                    const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
-                    const token = tokenInput ? tokenInput.value : '';
+            btn.addEventListener('click', async () => {
+                const text = document.getElementById('commentText').value.trim();
+                if (!selected) return alert('Please choose a rating.');
+                if (!text) return alert('Please write a comment.');
 
-                    submitBtn.disabled = true;
-                    submitBtn.innerText = 'Đang gửi...';
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
 
-                    try {
-                        const resp = await fetch('@Url.Action("AddComment", "Cinema", new { area = "Client" })', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded',
-                                'RequestVerificationToken': token,
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: new URLSearchParams({
-                                movieId: '@Model.Id',
-                                rate: selected,
-                                text: text
-                            })
-                        });
-
-                        if (resp.status === 401) {
-                            alert('Bạn cần đăng nhập để bình luận.');
-                            location.href = '@Url.Action("Login", "Account", new { area = "Client" })';
-                            return;
-                        }
-
-                        const data = await resp.json();
-                        if (data && data.success) {
-                            alert(data.message || 'Gửi thành công.');
-                            document.getElementById('commentText').value = '';
-                            selected = 0;
-                            highlight(0);
-                        } else {
-                            alert(data?.message || 'Lỗi khi gửi bình luận.');
-                        }
-                    } catch (err) {
-                        console.error(err);
-                        alert('Có lỗi xảy ra. Vui lòng thử lại.');
-                    } finally {
-                        submitBtn.disabled = false;
-                        submitBtn.innerText = 'Gửi bình luận';
-                    }
+                const resp = await fetch('@Url.Action("AddComment", "Cinema", new { area = "Client" })', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: new URLSearchParams({
+                        movieId: '@Model.Id',
+                        rate: selected,
+                        text: text
+                    })
                 });
-            }
+
+                const data = await resp.json();
+                alert(data?.message ?? 'Comment submitted.');
+            });
         })();
     </script>
 }

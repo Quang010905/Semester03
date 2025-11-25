@@ -1,10 +1,16 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Semester03.Models.Repositories;
 
 namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
-    public class HomeController : Controller
+    public class HomeController : ClientBaseController
     {
+
+        public HomeController(TenantTypeRepository tenantTypeRepo) : base(tenantTypeRepo)
+        {
+        }
+
         // GET: / hoặc /Home/Index
         public IActionResult Index()
         {
@@ -13,6 +19,11 @@ namespace Semester03.Areas.Client.Controllers
             ViewData["MallAddress"] = "123 Main Street";
 
             return View(); // Trả về view Areas/Client/Views/Home/Index.cshtml
+        }
+
+        public IActionResult Contact()
+        {
+            return View();
         }
 
         // POST: /Home/SetLanguage

@@ -32,4 +32,5 @@ public partial class TblTenantPosition
     public virtual ICollection<TblEvent> TblEvents { get; set; } = new List<TblEvent>();
 
     public virtual TblTenant? TenantPositionAssignedTenant { get; set; }
+    public virtual TblCinema? TenantPositionAssignedCinema { get; set; }
 }

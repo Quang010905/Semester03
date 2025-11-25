@@ -21,6 +21,8 @@ public partial class TblEvent
 
     public int EventMaxSlot { get; set; }
 
+    public decimal EventUnitPrice { get; set; }
+
     public int EventTenantPositionId { get; set; }
 
     public virtual TblTenantPosition EventTenantPosition { get; set; } = null!;

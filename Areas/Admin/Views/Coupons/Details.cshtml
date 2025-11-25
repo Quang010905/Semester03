@@ -22,6 +22,11 @@
             <dt class="col-sm-3">Discount</dt>
             <dd class="col-sm-9">@Html.DisplayFor(model => model.CouponDiscountPercent)%</dd>
 
+            <dt class="col-sm-3">Points Required</dt>
+            <dd class="col-sm-9">
+                @(Model.CouponMinimumPointsRequired.HasValue? Model.CouponMinimumPointsRequired.ToString() : "None (Free for all)")
+            </dd>
+
             <dt class="col-sm-3">Valid From</dt>
             <dd class="col-sm-9">@Model.CouponValidFrom.ToString("g")</dd>
 

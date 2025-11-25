@@ -13,53 +13,77 @@ namespace Semester03.Models.Repositories
         private readonly AbcdmallContext _db;
         public CinemaRepository(AbcdmallContext db) => _db = db;
 
-        public async Task<List<MovieCardVm>> GetFeaturedMoviesAsync(int top = 3)
+        // ==================== FEATURED (sửa ổn định cho EF Core) ====================
+        public async Task<List<MovieCardVm>> GetFeaturedMoviesAsync(int top = int.MaxValue)
         {
-            // NOTE: dùng DateTime.Now để phù hợp với dữ liệu lưu theo local time. 
-            // Nếu DB dùng UTC, đổi về DateTime.UtcNow.
             var now = DateTime.Now;
 
-            var nextStarts = from s in _db.TblShowtimes.AsNoTracking()
-                             join m in _db.TblMovies.AsNoTracking()
-                                 on s.ShowtimeMovieId equals m.MovieId
-                             // chỉ chọn showtime trong tương lai
-                             where s.ShowtimeStart >= now
-                             // movie đang trong khoảng hoặc start/end null (treat null start = already started, null end = no end)
-                             && (m.MovieStartDate == null || m.MovieStartDate <= now)
-                             && (m.MovieEndDate == null || m.MovieEndDate >= now)
-                             group s by s.ShowtimeMovieId into g
-                             select new
-                             {
-                                 MovieId = g.Key,
-                                 NextStart = g.Min(s => s.ShowtimeStart)
-                             };
+            // 1) NextStarts: mỗi movie có NextStart (nullable DateTime)
+            var nextStarts = _db.TblShowtimes
+                .AsNoTracking()
+                .Where(s => s.ShowtimeStart >= now)
+                .GroupBy(s => s.ShowtimeMovieId)
+                .Select(g => new
+                {
+                    MovieId = g.Key,
+                    NextStart = (DateTime?)g.Min(s => s.ShowtimeStart)
+                });
 
-            var q = from ns in nextStarts
-                    join s in _db.TblShowtimes.AsNoTracking()
-                        on new { MovieId = ns.MovieId, NextStart = ns.NextStart }
-                        equals new { MovieId = s.ShowtimeMovieId, NextStart = s.ShowtimeStart }
-                    join m in _db.TblMovies.AsNoTracking() on ns.MovieId equals m.MovieId
-                    join scr in _db.TblScreens.AsNoTracking() on s.ShowtimeScreenId equals scr.ScreenId
-                    join c in _db.TblCinemas.AsNoTracking() on scr.ScreenCinemaId equals c.CinemaId
-                    // thêm điều kiện an toàn
-                    where (m.MovieStartDate == null || m.MovieStartDate <= now)
-                          && (m.MovieEndDate == null || m.MovieEndDate >= now)
-                    orderby s.ShowtimeStart
-                    select new
-                    {
-                        MovieId = m.MovieId,
-                        MovieTitle = m.MovieTitle,
-                        MovieDescription = m.MovieDescription,
-                        MovieDurationMin = m.MovieDurationMin,
-                        ShowtimeStart = s.ShowtimeStart,
-                        ShowtimePrice = s.ShowtimePrice,
-                        ShowtimeId = s.ShowtimeId,
-                        PosterUrl = m.MovieImg,
-                        CinemaName = c.CinemaName,
-                        ScreenName = scr.ScreenName
-                    };
+            // 2) showInfo: nối nextStarts -> showtime -> screen -> cinema, trả projection phẳng
+            var showInfo = nextStarts
+                .Join(_db.TblShowtimes.AsNoTracking(),
+                      ns => new { ns.MovieId, NextStart = ns.NextStart },
+                      s => new { MovieId = s.ShowtimeMovieId, NextStart = (DateTime?)s.ShowtimeStart },
+                      (ns, s) => new { ns.MovieId, ShowtimeStart = (DateTime?)s.ShowtimeStart, s.ShowtimePrice, s.ShowtimeId, ScreenId = s.ShowtimeScreenId })
+                .Join(_db.TblScreens.AsNoTracking(),
+                      si => si.ScreenId,
+                      scr => scr.ScreenId,
+                      (si, scr) => new { si.MovieId, si.ShowtimeStart, si.ShowtimePrice, si.ShowtimeId, scr.ScreenName, scr.ScreenCinemaId })
+                .Join(_db.TblCinemas.AsNoTracking(),
+                      temp => temp.ScreenCinemaId,
+                      c => c.CinemaId,
+                      (temp, c) => new
+                      {
+                          MovieId = temp.MovieId,
+                          ShowtimeStart = temp.ShowtimeStart,
+                          ShowtimePrice = temp.ShowtimePrice,
+                          ShowtimeId = temp.ShowtimeId,
+                          ScreenName = temp.ScreenName,
+                          CinemaName = c.CinemaName
+                      });
 
-            var list = await q.Take(top).ToListAsync();
+            // 3) moviesInRun: tất cả phim đang trong khoảng public run
+            var moviesInRun = _db.TblMovies.AsNoTracking()
+                .Where(m =>
+                    (m.MovieStartDate == null || m.MovieStartDate <= now) &&
+                    (m.MovieEndDate == null || m.MovieEndDate >= now)
+                );
+
+            // 4) Left join moviesInRun với showInfo (GroupJoin + DefaultIfEmpty) và select phẳng
+            var q = moviesInRun
+                .GroupJoin(showInfo,
+                           m => m.MovieId,
+                           si => si.MovieId,
+                           (m, sis) => new { Movie = m, Show = sis.FirstOrDefault() }) // FirstOrDefault on the joined set is translatable here
+                .Select(x => new
+                {
+                    MovieId = x.Movie.MovieId,
+                    MovieTitle = x.Movie.MovieTitle,
+                    MovieDescription = x.Movie.MovieDescription,
+                    MovieDurationMin = x.Movie.MovieDurationMin,
+                    // Show may be null => ShowtimeStart is nullable
+                    ShowtimeStart = x.Show != null ? x.Show.ShowtimeStart : (DateTime?)null,
+                    ShowtimePrice = x.Show != null ? x.Show.ShowtimePrice : (decimal?)null,
+                    ShowtimeId = x.Show != null ? x.Show.ShowtimeId : (int?)null,
+                    PosterUrl = x.Movie.MovieImg,
+                    CinemaName = x.Show != null ? x.Show.CinemaName : null,
+                    ScreenName = x.Show != null ? x.Show.ScreenName : null
+                })
+                // 5) order: ưu tiên có showtime trước (0), không có showtime sau (1); sau đó theo thời gian showtime
+                .OrderBy(x => x.ShowtimeStart == null ? 1 : 0)
+                .ThenBy(x => x.ShowtimeStart ?? DateTime.MaxValue);
+
+            var list = (top == int.MaxValue) ? await q.ToListAsync() : await q.Take(top).ToListAsync();
 
             return list.Select(x => new MovieCardVm
             {
@@ -74,6 +98,7 @@ namespace Semester03.Models.Repositories
             }).ToList();
         }
 
+        // ==================== NOW SHOWING (giữ nguyên) ====================
         public async Task<List<MovieCardVm>> GetNowShowingAsync()
         {
             var now = DateTime.Now;
@@ -130,7 +155,6 @@ namespace Semester03.Models.Repositories
             }).ToList();
         }
 
-        // Get details + approved comments
         public async Task<MovieDetailsVm> GetMovieDetailsAsync(int movieId)
         {
             var movie = await _db.TblMovies
@@ -169,7 +193,6 @@ namespace Semester03.Models.Repositories
             return movie;
         }
 
-        // Add comment (pending by default)
         public async Task AddCommentAsync(int movieId, int userId, int rate, string text)
         {
             var ent = new TblCustomerComplaint
@@ -178,20 +201,52 @@ namespace Semester03.Models.Repositories
                 CustomerComplaintMovieId = movieId,
                 CustomerComplaintRate = rate,
                 CustomerComplaintDescription = text,
-                CustomerComplaintStatus = 0, 
-                CustomerComplaintCreatedAt = DateTime.UtcNow
+                CustomerComplaintStatus = 0,
+                CustomerComplaintCreatedAt = DateTime.Now
             };
 
             _db.TblCustomerComplaints.Add(ent);
             await _db.SaveChangesAsync();
         }
 
-        // ==========================================================
-        // === ADMIN SETTINGS METHODS ===
-        // === These methods *actually* operate on Tbl_Cinema ===
-        // ==========================================================
+        public async Task<(int userPoints, List<CouponVm> coupons)> GetCouponsForUserAsync(int userId)
+        {
+            var now = DateTime.Now;
 
-        private const int FIXED_CINEMA_ID = 1; //
+            var user = await _db.TblUsers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.UsersId == userId);
+
+            if (user == null)
+                return (0, new List<CouponVm>());
+
+            var userPoints = user.UsersPoints ?? 0;
+
+            var coupons = await _db.TblCoupons
+                .AsNoTracking()
+                .Where(c =>
+                    c.CouponIsActive == true &&
+                    c.CouponValidFrom <= now &&
+                    c.CouponValidTo >= now &&
+                    (c.CouponMinimumPointsRequired == null ||
+                     c.CouponMinimumPointsRequired <= userPoints))
+                .Select(c => new CouponVm
+                {
+                    Id = c.CouponId,
+                    Name = c.CouponName,
+                    Description = c.CouponDescription,
+                    DiscountPercent = c.CouponDiscountPercent,
+                    ValidFrom = c.CouponValidFrom,
+                    ValidTo = c.CouponValidTo,
+                    MinimumPointsRequired = c.CouponMinimumPointsRequired
+                })
+                .OrderBy(c => c.ValidTo)
+                .ToListAsync();
+
+            return (userPoints, coupons);
+        }
+
+        private const int FIXED_CINEMA_ID = 1;
 
         public async Task<TblCinema> GetSettingsAsync()
         {
@@ -199,12 +254,10 @@ namespace Semester03.Models.Repositories
 
             if (cinema == null)
             {
-                // If ID=1 doesn't exist (e.g., empty DB), create it
-                // We use the first record from the seed data as default
                 cinema = new TblCinema
                 {
                     CinemaId = FIXED_CINEMA_ID,
-                    CinemaName = "Galaxy ABCD Mall" //
+                    CinemaName = "Galaxy ABCD Mall"
                 };
                 _db.TblCinemas.Add(cinema);
                 await _db.SaveChangesAsync();
@@ -214,12 +267,9 @@ namespace Semester03.Models.Repositories
 
         public async Task UpdateSettingsAsync(TblCinema cinemaSettings)
         {
-            // Ensure the ID is correct
             cinemaSettings.CinemaId = FIXED_CINEMA_ID;
             _db.Entry(cinemaSettings).State = EntityState.Modified;
             await _db.SaveChangesAsync();
         }
-
-
     }
 }
