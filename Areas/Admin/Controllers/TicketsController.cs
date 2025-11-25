@@ -87,7 +87,7 @@ namespace Semester03.Areas.Admin.Controllers
             }
 
             // Redirect back to the Details page for this showtime
-            return RedirectToAction(nameof(Details), new { id = id });
+            return RedirectToAction("Details", "Showtimes", new { id = id });
         }
     }
 }

@@ -17,7 +17,7 @@ namespace Semester03.Models.Repositories
             if (m == null) return null;
 
             var next = _db.TblShowtimes.AsNoTracking()
-                        .Where(s => s.ShowtimeMovieId == movieId && s.ShowtimeStart >= DateTime.UtcNow)
+                        .Where(s => s.ShowtimeMovieId == movieId && s.ShowtimeStart >= DateTime.Now)
                         .OrderBy(s => s.ShowtimeStart)
                         .Select(s => new { s.ShowtimeId, s.ShowtimeStart, s.ShowtimePrice })
                         .FirstOrDefault();
@@ -68,6 +68,17 @@ namespace Semester03.Models.Repositories
                 _db.TblMovies.Remove(entity);
                 await _db.SaveChangesAsync();
             }
+        }
+
+        public async Task<bool> UpdateStatusAsync(int id, int newStatus)
+        {
+            var movie = await _db.TblMovies.FindAsync(id);
+            if (movie == null) return false;
+
+            movie.MovieStatus = newStatus;
+            _db.Entry(movie).State = EntityState.Modified;
+            await _db.SaveChangesAsync();
+            return true;
         }
     }
 }

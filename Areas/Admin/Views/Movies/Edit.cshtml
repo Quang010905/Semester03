@@ -5,122 +5,171 @@
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
 }
 
-<h1 class="h3 mb-2 text-gray-800">Edit Movie</h1>
+<h1 class="h3 mb-2 text-gray-800">Edit Movie: @Model.MovieTitle</h1>
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card shadow mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">@Model.MovieTitle</h6>
-            </div>
-            <div class="card-body">
+<form asp-action="Edit" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <input type="hidden" asp-for="MovieId" />
+    <input type="hidden" asp-for="MovieImg" />
 
-                <form asp-action="Edit" enctype="multipart/form-data">
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-                    <input type="hidden" asp-for="MovieId" />
-                    <input type="hidden" asp-for="MovieImg" />
-
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">General Information</h6>
+                </div>
+                <div class="card-body">
                     <div class="form-group">
-                        <label asp-for="MovieTitle" class="control-label">Movie Title</label>
+                        <label asp-for="MovieTitle" class="control-label font-weight-bold">Movie Title</label>
                         <input asp-for="MovieTitle" class="form-control" />
                         <span asp-validation-for="MovieTitle" class="text-danger"></span>
                     </div>
-                    <div class="form-group">
-                        <label asp-for="MovieGenre" class="control-label">Genre</label>
-                        <input asp-for="MovieGenre" class="form-control" />
-                        <span asp-validation-for="MovieGenre" class="text-danger"></span>
-                    </div>
-                    <div class="form-group">
-                        <label asp-for="MovieDirector" class="control-label">Director</label>
-                        <input asp-for="MovieDirector" class="form-control" />
-                        <span asp-validation-for="MovieDirector" class="text-danger"></span>
-                    </div>
 
-                    <div class="form-group">
-                        <label class="control-label">New Poster Image (Optional)</label>
-                        <br />
-
-                        <img id="imagePreview"
-                             src="@(string.IsNullOrEmpty(Model.MovieImg) ? "~/Content/Uploads/noimage.png" : "/Content/Uploads/Movies/" + Model.MovieImg)"
-                             alt="Current Poster"
-                             style="max-width: 200px; border-radius: 5px; margin-bottom: 10px;" onerror="this.onerror=null; this.src='/Content/Uploads/noimage.png';" />
-
-                        <input type="file" name="imageFile" id="imageFile" class="form-control" accept="image/*" />
-                    </div>
-
-                    <div class="form-group">
-                        <label asp-for="MovieStartDate" class="control-label">Start Date</label>
-                        <input asp-for="MovieStartDate" class="form-control" type="datetime-local" />
-                        <span asp-validation-for="MovieStartDate" class="text-danger"></span>
-                    </div>
-                    <div class="form-group">
-                        <label asp-for="MovieEndDate" class="control-label">End Date</label>
-                        <input asp-for="MovieEndDate" class="form-control" type="datetime-local" />
-                        <span asp-validation-for="MovieEndDate" class="text-danger"></span>
-                    </div>
-
-                    <div class="form-group">
-                        <label asp-for="MovieRate" class="control-label">Manual Rating Override (0-5 Stars)</label>
-                        <div>
-                            @for (int i = 0; i <= 5; i++)
-                            {
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" asp-for="MovieRate" id="rate@(i)" value="@i">
-                                    <label class="form-check-label" for="rate@(i)">@i ★</label>
-                                </div>
-                            }
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="MovieGenre" class="control-label">Genre</label>
+                                <input asp-for="MovieGenre" class="form-control" />
+                                <span asp-validation-for="MovieGenre" class="text-danger"></span>
+                            </div>
                         </div>
-                        <span asp-validation-for="MovieRate" class="text-danger"></span>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="MovieDirector" class="control-label">Director</label>
+                                <input asp-for="MovieDirector" class="form-control" />
+                                <span asp-validation-for="MovieDirector" class="text-danger"></span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label asp-for="MovieDurationMin" class="control-label">Duration (in Minutes)</label>
-                        <input asp-for="MovieDurationMin" class="form-control" type="number" />
-                        <span asp-validation-for="MovieDurationMin" class="text-danger"></span>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label asp-for="MovieDurationMin" class="control-label">Duration (min)</label>
+                                <input asp-for="MovieDurationMin" class="form-control" type="number" />
+                                <span asp-validation-for="MovieDurationMin" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label asp-for="MovieStartDate" class="control-label">Start Date</label>
+                                <input asp-for="MovieStartDate" class="form-control" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}" />
+                                <span asp-validation-for="MovieStartDate" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label asp-for="MovieEndDate" class="control-label">End Date</label>
+                                <input asp-for="MovieEndDate" class="form-control" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}" />
+                                <span asp-validation-for="MovieEndDate" class="text-danger"></span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label asp-for="MovieDescription" class="control-label">Description</label>
-                        <textarea asp-for="MovieDescription" class="form-control" rows="5"></textarea>
+                        <textarea asp-for="MovieDescription" class="form-control" rows="6"></textarea>
                         <span asp-validation-for="MovieDescription" class="text-danger"></span>
                     </div>
+                </div>
+            </div>
+        </div>
 
-                    <div class="form-group">
-                        <label asp-for="MovieStatus" class="control-label">Status</label>
-                        <div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" asp-for="MovieStatus" id="statusAvailable" value="1">
-                                <label class="form-check-label" for="statusAvailable">Available</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" asp-for="MovieStatus" id="statusUnavailable" value="0">
-                                <label class="form-check-label" for="statusUnavailable">Unavailable</label>
-                            </div>
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Media & Status</h6>
+                </div>
+                <div class="card-body text-center">
+                    <label class="control-label float-left font-weight-bold">Poster Image</label>
+                    <br style="clear:both;" />
+
+                    <div class="mb-3 p-2 border rounded bg-light">
+                        <img id="imagePreview"
+                             src="@Url.Content(string.IsNullOrEmpty(Model.MovieImg) ? "~/Content/Uploads/noimage.png" : "~/Content/Uploads/Movies/" + Model.MovieImg)"
+                             alt="Current Poster"
+                             class="img-fluid"
+                             style="max-height: 300px; object-fit: contain;"
+                             onerror="this.onerror=null; this.src='/Content/Uploads/noimage.png';" />
+                    </div>
+
+                    <div class="custom-file text-left mb-3">
+                        <input type="file" name="imageFile" id="imageFile" class="custom-file-input" accept="image/*">
+                        <label class="custom-file-label" for="imageFile">Change poster...</label>
+                    </div>
+                    <span asp-validation-for="MovieImg" class="text-danger d-block text-left"></span>
+
+                    <hr />
+
+                    <div class="form-group text-left">
+                        <label class="font-weight-bold d-block">Rating Override</label>
+
+                        <div class="btn-group btn-group-sm w-100" role="group">
+                            @for (int i = 0; i <= 5; i++)
+                            {
+                                string activeClass = (Model.MovieRate == i) ? "active" : "";
+
+                                <label class="btn btn-outline-warning @activeClass" id="btnRate@(i)" onclick="setRating(@i)">
+                                    <input type="radio" asp-for="MovieRate" value="@i" style="display:none;" />
+                                    @i <i class="fas fa-star"></i>
+                                </label>
+                            }
                         </div>
-                        <span asp-validation-for="MovieStatus" class="text-danger"></span>
+                        <span asp-validation-for="MovieRate" class="text-danger"></span>
                     </div>
-                    <div class="form-group">
-                        <input type="submit" value="Save" class="btn btn-primary" />
-                        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+
+                    <div class="form-group text-left">
+                        <label class="font-weight-bold d-block">Publish Status</label>
+                        <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+                            <label class="btn btn-outline-success @(Model.MovieStatus == 1 ? "active" : "")">
+                                <input type="radio" asp-for="MovieStatus" id="statusAvailable" value="1"> Available
+                            </label>
+                            <label class="btn btn-outline-secondary @(Model.MovieStatus == 0 ? "active" : "")">
+                                <input type="radio" asp-for="MovieStatus" id="statusUnavailable" value="0"> Unavailable
+                            </label>
+                        </div>
                     </div>
-                </form>
+
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary btn-block btn-lg">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary btn-block">Cancel</a>
+                </div>
             </div>
         </div>
     </div>
-</div>
+</form>
 
 @section Scripts {
     <script>
-        // Script to preview the NEW image on file select
         document.getElementById('imageFile').addEventListener('change', function(event) {
             var preview = document.getElementById('imagePreview');
+            var fileNameLabel = document.querySelector('.custom-file-label');
             if (event.target.files && event.target.files[0]) {
+                var file = event.target.files[0];
                 var reader = new FileReader();
                 reader.onload = function(e) {
-                    preview.src = e.target.result; // Update preview
+                    preview.src = e.target.result;
                 };
-                reader.readAsDataURL(event.target.files[0]);
+                reader.readAsDataURL(file);
+                fileNameLabel.textContent = file.name;
             }
         });
+        function setRating(val) {
+            // 1. Remove 'active' class from all rating buttons
+            for (var i = 0; i <= 5; i++) {
+                var btn = document.getElementById('btnRate' + i);
+                if (btn) {
+                    btn.classList.remove('active');
+                }
+            }
+            // 2. Add 'active' class to the clicked button
+            var selectedBtn = document.getElementById('btnRate' + val);
+            if (selectedBtn) {
+                selectedBtn.classList.add('active');
+            }
+        }
     </script>
 }

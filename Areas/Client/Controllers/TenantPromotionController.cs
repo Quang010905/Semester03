@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Semester03.Models.Repositories;
 using Semester03.Models.ViewModels;
 
@@ -20,6 +20,7 @@ namespace Semester03.Areas.Client.Controllers
         // LIST PAGE
         public IActionResult Index(int? tenantId, int page = 1)
         {
+            // Chỉ gọi repository, tất cả logic query + phân trang đã ở repo
             var vm = _promotionRepo.GetPromotions(tenantId, page);
             return View(vm);
         }
