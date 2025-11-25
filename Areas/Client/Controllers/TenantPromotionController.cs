@@ -29,7 +29,7 @@ namespace Semester03.Areas.Client.Controllers
             if (tenantId.HasValue)
                 query = query.Where(x => x.TenantPromotionTenantId == tenantId);
 
-            var today = DateTime.UtcNow;
+            var today = DateTime.Now;
 
             var activeList = query
                 .Where(p => p.TenantPromotionEnd >= today)

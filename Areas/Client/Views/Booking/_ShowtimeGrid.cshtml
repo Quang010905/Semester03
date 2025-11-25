@@ -10,7 +10,7 @@ else
         @foreach (var s in Model)
         {
             <div class="showtime-slot" data-id="@s.Id" data-start="@s.StartTime.ToString("o")">
-                <div class="fw-semibold">@s.StartTime.ToLocalTime().ToString("HH:mm")</div>
+                <div class="fw-semibold">@s.StartTime.ToString("HH:mm")</div>
                 <div class="small text-muted">
                     @s.ScreenName
                     @if (!string.IsNullOrEmpty(s.CinemaName))

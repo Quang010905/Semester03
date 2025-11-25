@@ -285,7 +285,7 @@ namespace Semester03.Areas.Client.Controllers
                                 booking.EventBookingUserId,
                                 "PaymentFailed",
                                 $"Payment failed. VNPAY Code: {response.VnPayResponseCode}",
-                                DateTime.UtcNow.Date,
+                                DateTime.Now.Date,
                                 null
                             );
                         }

@@ -92,13 +92,16 @@ namespace Semester03.Models.Repositories
                     foreach (var ticket in ticketsToCancel)
                     {
                         ticket.TicketStatus = "cancelled";
+                        ticket.TicketUpdatedAt = DateTime.Now;
                         _db.TblTickets.Update(ticket);
                     }
 
                     foreach (var seat in seatsToCancel)
                     {
                         seat.ShowtimeSeatStatus = "available";
-                        seat.ShowtimeSeatReservedByUserId = 0;
+                        seat.ShowtimeSeatReservedByUserId = null;
+                        seat.ShowtimeSeatReservedAt = null;
+                        seat.ShowtimeSeatUpdatedAt = DateTime.Now;
                         _db.TblShowtimeSeats.Update(seat);
                     }
 
@@ -145,11 +148,13 @@ namespace Semester03.Models.Repositories
                     }
 
                     ticket.TicketStatus = "cancelled";
+                    ticket.TicketUpdatedAt = DateTime.Now;
                     _db.TblTickets.Update(ticket);
 
                     showtimeSeat.ShowtimeSeatStatus = "available";
                     showtimeSeat.ShowtimeSeatReservedByUserId = null;
                     showtimeSeat.ShowtimeSeatReservedAt = null;
+                    showtimeSeat.ShowtimeSeatUpdatedAt = DateTime.Now;
                     _db.TblShowtimeSeats.Update(showtimeSeat);
 
                     await _db.SaveChangesAsync();

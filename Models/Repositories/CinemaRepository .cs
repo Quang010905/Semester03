@@ -172,7 +172,7 @@ namespace Semester03.Models.Repositories
                 CustomerComplaintRate = rate,
                 CustomerComplaintDescription = text,
                 CustomerComplaintStatus = 0,
-                CustomerComplaintCreatedAt = DateTime.UtcNow
+                CustomerComplaintCreatedAt = DateTime.Now
             };
 
             _db.TblCustomerComplaints.Add(ent);
@@ -183,7 +183,7 @@ namespace Semester03.Models.Repositories
 
         public async Task<(int userPoints, List<CouponVm> coupons)> GetCouponsForUserAsync(int userId)
         {
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
 
             var user = await _db.TblUsers
                 .AsNoTracking()

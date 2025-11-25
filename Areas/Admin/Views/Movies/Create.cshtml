@@ -6,109 +6,141 @@
 }
 
 <h1 class="h3 mb-2 text-gray-800">Add New Movie</h1>
+<p class="mb-4">Enter movie details. Fields marked are required.</p>
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card shadow mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Movie Details</h6>
-            </div>
-            <div class="card-body">
+<form asp-action="Create" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-                <form asp-action="Create" enctype="multipart/form-data">
-
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">General Information</h6>
+                </div>
+                <div class="card-body">
                     <div class="form-group">
-                        <label asp-for="MovieTitle" class="control-label">Movie Title</label>
-                        <input asp-for="MovieTitle" class="form-control" />
+                        <label asp-for="MovieTitle" class="control-label font-weight-bold">Movie Title</label>
+                        <input asp-for="MovieTitle" class="form-control" placeholder="Enter movie name..." />
                         <span asp-validation-for="MovieTitle" class="text-danger"></span>
                     </div>
 
-                    <div class="form-group">
-                        <label asp-for="MovieGenre" class="control-label">Genre</label>
-                        <input asp-for="MovieGenre" class="form-control" />
-                        <span asp-validation-for="MovieGenre" class="text-danger"></span>
-                    </div>
-                    <div class="form-group">
-                        <label asp-for="MovieDirector" class="control-label">Director</label>
-                        <input asp-for="MovieDirector" class="form-control" />
-                        <span asp-validation-for="MovieDirector" class="text-danger"></span>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="control-label">Poster Image</label>
-                        <input type="file" name="imageFile" id="imageFile" class="form-control" accept="image/*" />
-                        <span asp-validation-for="MovieImg" class="text-danger"></span>
-                        
-                        <img id="imagePreview" 
-                             src="~/Content/Uploads/noimage.png" 
-                             alt="Image preview" 
-                             class="mt-2" 
-                             style="max-width: 200px; border-radius: 5px; display: block;" />
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="MovieGenre" class="control-label">Genre</label>
+                                <input asp-for="MovieGenre" class="form-control" placeholder="e.g. Action, Horror" />
+                                <span asp-validation-for="MovieGenre" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="MovieDirector" class="control-label">Director</label>
+                                <input asp-for="MovieDirector" class="form-control" />
+                                <span asp-validation-for="MovieDirector" class="text-danger"></span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label asp-for="MovieStartDate" class="control-label">Start Date</label>
-                        <input asp-for="MovieStartDate" class="form-control" type="datetime-local" />
-                        <span asp-validation-for="MovieStartDate" class="text-danger"></span>
-                    </div>
-                    <div class="form-group">
-                        <label asp-for="MovieEndDate" class="control-label">End Date</label>
-                        <input asp-for="MovieEndDate" class="form-control" type="datetime-local" />
-                        <span asp-validation-for="MovieEndDate" class="text-danger"></span>
-                    </div>
-
-                    <div class="form-group">
-                        <label asp-for="MovieDurationMin" class="control-label">Duration (in Minutes)</label>
-                        <input asp-for="MovieDurationMin" class="form-control" type="number" />
-                        <span asp-validation-for="MovieDurationMin" class="text-danger"></span>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label asp-for="MovieDurationMin" class="control-label">Duration (min)</label>
+                                <input asp-for="MovieDurationMin" class="form-control" type="number" min="1" />
+                                <span asp-validation-for="MovieDurationMin" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label asp-for="MovieStartDate" class="control-label">Start Date</label>
+                                <input asp-for="MovieStartDate" class="form-control" type="datetime-local" />
+                                <span asp-validation-for="MovieStartDate" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label asp-for="MovieEndDate" class="control-label">End Date</label>
+                                <input asp-for="MovieEndDate" class="form-control" type="datetime-local" />
+                                <span asp-validation-for="MovieEndDate" class="text-danger"></span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label asp-for="MovieDescription" class="control-label">Description</label>
-                        <textarea asp-for="MovieDescription" class="form-control" rows="5"></textarea>
+                        <textarea asp-for="MovieDescription" class="form-control" rows="6" placeholder="Enter synopsis..."></textarea>
                         <span asp-validation-for="MovieDescription" class="text-danger"></span>
                     </div>
+                </div>
+            </div>
+        </div>
 
-                    <div class="form-group">
-                        <label asp-for="MovieStatus" class="control-label">Status</label>
-                        <div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" asp-for="MovieStatus" id="statusAvailable" value="1">
-                                <label class="form-check-label" for="statusAvailable">Available</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" asp-for="MovieStatus" id="statusUnavailable" value="0">
-                                <label class="form-check-label" for="statusUnavailable">Unavailable</label>
-                            </div>
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Media & Status</h6>
+                </div>
+                <div class="card-body text-center">
+                    <label class="control-label float-left font-weight-bold">Poster Image</label>
+                    <br style="clear:both;" />
+
+                    <div class="mb-3 p-2 border rounded bg-light">
+                        <img id="imagePreview"
+                             src="~/Content/Uploads/noimage.png"
+                             alt="Image preview"
+                             class="img-fluid"
+                             style="max-height: 300px; object-fit: contain;" />
+                    </div>
+
+                    <div class="custom-file text-left mb-3">
+                        <input type="file" name="imageFile" id="imageFile" class="custom-file-input" accept="image/*">
+                        <label class="custom-file-label" for="imageFile">Choose file...</label>
+                    </div>
+                    <span asp-validation-for="MovieImg" class="text-danger d-block text-left"></span>
+
+                    <hr />
+
+                    <div class="form-group text-left">
+                        <label class="font-weight-bold d-block">Publish Status</label>
+                        <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+                            <label class="btn btn-outline-success active">
+                                <input type="radio" asp-for="MovieStatus" id="statusAvailable" value="1" checked> Available
+                            </label>
+                            <label class="btn btn-outline-secondary">
+                                <input type="radio" asp-for="MovieStatus" id="statusUnavailable" value="0"> Unavailable
+                            </label>
                         </div>
                         <span asp-validation-for="MovieStatus" class="text-danger"></span>
                     </div>
-                    <div class="form-group">
-                        <input type="submit" value="Create" class="btn btn-primary" />
-                        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
-                    </div>
-                </form>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary btn-block btn-lg">
+                        <i class="fas fa-save"></i> Create Movie
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary btn-block">Back to List</a>
+                </div>
             </div>
         </div>
     </div>
-</div>
+</form>
 
 @section Scripts {
     <script>
-        // Script to preview the image on file select
+        // Preview Image
         document.getElementById('imageFile').addEventListener('change', function(event) {
             var preview = document.getElementById('imagePreview');
+            var fileNameLabel = document.querySelector('.custom-file-label');
+
             if (event.target.files && event.target.files[0]) {
+                var file = event.target.files[0];
                 var reader = new FileReader();
+
                 reader.onload = function(e) {
                     preview.src = e.target.result;
-                    preview.style.display = 'block'; // Show the preview
                 };
-                reader.readAsDataURL(event.target.files[0]);
-            } else {
-                preview.style.display = 'none'; // Hide if no file selected
+                reader.readAsDataURL(file);
+
+                // Update label with filename
+                fileNameLabel.textContent = file.name;
             }
         });
     </script>

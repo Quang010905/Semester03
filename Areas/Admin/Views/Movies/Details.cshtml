@@ -5,103 +5,101 @@
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
 }
 
-<h1 class="h3 mb-2 text-gray-800">Movie Details</h1>
+<h1 class="h3 mb-2 text-gray-800">Movie Details: @Model.MovieTitle</h1>
 
-<div class="card shadow mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">@Model.MovieTitle</h6>
-    </div>
-    <div class="card-body">
-        <dl class="row">
-
-            <dt class="col-sm-2">
-                Poster Image
-            </dt>
-            <dd class="col-sm-10 mb-3">
-                <img src="@(string.IsNullOrEmpty(Model.MovieImg) ? "~/Content/Uploads/noimage.png" : "/Content/Uploads/Movies/" + Model.MovieImg)"
+<div class="row">
+    <div class="col-lg-4 col-md-5">
+        <div class="card shadow mb-4">
+            <div class="card-body text-center bg-dark">
+                <img src="@Url.Content(string.IsNullOrEmpty(Model.MovieImg) ? "~/Content/Uploads/noimage.png" : "~/Content/Uploads/Movies/" + Model.MovieImg)"
                      alt="@Model.MovieTitle"
-                     style="max-width: 200px; border-radius: 5px;" onerror="this.onerror=null; this.src='/Content/Uploads/noimage.png';" />
-            </dd>
-            <dt class="col-sm-2">
-                Movie Title
-            </dt>
-            <dd class="col-sm-10">
-                @Html.DisplayFor(model => model.MovieTitle)
-            </dd>
-            <dt class="col-sm-2">
-                Genre
-            </dt>
-            <dd class="col-sm-10">
-                @Html.DisplayFor(model => model.MovieGenre)
-            </dd>
-            <dt class="col-sm-2">
-                Description
-            </dt>
-            <dd class="col-sm-10">
-                @Html.DisplayFor(model => model.MovieDescription)
-            </dd>
-            <dt class="col-sm-2">
-                Director
-            </dt>
-            <dd class="col-sm-10">
-                @Html.DisplayFor(model => model.MovieDirector)
-            </dd>
-            <dt class="col-sm-2">
-                Start Date
-            </dt>
-            <dd class="col-sm-10">
-                @Html.DisplayFor(model => model.MovieStartDate)
-            </dd>
-            <dt class="col-sm-2">
-                End Date
-            </dt>
-            <dd class="col-sm-10">
-                @Html.DisplayFor(model => model.MovieEndDate)
-            </dd>
-            <dt class="col-sm-2">
-                Duration (Min)
-            </dt>
-            <dd class="col-sm-10">
-                @Html.DisplayFor(model => model.MovieDurationMin)
-            </dd>
-
-            <dt class="col-sm-2">
-                Rating
-            </dt>
-            <dd class="col-sm-10">
-                @for (int i = 1; i <= 5; i++)
-                {
-                    if (i <= Model.MovieRate)
-                    {
-                        // Solid star
-                        <i class="fas fa-star" style="color: #f39c12;"></i>
-                    }
-                    else
-                    {
-                        // Empty star
-                        <i class="far fa-star" style="color: #f39c12;"></i>
-                    }
-                }
-            </dd>
-
-            <dt class="col-sm-2">
-                Status
-            </dt>
-            <dd class="col-sm-10">
-                @if (Model.MovieStatus == 1)
-                {
-                    <span class="badge badge-success">Available</span>
-                }
-                else
-                {
-                    <span class="badge badge-secondary">Unavailable</span>
-                }
-            </dd>
-
-        </dl>
+                     class="img-fluid rounded"
+                     style="max-height: 450px; width: auto;"
+                     onerror="this.onerror=null; this.src='/Content/Uploads/noimage.png';" />
+            </div>
+        </div>
     </div>
-    <div classs="card-footer" style="padding: 1.25rem;">
-        <a asp-action="Edit" asp-route-id="@Model.MovieId" class="btn btn-warning">Edit</a>
-        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+
+    <div class="col-lg-8 col-md-7">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Movie Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-3 font-weight-bold">Title:</div>
+                    <div class="col-md-9 h5 text-gray-900">@Model.MovieTitle</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-3 font-weight-bold">Genre:</div>
+                    <div class="col-md-9">@Model.MovieGenre</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-3 font-weight-bold">Director:</div>
+                    <div class="col-md-9">@Model.MovieDirector</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-3 font-weight-bold">Duration:</div>
+                    <div class="col-md-9">@Model.MovieDurationMin minutes</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-3 font-weight-bold">Release Period:</div>
+                    <div class="col-md-9">
+                        From: @Model.MovieStartDate.ToString("dd/MM/yyyy HH:mm") <br />
+                        To:   @Model.MovieEndDate.ToString("dd/MM/yyyy HH:mm")
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-3 font-weight-bold">Rating:</div>
+                    <div class="col-md-9 text-warning">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            if (i <= Model.MovieRate)
+                            {
+                                <i class="fas fa-star"></i>
+                            }
+                            else
+                            {
+
+                                <i class="far fa-star"></i>
+                            }
+                        }
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-3 font-weight-bold">Status:</div>
+                    <div class="col-md-9">
+                        @if (Model.MovieStatus == 1)
+                        {
+                            <span class="badge badge-success p-2">Available</span>
+                        }
+                        else
+                        {
+
+                            <span class="badge badge-secondary p-2">Unavailable</span>
+                        }
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="font-weight-bold">Description:</h6>
+                        <p class="text-gray-700">@Model.MovieDescription</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a asp-action="Edit" asp-route-id="@Model.MovieId" class="btn btn-warning btn-icon-split">
+                    <span class="icon text-white-50"><i class="fas fa-edit"></i></span>
+                    <span class="text">Edit Movie</span>
+                </a>
+                <a asp-action="Index" class="btn btn-secondary btn-icon-split ml-2">
+                    <span class="icon text-white-50"><i class="fas fa-arrow-left"></i></span>
+                    <span class="text">Back to List</span>
+                </a>
+            </div>
+        </div>
     </div>
 </div>

@@ -196,7 +196,7 @@ namespace Semester03.Areas.Client.Controllers
             };
 
             // --- Load coupon đang active & trong thời gian ---
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
             var coupons = _context.TblCoupons
                 .Where(c => !((c.CouponIsActive ?? false) == false
                               || c.CouponValidFrom > now
@@ -282,7 +282,7 @@ namespace Semester03.Areas.Client.Controllers
                     if (coupon == null)
                         return Json(new { success = false, message = "Mã giảm giá không hợp lệ." });
 
-                    var now = DateTime.UtcNow;
+                    var now = DateTime.Now;
                     if (coupon.CouponValidFrom > now || coupon.CouponValidTo < now)
                         return Json(new { success = false, message = "Mã đã hết hạn hoặc chưa hiệu lực." });
 
@@ -654,7 +654,7 @@ namespace Semester03.Areas.Client.Controllers
 
                                 var pNow = cmd.CreateParameter();
                                 pNow.ParameterName = "@now";
-                                pNow.Value = DateTime.UtcNow;
+                                pNow.Value = DateTime.Now;
                                 cmd.Parameters.Add(pNow);
 
                                 var pReservedBy = cmd.CreateParameter();
@@ -664,7 +664,7 @@ namespace Semester03.Areas.Client.Controllers
 
                                 var pReservedAt = cmd.CreateParameter();
                                 pReservedAt.ParameterName = "@reservedAt";
-                                pReservedAt.Value = (object?)DateTime.UtcNow ?? DBNull.Value;
+                                pReservedAt.Value = (object?)DateTime.Now ?? DBNull.Value;
                                 cmd.Parameters.Add(pReservedAt);
 
                                 await cmd.ExecuteNonQueryAsync();
@@ -711,7 +711,7 @@ namespace Semester03.Areas.Client.Controllers
 
                                     var pPurchasedAt = cmd.CreateParameter();
                                     pPurchasedAt.ParameterName = "@purchasedAt";
-                                    pPurchasedAt.Value = DateTime.UtcNow;
+                                    pPurchasedAt.Value = DateTime.Now;
                                     cmd.Parameters.Add(pPurchasedAt);
 
                                     var inserted = await cmd.ExecuteNonQueryAsync();
@@ -752,7 +752,7 @@ namespace Semester03.Areas.Client.Controllers
 
                                     var pNow2 = cmd.CreateParameter();
                                     pNow2.ParameterName = "@now";
-                                    pNow2.Value = DateTime.UtcNow;
+                                    pNow2.Value = DateTime.Now;
                                     cmd.Parameters.Add(pNow2);
 
                                     var pUserId = cmd.CreateParameter();
@@ -943,7 +943,7 @@ namespace Semester03.Areas.Client.Controllers
                 if (coupon == null)
                     return BadRequest(new { success = false, message = "Mã không tồn tại hoặc không hoạt động." });
 
-                var now = DateTime.UtcNow;
+                var now = DateTime.Now;
                 if (coupon.CouponValidFrom > now || coupon.CouponValidTo < now)
                     return BadRequest(new { success = false, message = "Mã chưa có hiệu lực hoặc đã hết hạn." });
 
@@ -998,7 +998,7 @@ namespace Semester03.Areas.Client.Controllers
                         seat.ShowtimeSeatStatus = "available";
                         seat.ShowtimeSeatReservedByUserId = default;
                         seat.ShowtimeSeatReservedAt = default(DateTime);
-                        seat.ShowtimeSeatUpdatedAt = DateTime.UtcNow;
+                        seat.ShowtimeSeatUpdatedAt = DateTime.Now;
                     }
 
                     await _context.SaveChangesAsync();

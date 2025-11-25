@@ -3,13 +3,137 @@
 @{
     ViewData["Title"] = "Showtime Details";
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+
+    // 1. Statistics
     int totalSeats = Model.ShowtimeScreen?.ScreenSeats ?? 0;
     int soldSeats = Model.TblShowtimeSeats.Count(s => s.ShowtimeSeatStatus.ToLower() == "sold");
     int availableSeats = Model.TblShowtimeSeats.Count(s => s.ShowtimeSeatStatus.ToLower() == "available");
+
+    // Occupancy percentage
     decimal occupancy = (totalSeats > 0) ? ((decimal)soldSeats / totalSeats) * 100 : 0;
 }
 
-<h1 class="h3 mb-2 text-gray-800">Showtime Details</h1>
+<style>
+    /* --- SEAT GRID STYLES --- */
+    .screen-container {
+        background-color: #f8f9fc;
+        border: 1px solid #e3e6f0;
+        border-radius: 10px;
+        padding: 20px;
+        overflow-x: auto; /* Scroll if too wide */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .screen-display {
+        width: 60%;
+        height: 30px;
+        background: linear-gradient(180deg, #5a5c69 0%, #858796 100%);
+        color: white;
+        text-align: center;
+        line-height: 30px;
+        border-radius: 0 0 40px 40px; /* Curved bottom */
+        margin-bottom: 40px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        font-weight: bold;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+    }
+
+    .seat-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 8px; /* Row gap */
+    }
+
+    .seat-row {
+        display: flex;
+        align-items: center;
+        gap: 6px; /* Col gap */
+    }
+
+    .row-label {
+        width: 30px;
+        font-weight: bold;
+        color: #858796;
+        text-align: right;
+        padding-right: 10px;
+    }
+
+    .seat-item {
+        width: 35px;
+        height: 35px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        font-weight: bold;
+        color: white;
+        cursor: default;
+        position: relative;
+        border: 1px solid rgba(0,0,0,0.1);
+        transition: transform 0.1s;
+    }
+
+        .seat-item:hover {
+            transform: scale(1.2);
+            z-index: 10;
+        }
+
+    /* --- STATUS COLORS --- */
+    .st-available {
+        background-color: #1cc88a;
+    }
+    /* Green */
+    .st-sold {
+        background-color: #e74a3b;
+        cursor: pointer;
+    }
+    /* Red */
+    .st-reserved {
+        background-color: #f6c23e;
+    }
+    /* Yellow */
+    .st-blocked {
+        background-color: #858796;
+        opacity: 0.5;
+    }
+    /* Gray (Broken/Maintenance) */
+
+    /* Legend */
+    .legend-item {
+        font-size: 0.8rem;
+        margin-right: 15px;
+    }
+
+    .legend-box {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        margin-right: 5px;
+    }
+</style>
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Showtime Details</h1>
+    <a asp-action="Index" class="btn btn-sm btn-secondary shadow-sm">
+        <i class="fas fa-arrow-left fa-sm text-white-50"></i> Back to Schedule
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
 <div class="row">
     <div class="col-xl-4 col-md-6 mb-4">
         <div class="card border-left-danger shadow h-100 py-2">
@@ -30,103 +154,141 @@
                         </div>
                     </div>
                 </a>
-
             </div>
         </div>
     </div>
+
     <div class="col-xl-4 col-md-6 mb-4">
         <div class="card border-left-success shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                            Seats Available
-                        </div>
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Available</div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">@availableSeats</div>
                     </div>
-                    <div class="col-auto">
-                        <i class="fas fa-chair fa-2x text-gray-300"></i>
-                    </div>
+                    <div class="col-auto"><i class="fas fa-chair fa-2x text-gray-300"></i></div>
                 </div>
             </div>
         </div>
     </div>
+
     <div class="col-xl-4 col-md-6 mb-4">
         <div class="card border-left-info shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                            Occupancy
-                        </div>
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Occupancy</div>
                         <div class="row no-gutters align-items-center">
                             <div class="col-auto">
                                 <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">@occupancy.ToString("F0")%</div>
                             </div>
                             <div class="col">
                                 <div class="progress progress-sm mr-2">
-                                    <div class="progress-bar bg-info" role="progressbar"
-                                         style="width: @occupancy.ToString("F0")%" aria-valuenow="@occupancy.ToString("F0")" aria-valuemin="0"
-                                         aria-valuemax="100"></div>
+                                    <div class="progress-bar bg-info" role="progressbar" style="width: @occupancy.ToString("F0")%"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-auto">
-                        <i class="fas fa-chart-pie fa-2x text-gray-300"></i>
-                    </div>
+                    <div class="col-auto"><i class="fas fa-chart-pie fa-2x text-gray-300"></i></div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 <div class="card shadow mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">@Model.ShowtimeMovie.MovieTitle</h6>
-    </div>
-    <div class="card-body">
-        <dl class="row">
-            <dt class="col-sm-2">
-                Movie
-            </dt>
-            <dd class="col-sm-10">
-                @Html.DisplayFor(model => model.ShowtimeMovie.MovieTitle)
-            </dd>
-            <dt class="col-sm-2">
-                Screen
-            </dt>
-            <dd class="col-sm-10">
-                @Html.DisplayFor(model => model.ShowtimeScreen.ScreenName)
-            </dd>
-            <dt class="col-sm-2">
-                Start Time
-            </dt>
-            <dd class="col-sm-10">
-                @Model.ShowtimeStart.ToString("F")
-            </dd>
-            <dt class="col-sm-2">
-                Price
-            </dt>
-            <dd class="col-sm-10">
-                @Model.ShowtimePrice.ToString("N0") VND
-            </dd>
-        </dl>
-    </div>
-    <div class="card-footer" style="padding: 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">
+            @Model.ShowtimeMovie.MovieTitle
+            <span class="text-muted small">(@Model.ShowtimeStart.ToString("dd/MM/yyyy HH:mm"))</span>
+        </h6>
 
         <div>
-            <a asp-action="Edit" asp-route-id="@Model.ShowtimeId" class="btn btn-warning">Edit</a>
-            <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+            <span class="legend-item"><span class="legend-box" style="background:#1cc88a;"></span>Available</span>
+            <span class="legend-item"><span class="legend-box" style="background:#e74a3b;"></span>Sold</span>
+            <span class="legend-item"><span class="legend-box" style="background:#f6c23e;"></span>Reserved</span>
+            <span class="legend-item"><span class="legend-box" style="background:#858796;"></span>Blocked</span>
+        </div>
+    </div>
+
+    <div class="card-body">
+
+        <div class="screen-container">
+            <div class="screen-display">SCREEN</div>
+
+            <div class="seat-grid">
+                @{
+                    // Group seats by Row (A, B, C...)
+                    // Make sure to order by Row then Col
+                    var rows = Model.TblShowtimeSeats
+                    .OrderBy(ss => ss.ShowtimeSeatSeat.SeatRow)
+                    .ThenBy(ss => ss.ShowtimeSeatSeat.SeatCol)
+                    .GroupBy(ss => ss.ShowtimeSeatSeat.SeatRow);
+                }
+
+                @if (!rows.Any())
+                {
+                    <div class="alert alert-warning">
+                        No seats generated for this showtime yet.
+                        (This usually happens for old data. New showtimes auto-generate seats).
+                    </div>
+                }
+
+                @foreach (var row in rows)
+                {
+                    <div class="seat-row">
+                        <div class="row-label">@row.Key</div>
+
+                        @foreach (var seat in row)
+                        {
+                            string statusClass = "st-available";
+                            string status = seat.ShowtimeSeatStatus.ToLower();
+                            string title = $"{seat.ShowtimeSeatSeat.SeatLabel}: {status}";
+
+                            // Logic chọn màu
+                            if (status == "sold")
+                            {
+                                statusClass = "st-sold";
+                                // Nếu có UserID, hiển thị tên (Cần Include User trong Repo)
+                                if (seat.ShowtimeSeatReservedByUserId != null)
+                                {
+                                    title += $" (User ID: {seat.ShowtimeSeatReservedByUserId})";
+                                }
+                            }
+                            else if (status == "reserved") { statusClass = "st-reserved"; }
+                            else if (status == "locked" || status == "blocked" || seat.ShowtimeSeatSeat.SeatIsActive == false)
+                            {
+                                statusClass = "st-blocked"; title = "Broken/Maintenance";
+                            }
+
+                            <div class="seat-item @statusClass" title="@title">
+                                @seat.ShowtimeSeatSeat.SeatCol
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
         </div>
 
-        <div>
-            <form asp-action="CancelAllTickets" asp-route-id="@Model.ShowtimeId" method="post" style="margin-bottom: 0;">
-                <button type="submit" class="btn btn-danger"
-                        onclick="return confirm('DANGER: This will cancel ALL sold tickets for this showtime and make their seats available again. This action cannot be undone. Are you sure?')">
-                    <i class="fas fa-exclamation-triangle"></i> Cancel All Tickets
+    </div>
+
+    <div class="card-footer d-flex justify-content-between">
+        <a asp-action="Edit" asp-route-id="@Model.ShowtimeId" class="btn btn-warning">
+            <i class="fas fa-edit"></i> Edit Showtime
+        </a>
+
+        @if (soldSeats > 0)
+        {
+            <form asp-action="CancelAllTickets" asp-route-id="@Model.ShowtimeId" asp-controller="Tickets" method="post"
+                  onsubmit="return confirm('WARNING: This will cancel @soldSeats sold tickets! Are you sure?');">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-bomb"></i> Cancel All Tickets
                 </button>
             </form>
-        </div>
-
+        }
+        else
+        {
+            <button class="btn btn-secondary" disabled>No Tickets to Cancel</button>
+        }
     </div>
 </div>

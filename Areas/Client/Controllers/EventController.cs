@@ -114,7 +114,7 @@ namespace Semester03.Areas.Client.Controllers
                 CustomerComplaintRate = rate,
                 CustomerComplaintDescription = text,
                 CustomerComplaintStatus = 0,
-                CustomerComplaintCreatedAt = DateTime.UtcNow
+                CustomerComplaintCreatedAt = DateTime.Now
             };
 
             _context.TblCustomerComplaints.Add(entity);
