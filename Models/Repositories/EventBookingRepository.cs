@@ -176,7 +176,7 @@ namespace Semester03.Models.Repositories
                 EventBookingTotalCost = totalCost,
                 EventBookingPaymentStatus = totalCost > 0m ? 0 : 2, // 0: pending, 2: free-confirmed
                 EventBookingNotes = combinedNotes,
-                EventBookingCreatedDate = DateTime.UtcNow
+                EventBookingCreatedDate = DateTime.Now
             };
 
             // ====== Quantity ======
@@ -230,7 +230,7 @@ namespace Semester03.Models.Repositories
                 entity.EventBookingUserId,
                 "CreatedBookingDay",
                 entity.EventBookingNotes,
-                DateTime.UtcNow.Date,
+                DateTime.Now.Date,
                 quantity
             );
 
@@ -248,7 +248,7 @@ namespace Semester03.Models.Repositories
             {
                 var prop = booking.GetType().GetProperty("EventBookingUpdatedDate");
                 if (prop != null && prop.CanWrite)
-                    prop.SetValue(booking, DateTime.UtcNow);
+                    prop.SetValue(booking, DateTime.Now);
             }
             catch { }
 
@@ -269,11 +269,11 @@ namespace Semester03.Models.Repositories
                 var type = booking.GetType();
                 var paidAtProp = type.GetProperty("EventBookingPaidAt") ?? type.GetProperty("PaidAt");
                 if (paidAtProp != null && paidAtProp.CanWrite)
-                    paidAtProp.SetValue(booking, DateTime.UtcNow);
+                    paidAtProp.SetValue(booking, DateTime.Now);
 
                 var updatedProp = type.GetProperty("EventBookingUpdatedDate") ?? type.GetProperty("UpdatedAt");
                 if (updatedProp != null && updatedProp.CanWrite)
-                    updatedProp.SetValue(booking, DateTime.UtcNow);
+                    updatedProp.SetValue(booking, DateTime.Now);
             }
             catch { }
 
@@ -287,7 +287,7 @@ namespace Semester03.Models.Repositories
                 booking.EventBookingUserId,
                 "PaymentSuccess",
                 "Thanh toán thành công qua VNPAY",
-                DateTime.UtcNow.Date,
+                DateTime.Now.Date,
                 TryGetQuantityFromBooking(booking)
             );
 
@@ -304,7 +304,7 @@ namespace Semester03.Models.Repositories
             {
                 var updatedProp = booking.GetType().GetProperty("EventBookingUpdatedDate") ?? booking.GetType().GetProperty("UpdatedAt");
                 if (updatedProp != null && updatedProp.CanWrite)
-                    updatedProp.SetValue(booking, DateTime.UtcNow);
+                    updatedProp.SetValue(booking, DateTime.Now);
             }
             catch { }
 
@@ -318,7 +318,7 @@ namespace Semester03.Models.Repositories
                 booking.EventBookingUserId,
                 "AdminCancelled",
                 "Đơn đặt vé bị hủy",
-                DateTime.UtcNow.Date,
+                DateTime.Now.Date,
                 TryGetQuantityFromBooking(booking)
             );
 
@@ -416,7 +416,7 @@ namespace Semester03.Models.Repositories
                 EventBookingHistoryUserId = adminId,
                 EventBookingHistoryAction = "UpdateStatus",
                 EventBookingHistoryDetails = $"Status changed from '{oldStatusLabel}' to '{newStatusLabel}'",
-                EventBookingHistoryCreatedAt = DateTime.UtcNow
+                EventBookingHistoryCreatedAt = DateTime.Now
             };
             _db.TblEventBookingHistories.Add(history);
 
@@ -482,7 +482,7 @@ namespace Semester03.Models.Repositories
                 EventBookingHistoryDetails = details,
                 EventBookingHistoryRelatedDate = relatedDate.HasValue ? DateOnly.FromDateTime(relatedDate.Value) : (DateOnly?)null,
                 EventBookingHistoryQuantity = quantity,
-                EventBookingHistoryCreatedAt = DateTime.UtcNow
+                EventBookingHistoryCreatedAt = DateTime.Now
             };
 
             _db.TblEventBookingHistories.Add(history);

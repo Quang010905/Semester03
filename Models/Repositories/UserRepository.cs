@@ -88,8 +88,8 @@ namespace Semester03.Models.Repositories
                 UsersPhone = phone?.Trim(),
                 UsersRoleId = 2, // role = 2 when registering
                 UsersPoints = 0,
-                UsersCreatedAt = DateTime.UtcNow,
-                UsersUpdatedAt = DateTime.UtcNow,
+                UsersCreatedAt = DateTime.Now,
+                UsersUpdatedAt = DateTime.Now,
                 UsersStatus = 1 // <-- ensure account is active when created
             };
 

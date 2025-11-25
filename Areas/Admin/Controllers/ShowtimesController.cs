@@ -2,8 +2,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Semester03.Areas.Admin.Models;
 using Semester03.Models.Entities;
 using Semester03.Models.Repositories;
+using System.Globalization;
 
 namespace Semester03.Areas.Admin.Controllers
 {
@@ -36,10 +38,40 @@ namespace Semester03.Areas.Admin.Controllers
         }
 
         // GET: Admin/Showtimes
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(DateTime? date)
         {
-            var showtimes = await _showtimeRepo.GetAllAsync();
-            return View(showtimes);
+            //  Default to today if no date selected
+            var selectedDate = date ?? DateTime.Now.Date;
+
+            //  Get all screens (Rows of the timeline)
+            var screens = await _context.TblScreens.OrderBy(s => s.ScreenName).ToListAsync();
+
+            //  Get showtimes for that date
+            var showtimes = await _showtimeRepo.GetShowtimesByDateAsync(selectedDate);
+
+            // Get active movies
+            var movies = await _context.TblMovies.Where(m => m.MovieStatus == 1).ToListAsync(); 
+
+            //  Group data for the View
+            var timelineData = new ShowtimeTimelineViewModel
+            {
+                SelectedDate = selectedDate,
+                ScreenGroups = new List<ScreenTimelineGroup>(),
+                AvailableMovies = movies
+            };
+
+            foreach (var screen in screens)
+            {
+                timelineData.ScreenGroups.Add(new ScreenTimelineGroup
+                {
+                    ScreenId = screen.ScreenId,
+                    ScreenName = screen.ScreenName,
+                    TotalSeats = screen.ScreenSeats,
+                    Showtimes = showtimes.Where(s => s.ShowtimeScreenId == screen.ScreenId).ToList()
+                });
+            }
+
+            return View(timelineData);
         }
 
         // GET: Admin/Showtimes/Details/5
@@ -51,135 +83,130 @@ namespace Semester03.Areas.Admin.Controllers
             return View(showtime);
         }
 
-        // GET: Admin/Showtimes/Create
-        public IActionResult Create()
-        {
-            // Populate the dropdowns for the Create form
-            PopulateDropdowns();
-            return View();
-        }
-
-        // POST: Admin/Showtimes/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(
-            [Bind("ShowtimeScreenId,ShowtimeMovieId,ShowtimeStart,ShowtimePrice")] TblShowtime tblShowtime)
+        public async Task<IActionResult> SaveShowtime(
+            [Bind("ShowtimeId,ShowtimeScreenId,ShowtimeMovieId,ShowtimePrice")] TblShowtime tblShowtime, string ShowtimeStart)
         {
-            // Remove validation for navigation properties
+            // Attempt flexible parsing
+            if (DateTime.TryParse(ShowtimeStart, out DateTime parsedDate))
+            {
+                tblShowtime.ShowtimeStart = parsedDate;
+            }
+            else
+            {
+                TempData["Error"] = $"Invalid Date: {ShowtimeStart}. Please use yyyy-MM-ddTHH:mm format.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            int duration = await _showtimeRepo.GetMovieDurationAsync(tblShowtime.ShowtimeMovieId);
+
+            // Gọi hàm kiểm tra (Buffer 30 phút)
+            bool isOverlapping = await _showtimeRepo.CheckOverlapAsync(
+                tblShowtime.ShowtimeScreenId,
+                tblShowtime.ShowtimeStart,
+                duration,
+                tblShowtime.ShowtimeId == 0 ? null : tblShowtime.ShowtimeId, // Exclude ID if Edit
+                30 // 30 mins cleaning buffer
+            );
+
+            if (isOverlapping)
+            {
+                TempData["Error"] = "Conflict detected! This time slot overlaps with another showtime (including 30m cleaning time).";
+                // Redirect back to the specific date so Admin sees the error
+                return RedirectToAction(nameof(Index), new { date = tblShowtime.ShowtimeStart.Date });
+            }
+
+            // Bypass navigation validation
             ModelState.Remove("ShowtimeScreen");
             ModelState.Remove("ShowtimeMovie");
-
-            // --- Business Logic Validation ---
-            if (tblShowtime.ShowtimePrice <= 0)
-            {
-                ModelState.AddModelError("ShowtimePrice", "Price must be greater than 0.");
-            }
-            if (tblShowtime.ShowtimeStart < DateTime.Now)
-            {
-                ModelState.AddModelError("ShowtimeStart", "Start Time cannot be in the past.");
-            }
-            // --- END VALIDATION ---
+            ModelState.Remove("ShowtimeStart");
 
             if (ModelState.IsValid)
             {
-                await _showtimeRepo.AddAsync(tblShowtime);
-                TempData["Success"] = "Showtime created successfully. Seats were generated automatically.";
-                return RedirectToAction(nameof(Index));
+                // 1. CREATE NEW
+                if (tblShowtime.ShowtimeId == 0)
+                {
+                    await _showtimeRepo.AddAsync(tblShowtime);
+                    TempData["Success"] = "Showtime created successfully.";
+                }
+                // 2. EDIT EXISTING
+                else
+                {
+                    try
+                    {
+                        await _showtimeRepo.UpdateAsync(tblShowtime);
+                        TempData["Success"] = "Showtime updated successfully.";
+                    }
+                    catch (DbUpdateConcurrencyException)
+                    {
+                        TempData["Error"] = "Error updating showtime.";
+                    }
+                }
+            }
+            else
+            {
+                TempData["Error"] = "Failed to save. Please check inputs.";
             }
 
-            // If invalid, re-populate the dropdowns and return
-            PopulateDropdowns(tblShowtime.ShowtimeMovieId, tblShowtime.ShowtimeScreenId);
-            return View(tblShowtime);
+            // Redirect back to the Timeline date
+            return RedirectToAction(nameof(Index), new { date = tblShowtime.ShowtimeStart.Date });
         }
 
-        // GET: Admin/Showtimes/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null) return NotFound();
-            var showtime = await _showtimeRepo.GetByIdAsync(id.Value);
-            if (showtime == null) return NotFound();
-
-            // Populate the dropdowns for the Edit form
-            PopulateDropdowns(showtime.ShowtimeMovieId, showtime.ShowtimeScreenId);
-            return View(showtime);
-        }
-
-        // POST: Admin/Showtimes/Edit/5
+        // [POST] Admin/Showtimes/Reschedule
+        // Called via AJAX when dragging an existing showtime on the timeline
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id,
-            [Bind("ShowtimeId,ShowtimeScreenId,ShowtimeMovieId,ShowtimeStart,ShowtimePrice")] TblShowtime tblShowtime)
+        public async Task<IActionResult> Reschedule(int id, int newScreenId, string newStartTime)
         {
-            if (id != tblShowtime.ShowtimeId) return NotFound();
-
-            ModelState.Remove("ShowtimeScreen");
-            ModelState.Remove("ShowtimeMovie");
-
-            // --- Business Logic Validation ---
-            if (tblShowtime.ShowtimePrice <= 0)
+            // Attempt flexible parsing
+            if (!DateTime.TryParse(newStartTime, out DateTime parsedDate))
             {
-                ModelState.AddModelError("ShowtimePrice", "Price must be greater than 0.");
-            }
-            if (tblShowtime.ShowtimeStart < DateTime.Now)
-            {
-                ModelState.AddModelError("ShowtimeStart", "Start Time cannot be in the past.");
-            }
-            // --- END VALIDATION ---
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    await _showtimeRepo.UpdateAsync(tblShowtime);
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    var exists = await _showtimeRepo.GetByIdAsync(id);
-                    if (exists == null) return NotFound();
-                    else throw;
-                }
-                TempData["Success"] = "Showtime updated successfully.";
-                return RedirectToAction(nameof(Index));
+                return Json(new { success = false, message = $"Invalid Date: {newStartTime}" });
             }
 
-            PopulateDropdowns(tblShowtime.ShowtimeMovieId, tblShowtime.ShowtimeScreenId);
-            return View(tblShowtime);
+            var showtime = await _showtimeRepo.GetByIdAsync(id);
+            if (showtime == null) return Json(new { success = false, message = "Not found." });
+
+            // Update
+            showtime.ShowtimeScreenId = newScreenId;
+            showtime.ShowtimeStart = parsedDate;
+
+            // Check Overlap (Optional but recommended)
+            int duration = showtime.ShowtimeMovie.MovieDurationMin;
+            bool isOverlapping = await _showtimeRepo.CheckOverlapAsync(newScreenId, parsedDate, duration, id, 30);
+
+            if (isOverlapping) return Json(new { success = false, message = "Time Conflict!" });
+
+            try
+            {
+                await _showtimeRepo.UpdateAsync(showtime);
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
-        // GET: Admin/Showtimes/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null) return NotFound();
-            var showtime = await _showtimeRepo.GetByIdAsync(id.Value);
-            if (showtime == null) return NotFound();
-
-            // Check for dependencies (Tbl_ShowtimeSeat / Tbl_Ticket)
-            bool hasSeats = await _context.TblShowtimeSeats.AnyAsync(s => s.ShowtimeSeatShowtimeId == id);
-            if (hasSeats)
-            {
-                ViewData["HasDependencies"] = true;
-                ViewData["ErrorMessage"] = "This showtime cannot be deleted. It has existing seats (and potential tickets) linked to it.";
-            }
-
-            return View(showtime);
-        }
-
-        // POST: Admin/Showtimes/Delete/5
-        [HttpPost, ActionName("Delete")]
+        // POST: Delete (Called from Modal)
+        [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteFromCalendar(int id, DateTime returnDate)
         {
-            // Final check
-            bool hasSeats = await _context.TblShowtimeSeats.AnyAsync(s => s.ShowtimeSeatShowtimeId == id);
+            // Check dependencies
+            bool hasSeats = await _context.TblShowtimeSeats.AnyAsync(s => s.ShowtimeSeatShowtimeId == id && s.ShowtimeSeatStatus == "sold");
             if (hasSeats)
             {
-                TempData["Error"] = "Cannot delete: This showtime has seats or tickets linked to it.";
-                return RedirectToAction(nameof(Index));
+                TempData["Error"] = "Cannot delete: Tickets have already been sold!";
+                return RedirectToAction(nameof(Index), new { date = returnDate });
             }
 
             await _showtimeRepo.DeleteAsync(id);
-            TempData["Success"] = "Showtime deleted successfully.";
-            return RedirectToAction(nameof(Index));
+            TempData["Success"] = "Showtime deleted.";
+            return RedirectToAction(nameof(Index), new { date = returnDate });
         }
+
+        
     }
 }

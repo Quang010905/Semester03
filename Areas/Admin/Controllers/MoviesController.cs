@@ -28,7 +28,33 @@ namespace Semester03.Areas.Admin.Controllers
         public async Task<IActionResult> Index()
         {
             var movies = await _movieRepo.GetAllAsync();
+            var today = DateTime.Now;
+            int expiredCount = movies.Count(m => m.MovieStatus == 1 && m.MovieEndDate < today);
+
+            ViewData["ExpiredCount"] = expiredCount;
             return View(movies);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleStatus(int id, int currentStatus)
+        {
+            // Swap status: If 1 -> 0, If 0 -> 1
+            int newStatus = (currentStatus == 1) ? 0 : 1;
+
+            var result = await _movieRepo.UpdateStatusAsync(id, newStatus);
+
+            if (result)
+            {
+                string statusName = newStatus == 1 ? "Available" : "Unavailable";
+                TempData["Success"] = $"Movie status changed to {statusName}.";
+            }
+            else
+            {
+                TempData["Error"] = "Movie not found.";
+            }
+
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Admin/Movies/Details/5
@@ -129,7 +155,7 @@ namespace Semester03.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id,
             // FIXED: Bind all fields, including the ID and old MovieImg
-            [Bind("MovieId,MovieTitle,MovieGenre,MovieDirector,MovieImg,MovieStartDate,MovieEndDate,MovieDurationMin,MovieDescription,MovieStatus")] TblMovie tblMovie,
+            [Bind("MovieId,MovieTitle,MovieGenre,MovieDirector,MovieImg,MovieStartDate,MovieEndDate,MovieDurationMin,MovieDescription,MovieStatus,MovieRate")] TblMovie tblMovie,
             IFormFile? imageFile)
         {
             if (id != tblMovie.MovieId) return NotFound();
@@ -151,7 +177,6 @@ namespace Semester03.Areas.Admin.Controllers
 
             if (ModelState.IsValid)
             {
-                tblMovie.MovieRate = 0;
                 try
                 {
                     if (imageFile != null)

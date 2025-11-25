@@ -19,7 +19,7 @@ namespace Semester03.Areas.Client.Repositories
         /// </summary>
         public async Task<List<EventCardVm>> GetUpcomingEventsAsync(int take = 8)
         {
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
 
             var q = _db.TblEvents
                 .AsNoTracking()
