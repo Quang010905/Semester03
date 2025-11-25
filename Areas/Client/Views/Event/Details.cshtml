@@ -30,7 +30,8 @@
     };
 
     var isPast = Model.IsPast;
-    var displayAvg = Model.CommentCount > 0 ? Model.AvgRate : 5.0;
+    // *** sửa tại đây: mặc định 0.0 khi chưa có comment (yêu cầu của bạn) ***
+    var displayAvg = Model.CommentCount > 0 ? Model.AvgRate : 0.0;
 }
 
 @section Styles {
@@ -535,13 +536,6 @@
             </div>
 
             <div class="event-header-main">
-                <div class="event-header-topline">
-                    <span>@Model.StartDate.ToString("dd/MM/yyyy")</span>
-                    @if (Model.EndDate.HasValue)
-                    {
-                        <span>– @Model.EndDate.Value.ToString("dd/MM/yyyy")</span>
-                    }
-                </div>
 
                 <div class="event-title-main">@Model.Title</div>
 
@@ -575,25 +569,8 @@
                             <i class="bi bi-flag-fill"></i> Đã kết thúc
                         </span>
                     }
-
-                    <span class="tag-pill tag-quality">
-                        <i class="bi bi-stars"></i> Quality event
-                    </span>
                 </div>
 
-                <div class="event-header-meta">
-                    <div>
-                        <strong>Thời gian:</strong>
-                        @Model.StartDate.ToString("dd/MM/yyyy HH:mm")
-                        @if (Model.EndDate.HasValue)
-                        {
-                            <text> – @Model.EndDate.Value.ToString("dd/MM/yyyy HH:mm")</text>
-                        }
-                    </div>
-                    <div>
-                        <strong>Slots:</strong> @Model.MaxSlot
-                    </div>
-                </div>
             </div>
 
             <div class="rating-panel">
@@ -621,38 +598,6 @@
                         @(Model.CommentCount > 0 ? $"{Model.CommentCount} review(s)" : "No reviews yet")
                     </div>
                 </div>
-
-                <div>
-                    @{
-                        string statusText;
-                        string statusClass = "status-chip";
-                        if (Model.IsPast)
-                        {
-                            statusText = "Đã kết thúc";
-                            statusClass += " ended";
-                        }
-                        else if (Model.IsOngoing && Model.Status == 1)
-                        {
-                            statusText = "Đang diễn ra";
-                            statusClass += " active";
-                        }
-                        else if (Model.IsUpcoming && Model.Status == 1)
-                        {
-                            statusText = "Sắp diễn ra";
-                            statusClass += " active";
-                        }
-                        else if (Model.Status == 1)
-                        {
-                            statusText = "Đang mở";
-                            statusClass += " active";
-                        }
-                        else
-                        {
-                            statusText = "Không hoạt động";
-                        }
-                    }
-                    <div class="@statusClass">@statusText</div>
-                </div>
             </div>
         </div>
 
@@ -661,16 +606,6 @@
         <!-- MAIN CONTENT -->
         <div class="row event-content-row g-4">
             <div class="col-lg-8">
-                <!-- details -->
-                <section class="event-section">
-                    <div class="event-section-title">
-                        <i class="bi bi-info-circle"></i>
-                        <span>Event details</span>
-                    </div>
-                    <div class="event-description">
-                        @Html.Raw(Model.Description)
-                    </div>
-                </section>
 
                 <!-- comments -->
                 <section class="event-section">
@@ -711,6 +646,9 @@
                         @if (User?.Identity?.IsAuthenticated == true)
                         {
                             @Html.AntiForgeryToken()
+                            <!-- hidden event id for JS -->
+                            <input type="hidden" id="eventId" value="@Model.Id" />
+
                             <textarea id="commentText"
                                   class="form-control mb-2"
                                   rows="3"
@@ -824,202 +762,190 @@
                 <div class="event-side-card">
                     <h6>Thông tin sự kiện</h6>
 
+                    <p><strong>Ngày bắt đầu:</strong> @Model.StartDate.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p><strong>Ngày kết thúc:</strong> @(Model.EndDate.HasValue? Model.EndDate.Value.ToString("dd/MM/yyyy HH:mm") : "-")</p>
+
                     <p>
-                        <strong>Ngày bắt đầu:</strong>
-                        @Model.StartDate.ToString("dd/MM/yyyy HH:mm")
+                        <strong>Giá vé:</strong>
+                        @if (Model.Price.HasValue)
+                        {
+                            @Model.Price.Value.ToString("C0")
+                        }
+                        else
+                        {
+                            <span>Miễn phí</span>
+                        }
                     </p>
 
                     <p>
-                        <strong>Ngày kết thúc:</strong>
-                        @(Model.EndDate.HasValue? Model.EndDate.Value.ToString("dd/MM/yyyy HH:mm") : "-")
+                        <strong>Slots còn lại:</strong> @Model.AvailableSlots @if (Model.MaxSlot > 0) {
+                        <span>/ @Model.MaxSlot</span>
+                                                }
                     </p>
-
-                    <p><strong>Slots:</strong> @Model.MaxSlot</p>
 
                     <p>
                         <strong>Trạng thái:</strong>
                         @{
                             string statusTextSide;
-                            if (Model.IsPast)
-                                statusTextSide = "Đã kết thúc";
-                            else if (Model.IsOngoing && Model.Status == 1)
-                                statusTextSide = "Đang diễn ra";
-                            else if (Model.IsUpcoming && Model.Status == 1)
-                                statusTextSide = "Sắp diễn ra";
-                            else if (Model.Status == 1)
-                                statusTextSide = "Đang mở";
-                            else
-                                statusTextSide = "Không hoạt động";
+                            if (Model.IsPast) statusTextSide = "Đã kết thúc";
+                            else if (Model.IsOngoing && Model.Status == 1) statusTextSide = "Đang diễn ra";
+                            else if (Model.IsUpcoming && Model.Status == 1) statusTextSide = "Sắp diễn ra";
+                            else if (Model.Status == 1) statusTextSide = "Đang mở";
+                            else statusTextSide = "Không hoạt động";
                         }
                         @statusTextSide
                     </p>
 
-                    <p>
-                        <strong>Organizer:</strong>
-                        @(Model.TenantPositionId != 0 ? Model.TenantPositionId.ToString() : "-")
-                    </p>
+                    <hr />
+
+                    <h6>Tổ chức / Shop</h6>
+                    <div>
+                        <div class="fw-bold">@(!string.IsNullOrWhiteSpace(Model.OrganizerShopName) ? Model.OrganizerShopName : "-")</div>
+                        @if (!string.IsNullOrWhiteSpace(Model.OrganizerDescription))
+                        {
+                            <div class="text-muted small">@Model.OrganizerDescription</div>
+                        }
+                    </div>
+
+                    <div class="mt-2 small-muted">
+                        <div><strong>Vị trí:</strong></div>
+                        @if (!string.IsNullOrWhiteSpace(Model.PositionLocation))
+                        {
+                            <div>@Model.PositionLocation</div>
+                        }
+                        @if (Model.PositionFloor.HasValue)
+                        {
+                            <div>Tầng: @Model.PositionFloor.Value</div>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.OrganizerPhone) || !string.IsNullOrWhiteSpace(Model.OrganizerEmail))
+                    {
+                        <div class="mt-2">
+                            <small class="text-muted">Liên hệ:</small>
+                            <div>
+                                @if (!string.IsNullOrWhiteSpace(Model.OrganizerPhone))
+                                {
+                                    <div><i class="bi bi-telephone"></i> @Model.OrganizerPhone</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(Model.OrganizerEmail))
+                                {
+                                    <div><i class="bi bi-envelope"></i> @Model.OrganizerEmail</div>
+                                }
+                            </div>
+                        </div>
+                    }
 
                     <div class="d-grid mt-3">
-                        @if (Model.IsPast || Model.Status != 1)
+                        @if (Model.IsPast || Model.Status != 1 || Model.AvailableSlots <= 0)
                         {
                             <button class="btn btn-secondary btn-register" disabled>
-                                Sự kiện đã kết thúc
+                                @(Model.AvailableSlots <= 0 ? "Hết chỗ" : "Sự kiện đã kết thúc")
                             </button>
                         }
                         else
                         {
-                            <a href="@Url.Action("Register", "EventBooking", new { area = "Client", id = Model.Id })"
-                               class="btn btn-success btn-register">
-                                Đăng ký ngay
-                            </a>
+                            if (User?.Identity?.IsAuthenticated == true)
+                            {
+                                <a href="@Url.Action("Register", "EventBooking", new { area = "Client", id = Model.Id })"
+                                   class="btn btn-success btn-register">
+                                    Đăng ký ngay
+                                </a>
+                            }
+                            else
+                            {
+                                // build URLs inside the same code block (no nested @{})
+                                var registerUrl = Url.Action("Register", "EventBooking", new { area = "Client", id = Model.Id });
+                                var loginUrl = Url.Action("Login", "Account", new { area = "Client", returnUrl = registerUrl });
+
+                                <a href="@loginUrl" class="btn btn-outline-primary btn-register">
+                                    Đăng nhập để đăng ký
+                                </a>
+                            }
                         }
                     </div>
+
                 </div>
             </aside>
+
         </div>
     </div>
 </div>
 
 @section Scripts {
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // ⭐ rating input
-            const starContainer = document.getElementById('userStars');
-            const submitBtn = document.getElementById('submitComment');
-            const textArea = document.getElementById('commentText');
-            let selectedRating = 0;
+        (function () {
+            const starEls = document.querySelectorAll('#userStars .star');
+            let selected = 0;
 
-            if (starContainer) {
-                const stars = starContainer.querySelectorAll('.star');
-
-                function highlight(value) {
-                    stars.forEach(st => {
-                        const v = parseInt(st.dataset.value || '0');
-                        if (v <= value) {
-                            st.classList.remove('bi-star');
-                            st.classList.add('bi-star-fill', 'filled');
-                        } else {
-                            st.classList.remove('bi-star-fill', 'filled');
-                            st.classList.add('bi-star');
-                        }
-                    });
-                }
-
-                stars.forEach(s => {
-                    s.addEventListener('mouseenter', () => highlight(parseInt(s.dataset.value || '0')));
-                    s.addEventListener('mouseleave', () => highlight(selectedRating));
-                    s.addEventListener('click', () => {
-                        selectedRating = parseInt(s.dataset.value || '0');
-                        highlight(selectedRating);
-                    });
+            function apply(v) {
+                starEls.forEach(el => {
+                    const val = Number(el.dataset.value);
+                    el.classList.remove('bi-star', 'bi-star-fill', 'filled');
+                    if (val <= v) el.classList.add('bi-star-fill', 'filled');
+                    else el.classList.add('bi-star');
                 });
             }
 
-            if (submitBtn) {
-                submitBtn.addEventListener('click', async function () {
-                    if (!selectedRating || selectedRating <= 0) {
-                        alert('Vui lòng chọn số sao đánh giá.');
-                        return;
-                    }
-                    const text = (textArea?.value || '').trim();
-                    if (!text) {
-                        alert('Vui lòng nhập nội dung bình luận.');
-                        return;
-                    }
-
-                    const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
-                    const token = tokenInput ? tokenInput.value : '';
-
-                    submitBtn.disabled = true;
-                    const originalText = submitBtn.innerHTML;
-                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang gửi...';
-
-                    try {
-                        const resp = await fetch('@Url.Action("AddComment", "Event", new { area = "Client" })', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                'RequestVerificationToken': token,
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: new URLSearchParams({
-                                eventId: '@Model.Id',
-                                rate: selectedRating.toString(),
-                                text: text
-                            })
-                        });
-
-                        const data = await resp.json();
-                        if (data && data.success) {
-                            alert(data.message || 'Gửi bình luận thành công.');
-                            if (textArea) textArea.value = '';
-                            selectedRating = 0;
-                            if (starContainer) {
-                                starContainer.querySelectorAll('.star').forEach(st => {
-                                    st.classList.remove('bi-star-fill', 'filled');
-                                    st.classList.add('bi-star');
-                                });
-                            }
-                            window.location.reload();
-                        } else {
-                            alert(data?.message || 'Có lỗi khi gửi bình luận.');
-                        }
-                    } catch (e) {
-                        console.error(e);
-                        alert('Lỗi server. Vui lòng thử lại sau.');
-                    } finally {
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = originalText;
-                    }
+            starEls.forEach(el => {
+                el.addEventListener('mouseenter', () => apply(Number(el.dataset.value)));
+                el.addEventListener('mouseleave', () => apply(selected));
+                el.addEventListener('click', () => {
+                    selected = Number(el.dataset.value);
+                    apply(selected);
                 });
-            }
+            });
 
-            // 🔁 upcoming events slider
-            const scrollEl = document.getElementById('upcomingEventsScroll');
-            const dotsContainer = document.getElementById('upcomingDots');
-            const prevBtn = document.getElementById('upcomingPrevBtn');
-            const nextBtn = document.getElementById('upcomingNextBtn');
+            const btn = document.getElementById('submitComment');
+            if (!btn) return;
 
-            if (scrollEl && dotsContainer) {
-                const cards = scrollEl.querySelectorAll('.upcoming-card');
-                const perPage = 3;
-                const pageCount = Math.max(1, Math.ceil(cards.length / perPage));
-                let currentPage = 0;
+            btn.addEventListener('click', async () => {
+                const textEl = document.getElementById('commentText');
+                const text = (textEl?.value || '').trim();
+                if (!selected) return alert('Vui lòng chọn số sao đánh giá.');
+                if (!text) return alert('Vui lòng viết bình luận.');
 
-                // create dots
-                for (let i = 0; i < pageCount; i++) {
-                    const dot = document.createElement('div');
-                    dot.className = 'upcoming-dot' + (i === 0 ? ' active' : '');
-                    dot.dataset.page = i;
-                    dotsContainer.appendChild(dot);
-                    dot.addEventListener('click', () => goToPage(i));
-                }
+                const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                const token = tokenInput ? tokenInput.value : '';
 
-                function updateDots() {
-                    dotsContainer.querySelectorAll('.upcoming-dot').forEach(d => {
-                        d.classList.toggle('active', parseInt(d.dataset.page) === currentPage);
+                btn.disabled = true;
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang gửi...';
+
+                try {
+                    const resp = await fetch('@Url.Action("AddComment", "Event", new { area = "Client" })', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                            'RequestVerificationToken': token,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: new URLSearchParams({
+                            eventId: document.getElementById('eventId').value,
+                            rate: selected,
+                            text: text
+                        })
                     });
-                }
 
-                function goToPage(page) {
-                    currentPage = Math.max(0, Math.min(pageCount - 1, page));
-                    const firstCard = cards[0];
-                    if (!firstCard) return;
-                    const cardWidth = firstCard.offsetWidth + 14; // width + gap
-                    scrollEl.scrollTo({
-                        left: currentPage * cardWidth * perPage,
-                        behavior: 'smooth'
-                    });
-                    updateDots();
+                    const data = await resp.json();
+                    if (data && data.success) {
+                        alert(data.message || 'Gửi bình luận thành công.');
+                        if (textEl) textEl.value = '';
+                        selected = 0;
+                        apply(0);
+                        // reload để hiển thị comment (vì cần duyệt hoặc cập nhật view)
+                        window.location.reload();
+                    } else {
+                        alert(data?.message || 'Có lỗi khi gửi bình luận.');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('Lỗi server. Vui lòng thử lại sau.');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
                 }
-
-                if (prevBtn) {
-                    prevBtn.addEventListener('click', () => goToPage(currentPage - 1));
-                }
-                if (nextBtn) {
-                    nextBtn.addEventListener('click', () => goToPage(currentPage + 1));
-                }
-            }
-        });
+            });
+        })();
     </script>
 }

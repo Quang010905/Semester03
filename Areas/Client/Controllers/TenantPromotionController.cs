@@ -1,20 +1,25 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Semester03.Models.Entities;
+using Semester03.Models.Repositories;
 using Semester03.Models.ViewModels;
 
 
 namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
-    public class TenantPromotionController : Controller
+    public class TenantPromotionController : ClientBaseController
     {
         private readonly AbcdmallContext _context;
 
-        public TenantPromotionController(AbcdmallContext context)
+        public TenantPromotionController(
+            TenantTypeRepository tenantTypeRepo,   // 👈 thêm để truyền cho base
+            AbcdmallContext context
+        ) : base(tenantTypeRepo)                  // 👈 gọi constructor cha
         {
             _context = context;
         }
+
 
         // LIST PAGE
         public IActionResult Index(int? tenantId, int page = 1)

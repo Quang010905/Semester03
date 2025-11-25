@@ -16,12 +16,18 @@ namespace Semester03.Models.Repositories
             _db = db ?? throw new ArgumentNullException(nameof(db));
         }
 
+        /// <summary>
+        /// NOTE: We intentionally do NOT include EventBookingTenant here as a quick fix
+        /// because including Tenant currently causes EF to generate a bad column name
+        /// (TblTenantPositionTenantPositionId) — fix the model mapping in AbcdmallContext
+        /// (see comments in code) and you can safely add Include(b => b.EventBookingTenant).
+        /// </summary>
         private IQueryable<TblEventBooking> GetFullBookingQuery()
         {
             return _db.TblEventBookings
                 .Include(b => b.EventBookingEvent)
-                .Include(b => b.EventBookingUser)
-                .Include(b => b.EventBookingTenant);
+                .Include(b => b.EventBookingUser);
+            // .Include(b => b.EventBookingTenant); // <-- enable after fixing Tenant <-> TenantPosition mapping in DbContext
         }
 
         public async Task<IEnumerable<TblEventBooking>> GetAllAsync()
@@ -113,6 +119,7 @@ namespace Semester03.Models.Repositories
             // Thử set thêm Quantity, UnitPrice, Date nếu entity có cột tương ứng
             try
             {
+                // cố gắng set trực tiếp (nếu property tồn tại)
                 var type = entity.GetType();
 
                 var qtyProp = type.GetProperty("EventBookingQuantity") ?? type.GetProperty("Quantity");
@@ -123,12 +130,19 @@ namespace Semester03.Models.Repositories
                 if (unitPriceProp != null && unitPriceProp.CanWrite)
                 {
                     var unitPrice = quantity > 0 ? totalCost / quantity : totalCost;
-                    unitPriceProp.SetValue(entity, unitPrice);
+                    unitPriceProp.SetValue(entity, Convert.ChangeType(unitPrice, unitPriceProp.PropertyType));
                 }
 
                 var dateProp = type.GetProperty("EventBookingDate") ?? type.GetProperty("Date");
                 if (dateProp != null && dateProp.CanWrite)
-                    dateProp.SetValue(entity, DateTime.Now.Date);
+
+                {
+                    if (dateProp.PropertyType == typeof(DateOnly) || dateProp.PropertyType == typeof(DateOnly?))
+                        dateProp.SetValue(entity, DateOnly.FromDateTime(DateTime.Now));
+                    else
+                        dateProp.SetValue(entity, DateTime.Now.Date);
+                }
+
             }
             catch
             {
@@ -299,9 +313,18 @@ namespace Semester03.Models.Repositories
 
         public async Task<TblEventBooking> GetByIdWithHistoryAsync(int id)
         {
-            return await GetFullBookingQuery()
-                .Include(b => b.TblEventBookingHistories.OrderByDescending(h => h.EventBookingHistoryCreatedAt))
+            var booking = await GetFullBookingQuery()
+                .Include(b => b.TblEventBookingHistories)
                 .FirstOrDefaultAsync(b => b.EventBookingId == id);
+
+            if (booking != null && booking.TblEventBookingHistories != null)
+            {
+                booking.TblEventBookingHistories = booking.TblEventBookingHistories
+                    .OrderByDescending(h => h.EventBookingHistoryCreatedAt)
+                    .ToList();
+            }
+
+            return booking;
         }
 
         public async Task<bool> UpdateStatusByAdminAsync(int bookingId, int newStatus, int adminId)
@@ -319,7 +342,7 @@ namespace Semester03.Models.Repositories
             {
                 EventBookingHistoryBookingId = booking.EventBookingId,
                 EventBookingHistoryEventId = booking.EventBookingEventId,
-                EventBookingHistoryUserId = adminId, // always = 1 
+                EventBookingHistoryUserId = adminId,
                 EventBookingHistoryAction = "UpdateStatus",
                 EventBookingHistoryDetails = $"Status changed from '{oldStatusLabel}' to '{newStatusLabel}'",
                 EventBookingHistoryCreatedAt = DateTime.Now
@@ -341,6 +364,7 @@ namespace Semester03.Models.Repositories
                 _ => "Unknown"
             };
         }
+
         private int TryGetQuantityFromBooking(TblEventBooking booking)
         {
             try

@@ -13,7 +13,7 @@ namespace Semester03.Models.Repositories
         private readonly AbcdmallContext _db;
         public TicketRepository(AbcdmallContext db) => _db = db;
 
-        // Helper to build the complex query
+        // ===== Helper Include Query =====
         private IQueryable<TblTicket> GetFullTicketQuery()
         {
             return _db.TblTickets
@@ -28,6 +28,20 @@ namespace Semester03.Models.Repositories
                         .ThenInclude(st => st.ShowtimeScreen);
         }
 
+        // =======================================================
+        //  ⭐ NEW — Get tickets by UserID
+        // =======================================================
+        public async Task<List<TblTicket>> GetTicketsByUserAsync(int userId)
+        {
+            return await GetFullTicketQuery()
+                .Where(t => t.TicketBuyerUserId == userId)
+                .OrderByDescending(t => t.TicketCreatedAt)
+                .ToListAsync();
+        }
+
+        // =======================================================
+        //  Existing — Used for Email
+        // =======================================================
         public async Task<List<TicketEmailItem>> GetTicketDetailsByShowtimeSeatIdsAsync(List<int> showtimeSeatIds)
         {
             var result = await (from t in _db.TblTickets
@@ -50,8 +64,9 @@ namespace Semester03.Models.Repositories
             return result;
         }
 
-        // --- ADMIN METHODS ---
-
+        // =======================================================
+        //  ADMIN METHODS (giữ nguyên)
+        // =======================================================
         public async Task<IEnumerable<TblTicket>> GetAllAsync()
         {
             return await GetFullTicketQuery()

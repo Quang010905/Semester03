@@ -56,6 +56,12 @@ builder.Services.AddScoped<CategoryRepository>();
 builder.Services.AddScoped<UserActivityRepository>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<UserActivityRepository>();
+builder.Services.AddScoped<TicketRepository>();
+builder.Services.AddScoped<EventTicketRepository>(); // thêm dòng này
+builder.Services.AddScoped<EventBookingRepository>();
+
+
+
 
 
 

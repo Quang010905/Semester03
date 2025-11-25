@@ -7,12 +7,16 @@ using System.Security.Claims;
 namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
-    public class ProfileController : Controller
+    public class ProfileController : ClientBaseController
     {
         private readonly UserRepository _userRepo;
         private readonly UserActivityRepository _activityRepo;
 
-        public ProfileController(UserRepository userRepo, UserActivityRepository activityRepo)
+        public ProfileController(
+            TenantTypeRepository tenantTypeRepo,  // 👈 thêm vào để truyền cho base
+            UserRepository userRepo,
+            UserActivityRepository activityRepo
+        ) : base(tenantTypeRepo)                 // 👈 gọi constructor cha
         {
             _userRepo = userRepo;
             _activityRepo = activityRepo;

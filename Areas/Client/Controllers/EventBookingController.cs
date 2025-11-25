@@ -23,14 +23,14 @@ namespace Semester03.Areas.Client.Controllers
         private readonly ILogger<EventBookingController> _logger;
 
         public EventBookingController(
-            TenantTypeRepository tenantTypeRepo,         // ⭐ THÊM DÒNG NÀY
+            TenantTypeRepository tenantTypeRepo,
             AbcdmallContext context,
             EventRepository eventRepo,
             EventBookingRepository bookingRepo,
             IVnPayService vnPayService,
             TicketEmailService ticketEmailService,
             ILogger<EventBookingController> logger
-        ) : base(tenantTypeRepo)                        // ⭐ GỌI BASE()
+        ) : base(tenantTypeRepo)
         {
             _context = context;
             _eventRepo = eventRepo;
@@ -43,7 +43,9 @@ namespace Semester03.Areas.Client.Controllers
         [HttpGet]
         public IActionResult Ping() => Content("Ping OK");
 
+        // =====================================================================================
         // GET: Client/EventBooking/Register/5
+        // =====================================================================================
         [HttpGet]
         public async Task<IActionResult> Register(int id)
         {
@@ -51,54 +53,51 @@ namespace Semester03.Areas.Client.Controllers
             if (evt == null) return NotFound();
 
             var confirmed = await _bookingRepo.GetConfirmedSlotsForEventAsync(id);
-            var maxSlot = evt.MaxSlot;
-            var available = Math.Max(0, maxSlot - confirmed);
+            var available = Math.Max(0, evt.MaxSlot - confirmed);
 
-            decimal pricePerTicket = 0m;
-            try
+            // LẤY GIÁ TỪ VIEWMODEL (PRIMARY SOURCE)
+            decimal pricePerTicket = evt.Price ?? 0m;
+
+            // fallback nếu EF mapping cũ chưa có Price
+            if (pricePerTicket <= 0m)
             {
-                var evtEntity = await _context.TblEvents.FindAsync(id);
-                if (evtEntity != null)
+                try
                 {
-                    var prop = evtEntity.GetType().GetProperty("EventPrice")
-                               ?? evtEntity.GetType().GetProperty("Price")
-                               ?? evtEntity.GetType().GetProperty("TicketPrice");
-                    if (prop != null)
+                    var evtEntity = await _context.TblEvents.FindAsync(id);
+
+                    if (evtEntity != null)
                     {
-                        var raw = prop.GetValue(evtEntity);
-                        if (raw != null) pricePerTicket = Convert.ToDecimal(raw);
+                        var prop = evtEntity.GetType().GetProperty("EventPrice")
+                                   ?? evtEntity.GetType().GetProperty("Price")
+                                   ?? evtEntity.GetType().GetProperty("TicketPrice");
+
+                        if (prop != null)
+                        {
+                            var raw = prop.GetValue(evtEntity);
+                            if (raw != null) pricePerTicket = Convert.ToDecimal(raw);
+                        }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Cannot read price for event; default to 0.");
-                pricePerTicket = 0m;
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Register(): fallback price error");
+                }
             }
 
             ViewBag.Price = pricePerTicket;
 
             var vm = new EventRegisterVm
             {
-                Event = new EventDetailsVm
-                {
-                    Id = evt.Id,
-                    Title = evt.Title,
-                    Description = evt.Description,
-                    StartDate = evt.StartDate,
-                    EndDate = evt.EndDate,
-                    ImageUrl = evt.ImageUrl,
-                    MaxSlot = evt.MaxSlot,
-                    Status = evt.Status,
-                    TenantPositionId = evt.TenantPositionId
-                },
+                Event = evt,
                 AvailableSlots = available
             };
 
             return View("Register", vm);
         }
 
-        // POST: Client/EventBooking/CreateBooking (AJAX hoặc form thường)
+        // =====================================================================================
+        // POST: Client/EventBooking/CreateBooking
+        // =====================================================================================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateBooking(
@@ -114,69 +113,67 @@ namespace Semester03.Areas.Client.Controllers
                 var evt = await _eventRepo.GetEventByIdAsync(eventId);
                 if (evt == null)
                 {
-                    _logger.LogWarning("CreateBooking: event {EventId} not found", eventId);
                     if (IsAjaxRequest()) return Json(new { success = false, message = "Sự kiện không tồn tại." });
                     TempData["BookingError"] = "Sự kiện không tồn tại.";
-                    return RedirectToAction("Index", "Event", new { area = "Client" });
+                    return RedirectToAction("Index", "Event");
                 }
 
-                // Tính slot đã confirm
                 var confirmed = await _bookingRepo.GetConfirmedSlotsForEventAsync(eventId);
-                var maxSlot = evt.MaxSlot;
-                var available = Math.Max(0, maxSlot - confirmed);
+                var available = Math.Max(0, evt.MaxSlot - confirmed);
+
                 if (quantity > available)
                 {
                     var msg = $"Không đủ slot. Còn {available} slot.";
-                    _logger.LogInformation(
-                        "CreateBooking: not enough slots for event {EventId}. Requested {Req}, Available {Avail}",
-                        eventId, quantity, available);
 
                     if (IsAjaxRequest()) return Json(new { success = false, message = msg });
                     TempData["BookingError"] = msg;
-                    return RedirectToAction("Register", new { area = "Client", id = eventId });
+                    return RedirectToAction("Register", new { id = eventId });
                 }
 
-                // Lấy giá
-                decimal pricePerTicket = 0m;
-                try
+                // ===== LẤY GIÁ =====
+                decimal pricePerTicket = evt.Price ?? 0m;
+
+                // fallback
+                if (pricePerTicket <= 0m)
                 {
-                    var evtEntity = await _context.TblEvents.FindAsync(eventId);
-                    if (evtEntity != null)
+                    try
                     {
-                        var prop = evtEntity.GetType().GetProperty("EventPrice")
-                                   ?? evtEntity.GetType().GetProperty("Price")
-                                   ?? evtEntity.GetType().GetProperty("TicketPrice");
-                        if (prop != null)
+                        var evtEntity = await _context.TblEvents.FindAsync(eventId);
+
+                        if (evtEntity != null)
                         {
-                            var raw = prop.GetValue(evtEntity);
-                            if (raw != null) pricePerTicket = Convert.ToDecimal(raw);
+                            var prop = evtEntity.GetType().GetProperty("EventPrice")
+                                       ?? evtEntity.GetType().GetProperty("Price")
+                                       ?? evtEntity.GetType().GetProperty("TicketPrice");
+
+                            if (prop != null)
+                            {
+                                var raw = prop.GetValue(evtEntity);
+                                if (raw != null) pricePerTicket = Convert.ToDecimal(raw);
+                            }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Error reading price for event {EventId}", eventId);
-                    pricePerTicket = 0m;
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "CreateBooking(): fallback price error");
+                    }
                 }
 
                 var totalCost = pricePerTicket * quantity;
-                _logger.LogDebug("CreateBooking: event {EventId}, qty {Qty}, price {Price}, total {Total}",
-                    eventId, quantity, pricePerTicket, totalCost);
 
                 int? userId = null;
                 var claim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (!string.IsNullOrWhiteSpace(claim) && int.TryParse(claim, out var parsedUser))
-                    userId = parsedUser;
+                if (int.TryParse(claim, out var uid)) userId = uid;
 
-                // Lưu tenantId = TenantPositionId như code gốc (FK hơi lệch nhưng tớ không đổi để tránh vỡ)
-                var tenantId = evt.TenantPositionId;
                 var notes = $"ContactName:{contactName};ContactEmail:{contactEmail};Qty:{quantity}";
 
+                // =====================================================================================
+                // FREE EVENT
+                // =====================================================================================
                 if (totalCost <= 0m)
                 {
-                    // FREE EVENT – tạo booking và xác nhận luôn
                     var booking = await _bookingRepo.CreateBookingAsync(
-                        tenantId: tenantId,
+                        tenantId: evt.TenantPositionId,
                         userId: userId,
                         eventId: eventId,
                         totalCost: totalCost,
@@ -184,74 +181,78 @@ namespace Semester03.Areas.Client.Controllers
                         notes: notes
                     );
 
-                    // Gửi email (fire & forget)
+                    // gửi email async
                     _ = Task.Run(async () =>
                     {
                         try
                         {
-                            if (userId.HasValue)
-                                await _ticketEmailService.SendTicketsEmailAsync(userId.Value, new System.Collections.Generic.List<int>());
+                            if (booking.EventBookingUserId != 0)
+                            {
+                                await _ticketEmailService.SendTicketsEmailAsync(
+                                    booking.EventBookingUserId,
+                                    new System.Collections.Generic.List<int>()
+                                );
+                            }
                         }
-                        catch (Exception ex) { _logger.LogError(ex, "Error sending booking email (free event)"); }
+                        catch { }
                     });
 
                     if (IsAjaxRequest())
                     {
-                        var redirectUrl = Url.Action("BookingSuccess", "EventBooking",
-                            new { area = "Client", id = booking.EventBookingId });
-                        return Json(new { success = true, redirectUrl });
+                        return Json(new
+                        {
+                            success = true,
+                            redirectUrl = Url.Action("BookingSuccess", new { id = booking.EventBookingId })
+                        });
                     }
 
-                    return RedirectToAction("BookingSuccess", "EventBooking",
-                        new { area = "Client", id = booking.EventBookingId });
+                    return RedirectToAction("BookingSuccess", new { id = booking.EventBookingId });
                 }
-                else
+
+                // =====================================================================================
+                // PAID EVENT
+                // =====================================================================================
+                var pendingBooking = await _bookingRepo.CreateBookingAsync(
+                    tenantId: evt.TenantPositionId,
+                    userId: userId,
+                    eventId: eventId,
+                    totalCost: totalCost,
+                    quantity: quantity,
+                    notes: notes
+                );
+
+                var payModel = new Semester03.Areas.Client.Models.Vnpay.PaymentInformationModel
                 {
-                    // Event có phí – tạo booking Pending, rồi redirect sang VNPAY
-                    var bookingPending = await _bookingRepo.CreateBookingAsync(
-                        tenantId: tenantId,
-                        userId: userId,
-                        eventId: eventId,
-                        totalCost: totalCost,
-                        quantity: quantity,
-                        notes: notes
-                    );
+                    OrderType = "event-ticket",
+                    Amount = (double)totalCost,
+                    OrderDescription =
+                        $"Event:{eventId};BookingId:{pendingBooking.EventBookingId};Qty:{quantity};Amount:{totalCost}",
+                    Name = $"Event Booking #{pendingBooking.EventBookingId} - {evt.Title}"
+                };
 
-                    var payModel = new Semester03.Areas.Client.Models.Vnpay.PaymentInformationModel
-                    {
-                        OrderType = "event-ticket",
-                        Amount = (double)totalCost,
-                        OrderDescription =
-                            $"Event:{eventId};BookingId:{bookingPending.EventBookingId};Qty:{quantity};Amount:{totalCost}",
-                        Name = $"Event Booking #{bookingPending.EventBookingId} - {evt.Title}"
-                    };
+                var paymentUrl = _vnPayService.CreatePaymentUrl(payModel, HttpContext);
 
-                    var url = _vnPayService.CreatePaymentUrl(payModel, HttpContext);
-
-                    if (string.IsNullOrWhiteSpace(url))
-                    {
-                        _logger.LogError("VnPay service returned null or empty URL for booking {BookingId}",
-                            bookingPending.EventBookingId);
-                        if (IsAjaxRequest()) return Json(new { success = false, message = "Không thể tạo link thanh toán." });
-                        TempData["BookingError"] = "Không thể tạo link thanh toán. Vui lòng thử lại sau.";
-                        return RedirectToAction("Register", new { area = "Client", id = eventId });
-                    }
-
-                    if (IsAjaxRequest()) return Json(new { success = true, url });
-                    return Redirect(url);
+                if (IsAjaxRequest())
+                {
+                    return Json(new { success = true, url = paymentUrl });
                 }
+
+                return Redirect(paymentUrl);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CreateBooking error");
-                if (IsAjaxRequest()) return Json(new { success = false, message = "Lỗi server khi tạo đặt chỗ." });
 
-                TempData["BookingError"] = "Có lỗi xảy ra khi đặt chỗ. Vui lòng thử lại sau.";
-                return RedirectToAction("Register", new { area = "Client", id = eventId });
+                if (IsAjaxRequest()) return Json(new { success = false, message = "Lỗi server." });
+
+                TempData["BookingError"] = "Lỗi hệ thống khi đặt vé.";
+                return RedirectToAction("Register", new { id = eventId });
             }
         }
 
-        // VNPAY callback (GET) cho EVENT
+        // =====================================================================================
+        // VNPAY CALLBACK
+        // =====================================================================================
         [HttpGet]
         public async Task<IActionResult> PaymentCallbackVnpay()
         {
@@ -259,100 +260,49 @@ namespace Semester03.Areas.Client.Controllers
             {
                 var response = _vnPayService.PaymentExecute(Request.Query);
                 if (response == null)
-                    return RedirectToAction("PaymentFailed",
-                        new { area = "Client", message = "Không nhận được phản hồi từ VNPAY" });
+                    return RedirectToAction("PaymentFailed");
 
                 int bookingId = 0;
-                var parts = (response.OrderDescription ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries);
+
+                var parts = (response.OrderDescription ?? "")
+                    .Split(';', StringSplitOptions.RemoveEmptyEntries);
+
                 foreach (var p in parts)
                 {
-                    var t = p.Trim();
-                    if (t.StartsWith("BookingId:", StringComparison.OrdinalIgnoreCase))
-                        int.TryParse(t.Substring("BookingId:".Length).Trim(), out bookingId);
+                    if (p.StartsWith("BookingId:"))
+                        int.TryParse(p.Replace("BookingId:", "").Trim(), out bookingId);
                 }
 
                 if (!response.Success)
-                {
-                    // LOG HISTORY PAYMENT FAILED
-                    if (bookingId > 0)
-                    {
-                        var booking = await _bookingRepo.GetByIdAsync(bookingId);
-                        if (booking != null)
-                        {
-                            await _bookingRepo.AddHistoryAsync(
-                                booking.EventBookingId,
-                                booking.EventBookingEventId,
-                                booking.EventBookingUserId,
-                                "PaymentFailed",
-                                $"Payment failed. VNPAY Code: {response.VnPayResponseCode}",
-                                DateTime.Now.Date,
-                                null
-                            );
-                        }
-                    }
-
-                    return RedirectToAction("PaymentFailed",
-                        new { area = "Client", message = $"Thanh toán thất bại (code: {response.VnPayResponseCode})" });
-                }
-
-                if (bookingId <= 0)
-                {
-                    _logger.LogWarning("VNPAY callback: BookingId not found in OrderDescription");
-                    return RedirectToAction("PaymentFailed",
-                        new { area = "Client", message = "Không xác định booking." });
-                }
+                    return RedirectToAction("PaymentFailed");
 
                 var marked = await _bookingRepo.MarkBookingPaidAsync(bookingId);
-                if (!marked) _logger.LogWarning("Failed to mark booking {BookingId} as paid", bookingId);
 
-                try
-                {
-                    var booking = await _bookingRepo.GetByIdAsync(bookingId);
-                    if (booking != null && booking.EventBookingUserId > 0)
-                    {
-                        // gửi email
-                        await _ticketEmailService.SendTicketsEmailAsync(
-                            booking.EventBookingUserId,
-                            new System.Collections.Generic.List<int>()
-                        );
-                    }
-                }
-                catch (Exception exEmail)
-                {
-                    _logger.LogError(exEmail, "Error sending booking confirmation email after payment.");
-                }
-
-                return RedirectToAction("BookingSuccess", "EventBooking",
-                    new { area = "Client", id = bookingId });
+                return RedirectToAction("BookingSuccess", new { id = bookingId });
             }
-            catch (Exception ex)
+            catch
             {
-                _logger.LogError(ex, "PaymentCallbackVnpay error");
-                return RedirectToAction("PaymentFailed",
-                    new { area = "Client", message = "Lỗi xử lý VNPAY." });
+                return RedirectToAction("PaymentFailed");
             }
         }
 
+        // =====================================================================================
+        // SUCCESS PAGE
+        // =====================================================================================
         [HttpGet]
         public async Task<IActionResult> BookingSuccess(int id)
         {
             var booking = await _bookingRepo.GetByIdAsync(id);
-            if (booking == null)
-            {
-                TempData["BookingError"] = "Không tìm thấy đơn đặt vé.";
-                return RedirectToAction("Index", "Event", new { area = "Client" });
-            }
+            if (booking == null) return RedirectToAction("Index", "Event");
 
             var evt = await _eventRepo.GetEventByIdAsync(booking.EventBookingEventId);
-            decimal amount = 0m;
-            try { amount = Convert.ToDecimal(booking.EventBookingTotalCost); } catch { amount = 0m; }
 
             var vm = new EventBookingSuccessVm
             {
                 BookingId = booking.EventBookingId,
-                EventTitle = evt?.Title ?? $"Event #{booking.EventBookingEventId}",
+                EventTitle = evt?.Title ?? "Event",
                 Quantity = ExtractQtyFromNotes(booking.EventBookingNotes),
-                Amount = amount,
+                Amount = booking.EventBookingTotalCost ?? 0,
                 ContactEmail = ExtractContactEmailFromNotes(booking.EventBookingNotes),
                 PaymentStatus = booking.EventBookingPaymentStatus ?? 0
             };
@@ -363,39 +313,27 @@ namespace Semester03.Areas.Client.Controllers
         [HttpGet]
         public IActionResult PaymentFailed(string message = "")
         {
-            ViewData["Message"] = string.IsNullOrEmpty(message)
-                ? "Thanh toán thất bại hoặc bị hủy."
-                : message;
+            ViewData["Message"] = message;
             return View("PaymentFailed");
         }
 
-        // ==========================
-        // Helpers
-        // ==========================
-
-        // MỞ RỘNG kiểm tra AJAX: X-Requested-With hoặc Accept: application/json hoặc ?ajax=1
+        // =====================================================================================
+        // HELPERS
+        // =====================================================================================
         private bool IsAjaxRequest()
         {
             try
             {
                 var xreq = Request.Headers["X-Requested-With"].FirstOrDefault();
-                if (!string.IsNullOrEmpty(xreq) &&
-                    xreq.Equals("XMLHttpRequest", StringComparison.OrdinalIgnoreCase))
-                    return true;
+                if (xreq == "XMLHttpRequest") return true;
 
                 var accept = Request.Headers["Accept"].FirstOrDefault();
-                if (!string.IsNullOrEmpty(accept) &&
-                    accept.IndexOf("application/json", StringComparison.OrdinalIgnoreCase) >= 0)
-                    return true;
+                if (accept != null && accept.Contains("application/json")) return true;
 
                 if (Request.Query.ContainsKey("ajax")) return true;
-
-                return false;
             }
-            catch
-            {
-                return false;
-            }
+            catch { }
+            return false;
         }
 
         private int ExtractQtyFromNotes(string notes)
@@ -403,13 +341,12 @@ namespace Semester03.Areas.Client.Controllers
             if (string.IsNullOrWhiteSpace(notes)) return 1;
             try
             {
-                var qpart = notes.Split(';')
-                    .FirstOrDefault(p => p.Trim().StartsWith("Qty", StringComparison.OrdinalIgnoreCase));
-                if (qpart == null) return 1;
-                var idx = qpart.IndexOfAny(new[] { ':', '=', ' ' });
-                string val = idx >= 0 ? qpart.Substring(idx + 1).Trim() : qpart.Substring(3).Trim();
-                if (int.TryParse(new string(val.Where(char.IsDigit).ToArray()), out var q))
-                    return Math.Max(1, q);
+                var part = notes.Split(';')
+                    .FirstOrDefault(p => p.StartsWith("Qty", StringComparison.OrdinalIgnoreCase));
+                if (part == null) return 1;
+
+                var val = new string(part.Where(char.IsDigit).ToArray());
+                if (int.TryParse(val, out var q)) return q;
             }
             catch { }
             return 1;
@@ -420,13 +357,14 @@ namespace Semester03.Areas.Client.Controllers
             if (string.IsNullOrWhiteSpace(notes)) return "";
             try
             {
-                var ep = notes.Split(';')
-                    .FirstOrDefault(p => p.Trim().StartsWith("ContactEmail:", StringComparison.OrdinalIgnoreCase));
-                if (ep == null) return "";
-                var v = ep.Substring(ep.IndexOf(':') + 1).Trim();
-                return v;
+                var part = notes.Split(';')
+                    .FirstOrDefault(p => p.StartsWith("ContactEmail:", StringComparison.OrdinalIgnoreCase));
+
+                if (part == null) return "";
+                return part.Replace("ContactEmail:", "").Trim();
             }
-            catch { return ""; }
+            catch { }
+            return "";
         }
     }
 }

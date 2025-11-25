@@ -21,6 +21,7 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public int Col { get; set; }
         public string Status { get; set; } = "available";
         public int? ReservedByUserId { get; set; }
+        public bool IsActive { get; set; }
         public DateTime? ReservedAt { get; set; }
     }
 
