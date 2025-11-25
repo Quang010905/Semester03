@@ -2,6 +2,8 @@
 using Semester03.Areas.Partner.Models;
 using Semester03.Models.Entities;
 using Semester03.Models.ViewModels;
+using System.Globalization;
+using System.Text;
 
 namespace Semester03.Models.Repositories
 {
@@ -13,6 +15,25 @@ namespace Semester03.Models.Repositories
         {
             _context = context;
         }
+        //lay san pham theo danh sach cua category 
+        public async Task<List<Product>> GetAllProductsByCateId(int cateId)
+        {
+            return await _context.TblProducts
+                .Where(x => x.ProductCategoryId == cateId)
+                .Select(x => new Product
+                {
+                    Id = x.ProductId,
+                    Name = x.ProductName,
+                    Status = x.ProductStatus ?? 0,
+                    Img = x.ProductImg,
+                    CateId = cateId,
+                    Description = x.ProductDescription,
+                    Price = x.ProductPrice,
+                    CreatedAt = (DateTime)x.ProductCreatedAt
+                })
+                .ToListAsync();
+        }
+
         //them
         public async Task AddProduct(Product entity)
         {
@@ -109,6 +130,29 @@ namespace Semester03.Models.Repositories
 
             // Bỏ khoảng trắng và chuyển về chữ thường
             return new string(input.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToLowerInvariant();
+        }
+
+        public string NormalizeSearch(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            string lower = input.ToLowerInvariant();
+            string normalized = lower.Normalize(NormalizationForm.FormD);
+
+            StringBuilder sb = new StringBuilder();
+            foreach (char c in normalized)
+            {
+                UnicodeCategory uc = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (uc != UnicodeCategory.NonSpacingMark)
+                {
+                    sb.Append(c);
+                }
+            }
+
+            return new string(sb.ToString()
+                .Where(c => !char.IsWhiteSpace(c))
+                .ToArray());
         }
     }
 }

@@ -132,10 +132,10 @@ namespace Semester03.Areas.Client.Controllers
                 // Admin area
                 return RedirectToAction("Index", "Admin", new { area = "Admin" });
             }
-            else if (user.UsersRoleId == 2)
+            else if (user.UsersRoleId == 3)
             {
                 return RedirectToAction("Index", "Home", new { area = "Client" });
-            }else if (user.UsersRoleId == 3)
+            }else if (user.UsersRoleId == 2)
             {
                 return RedirectToAction("Index", "Shop", new { area = "Partner" });
             }

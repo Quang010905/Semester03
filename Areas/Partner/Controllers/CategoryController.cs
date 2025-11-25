@@ -9,16 +9,15 @@ namespace Semester03.Areas.Partner.Controllers
     [Area("Partner")]
     public class CategoryController : Controller
     {
-
-        private readonly TenantRepository _tenantRepo;
         private readonly CategoryRepository _categoryRepo;
+        private readonly TenantRepository _tenantRepo;
         private readonly IWebHostEnvironment _webHostEnvironment;
         // Inject repository qua constructor
-        public CategoryController(TenantRepository tenantRepo, IWebHostEnvironment webHostEnvironment, CategoryRepository categoryRepo)
+        public CategoryController(IWebHostEnvironment webHostEnvironment, CategoryRepository categoryRepo, TenantRepository tenantRepo)
         {
-            _tenantRepo = tenantRepo ?? throw new ArgumentException(nameof(_tenantRepo));
             _webHostEnvironment = webHostEnvironment;
             _categoryRepo = categoryRepo;
+            _tenantRepo = tenantRepo;
         }
 
         public async Task<IActionResult> Index(int id, int page = 1, string search = "")
