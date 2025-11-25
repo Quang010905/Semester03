@@ -6,6 +6,7 @@ using System.Linq;
 using Semester03.Areas.Admin.Models;
 using System.Globalization;
 using System.Text;
+using Semester03.Areas.Client.Models.ViewModels;
 
 namespace Semester03.Models.Repositories
 {
@@ -18,14 +19,13 @@ namespace Semester03.Models.Repositories
             _context = context;
         }
 
-        // Lấy Featured Stores (top 6)
-        public List<FeaturedStoreViewModel> GetFeaturedStores(int top = 6)
+        public List<FeaturedStoreViewModel> GetFeaturedStores()
         {
             return _context.TblTenants
                 .Include(t => t.TenantType)
                 .Include(t => t.TblTenantPositions)
-                .OrderByDescending(t => t.TenantCreatedAt)
-                .Take(top)
+                .Include(t => t.TblCustomerComplaints)
+                .Where(t => t.TblCustomerComplaints.Any())
                 .Select(t => new FeaturedStoreViewModel
                 {
                     TenantId = t.TenantId,
@@ -35,10 +35,16 @@ namespace Semester03.Models.Repositories
                     TenantTypeName = t.TenantType.TenantTypeName,
                     Position = t.TblTenantPositions.FirstOrDefault() != null
                         ? $"{t.TblTenantPositions.First().TenantPositionLocation}, Floor {t.TblTenantPositions.First().TenantPositionFloor}"
-                        : ""
+                        : "",
+                    Rating = t.TblCustomerComplaints.Average(c => c.CustomerComplaintRate)
                 })
+                .Where(f => f.Rating == 5) // chỉ lấy 5 sao
                 .ToList();
         }
+
+
+
+
 
         // Lấy stores theo typeId và search
         public List<FeaturedStoreViewModel> GetStores(int? typeId = null, string search = "")
