@@ -46,4 +46,12 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public string LastAction { get; set; }
         public DateTime? LastActionDate { get; set; }
     }
+
+    public class UpdateProfileDto
+    {
+        public string? FullName { get; set; }
+        public string? Email { get; set; }
+        public string? Phone { get; set; }
+        public string? NewPassword { get; set; }   // nếu rỗng thì không đổi password
+    }
 }

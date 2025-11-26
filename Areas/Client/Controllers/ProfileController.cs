@@ -56,7 +56,53 @@ namespace Semester03.Areas.Client.Controllers
             return View(vm);
         }
 
+        [HttpPost]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto model)
+        {
+            // Lấy userId từ Claims (giống action Profile)
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
+            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Bạn chưa đăng nhập."
+                });
+            }
+
+            if (model == null)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Dữ liệu gửi lên không hợp lệ."
+                });
+            }
+
+            var (success, error) = await _userRepo.UpdateProfileAsync(
+                userId,
+                model.FullName,
+                model.Email,
+                model.Phone,
+                model.NewPassword
+            );
+
+            if (!success)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = error ?? "Cập nhật thất bại."
+                });
+            }
+
+            return Json(new
+            {
+                success = true,
+                message = "Cập nhật hồ sơ thành công."
+            });
+        }
     }
 
 }
