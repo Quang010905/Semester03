@@ -1,11 +1,77 @@
-﻿@using Semester03.Areas.Client.Models.ViewModels
+﻿@using System
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
+@using Semester03.Areas.Client.Models.ViewModels
 @model IEnumerable<FeaturedStoreViewModel>
-
 
 @{
     Layout = "_LayoutClient";
     ViewData["Title"] = "Stores";
     var types = ViewBag.TenantTypes as List<Semester03.Areas.Admin.Models.TenantType>;
+
+    // ===== HÀM ẢNH CHO STORE / TENANT =====
+    Func<string, string> ImgStore = (raw) =>
+    {
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            // nếu đã là URL tuyệt đối
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            // chuẩn hóa
+            var file = raw.Replace("\\", "/").Trim();
+
+            // nếu raw chứa "Content/Uploads/Tenant", lấy filename cuối
+            var keyword = "Content/Uploads/Tenant";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
+
+            // bỏ prefix "wwwroot/", "~/" hoặc "/"
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            // lấy IWebHostEnvironment để check file thật
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                return Url.Content("~/Content/Uploads/Tenant/" + Uri.EscapeDataString(file));
+            }
+
+            var physical = System.IO.Path.Combine(
+                env.WebRootPath ?? "wwwroot",
+                "Content", "Uploads", "Tenant", file
+            );
+
+            if (System.IO.File.Exists(physical))
+            {
+                return Url.Content("~/Content/Uploads/Tenant/" + Uri.EscapeDataString(file));
+            }
+            else
+            {
+                return noImageUrl;
+            }
+        }
+        catch
+        {
+            return noImageUrl;
+        }
+    };
 }
 
 @section Styles {
@@ -167,9 +233,7 @@
         {
             foreach (var s in Model)
             {
-                var img = string.IsNullOrEmpty(s.TenantImg)
-                ? "/Content/Uploads/noimage.png"
-                : $"/Content/Uploads/Tenant/{s.TenantImg}";
+                var img = ImgStore(s.TenantImg);
 
                 <div class="col-6 col-md-4 col-lg-3 col-xl-2">
                     <div class="card store-card h-100 position-relative">
