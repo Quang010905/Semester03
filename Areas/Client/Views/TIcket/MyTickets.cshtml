@@ -1,4 +1,7 @@
-﻿@model Semester03.Areas.Client.Models.ViewModels.MyTicketsPageVm
+﻿@using System
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
+@model Semester03.Areas.Client.Models.ViewModels.MyTicketsPageVm
 
 @{
     ViewData["Title"] = "Vé của tôi";
@@ -9,6 +12,124 @@
     var futureMovies = Model.MovieTickets.Where(t => t.Status == "Sắp chiếu").ToList();
     var pastMovies = Model.MovieTickets.Where(t => t.Status == "Đã xem").ToList();
     var cancelledMovies = Model.MovieTickets.Where(t => t.Status == "Đã hủy").ToList();
+
+    // ===== HÌNH PHIM (dựa theo Cinema) =====
+    Func<string, string> ImgMovie = (raw) =>
+    {
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            var file = raw.Replace("\\", "/").Trim();
+
+            var keyword = "Content/Uploads/Movies";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
+
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                return Url.Content("~/Content/Uploads/Movies/" + Uri.EscapeDataString(file));
+            }
+
+            var physical = System.IO.Path.Combine(
+                env.WebRootPath ?? "wwwroot",
+                "Content", "Uploads", "Movies", file
+            );
+
+            if (System.IO.File.Exists(physical))
+            {
+                return Url.Content("~/Content/Uploads/Movies/" + Uri.EscapeDataString(file));
+            }
+            else
+            {
+                return noImageUrl;
+            }
+        }
+        catch
+        {
+            return Url.Content("~/Content/Uploads/noimage.png");
+        }
+    };
+
+    // ===== HÌNH SỰ KIỆN (tương tự nhưng folder Events) =====
+    Func<string, string> ImgEvent = (raw) =>
+    {
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            var file = raw.Replace("\\", "/").Trim();
+
+            var keyword = "Content/Uploads/Events";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
+
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
+            }
+
+            var physical = System.IO.Path.Combine(
+                env.WebRootPath ?? "wwwroot",
+                "Content", "Uploads", "Events", file
+            );
+
+            if (System.IO.File.Exists(physical))
+            {
+                return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
+            }
+            else
+            {
+                return noImageUrl;
+            }
+        }
+        catch
+        {
+            return Url.Content("~/Content/Uploads/noimage.png");
+        }
+    };
 }
 
 <style>
@@ -160,7 +281,8 @@
                 <div class="row g-4">
                     @foreach (var t in futureMovies)
                     {
-                        var poster = "/images/movie-placeholder.jpg";
+                        // Cần MyTicketVm có property PosterUrl
+                        var poster = ImgMovie(t.PosterUrl);
 
                         <div class="col-6 col-md-4 col-lg-3">
                             <div class="ticket-card">
@@ -214,7 +336,7 @@
                 <div class="row g-4">
                     @foreach (var t in pastMovies)
                     {
-                        var poster = "/images/movie-placeholder.jpg";
+                        var poster = ImgMovie(t.PosterUrl);
 
                         <div class="col-6 col-md-4 col-lg-3">
                             <div class="ticket-card">
@@ -257,7 +379,7 @@
                 <div class="row g-4">
                     @foreach (var t in cancelledMovies)
                     {
-                        var poster = "/images/movie-placeholder.jpg";
+                        var poster = ImgMovie(t.PosterUrl);
 
                         <div class="col-6 col-md-4 col-lg-3">
                             <div class="ticket-card" style="opacity:.55;">
@@ -289,9 +411,6 @@
 
     </div>
 
-
-
-
     <!-- ================================================= -->
     <!--              TAB 2 — SỰ KIỆN -->
     <!-- ================================================= -->
@@ -306,9 +425,7 @@
             <div class="row g-4">
                 @foreach (var e in Model.EventTickets)
                 {
-                    var poster = string.IsNullOrWhiteSpace(e.EventImage)
-                    ? "/images/event-placeholder.png"
-                    : $"/images/events/{e.EventImage}";
+                    var poster = ImgEvent(e.EventImage);
 
                     <div class="col-6 col-md-4 col-lg-3">
 
@@ -324,7 +441,6 @@
 
                                 <div class="ticket-title">@e.EventName</div>
 
-                                <!-- EventStart là DateTime -->
                                 <div class="ticket-time">@e.EventStart.ToString("dd/MM/yyyy HH:mm")</div>
 
                                 <div class="ticket-time">Số lượng: @e.Quantity</div>
