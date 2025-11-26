@@ -63,8 +63,15 @@ namespace Semester03.Areas.Client.Controllers
                     ScreenName = t.TicketShowtimeSeat.ShowtimeSeatShowtime.ShowtimeScreen.ScreenName,
                     Price = t.TicketPrice,
                     Status = status,
-                    CreatedAt = (DateTime)t.TicketCreatedAt
+                    CreatedAt = (DateTime)t.TicketCreatedAt,
+
+                    // 👇 lấy đúng field ảnh từ TblMovie
+                    PosterUrl = t.TicketShowtimeSeat
+                     .ShowtimeSeatShowtime
+                     .ShowtimeMovie
+                     .MovieImg
                 };
+
             }).ToList();
 
 
