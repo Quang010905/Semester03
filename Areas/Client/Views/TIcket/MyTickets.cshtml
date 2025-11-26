@@ -52,8 +52,10 @@
                 return Url.Content("~/Content/Uploads/Movies/" + Uri.EscapeDataString(file));
             }
 
-            var physical = System.IO.Path.Combine(env.WebRootPath ?? "wwwroot", "Content", "Uploads", "Movies", file);
-
+            var physical = System.IO.Path.Combine(
+                env.WebRootPath ?? "wwwroot",
+                "Content", "Uploads", "Movies", file
+            );
 
             if (System.IO.File.Exists(physical))
             {
@@ -109,8 +111,10 @@
                 return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
             }
 
-            var physical = System.IO.Path.Combine(env.WebRootPath ?? "wwwroot", "Content", "Uploads", "Events", file);
-
+            var physical = System.IO.Path.Combine(
+                env.WebRootPath ?? "wwwroot",
+                "Content", "Uploads", "Events", file
+            );
 
             if (System.IO.File.Exists(physical))
             {
