@@ -7,7 +7,6 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public int TicketId { get; set; }
         public string MovieTitle { get; set; } = string.Empty;
 
-        // LUÔN là DateTime, KHÔNG DÙNG DateOnly
         public DateTime Showtime { get; set; }
 
         public string SeatLabel { get; set; } = string.Empty;
@@ -17,5 +16,10 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public string Status { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; }
+
+        // 👇 THÊM DÒNG NÀY
+        public string PosterUrl { get; set; } = string.Empty;
     }
+
+
 }
