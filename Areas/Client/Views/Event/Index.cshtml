@@ -1,33 +1,76 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.EventHomeVm
+@using System
+@using System.IO
 @using System.Linq
+@using Microsoft.AspNetCore.Hosting
 @using Semester03.Areas.Client.Models.ViewModels
 
 @{
     ViewData["Title"] = "Sự kiện";
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
 
+    // Hàm xử lý ảnh sự kiện – giống style ImgEvent bên Tickets
     Func<string, string> Img = (raw) =>
     {
-        if (string.IsNullOrWhiteSpace(raw))
-            return Url.Content("~/images/event-placeholder.png");
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
 
-        if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-            return raw;
-
-        var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
-        s = s.Replace(" ", "%20");
-
-        if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase)
-            || s.StartsWith("images", StringComparison.OrdinalIgnoreCase)
-            || s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
+        try
         {
-            return Url.Content("~/" + s);
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            // Link external
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            // Chuẩn hóa path
+            var file = raw.Replace("\\", "/").Trim();
+
+            // Nếu path chứa "Content/Uploads/Events" thì lấy filename cuối
+            var keyword = "Content/Uploads/Events";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
+
+            // Bỏ prefix không cần thiết
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            // Lấy env để kiểm tra file thực tế
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
+            }
+
+            var physical = System.IO.Path.Combine(
+                env.WebRootPath ?? "wwwroot",
+                "Content", "Uploads", "Events", file
+            );
+
+            if (System.IO.File.Exists(physical))
+            {
+                return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
+            }
+            else
+            {
+                return noImageUrl;
+            }
         }
-
-        if (raw.StartsWith("/"))
-            return Url.Content("~" + raw);
-
-        return Url.Content("~/Content/Uploads/Events/" + s);
+        catch
+        {
+            return Url.Content("~/Content/Uploads/noimage.png");
+        }
     };
 
     var upcoming = Model.Upcoming ?? new List<EventCardVm>();
