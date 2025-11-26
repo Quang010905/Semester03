@@ -1,5 +1,6 @@
-﻿@model Semester03.Areas.Client.Models.ViewModels.EventDetailsVm
+@model Semester03.Areas.Client.Models.ViewModels.EventDetailsVm
 @using System
+@using System.Globalization
 @using System.IO
 @using Microsoft.AspNetCore.Hosting
 
@@ -806,7 +807,7 @@
                         <strong>Giá vé:</strong>
                         @if (Model.Price.HasValue)
                         {
-                            @Model.Price.Value.ToString("C0")
+                            @Model.Price.Value.ToString("C0", new CultureInfo("vi-VN"))
                         }
                         else
                         {
