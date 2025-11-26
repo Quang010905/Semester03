@@ -86,7 +86,7 @@ namespace Semester03.Models.Repositories
                 UsersFullName = fullName?.Trim(),
                 UsersEmail = email?.Trim().ToLowerInvariant(),
                 UsersPhone = phone?.Trim(),
-                UsersRoleId = 2, // role = 2 when registering
+                UsersRoleId = 3, // role = 2 when registering
                 UsersPoints = 0,
                 UsersCreatedAt = DateTime.Now,
                 UsersUpdatedAt = DateTime.Now,
