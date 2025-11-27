@@ -7,6 +7,8 @@
     var dayOfWeek = Model.Showtime.ToString("dddd", new System.Globalization.CultureInfo("vi-VN"));
 }
 
+@using System.Linq
+
 <style>
     .ticket-wrapper {
         max-width: 700px;
@@ -82,6 +84,21 @@
         border-radius: 12px;
         border: 1px solid #eee;
     }
+
+    .seat-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: #e0f2fe;
+        color: #0f172a;
+        font-size: 0.8rem;
+        margin: 2px 4px 2px 0;
+    }
+
+    .seat-badge-cancel {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
 </style>
 
 <div class="ticket-wrapper mt-4 mb-4 position-relative">
@@ -133,8 +150,17 @@
                     <div class="ticket-value">@Model.Screen</div>
                 </div>
                 <div class="col">
-                    <div class="ticket-label">Số ghế</div>
-                    <div class="ticket-value">@Model.Seat</div>
+                    <div class="ticket-label">Các ghế đã đặt</div>
+                    <div class="ticket-value">
+                        @if (Model.Seats != null && Model.Seats.Any())
+                        {
+                            @string.Join(", ", Model.Seats.Select(s => s.SeatLabel))
+                        }
+                        else
+                        {
+                            <span>Không có ghế nào.</span>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
@@ -144,6 +170,147 @@
             <div class="ticket-value">@Model.TheaterName</div>
             <div>@Model.TheaterAddress</div>
         </div>
+
+        <!-- ==========================
+             KHỐI HỦY VÉ NHIỀU GHẾ
+             ========================== -->
+        <div class="ticket-section mt-3">
+            <button class="btn btn-danger w-100" type="button" onclick="toggleCancelBox()">
+                Hủy vé (chọn ghế)
+            </button>
+
+            <div id="cancelBox" class="mt-3" style="display:none;">
+                <h5>Chọn ghế cần hủy</h5>
+
+                @if (Model.Seats == null || !Model.Seats.Any())
+                {
+                    <div class="ticket-label">Bạn không còn ghế nào có thể hủy.</div>
+                }
+                else
+                {
+                    @* checkbox cho từng ghế *@
+                    @foreach (var s in Model.Seats)
+                    {
+                        <div class="form-check">
+                            <input class="form-check-input seat-check"
+                                   type="checkbox"
+                                   value="@s.TicketId"
+                                   id="seat_@s.TicketId"
+                                   data-seat-label="@s.SeatLabel" />
+                            <label class="form-check-label" for="seat_@s.TicketId">
+                                Ghế @s.SeatLabel (@s.Price.ToString("N0") đ)
+                            </label>
+                        </div>
+                    }
+
+                    <button class="btn btn-primary w-100 mt-3" type="button" onclick="submitCancel()">
+                        Xác nhận hủy những ghế đã chọn
+                    </button>
+                }
+
+                <hr />
+
+                <h6>Ghế muốn hủy:</h6>
+                <div id="selectedSeatsBox">
+                    <span class="ticket-label text-muted">Chưa chọn ghế nào.</span>
+                </div>
+            </div>
+        </div>
+
     </div>
 
 </div>
+
+@section Scripts {
+    <script>
+        function toggleCancelBox() {
+            var box = document.getElementById("cancelBox");
+            if (!box) return;
+
+            if (box.style.display === "none" || box.style.display === "") {
+                box.style.display = "block";
+            } else {
+                box.style.display = "none";
+            }
+        }
+
+        function renderSelectedSeats() {
+            var box = document.getElementById("selectedSeatsBox");
+            if (!box) return;
+
+            box.innerHTML = "";
+
+            var selected = [];
+            document.querySelectorAll(".seat-check:checked").forEach(function (chk) {
+                var label = chk.getAttribute("data-seat-label") || chk.value;
+                selected.push(label);
+            });
+
+            if (selected.length === 0) {
+                box.innerHTML = '<span class="ticket-label text-muted">Chưa chọn ghế nào.</span>';
+                return;
+            }
+
+            selected.forEach(function (seat) {
+                var span = document.createElement("span");
+                span.className = "seat-badge seat-badge-cancel";
+                span.textContent = seat;
+                box.appendChild(span);
+            });
+        }
+
+        // Gửi request hủy ghế bằng fetch (không dùng jQuery)
+        function submitCancel() {
+            var selected = [];
+            document.querySelectorAll(".seat-check:checked").forEach(function (chk) {
+                selected.push(chk.value);
+            });
+
+            if (selected.length === 0) {
+                alert("Bạn chưa chọn ghế để hủy.");
+                return;
+            }
+
+            if (!confirm("Bạn có chắc muốn hủy " + selected.length + " ghế?")) {
+                return;
+            }
+
+            var url = "@Url.Action("CancelSelectedSeats", "TicketDetail", new { area = "Client" })";
+
+            var bodyParams = new URLSearchParams();
+            selected.forEach(function (id) {
+                // ASP.NET Core binding: seatIds=1&seatIds=2&...
+                bodyParams.append("seatIds", id);
+            });
+
+            fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                },
+                body: bodyParams.toString()
+            })
+                .then(function (response) { return response.json(); })
+                .then(function (res) {
+                    alert(res.message || "Đã xử lý xong.");
+                    if (res.success) {
+                        location.reload();
+                    }
+                })
+                .catch(function (err) {
+                    console.error(err);
+                    alert("Có lỗi xảy ra khi gửi yêu cầu hủy vé.");
+                });
+        }
+
+        // Gắn sự kiện change cho checkbox sau khi DOM load
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".seat-check").forEach(function (chk) {
+                chk.addEventListener("change", renderSelectedSeats);
+            });
+
+            // render lần đầu (chưa chọn ghế nào)
+            renderSelectedSeats();
+        });
+    </script>
+}

@@ -9,6 +9,7 @@ using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Semester03.Areas.Client.Controllers
 {
@@ -296,6 +297,89 @@ namespace Semester03.Areas.Client.Controllers
         }
 
         // =====================================================================================
+        // GET: Client/EventBooking/Details/{id}
+        // Xem chi tiết vé sự kiện (giống vé xem phim)
+        // =====================================================================================
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> Details(int id)
+        {
+            // Lấy user hiện tại
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr))
+            {
+                // Nếu chưa login thì cho về login
+                return RedirectToAction(
+                    "Login",
+                    "Account",
+                    new { area = "Client", returnUrl = Url.Action("Details", "EventBooking", new { area = "Client", id }) }
+                );
+            }
+
+            int userId = int.Parse(userIdStr);
+
+            // Lấy booking + event
+            var booking = await _bookingRepo.GetByIdAsync(id);
+            if (booking == null || booking.EventBookingUserId != userId)
+            {
+                return NotFound();
+            }
+
+            // Lấy thêm thông tin event (địa điểm, đơn vị, giá...) từ EventRepository
+            var evtDetail = await _eventRepo.GetEventByIdAsync(booking.EventBookingEventId, userId);
+            if (evtDetail == null)
+            {
+                return NotFound();
+            }
+
+            var now = DateTime.Now;
+
+            string status =
+                (booking.EventBookingStatus ?? 0) == 0 ? "Đã hủy" :
+                (evtDetail.EndDate ?? evtDetail.StartDate) <= now ? "Đã diễn ra" :
+                "Sắp diễn ra";
+
+            // Tạo link QR check-in
+            string qrUrl = Url.Action(
+                "Details",
+                "EventBooking",
+                new { area = "Client", id = booking.EventBookingId },
+                protocol: HttpContext.Request.Scheme
+            );
+
+            string qrImg = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" +
+                           System.Net.WebUtility.UrlEncode(qrUrl);
+
+            // Build ViewModel
+            var vm = new EventTicketDetailVm
+            {
+                BookingId = booking.EventBookingId,
+                EventName = evtDetail.Title,
+                EventImg = string.IsNullOrEmpty(evtDetail.ImageUrl)
+                    ? "/images/event-placeholder.png"
+                    : evtDetail.ImageUrl,
+                Description = evtDetail.Description,
+
+                EventStart = evtDetail.StartDate,
+                EventEnd = (evtDetail.EndDate ?? evtDetail.StartDate),
+
+                Quantity = booking.EventBookingQuantity ?? 1,
+                TotalCost = booking.EventBookingTotalCost ?? 0m,
+                UnitPrice = booking.EventBookingUnitPrice ?? (evtDetail.Price ?? 0m),
+
+                Status = status,
+
+                PositionLocation = evtDetail.PositionLocation ?? "",
+                PositionFloor = evtDetail.PositionFloor,
+                OrganizerShopName = evtDetail.OrganizerShopName ?? "",
+
+                QRCodeUrl = qrImg
+            };
+
+            return View(vm);
+        }
+
+        // =====================================================================================
         // SUCCESS PAGE
         // =====================================================================================
         [HttpGet]
@@ -374,6 +458,107 @@ namespace Semester03.Areas.Client.Controllers
             }
             catch { }
             return "";
+        }
+
+        // =====================================================================================
+        // PARTIAL CANCEL EVENT TICKETS
+        // =====================================================================================
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> PartialCancel(int bookingId, int cancelQuantity)
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            // Lấy booking qua repository cho đúng cấu trúc project
+            var booking = await _bookingRepo.GetByIdAsync(bookingId);
+
+            if (booking == null || booking.EventBookingUserId != userId)
+                return Json(new { success = false, message = "Không tìm thấy đơn đặt vé." });
+
+            int qty = booking.EventBookingQuantity ?? 0;
+
+            if (cancelQuantity <= 0)
+                return Json(new { success = false, message = "Số lượng hủy phải > 0." });
+
+            if (cancelQuantity > qty)
+                return Json(new { success = false, message = "Số vé cần hủy vượt quá số vé còn lại." });
+
+            // =======================================
+            // B1: Tính lại số vé còn và tiền hoàn
+            // =======================================
+            int remainingQty = qty - cancelQuantity;
+            decimal unitPrice = booking.EventBookingUnitPrice ?? 0;
+            decimal refundAmount = unitPrice * cancelQuantity;
+
+            booking.EventBookingQuantity = remainingQty;
+            booking.EventBookingTotalCost = remainingQty * unitPrice;
+
+            // PaymentStatus: 1 = Paid, 2 = Partial Refund, 3 = Full Refund
+            booking.EventBookingPaymentStatus = remainingQty > 0 ? 2 : 3;
+
+            // Status: 1 = Active, 0 = Cancelled
+            booking.EventBookingStatus = remainingQty > 0 ? 1 : 0;
+
+            // Lưu log nhỏ vào notes
+            string smallLog =
+                $"[Cancel {DateTime.Now:dd/MM HH:mm}] Hủy {cancelQuantity} vé (còn {remainingQty}).";
+
+            booking.EventBookingNotes =
+                string.IsNullOrWhiteSpace(booking.EventBookingNotes)
+                    ? smallLog
+                    : booking.EventBookingNotes + "\n" + smallLog;
+
+            // =======================================
+            // B2: Ghi vào bảng history (FULL LOG)
+            // =======================================
+            var history = new TblEventBookingHistory
+            {
+                EventBookingHistoryBookingId = booking.EventBookingId,
+                EventBookingHistoryEventId = booking.EventBookingEventId,
+                EventBookingHistoryUserId = userId,
+                EventBookingHistoryAction = "PartialCancel",
+                EventBookingHistoryQuantity = cancelQuantity,
+                EventBookingHistoryDetails =
+                    $"User cancelled {cancelQuantity} ticket(s). From {qty} → {remainingQty}. Refund {refundAmount:N0}",
+                EventBookingHistoryRelatedDate = DateOnly.FromDateTime(DateTime.Now),
+                EventBookingHistoryCreatedAt = DateTime.Now
+            };
+
+            _context.TblEventBookingHistories.Add(history);
+
+            // =======================================
+            // B3: Lưu DB
+            // =======================================
+            _context.Update(booking);
+            await _context.SaveChangesAsync();
+
+            // =======================================
+            // B4: Gửi email hủy vé sự kiện
+            // =======================================
+            try
+            {
+                var evt = await _eventRepo.GetEventByIdAsync(booking.EventBookingEventId);
+                string eventName = evt?.Title ?? "Sự kiện";
+
+                await _ticketEmailService.SendEventCancelEmailAsync(
+                    userId: booking.EventBookingUserId,
+                    eventName: eventName,
+                    bookingId: booking.EventBookingId,
+                    cancelledQty: cancelQuantity,
+                    remainingQty: remainingQty,
+                    refundAmount: refundAmount
+                );
+            }
+            catch
+            {
+                // tránh crash nếu lỗi email
+            }
+
+            return Json(new
+            {
+                success = true,
+                message = $"Đã hủy {cancelQuantity} vé, hoàn lại {refundAmount:N0}đ."
+            });
         }
     }
 }

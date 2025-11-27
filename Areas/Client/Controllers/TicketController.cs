@@ -1,11 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Semester03.Models.Repositories;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Semester03.Areas.Client.Models.ViewModels;
-using Microsoft.AspNetCore.Authorization;
+using Semester03.Models.Repositories;
+using Semester03.Services.Email;
+using System;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using System.Linq;
-using System;
+using System.Collections.Generic;
 
 namespace Semester03.Areas.Client.Controllers
 {
@@ -15,22 +17,24 @@ namespace Semester03.Areas.Client.Controllers
     {
         private readonly TicketRepository _ticketRepo;
         private readonly EventBookingRepository _eventBookingRepo;
+        private readonly TicketEmailService _ticketEmailService;
 
         public TicketController(
-            TenantTypeRepository tenantTypeRepo,      // 👈 thêm để truyền vào base
+            TenantTypeRepository tenantTypeRepo,
             TicketRepository ticketRepo,
-            EventBookingRepository eventBookingRepo
-        ) : base(tenantTypeRepo)                     // 👈 gọi constructor của controller cha
+            EventBookingRepository eventBookingRepo,
+            TicketEmailService ticketEmailService
+        ) : base(tenantTypeRepo)
         {
             _ticketRepo = ticketRepo;
             _eventBookingRepo = eventBookingRepo;
+            _ticketEmailService = ticketEmailService;
         }
 
         private int GetUserId()
         {
             return int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
         }
-
 
         // ===============================================
         //        🎟  VÉ CỦA TÔI — 2 TAB LỚN
@@ -41,42 +45,56 @@ namespace Semester03.Areas.Client.Controllers
             DateTime now = DateTime.Now;
 
             // =======================
-            // 1) VÉ XEM PHIM
+            // 1) VÉ XEM PHIM (GROUP)
             // =======================
             var movieDb = await _ticketRepo.GetTicketsByUserAsync(userId);
 
-            var movieTickets = movieDb.Select(t =>
-            {
-                DateTime show = t.TicketShowtimeSeat.ShowtimeSeatShowtime.ShowtimeStart;
-
-                string status =
-                    t.TicketStatus == "cancelled" ? "Đã hủy"
-                    : show <= now ? "Đã xem"
-                    : "Sắp chiếu";
-
-                return new MyTicketVm
+            // Gộp theo: Phim + thời gian chiếu + phòng + poster + status
+            var movieTickets = movieDb
+                .GroupBy(t =>
                 {
-                    TicketId = t.TicketId,
-                    MovieTitle = t.TicketShowtimeSeat.ShowtimeSeatShowtime.ShowtimeMovie.MovieTitle,
-                    Showtime = show,
-                    SeatLabel = t.TicketShowtimeSeat.ShowtimeSeatSeat.SeatLabel,
-                    ScreenName = t.TicketShowtimeSeat.ShowtimeSeatShowtime.ShowtimeScreen.ScreenName,
-                    Price = t.TicketPrice,
-                    Status = status,
-                    CreatedAt = (DateTime)t.TicketCreatedAt,
+                    var showtime = t.TicketShowtimeSeat.ShowtimeSeatShowtime;
+                    var movie = showtime.ShowtimeMovie;
 
-                    // 👇 lấy đúng field ảnh từ TblMovie
-                    PosterUrl = t.TicketShowtimeSeat
-                     .ShowtimeSeatShowtime
-                     .ShowtimeMovie
-                     .MovieImg
-                };
+                    string status =
+                        t.TicketStatus == "cancelled" ? "Đã hủy"
+                        : showtime.ShowtimeStart <= now ? "Đã xem"
+                        : "Sắp chiếu";
 
-            }).ToList();
-
+                    return new
+                    {
+                        MovieTitle = movie.MovieTitle,
+                        Showtime = showtime.ShowtimeStart,
+                        ScreenName = showtime.ShowtimeScreen.ScreenName,
+                        PosterUrl = movie.MovieImg,
+                        Status = status
+                    };
+                })
+                .Select(g =>
+                {
+                    var sample = g.First();
+                    return new MyTicketVm
+                    {
+                        // dùng 1 TicketId đại diện để đi tới trang chi tiết
+                        TicketId = sample.TicketId,
+                        MovieTitle = g.Key.MovieTitle,
+                        Showtime = g.Key.Showtime,
+                        ScreenName = g.Key.ScreenName,
+                        // giá: lấy giá của 1 vé (giả sử giống nhau)
+                        Price = sample.TicketPrice,
+                        Status = g.Key.Status,
+                        CreatedAt = (DateTime)sample.TicketCreatedAt,
+                        PosterUrl = g.Key.PosterUrl,
+                        Quantity = g.Count()
+                        // SeatLabel ở màn danh sách không dùng nữa,
+                        // nếu cần có thể nối string ghế tại đây.
+                    };
+                })
+                .OrderByDescending(x => x.Showtime)
+                .ToList();
 
             // =======================
-            // 2) VÉ SỰ KIỆN
+            // 2) VÉ SỰ KIỆN (giữ nguyên)
             // =======================
             var eventDb = await _eventBookingRepo.GetBookingsForUserAsync(userId);
 
@@ -94,15 +112,10 @@ namespace Semester03.Areas.Client.Controllers
                     BookingId = e.EventBookingId,
                     EventName = ev.EventName,
                     EventImage = ev.EventImg,
-
-                    // Event_Start, Event_End là DATETIME2 → EF map thành DateTime
                     EventStart = ev.EventStart,
                     EventEnd = ev.EventEnd,
-
-                    // FIX NULLABLE:
                     Quantity = e.EventBookingQuantity ?? 1,
                     TotalCost = e.EventBookingTotalCost ?? 0m,
-
                     Status = status
                 };
             }).ToList();
@@ -113,7 +126,6 @@ namespace Semester03.Areas.Client.Controllers
                 EventTickets = eventTickets
             });
         }
-
 
         // ===============================================
         //          ❌ HỦY VÉ XEM PHIM (KHÓA 24H)
@@ -131,9 +143,9 @@ namespace Semester03.Areas.Client.Controllers
                 return RedirectToAction("MyTickets");
             }
 
-            DateTime show = ticket.TicketShowtimeSeat.ShowtimeSeatShowtime.ShowtimeStart;
+            DateTime showtime = ticket.TicketShowtimeSeat.ShowtimeSeatShowtime.ShowtimeStart;
 
-            if (show - DateTime.Now < TimeSpan.FromHours(24))
+            if (showtime - DateTime.Now < TimeSpan.FromHours(24))
             {
                 TempData["Error"] = "Bạn chỉ được hủy vé trước 24 giờ.";
                 return RedirectToAction("MyTickets");
@@ -141,10 +153,31 @@ namespace Semester03.Areas.Client.Controllers
 
             bool ok = await _ticketRepo.CancelTicketAsync(id);
 
+            if (ok)
+            {
+                var buyer = ticket.TicketBuyerUser;
+                var movie = ticket.TicketShowtimeSeat.ShowtimeSeatShowtime.ShowtimeMovie;
+
+                var cancelledSeats = new List<string>
+                {
+                    ticket.TicketShowtimeSeat.ShowtimeSeatSeat.SeatLabel
+                };
+
+                decimal refundAmount = ticket.TicketPrice;
+
+                await _ticketEmailService.SendMovieCancelEmailAsync(
+                    userId: buyer.UsersId,
+                    movieName: movie.MovieTitle,
+                    showtime: showtime,
+                    cancelledSeats: cancelledSeats,
+                    refundAmount: refundAmount
+                );
+            }
+
             TempData[ok ? "Success" : "Error"] =
                 ok ? "Hủy vé thành công!" : "Hủy vé thất bại!";
 
-            return RedirectToAction("MyTickets");
+            return RedirectToAction("Index", "TicketDetail", new { area = "Client", id = ticket.TicketId });
         }
     }
 }

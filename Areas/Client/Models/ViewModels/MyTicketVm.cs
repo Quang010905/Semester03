@@ -17,9 +17,10 @@ namespace Semester03.Areas.Client.Models.ViewModels
 
         public DateTime CreatedAt { get; set; }
 
-        // 👇 THÊM DÒNG NÀY
+        // Ảnh poster
         public string PosterUrl { get; set; } = string.Empty;
+
+        // 👉 Số lượng vé trong nhóm (cùng phim + giờ chiếu)
+        public int Quantity { get; set; }
     }
-
-
 }

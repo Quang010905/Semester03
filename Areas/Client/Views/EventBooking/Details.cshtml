@@ -1,0 +1,289 @@
+﻿@model Semester03.Areas.Client.Models.ViewModels.EventTicketDetailVm
+
+@{
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+    ViewData["Title"] = "Thông tin vé sự kiện";
+
+    var dayOfWeek = Model.EventStart.ToString("dddd", new System.Globalization.CultureInfo("vi-VN"));
+
+    var locationText = string.IsNullOrWhiteSpace(Model.PositionLocation)
+        ? ""
+        : Model.PositionFloor.HasValue
+            ? $"{Model.PositionLocation} - Tầng {Model.PositionFloor}"
+            : Model.PositionLocation;
+}
+
+<style>
+    .ticket-wrapper {
+        max-width: 700px;
+        margin: auto;
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        overflow: hidden;
+    }
+
+    .ticket-header {
+        padding: 20px;
+        background: #e0f2fe;
+        font-weight: 700;
+        font-size: 1.3rem;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .ticket-header a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .ticket-header i {
+            font-size: 1.2rem;
+        }
+
+    .ticket-poster {
+        width: 100%;
+        height: 260px;
+        object-fit: cover;
+    }
+
+    .ticket-body {
+        padding: 20px;
+        background: #fff;
+    }
+
+    .ticket-label {
+        font-size: .9rem;
+        color: #64748b;
+    }
+
+    .ticket-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .ticket-section {
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px dashed #e2e8f0;
+    }
+
+    .qr-box {
+        display: flex;
+        justify-content: center;
+    }
+
+        .qr-box img {
+            width: 160px;
+            height: 160px;
+        }
+
+    .stamp-status {
+        position: absolute;
+        top: 22px;
+        right: -40px;
+        transform: rotate(20deg);
+        background: #22c55e;
+        color: #fff;
+        padding: 6px 40px;
+        font-weight: 700;
+        font-size: .8rem;
+        text-transform: uppercase;
+        box-shadow: 0 0 0 3px rgba(34,197,94,.4);
+    }
+
+        .stamp-status.cancelled {
+            background: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239,68,68,.4);
+        }
+
+    .ticket-badge-status {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: .8rem;
+        font-weight: 600;
+        background: #e5e7eb;
+        margin-bottom: 8px;
+    }
+
+        .ticket-badge-status.past {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .ticket-badge-status.cancelled {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+</style>
+
+<div class="ticket-wrapper mt-4 mb-4 position-relative">
+
+    @* Stamp trạng thái *@
+    @if (Model.Status == "Đã hủy")
+    {
+        <div class="stamp-status cancelled">ĐÃ HỦY</div>
+    }
+    else if (Model.Status == "Đã diễn ra")
+    {
+        <div class="stamp-status">ĐÃ DIỄN RA</div>
+    }
+
+    <div class="ticket-header">
+        <a href="javascript:history.back()">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        Thông tin vé sự kiện
+    </div>
+
+    <img src="@Model.EventImg" class="ticket-poster" />
+
+    <div class="ticket-body">
+
+        <div class="ticket-value mb-1">@Model.EventName</div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Description))
+        {
+            <div class="ticket-label mb-3">
+                @Model.Description
+            </div>
+        }
+
+        <span class="ticket-badge-status
+            @(Model.Status == "Đã diễn ra" ? "past" : Model.Status == "Đã hủy" ? "cancelled" : "")">
+            @Model.Status.ToUpper()
+        </span>
+
+        <div class="ticket-section">
+            <div class="ticket-label">Mã đặt vé:</div>
+            <div class="ticket-value">@Model.BookingId</div>
+
+            <div class="ticket-label mt-3">Thời gian:</div>
+            <div class="ticket-value" style="color:#e00063">
+                @Model.EventStart.ToString("HH:mm") - @Model.EventEnd.ToString("HH:mm")
+            </div>
+            <div class="ticket-value">
+                @dayOfWeek, @Model.EventStart.ToString("dd/MM/yyyy")
+            </div>
+
+            <div class="qr-box mt-3">
+                <img src="@Model.QRCodeUrl" />
+            </div>
+
+            <div class="ticket-label mt-2 text-center">
+                Đưa mã này cho nhân viên check-in tại sự kiện
+            </div>
+        </div>
+
+        <div class="ticket-section">
+            <div class="row text-center">
+                <div class="col">
+                    <div class="ticket-label">Số lượng vé</div>
+                    <div class="ticket-value">@Model.Quantity</div>
+                </div>
+                <div class="col">
+                    <div class="ticket-label">Giá / vé</div>
+                    <div class="ticket-value">
+                        @Model.UnitPrice.ToString("N0") đ
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="ticket-label">Tổng tiền</div>
+                    <div class="ticket-value">
+                        @Model.TotalCost.ToString("N0") đ
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(locationText) || !string.IsNullOrWhiteSpace(Model.OrganizerShopName))
+        {
+            <div class="ticket-section">
+                @if (!string.IsNullOrWhiteSpace(locationText))
+                {
+                    <div class="ticket-label">Địa điểm</div>
+                    <div class="ticket-value">@locationText</div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.OrganizerShopName))
+                {
+                    <div class="ticket-label mt-2">Đơn vị tổ chức</div>
+                    <div class="ticket-value">@Model.OrganizerShopName</div>
+                }
+            </div>
+        }
+
+        @* ===========================
+           PHẦN HỦY VÉ SỰ KIỆN
+           =========================== *@
+        @if (Model.Status != "Đã hủy" && Model.Quantity > 0)
+        {
+            <div class="ticket-section">
+                <div class="ticket-label mb-2">Hủy bớt vé</div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <input id="cancelQty"
+                           type="number"
+                           class="form-control"
+                           min="1"
+                           max="@Model.Quantity"
+                           placeholder="Nhập số vé muốn hủy"
+                           style="width:150px;" />
+
+                    <button class="btn btn-danger" id="btnCancelTickets">
+                        Hủy vé
+                    </button>
+                </div>
+
+                <small class="text-muted">Chỉ có thể hủy tối đa @Model.Quantity vé.</small>
+            </div>
+        }
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+
+    @* THÊM jQuery – BẮT BUỘC *@
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            $("#btnCancelTickets").click(function () {
+
+                let qty = parseInt($("#cancelQty").val());
+
+                if (!qty || qty <= 0) {
+                    alert("Vui lòng nhập số vé hợp lệ.");
+                    return;
+                }
+
+                $.ajax({
+                    url: '@Url.Action("PartialCancel", "EventBooking", new { area = "Client" })',
+                    type: "POST",
+                    data: {
+                        bookingId: @Model.BookingId,
+                        cancelQuantity: qty
+                    },
+                    success: function (res) {
+                        alert(res.message);
+                        if (res.success) location.reload();
+                    },
+                    error: function (xhr) {
+                        console.log("AJAX ERROR:", xhr.responseText);
+                        alert("Lỗi server khi hủy vé.");
+                    }
+                });
+
+            });
+
+        });
+    </script>
+}
