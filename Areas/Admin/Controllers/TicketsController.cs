@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Semester03.Models.Entities;
 using Semester03.Models.Repositories;
+using System.Text;
 
 namespace Semester03.Areas.Admin.Controllers
 {
@@ -17,23 +18,13 @@ namespace Semester03.Areas.Admin.Controllers
         }
 
         // GET: Admin/Tickets
-        public async Task<IActionResult> Index(int? showtimeId)
+        public async Task<IActionResult> Index(string search, DateTime? date, int? showtimeId)
         {
-            IEnumerable<TblTicket> tickets;
+            var tickets = await _ticketRepo.SearchTicketsAsync(search, showtimeId, date);
 
-            if (showtimeId.HasValue)
-            {
-                // If ID is provided, get filtered tickets
-                tickets = await _ticketRepo.GetTicketsForShowtimeAsync(showtimeId.Value);
-                ViewData["Title"] = $"Tickets for Showtime #{showtimeId.Value}";
-                ViewData["ShowtimeFilter"] = showtimeId.Value;
-            }
-            else
-            {
-                // If no ID, get all tickets
-                tickets = await _ticketRepo.GetAllAsync();
-                ViewData["Title"] = "Sold Ticket Management";
-            }
+            ViewData["CurrentSearch"] = search;
+            ViewData["CurrentDate"] = date?.ToString("yyyy-MM-dd");
+            ViewData["CurrentShowtime"] = showtimeId;
 
             return View(tickets);
         }
@@ -88,6 +79,61 @@ namespace Semester03.Areas.Admin.Controllers
 
             // Redirect back to the Details page for this showtime
             return RedirectToAction("Details", "Showtimes", new { id = id });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ExportSummary(string search, DateTime? date, int? showtimeId)
+        {
+            // 1. Get Data (Reuse existing search logic to respect filters)
+            var tickets = await _ticketRepo.SearchTicketsAsync(search, showtimeId, date);
+
+            // 2. Process Data: Filter 'Sold' -> Group by Movie & Showtime
+            var summaryData = tickets
+                .Where(t => t.TicketStatus.ToLower() == "sold")
+                .GroupBy(t => new
+                {
+                    Movie = t.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeMovie?.MovieTitle ?? "Unknown",
+                    Screen = t.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeScreen?.ScreenName ?? "Unknown",
+                    // Group by the specific showtime start datetime
+                    StartDateTime = t.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeStart
+                })
+                .Select(g => new
+                {
+                    MovieTitle = g.Key.Movie.Replace(",", " "), // Escape commas
+                    ScreenName = g.Key.Screen,
+                    Date = g.Key.StartDateTime?.ToString("yyyy-MM-dd") ?? "N/A",
+                    Time = g.Key.StartDateTime?.ToString("HH:mm") ?? "N/A",
+                    TicketsSold = g.Count(),
+                    Revenue = g.Sum(x => x.TicketPrice)
+                })
+                .OrderBy(x => x.Date).ThenBy(x => x.Time) // Sort chronologically
+                .ToList();
+
+            // 3. Build CSV Content
+            var builder = new StringBuilder();
+            // Header
+            builder.AppendLine("Date,Time,Movie Title,Screen,Tickets Sold,Revenue (VND)");
+
+            foreach (var item in summaryData)
+            {
+                builder.AppendLine($"{item.Date},{item.Time},{item.MovieTitle},{item.ScreenName},{item.TicketsSold},{item.Revenue.ToString("F0")}");
+            }
+
+            // Footer (Grand Total)
+            decimal grandTotalRevenue = summaryData.Sum(x => x.Revenue);
+            int grandTotalTickets = summaryData.Sum(x => x.TicketsSold);
+
+            builder.AppendLine(",,,,,"); // Spacer
+            builder.AppendLine($",,,GRAND TOTAL,{grandTotalTickets},{grandTotalRevenue.ToString("F0")}");
+
+            // 4. Add BOM for Excel/Google Sheets compatibility (UTF-8)
+            var content = builder.ToString();
+            var encoding = new UTF8Encoding(true);
+            var preamble = encoding.GetPreamble();
+            var data = encoding.GetBytes(content);
+            var finalData = preamble.Concat(data).ToArray();
+
+            return File(finalData, "text/csv", $"Revenue_Summary_{DateTime.Now:yyyyMMdd_HHmm}.csv");
         }
     }
 }
