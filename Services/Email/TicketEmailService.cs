@@ -33,11 +33,21 @@ namespace Semester03.Services.Email
         // ====================================================================
         // 1) EMAIL VÉ XEM PHIM
         // ====================================================================
+
+        /// <summary>
+        /// Overload cũ: chỉ gửi theo list showtimeSeatIds, không truyền thông tin giảm giá.
+        /// </summary>
         public Task SendTicketsEmailAsync(int userId, List<int> showtimeSeatIds)
         {
+            // truyền null cho các tham số tiền để bên trong tự tính baseTotal
             return SendTicketsEmailAsync(userId, showtimeSeatIds, null, null, null);
         }
 
+        /// <summary>
+        /// Gửi email vé xem phim + hiển thị tổng tiền / giảm giá / điểm thưởng.
+        /// originalAmount, discountAmount, finalAmount được truyền từ PaymentSuccess
+        /// để luôn khớp với VNPAY.
+        /// </summary>
         public async Task SendTicketsEmailAsync(
             int userId,
             List<int> showtimeSeatIds,
@@ -45,56 +55,100 @@ namespace Semester03.Services.Email
             decimal? discountAmount,
             decimal? finalAmount)
         {
+            if (showtimeSeatIds == null || !showtimeSeatIds.Any())
+            {
+                _logger.LogWarning("SendTicketsEmailAsync: empty showtimeSeatIds for user {UserId}", userId);
+                return;
+            }
+
             var user = await _db.TblUsers.FindAsync(userId);
             if (user == null || string.IsNullOrWhiteSpace(user.UsersEmail))
+            {
+                _logger.LogWarning("SendTicketsEmailAsync: user {UserId} not found or has no email.", userId);
                 return;
-
-            if (showtimeSeatIds == null || !showtimeSeatIds.Any())
-                return;
+            }
 
             var repo = new TicketRepository(_db);
             var ticketDetails = await repo.GetTicketDetailsByShowtimeSeatIdsAsync(showtimeSeatIds);
 
             if (ticketDetails == null || !ticketDetails.Any())
+            {
+                _logger.LogWarning("SendTicketsEmailAsync: no ticket details found for user {UserId}", userId);
                 return;
+            }
 
+            // Build danh sách vé gửi ra email + QR payload cho từng vé
             var ticketVmList = ticketDetails
-                .Select(t => new TicketEmailItemVm
+                .Select(t =>
                 {
-                    MovieTitle = t.MovieTitle,
-                    CinemaName = t.CinemaName,
-                    ScreenName = t.ScreenName,
-                    ShowtimeStart = t.ShowtimeStart,
-                    SeatLabel = t.SeatLabel,
-                    Price = t.Price
+                    // QR payload: chuỗi duy nhất dựa trên thông tin vé
+                    var qrPayload =
+                        $"TICKET|MOVIE={t.MovieTitle}|CINEMA={t.CinemaName}|SCREEN={t.ScreenName}|TIME={t.ShowtimeStart:yyyy-MM-dd HH:mm}|SEAT={t.SeatLabel}";
+
+                    return new TicketEmailItemVm
+                    {
+                        MovieTitle = t.MovieTitle,
+                        CinemaName = t.CinemaName,
+                        ScreenName = t.ScreenName,
+                        ShowtimeStart = t.ShowtimeStart,
+                        SeatLabel = t.SeatLabel,
+                        Price = t.Price,
+                        QrCode = qrPayload
+                    };
                 })
                 .ToList();
 
+            // Tổng tiền tính theo giá vé (backup khi caller không truyền)
             var baseTotal = ticketVmList.Sum(t => t.Price);
+
             var effectiveOriginal = originalAmount ?? baseTotal;
             var effectiveFinal = finalAmount ?? baseTotal;
             var effectiveDiscount = discountAmount ?? (effectiveOriginal - effectiveFinal);
             if (effectiveDiscount < 0) effectiveDiscount = 0;
 
+            // Điểm thưởng dựa trên số tiền thực trả (final)
+            var pointsAwarded = (int)Math.Floor(effectiveFinal / 100m);
+
+            var purchaseDateUtc = DateTime.UtcNow;
+
             var model = new TicketEmailViewModel
             {
                 UserFullName = user.UsersFullName ?? user.UsersUsername,
-                PurchaseDate = DateTime.UtcNow,
+                PurchaseDate = purchaseDateUtc,
                 Tickets = ticketVmList,
                 OriginalAmount = effectiveOriginal,
                 DiscountAmount = effectiveDiscount,
                 TotalAmount = effectiveFinal,
-                PointsAwarded = (int)Math.Floor(effectiveFinal / 100m)
+                PointsAwarded = pointsAwarded
             };
 
-            var html = await _renderer.RenderViewToStringAsync(
-                "~/Areas/Client/Views/Emails/TicketEmail.cshtml",
-                model);
+            string html;
+            try
+            {
+                html = await _renderer.RenderViewToStringAsync(
+                    "~/Areas/Client/Views/Emails/TicketEmail.cshtml",
+                    model);
+            }
+            catch (Exception exRender)
+            {
+                _logger.LogError(exRender, "SendTicketsEmailAsync: error rendering TicketEmail view for user {UserId}", userId);
+                throw;
+            }
 
-            await _emailSender.SendEmailAsync(
-                user.UsersEmail,
-                "Vé ABCD Mall - Đơn hàng của bạn",
-                html);
+            try
+            {
+                await _emailSender.SendEmailAsync(
+                    user.UsersEmail,
+                    "Vé ABCD Mall - Đơn hàng của bạn",
+                    html);
+
+                _logger.LogInformation("SendTicketsEmailAsync: ticket email sent to {Email}", user.UsersEmail);
+            }
+            catch (Exception exSend)
+            {
+                _logger.LogError(exSend, "SendTicketsEmailAsync: error sending ticket email to {Email}", user.UsersEmail);
+                throw;
+            }
         }
 
         // ====================================================================
@@ -214,7 +268,6 @@ namespace Semester03.Services.Email
             try
             {
                 var eventRepo = new EventRepository(_db);
-                // overload có userId giống như bạn đã dùng trong controller
                 var evtDetail = await eventRepo.GetEventByIdAsync(ev.EventId, booking.EventBookingUserId);
 
                 if (evtDetail != null)
@@ -233,7 +286,6 @@ namespace Semester03.Services.Email
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "SendEventBookingSuccessEmailAsync: error when reading organizer/location from EventRepository");
-                // nếu lỗi thì dùng mặc định organizerName = "ABCD Mall", location = ""
             }
 
             decimal unitPrice = booking.EventBookingUnitPrice ?? 0m;
@@ -252,8 +304,8 @@ namespace Semester03.Services.Email
                 EventStart = ev.EventStart,
                 EventEnd = ev.EventEnd,
 
-                Location = location,          // 👈 GIỜ ĐÃ GÁN LOCATION ĐÚNG
-                OrganizerName = organizerName, // 👈 VÀ ORGANIZER LẤY TỪ REPO
+                Location = location,
+                OrganizerName = organizerName,
 
                 Quantity = qty,
                 UnitPrice = unitPrice,
@@ -281,4 +333,3 @@ namespace Semester03.Services.Email
         }
     }
 }
-    
