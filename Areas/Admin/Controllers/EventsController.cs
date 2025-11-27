@@ -1,9 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering; // For SelectList
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Semester03.Models.Entities;
 using Semester03.Models.Repositories;
-using Microsoft.AspNetCore.Authorization;
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Semester03.Areas.Admin.Controllers
 {
@@ -13,7 +17,7 @@ namespace Semester03.Areas.Admin.Controllers
     {
         private readonly EventRepository _eventRepo;
         private readonly IWebHostEnvironment _webHostEnvironment;
-        private readonly AbcdmallContext _context; // For dropdowns
+        private readonly AbcdmallContext _context;
 
         public EventsController(EventRepository eventRepo, IWebHostEnvironment webHostEnvironment, AbcdmallContext context)
         {
@@ -22,59 +26,24 @@ namespace Semester03.Areas.Admin.Controllers
             _context = context;
         }
 
-        // --- Helper method to populate dropdowns ---
-        private void PopulatePositionsDropdown(object selectedPosition = null)
+        // --- Helper ---
+        private void PopulatePositionsDropdown()
         {
-            // Get Position list
-            ViewData["PositionList"] = new SelectList(
-                _context.TblTenantPositions.OrderBy(p => p.TenantPositionLocation),
-                "TenantPositionId", "TenantPositionLocation", selectedPosition);
+            // Get vacant positions + include current ones in logic if needed
+            var positions = _context.TblTenantPositions
+                .Where(p => p.TenantPositionStatus == 0)
+                .OrderBy(p => p.TenantPositionLocation)
+                .Select(p => new { Id = p.TenantPositionId, Text = $"{p.TenantPositionLocation} ({p.TenantPositionAreaM2} m2)" })
+                .ToList();
+
+            ViewData["PositionList"] = new SelectList(positions, "Id", "Text");
         }
 
-        // --- Helper for saving images (Same as MoviesController) ---
-        private async Task<string> SaveImageFileAsync(IFormFile imageFile)
-        {
-            string wwwRootPath = _webHostEnvironment.WebRootPath;
-            // CHANGE: Save to wwwroot/Content/Uploads/Events
-            string savePath = Path.Combine(wwwRootPath, "Content", "Uploads", "Events");
-
-            if (!Directory.Exists(savePath))
-            {
-                Directory.CreateDirectory(savePath);
-            }
-            string fileName = Guid.NewGuid().ToString() + Path.GetExtension(imageFile.FileName);
-            string filePath = Path.Combine(savePath, fileName);
-            using (var fileStream = new FileStream(filePath, FileMode.Create))
-            {
-                await imageFile.CopyToAsync(fileStream);
-            }
-            return fileName; // Return only the filename
-        }
-
-        // --- Helper for deleting images ---
-        private void DeleteImageFile(string fileName)
-        {
-            try
-            {
-                string wwwRootPath = _webHostEnvironment.WebRootPath;
-                // CHANGE: Delete from wwwroot/Content/Uploads/Events
-                string filePath = Path.Combine(wwwRootPath, "Content", "Uploads", "Events", fileName);
-
-                if (System.IO.File.Exists(filePath))
-                {
-                    System.IO.File.Delete(filePath);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error deleting file: {fileName}. Error: {ex.Message}");
-            }
-        }
-
-        // GET: Admin/Events
+        // GET: Admin/Events (Main Dashboard)
         public async Task<IActionResult> Index()
         {
             var events = await _eventRepo.GetAllAsync();
+            PopulatePositionsDropdown();
             return View(events);
         }
 
@@ -82,253 +51,243 @@ namespace Semester03.Areas.Admin.Controllers
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
-            var evt = await _eventRepo.GetByIdAdminAsync(id.Value); // Use Admin method
+            var evt = await _eventRepo.GetByIdAdminAsync(id.Value);
             if (evt == null) return NotFound();
             return View(evt);
         }
 
-        // GET: Admin/Events/Create
-        public IActionResult Create()
-        {
-            PopulatePositionsDropdown();
-
-            // We must round the time to avoid the browser step validation error.
-            var now = DateTime.Now;
-
-            // Round down to the current minute (e.g., 4:31:53 -> 4:31:00)
-            // And add 1 hour as a sensible default start
-            var defaultStart = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0)
-                                .AddHours(1);
-
-            var model = new TblEvent
-            {
-                EventStatus = 1,
-                EventStart = defaultStart, // Use the "clean" value
-                EventEnd = defaultStart.AddDays(1) // Use the "clean" value
-            };
-            return View(model);
-        }
-
-        // POST: Admin/Events/Create
+        // ==========================================================
+        // === UNIFIED SAVE (Create & Edit) ===
+        // ==========================================================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(
-            [Bind("EventName,EventDescription,EventStart,EventEnd,EventStatus,EventMaxSlot,EventTenantPositionId")] TblEvent tblEvent,
+        public async Task<IActionResult> SaveEvent(
+            [Bind("EventId,EventName,EventDescription,EventStart,EventEnd,EventStatus,EventMaxSlot,EventTenantPositionId,EventUnitPrice")] TblEvent tblEvent,
             IFormFile? imageFile)
         {
-            // --- 1. Basic Validation (as before) ---
+            ModelState.Remove("EventTenantPosition");
             ModelState.Remove("EventImg");
-            ModelState.Remove("EventTenantPosition");
 
-            if (imageFile == null)
+            // Basic Validations
+            if (tblEvent.EventMaxSlot <= 0) ModelState.AddModelError("EventMaxSlot", "Max Slots must be > 0.");
+            if (tblEvent.EventEnd <= tblEvent.EventStart) ModelState.AddModelError("EventEnd", "End Time must be after Start Time.");
+            
+            bool isConflict = await _eventRepo.CheckOverlapAsync(
+                tblEvent.EventTenantPositionId,
+                tblEvent.EventStart,
+                tblEvent.EventEnd,
+                tblEvent.EventId == 0 ? null : tblEvent.EventId // Exclude ID if Edit
+            );
+
+            if (isConflict)
             {
-                ModelState.AddModelError("EventImg", "An event image is required.");
+                var posName = _context.TblTenantPositions
+                    .Where(p => p.TenantPositionId == tblEvent.EventTenantPositionId)
+                    .Select(p => p.TenantPositionLocation)
+                    .FirstOrDefault();
+
+                ModelState.AddModelError("EventTenantPositionId", $"Location '{posName}' is already booked for this time range.");
+                TempData["Error"] = "Booking Conflict! Please choose another time or location.";
             }
-
-            // --- 2. Business Logic Validation ---
-
-            // Rule 1: MaxSlot must be greater than 0
-            if (tblEvent.EventMaxSlot <= 0)
-            {
-                ModelState.AddModelError("EventMaxSlot", "Max Slots must be a positive number (greater than 0).");
-            }
-
-            // Get today's date at midnight (to compare)
-            var today = DateTime.Now.Date;
-
-            // Rule 2: Start time cannot be in the past
-            if (tblEvent.EventStart < today)
-            {
-                ModelState.AddModelError("EventStart", "Event Start Time cannot be in the past.");
-            }
-
-            // Rule 3: End time must be after start time
-            if (tblEvent.EventEnd <= tblEvent.EventStart)
-            {
-                ModelState.AddModelError("EventEnd", "Event End Time must be after the Start Time.");
-            }
-            // --- End of Business Logic Validation ---
-
-
-            // 3. Check ModelState (now includes ALL errors)
-            if (ModelState.IsValid)
-            {
-                if (imageFile != null)
-                {
-                    tblEvent.EventImg = await SaveImageFileAsync(imageFile);
-                }
-
-                await _eventRepo.AddAsync(tblEvent);
-                return RedirectToAction(nameof(Index));
-            }
-
-            // If we are here, something failed (e.g., "Start time in past")
-            PopulatePositionsDropdown(tblEvent.EventTenantPositionId);
-            return View(tblEvent);
-        }
-
-        // GET: Admin/Events/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null) return NotFound();
-            var evt = await _eventRepo.GetByIdAdminAsync(id.Value); // Use Admin method
-            if (evt == null) return NotFound();
-
-            PopulatePositionsDropdown(evt.EventTenantPositionId);
-            return View(evt);
-        }
-
-        // POST: Admin/Events/Edit/5
-        // [POST] Admin/Events/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id,
-            [Bind("EventId,EventName,EventImg,EventDescription,EventStart,EventEnd,EventStatus,EventMaxSlot,EventTenantPositionId")] TblEvent tblEvent,
-            IFormFile? imageFile)
-        {
-            if (id != tblEvent.EventId) return NotFound();
-
-            // --- 1. Basic Validation ---
-            ModelState.Remove("EventTenantPosition");
-
-            // --- 2. Business Logic Validation (Same as Create) ---
-
-            // Rule 1: MaxSlot must be > 0
-            if (tblEvent.EventMaxSlot <= 0)
-            {
-                ModelState.AddModelError("EventMaxSlot", "Max Slots must be a positive number (greater than 0).");
-            }
-
-            // Get today's date at midnight (to compare)
-            var today = DateTime.Now.Date;
-
-            // Rule 2: Start time cannot be in the past
-            // Note: This rule is very strict. If an event has started
-            // and you edit it, you might need to adjust this logic.
-            // But for now, we follow the requirement.
-            if (tblEvent.EventStart < today)
-            {
-                ModelState.AddModelError("EventStart", "Event Start Time cannot be in the past.");
-            }
-
-            // Rule 3: End time must be after start time
-            if (tblEvent.EventEnd <= tblEvent.EventStart)
-            {
-                ModelState.AddModelError("EventEnd", "Event End Time must be after the Start Time.");
-            }
-            // --- End of Business Logic Validation ---
-
-            // 3. Check ModelState
+            
             if (ModelState.IsValid)
             {
                 try
                 {
-                    if (imageFile != null)
-                    {
-                        // Delete old image if it exists
-                        if (!string.IsNullOrEmpty(tblEvent.EventImg))
-                        {
-                            DeleteImageFile(tblEvent.EventImg);
-                        }
-                        tblEvent.EventImg = await SaveImageFileAsync(imageFile);
-                    }
+                    string newFileName = null;
+                    if (imageFile != null) newFileName = await SaveImageFileAsync(imageFile);
 
-                    await _eventRepo.UpdateAsync(tblEvent);
+                    // CASE 1: CREATE
+                    if (tblEvent.EventId == 0)
+                    {
+                        if (tblEvent.EventStart < DateTime.Now)
+                        {
+                            TempData["Error"] = "Cannot create an event in the past.";
+                            return RedirectToAction(nameof(Index));
+                        }
+
+                        if (newFileName == null)
+                        {
+                            TempData["Error"] = "Image is required for new events.";
+                            return RedirectToAction(nameof(Index));
+                        }
+
+                        tblEvent.EventImg = newFileName;
+                        await _eventRepo.AddAsync(tblEvent);
+                        TempData["Success"] = "Event created successfully.";
+                    }
+                    // CASE 2: EDIT
+                    else
+                    {
+                        var existingEvt = await _eventRepo.GetByIdAdminAsync(tblEvent.EventId);
+
+                        // === STRICT RULE: Cannot edit if started ===
+                        if (existingEvt.EventStart <= DateTime.Now)
+                        {
+                            TempData["Error"] = "Action Denied: This event has already started/finished.";
+                            return RedirectToAction(nameof(Index));
+                        }
+
+                        if (newFileName != null)
+                        {
+                            if (!string.IsNullOrEmpty(existingEvt.EventImg)) DeleteImageFile(existingEvt.EventImg);
+                            tblEvent.EventImg = newFileName;
+                        }
+                        else
+                        {
+                            tblEvent.EventImg = existingEvt.EventImg;
+                        }
+
+                        await _eventRepo.UpdateAsync(tblEvent);
+                        TempData["Success"] = "Event updated successfully.";
+                    }
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (Exception ex)
                 {
-                    var exists = await _eventRepo.GetByIdAdminAsync(id);
-                    if (exists == null) return NotFound();
-                    else throw;
+                    TempData["Error"] = "Error: " + ex.Message;
                 }
                 return RedirectToAction(nameof(Index));
             }
 
-            // If we are here, something failed
-            PopulatePositionsDropdown(tblEvent.EventTenantPositionId);
-            return View(tblEvent);
+            TempData["Error"] = "Validation failed. Please check inputs.";
+            return RedirectToAction(nameof(Index));
         }
 
-        // GET: Admin/Events/Delete/5
-        public async Task<IActionResult> Delete(int? id)
+        // [POST] Delete
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteEvent(int id)
         {
-            if (id == null) return NotFound();
-            var evt = await _eventRepo.GetByIdAdminAsync(id.Value);
+            var evt = await _eventRepo.GetByIdAdminAsync(id);
             if (evt == null) return NotFound();
 
-            // Check for dependencies 
-            bool hasBookings = await _context.TblEventBookings.AnyAsync(b => b.EventBookingEventId == id);
-            bool hasComplaints = await _context.TblCustomerComplaints.AnyAsync(c => c.CustomerComplaintEventId == id.Value);
-
-            if (hasBookings || hasComplaints)
+            // === STRICT RULE: Cannot delete if started ===
+            if (evt.EventStart <= DateTime.Now)
             {
-                ViewData["HasDependencies"] = true;
-                string error = "This event cannot be deleted. It is linked to:";
-                if (hasBookings) error += " one or more Bookings.";
-                if (hasComplaints) error += " one or more Customer Reviews.";
-                ViewData["ErrorMessage"] = error;
-            }
-
-            return View(evt);
-        }
-
-        // POST: Admin/Events/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            bool hasBookings = await _context.TblEventBookings.AnyAsync(b => b.EventBookingEventId == id);
-            bool hasComplaints = await _context.TblCustomerComplaints.AnyAsync(c => c.CustomerComplaintEventId == id);
-
-            if (hasBookings || hasComplaints)
-            {
-                TempData["Error"] = "This event cannot be deleted (it has dependencies).";
+                TempData["Error"] = "Action Denied: Cannot delete ongoing/past events.";
                 return RedirectToAction(nameof(Index));
             }
 
-            var evt = await _eventRepo.GetByIdAdminAsync(id);
-            if (evt != null && !string.IsNullOrEmpty(evt.EventImg))
+            bool hasBookings = await _context.TblEventBookings.AnyAsync(b => b.EventBookingEventId == id);
+            if (hasBookings)
             {
-                DeleteImageFile(evt.EventImg);
+                TempData["Error"] = "Cannot delete: Event has bookings.";
+                return RedirectToAction(nameof(Index));
             }
+
+            if (!string.IsNullOrEmpty(evt.EventImg)) DeleteImageFile(evt.EventImg);
 
             await _eventRepo.DeleteAsync(id);
             TempData["Success"] = "Event deleted successfully.";
             return RedirectToAction(nameof(Index));
         }
 
+        // [POST] Reschedule (Drag & Drop)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RescheduleEvent(int id, DateTime newStart, DateTime newEnd)
+        {
+            var evt = await _eventRepo.GetByIdAdminAsync(id);
+            if (evt == null) return Json(new { success = false, message = "Not found" });
+
+            if (evt.EventStart <= DateTime.Now)
+                return Json(new { success = false, message = "Cannot move started events." });
+
+            if (newStart < DateTime.Now)
+                return Json(new { success = false, message = "Cannot move to past." });
+
+            bool isConflict = await _eventRepo.CheckOverlapAsync(
+                evt.EventTenantPositionId,
+                newStart,
+                newEnd,
+                id // <--- Exclude ID
+            );
+
+            if (isConflict)
+            {
+                return Json(new { success = false, message = "Time Conflict! Another event is already scheduled here." });
+            }
+
+            evt.EventStart = newStart;
+            evt.EventEnd = newEnd;
+            await _eventRepo.UpdateAsync(evt);
+            return Json(new { success = true });
+        }
+
+        // [POST] Approve
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Approve(int id)
         {
-            // Status 1 = Active
-            var result = await _eventRepo.UpdateStatusAsync(id, 1);
-            if (result)
+            var evt = await _eventRepo.GetByIdAdminAsync(id);
+            if (evt != null && evt.EventEnd > DateTime.Now) // Allow ongoing, Block ended
             {
-                TempData["Success"] = "Event has been approved and is now active.";
+                await _eventRepo.UpdateStatusAsync(id, 1);
+                TempData["Success"] = "Event approved.";
             }
             else
             {
-                TempData["Error"] = "Event not found.";
+                TempData["Error"] = "Cannot approve ended events.";
             }
             return RedirectToAction(nameof(Index));
         }
 
+        // [POST] Reject
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Reject(int id)
         {
-            // We assume Status 0 = Inactive/Rejected
-            var result = await _eventRepo.UpdateStatusAsync(id, 0);
-            if (result)
-            {
-                TempData["Success"] = "Event has been rejected and is now inactive.";
-            }
-            else
-            {
-                TempData["Error"] = "Event not found.";
-            }
+            await _eventRepo.UpdateStatusAsync(id, 0);
+            TempData["Success"] = "Event rejected.";
             return RedirectToAction(nameof(Index));
+        }
+
+        // --- API for Calendar & Modal ---
+        [HttpGet]
+        public async Task<IActionResult> GetCalendarData()
+        {
+            var data = await _eventRepo.GetCalendarEventsAsync();
+            return Json(data);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetEventJson(int id)
+        {
+            var evt = await _eventRepo.GetByIdAdminAsync(id);
+            if (evt == null) return NotFound();
+
+            return Json(new
+            {
+                id = evt.EventId,
+                eventName = evt.EventName,
+                eventDescription = evt.EventDescription,
+                eventStart = evt.EventStart.ToString("yyyy-MM-ddTHH:mm"),
+                eventEnd = evt.EventEnd.ToString("yyyy-MM-ddTHH:mm"),
+                eventMaxSlot = evt.EventMaxSlot,
+                eventUnitPrice = evt.EventUnitPrice,
+                eventTenantPositionId = evt.EventTenantPositionId,
+                eventImg = evt.EventImg
+            });
+        }
+
+        // --- File Helpers ---
+        private async Task<string> SaveImageFileAsync(IFormFile imageFile)
+        {
+            string wwwRootPath = _webHostEnvironment.WebRootPath;
+            string savePath = Path.Combine(wwwRootPath, "Content", "Uploads", "Events");
+            if (!Directory.Exists(savePath)) Directory.CreateDirectory(savePath);
+            string fileName = Guid.NewGuid().ToString() + Path.GetExtension(imageFile.FileName);
+            using (var fileStream = new FileStream(Path.Combine(savePath, fileName), FileMode.Create)) { await imageFile.CopyToAsync(fileStream); }
+            return fileName;
+        }
+        private void DeleteImageFile(string fileName)
+        {
+            try
+            {
+                string path = Path.Combine(_webHostEnvironment.WebRootPath, "Content", "Uploads", "Events", fileName);
+                if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
+            }
+            catch { }
         }
     }
 }

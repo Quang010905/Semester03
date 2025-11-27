@@ -331,6 +331,7 @@ namespace Semester03.Models.Repositories
         public async Task<TblEvent> GetByIdAdminAsync(int id)
         {
             return await _context.TblEvents
+                .AsNoTracking()
                 .Include(e => e.EventTenantPosition)
                 .Include(e => e.TblEventBookings)
                 .FirstOrDefaultAsync(e => e.EventId == id);
@@ -367,6 +368,44 @@ namespace Semester03.Models.Repositories
             _context.Update(evt);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<IEnumerable<object>> GetCalendarEventsAsync()
+        {
+            var events = await _context.TblEvents
+                .Include(e => e.EventTenantPosition)
+                .Where(e => e.EventStatus == 1) // Only Active events
+                .ToListAsync();
+
+            return events.Select(e => new
+            {
+                id = e.EventId,
+                title = e.EventName,
+                start = e.EventStart,
+                end = e.EventEnd,
+                // Color based on location or type (optional)
+                backgroundColor = "#4e73df",
+                borderColor = "#4e73df",
+                url = $"/Admin/Events/Details/{e.EventId}" // Click to view details
+            });
+        }
+
+        public async Task<bool> CheckOverlapAsync(int positionId, DateTime start, DateTime end, int? excludeEventId = null)
+        {
+            
+
+            var query = _context.TblEvents.AsNoTracking()
+                .Where(e => e.EventTenantPositionId == positionId);
+
+            
+            if (excludeEventId.HasValue)
+            {
+                query = query.Where(e => e.EventId != excludeEventId.Value);
+            }
+
+            
+
+            return await query.AnyAsync(e => e.EventStart < end && e.EventEnd > start);
         }
     }
 }

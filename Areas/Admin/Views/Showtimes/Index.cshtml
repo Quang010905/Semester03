@@ -5,7 +5,7 @@
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
 
     int startHour = 8;
-    int endHour = 24;
+    int endHour = 28;
     int pixelsPerMinute = 2;
     int totalMinutes = (endHour - startHour) * 60;
     int timelineWidth = totalMinutes * pixelsPerMinute;
@@ -256,7 +256,9 @@
                         <div class="time-scale" style="min-width: @(timelineWidth)px;">
                             @for (int h = startHour; h < endHour; h++)
                             {
-                                <div class="time-hour" style="width: @(60 * pixelsPerMinute)px;">@h:00</div>
+                                int dh = (h >= 24) ? (h - 24) : h;
+                                string plus = (h >= 24) ? "Next Day" : "";
+                                <div class="time-hour" style="width: @(60 * pixelsPerMinute)px;">@dh:00 <small>@plus</small></div>
                             }
                         </div>
                         @foreach (var group in Model.ScreenGroups)
@@ -387,6 +389,11 @@
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
     <script>
         $(document).ready(function() {
+            var pixelsPerMinute = @pixelsPerMinute;
+            var startHour = @startHour; // 8
+            var baseDateStr = "@Model.SelectedDate.ToString("yyyy-MM-dd")";
+            var now = new Date(); // Current client time
+
             // 1. Draggable Movies
             $(".draggable-movie").draggable({
                 helper: "clone", revert: "invalid", cursor: "move", zIndex: 100,
@@ -417,36 +424,63 @@
                     var newScreenName = $row.data("screen-name");
 
                     // Calculate Time
-                    var offset = ui.helper.offset();
-                    if (!ui.helper.hasClass("ui-draggable-dragging")) offset = ui.draggable.offset();
-
-                    var rowOffset = $row.offset();
-                    var leftPos = offset.left - rowOffset.left + $row.parent().scrollLeft();
-
+                    var leftPos = ui.helper.position().left;
+                    var container = $('.timeline-wrapper');
+                    var containerOffset = container.offset().left;
+                    var scrollLeft = container.scrollLeft();
+                    var realLeft = (ui.offset.left - containerOffset) + scrollLeft;
+                    if (realLeft < 0) realLeft = 0;
                     var pixelsPerMinute = @pixelsPerMinute;
                     var startHour = @startHour;
-                    var minutesFromStart = leftPos / pixelsPerMinute;
-                    var totalMinutes = (startHour * 60) + minutesFromStart;
+                    var totalMinutes = (startHour * 60) + (realLeft / pixelsPerMinute);
 
-                    var hour = Math.floor(totalMinutes / 60);
-                    var minute = Math.floor(totalMinutes % 60);
-                    minute = Math.round(minute / 5) * 5;
-                    if (minute >= 60) { minute = 0; hour++; }
-                    if (hour >= 24) hour = 0;
 
-                    // Date Formatting (ISO 8601: yyyy-MM-ddTHH:mm)
-                    var dateStr = "@Model.SelectedDate.ToString("yyyy-MM-dd")";
-                    var hh = (hour < 10 ? "0" : "") + hour;
-                    var mm = (minute < 10 ? "0" : "") + minute;
+                    totalMinutes = Math.round(totalMinutes / 5) * 5;
+                    var hours = Math.floor(totalMinutes / 60);
+                    var minutes = Math.floor(totalMinutes % 60);
 
-                    var fullDateISO = dateStr + "T" + hh + ":" + mm + ":00";
-                    var fullDateInput = dateStr + "T" + hh + ":" + mm;
+                    // === DATE STRING CONSTRUCTION ===
+                    var dayOffset = 0;
+                    if (hours >= 24) {
+                        dayOffset = 1;
+                        hours = hours - 24;
+                    }
+
+                    
+                    var checkDate = new Date(baseDateStr);
+                    checkDate.setDate(checkDate.getDate() + dayOffset);
+                    checkDate.setHours(hours, minutes, 0, 0);
+
+                    // === BLOCK PAST TIME  ===
+                    if (checkDate < now) {
+                        alert("Cannot schedule in the past!");
+                        // Revert visual
+                        if (ui.draggable.hasClass("showtime-block")) {
+                             ui.draggable.animate({top: "10px", left: ui.draggable.data("original-left")}, "fast");
+                        }
+                        return;
+                    }
+                    // ============================================
+
+                    var hh = hours.toString().padStart(2, '0');
+                    var mm = minutes.toString().padStart(2, '0');
+
+                    // Nếu qua ngày, cần chuỗi ngày mới. Nhưng để đơn giản cho Controller (chỉ nhận giờ),
+                    // ta có thể gửi chuỗi ISO đầy đủ.
+
+                    // Format lại chuỗi ngày cho đúng ngày thả (hôm nay hoặc mai)
+                    var y = checkDate.getFullYear();
+                    var m = String(checkDate.getMonth() + 1).padStart(2, '0');
+                    var d = String(checkDate.getDate()).padStart(2, '0');
+
+                    var fullDateStr = `${y}-${m}-${d}T${hh}:${mm}`;
+                    var fullDateISO = fullDateStr + ":00";
 
                     if (ui.draggable.hasClass("draggable-movie")) {
                         // CREATE
                         var movieId = ui.draggable.data("movie-id");
                         var movieTitle = ui.draggable.data("movie-title");
-                        openCreateModal(newScreenId, newScreenName, movieId, movieTitle, fullDateInput);
+                        openCreateModal(newScreenId, newScreenName, movieId, movieTitle, fullDateStr);
                     }
                     else if (ui.draggable.hasClass("showtime-block")) {
                         // RESCHEDULE

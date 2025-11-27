@@ -61,27 +61,24 @@ namespace Semester03.Areas.Admin.Controllers
             [Bind("CouponName,CouponDescription,CouponDiscountPercent,CouponValidFrom,CouponValidTo,CouponIsActive,CouponMinimumPointsRequired")] TblCoupon tblCoupon)
         {
             // --- Business Logic Validation ---
-            if (tblCoupon.CouponDiscountPercent <= 0)
+            if (tblCoupon.CouponDiscountPercent <= 0 || tblCoupon.CouponDiscountPercent > 100)
             {
-                ModelState.AddModelError("CouponDiscountPercent", "Discount Percent must be greater than 0.");
+                ModelState.AddModelError("CouponDiscountPercent", "Discount Percent must be between 0 and 100.");
             }
             if (tblCoupon.CouponValidTo <= tblCoupon.CouponValidFrom)
             {
-                ModelState.AddModelError("CouponValidTo", "Valid To date must be after Valid From date.");
-            }
-            if (tblCoupon.CouponValidFrom.Date < DateTime.Now.Date)
-            {
-                ModelState.AddModelError("CouponValidFrom", "Valid From date cannot be in the past.");
+                ModelState.AddModelError("CouponValidTo", "End Date must be after Start Date.");
             }
             if (tblCoupon.CouponMinimumPointsRequired.HasValue && tblCoupon.CouponMinimumPointsRequired < 0)
             {
                 ModelState.AddModelError("CouponMinimumPointsRequired", "Minimum Points cannot be negative.");
             }
-            // === END NEW VALIDATION ===
+            // ---------------------------------
 
             if (ModelState.IsValid)
             {
                 await _couponRepo.AddAsync(tblCoupon);
+                TempData["Success"] = "Coupon created successfully.";
                 return RedirectToAction(nameof(Index));
             }
             return View(tblCoupon);

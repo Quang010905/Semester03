@@ -3,10 +3,11 @@
 @{
     ViewData["Title"] = "Coupon Management";
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+    var now = DateTime.Now;
 }
 
 <h1 class="h3 mb-2 text-gray-800">Coupon Management</h1>
-<p class="mb-4">Create and manage discount coupons for customers.</p>
+<p class="mb-4">Manage discount codes and loyalty rewards.</p>
 
 @if (TempData["Success"] != null)
 {
@@ -18,7 +19,7 @@
 }
 
 <p>
-    <a asp-action="Create" class="btn btn-primary">Create New Coupon</a>
+    <a asp-action="Create" class="btn btn-primary"><i class="fas fa-plus"></i> Create New Coupon</a>
 </p>
 
 <div class="card shadow mb-4">
@@ -30,11 +31,10 @@
             <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                 <thead>
                     <tr>
-                        <th>Name/Code</th>
+                        <th>Code</th>
                         <th>Discount</th>
-                        <th>Valid From</th>
-                        <th>Valid To</th>
-                        <th>Points</th>
+                        <th>Validity Period</th>
+                        <th>Min Points</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -42,36 +42,42 @@
                 <tbody>
                     @foreach (var item in Model)
                     {
+                        // Smart Status Logic
+                        bool isActive = item.CouponIsActive ?? false;
+                        bool isExpired = item.CouponValidTo < now;
+                        bool isFuture = item.CouponValidFrom > now;
+
+                        string statusLabel;
+                        string statusClass;
+
+                        if (!isActive) { statusLabel = "Inactive"; statusClass = "badge-secondary"; }
+                        else if (isExpired) { statusLabel = "Expired"; statusClass = "badge-danger"; }
+                        else if (isFuture) { statusLabel = "Scheduled"; statusClass = "badge-info"; }
+                        else { statusLabel = "Active"; statusClass = "badge-success"; }
+
                         <tr>
-                            <td>
-                                @Html.DisplayFor(modelItem => item.CouponName)
+                            <td class="font-weight-bold text-primary">
+                                @item.CouponName
+                                <button class="btn btn-link btn-sm p-0 ml-2" onclick="copyToClipboard('@item.CouponName')" title="Copy Code">
+                                    <i class="far fa-copy"></i>
+                                </button>
+                            </td>
+                            <td>@item.CouponDiscountPercent%</td>
+                            <td style="font-size:0.85rem;">
+                                @item.CouponValidFrom.ToString("dd/MM/yyyy") <br />
+                                <i class="fas fa-arrow-down text-gray-400"></i> <br />
+                                @item.CouponValidTo.ToString("dd/MM/yyyy")
                             </td>
                             <td>
-                                @Html.DisplayFor(modelItem => item.CouponDiscountPercent)%
+                                @(item.CouponMinimumPointsRequired.HasValue? item.CouponMinimumPointsRequired + " pts" : "Free")
                             </td>
                             <td>
-                                @item.CouponValidFrom.ToString("g")
+                                <span class="badge @statusClass p-2">@statusLabel</span>
                             </td>
                             <td>
-                                @item.CouponValidTo.ToString("g")
-                            </td>
-                            <td>
-                                @(item.CouponMinimumPointsRequired.HasValue? item.CouponMinimumPointsRequired.ToString() : "Free")
-                            </td>
-                            <td>
-                                @if (item.CouponIsActive == true)
-                                {
-                                    <span class="badge badge-success">Active</span>
-                                }
-                                else
-                                {
-                                    <span class="badge badge-secondary">Inactive</span>
-                                }
-                            </td>
-                            <td>
-                                <a asp-action="Edit" asp-route-id="@item.CouponId" class="btn btn-warning btn-sm">Edit</a>
-                                <a asp-action="Details" asp-route-id="@item.CouponId" class="btn btn-info btn-sm">Details</a>
-                                <a asp-action="Delete" asp-route-id="@item.CouponId" class="btn btn-danger btn-sm">Delete</a>
+                                <a asp-action="Edit" asp-route-id="@item.CouponId" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i></a>
+                                <a asp-action="Details" asp-route-id="@item.CouponId" class="btn btn-info btn-sm"><i class="fas fa-eye"></i></a>
+                                <a asp-action="Delete" asp-route-id="@item.CouponId" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></a>
                             </td>
                         </tr>
                     }
@@ -84,7 +90,15 @@
 @section Scripts {
     <script>
         $(document).ready(function() {
-          $('#dataTable').DataTable({"order": [[ 3, "desc" ]]});
+          $('#dataTable').DataTable({ "order": [[ 5, "asc" ]] }); // Sort by Status or Date
         });
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                alert('Copied: ' + text);
+            }, function(err) {
+                console.error('Async: Could not copy text: ', err);
+            });
+        }
     </script>
 }

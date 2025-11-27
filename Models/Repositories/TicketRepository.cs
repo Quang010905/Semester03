@@ -184,5 +184,41 @@ namespace Semester03.Models.Repositories
                 }
             }
         }
+
+        // ==========================================================
+        // === ADMIN: ADVANCED SEARCH ===
+        // ==========================================================
+        public async Task<IEnumerable<TblTicket>> SearchTicketsAsync(string keyword, int? showtimeId, DateTime? date)
+        {
+            var query = GetFullTicketQuery();
+
+            // 1. Filter by Showtime ID
+            if (showtimeId.HasValue)
+            {
+                query = query.Where(t => t.TicketShowtimeSeat.ShowtimeSeatShowtimeId == showtimeId);
+            }
+
+            // 2. Filter by Date (Purchase Date)
+            if (date.HasValue)
+            {
+                // Compare only the DATE part
+                query = query.Where(t => t.TicketCreatedAt.HasValue && t.TicketCreatedAt.Value.Date == date.Value.Date);
+            }
+
+            // 3. Search by Keyword (TicketID, Customer Name, Phone)
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                string k = keyword.ToLower();
+                query = query.Where(t =>
+                    t.TicketId.ToString() == k || // Exact Ticket ID
+                    (t.TicketBuyerUser != null && (
+                        t.TicketBuyerUser.UsersFullName.ToLower().Contains(k) ||
+                        t.TicketBuyerUser.UsersPhone.Contains(k)
+                    ))
+                );
+            }
+
+            return await query.OrderByDescending(t => t.TicketCreatedAt).ToListAsync();
+        }
     }
 }
