@@ -56,10 +56,8 @@ namespace Semester03.Areas.Client.Controllers
             var confirmed = await _bookingRepo.GetConfirmedSlotsForEventAsync(id);
             var available = Math.Max(0, evt.MaxSlot - confirmed);
 
-            // LẤY GIÁ TỪ VIEWMODEL (PRIMARY SOURCE)
             decimal pricePerTicket = evt.Price ?? 0m;
 
-            // fallback nếu EF mapping cũ chưa có Price
             if (pricePerTicket <= 0m)
             {
                 try
@@ -134,7 +132,6 @@ namespace Semester03.Areas.Client.Controllers
                 // ===== LẤY GIÁ =====
                 decimal pricePerTicket = evt.Price ?? 0m;
 
-                // fallback
                 if (pricePerTicket <= 0m)
                 {
                     try
@@ -182,16 +179,25 @@ namespace Semester03.Areas.Client.Controllers
                         notes: notes
                     );
 
-                    // gửi email async
+                    // Gửi email xác nhận đặt vé sự kiện (chỉ khi có userId)
                     _ = Task.Run(async () =>
                     {
                         try
                         {
                             if (booking.EventBookingUserId != 0)
                             {
-                                await _ticketEmailService.SendTicketsEmailAsync(
-                                    booking.EventBookingUserId,
-                                    new System.Collections.Generic.List<int>()
+                                await _ticketEmailService.SendEventBookingSuccessEmailAsync(
+                                    userId: booking.EventBookingUserId,
+                                    bookingId: booking.EventBookingId,
+                                    eventName: evt.Title,
+                                    eventStart: evt.StartDate,
+                                    eventEnd: evt.EndDate,
+                                    location: evt.PositionLocation,
+                                    organizer: evt.OrganizerShopName,
+                                    quantity: booking.EventBookingQuantity ?? quantity,
+                                    unitPrice: pricePerTicket,
+                                    totalAmount: booking.EventBookingTotalCost ?? totalCost,
+                                    purchaseDate: DateTime.Now
                                 );
                             }
                         }
@@ -224,7 +230,6 @@ namespace Semester03.Areas.Client.Controllers
 
                 var payModel = new Semester03.Areas.Client.Models.Vnpay.PaymentInformationModel
                 {
-                    // 🔴 RẤT QUAN TRỌNG: dùng OrderType riêng cho event
                     OrderType = "event-ticket",
                     Amount = (double)totalCost,
                     OrderDescription =
@@ -255,8 +260,6 @@ namespace Semester03.Areas.Client.Controllers
         // =====================================================================================
         // VNPAY CALLBACK
         // =====================================================================================
-
-        // Khớp với "https://localhost:7054/Client/EventBooking/PaymentCallbackVnpay"
         [HttpGet("/Client/EventBooking/PaymentCallbackVnpay")]
         public async Task<IActionResult> PaymentCallbackVnpay()
         {
@@ -287,6 +290,37 @@ namespace Semester03.Areas.Client.Controllers
                     return RedirectToAction("PaymentFailed", new { message = "Không tìm thấy booking hoặc không cập nhật được trạng thái thanh toán." });
                 }
 
+                // ========== GỬI EMAIL XÁC NHẬN ĐẶT VÉ SỰ KIỆN SAU KHI THANH TOÁN THÀNH CÔNG ==========
+                try
+                {
+                    var booking = await _bookingRepo.GetByIdAsync(bookingId);
+                    if (booking != null && booking.EventBookingUserId != 0)
+                    {
+                        var evt = await _eventRepo.GetEventByIdAsync(booking.EventBookingEventId);
+
+                        if (evt != null)
+                        {
+                            await _ticketEmailService.SendEventBookingSuccessEmailAsync(
+                                userId: booking.EventBookingUserId,
+                                bookingId: booking.EventBookingId,
+                                eventName: evt.Title,
+                                eventStart: evt.StartDate,
+                                eventEnd: evt.EndDate,
+                                location: evt.PositionLocation,
+                                organizer: evt.OrganizerShopName,
+                                quantity: booking.EventBookingQuantity ?? 1,
+                                unitPrice: booking.EventBookingUnitPrice ?? (evt.Price ?? 0m),
+                                totalAmount: booking.EventBookingTotalCost ?? 0m,
+                                purchaseDate: DateTime.Now
+                            );
+                        }
+                    }
+                }
+                catch (Exception exMail)
+                {
+                    _logger.LogError(exMail, "Error sending event booking email after VNPAY callback for booking {BookingId}", bookingId);
+                }
+
                 return RedirectToAction("BookingSuccess", new { id = bookingId });
             }
             catch (Exception ex)
@@ -298,17 +332,14 @@ namespace Semester03.Areas.Client.Controllers
 
         // =====================================================================================
         // GET: Client/EventBooking/Details/{id}
-        // Xem chi tiết vé sự kiện (giống vé xem phim)
         // =====================================================================================
         [HttpGet]
         [Authorize]
         public async Task<IActionResult> Details(int id)
         {
-            // Lấy user hiện tại
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userIdStr))
             {
-                // Nếu chưa login thì cho về login
                 return RedirectToAction(
                     "Login",
                     "Account",
@@ -318,14 +349,12 @@ namespace Semester03.Areas.Client.Controllers
 
             int userId = int.Parse(userIdStr);
 
-            // Lấy booking + event
             var booking = await _bookingRepo.GetByIdAsync(id);
             if (booking == null || booking.EventBookingUserId != userId)
             {
                 return NotFound();
             }
 
-            // Lấy thêm thông tin event (địa điểm, đơn vị, giá...) từ EventRepository
             var evtDetail = await _eventRepo.GetEventByIdAsync(booking.EventBookingEventId, userId);
             if (evtDetail == null)
             {
@@ -339,7 +368,6 @@ namespace Semester03.Areas.Client.Controllers
                 (evtDetail.EndDate ?? evtDetail.StartDate) <= now ? "Đã diễn ra" :
                 "Sắp diễn ra";
 
-            // Tạo link QR check-in
             string qrUrl = Url.Action(
                 "Details",
                 "EventBooking",
@@ -350,7 +378,6 @@ namespace Semester03.Areas.Client.Controllers
             string qrImg = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" +
                            System.Net.WebUtility.UrlEncode(qrUrl);
 
-            // Build ViewModel
             var vm = new EventTicketDetailVm
             {
                 BookingId = booking.EventBookingId,
@@ -359,20 +386,15 @@ namespace Semester03.Areas.Client.Controllers
                     ? "/images/event-placeholder.png"
                     : evtDetail.ImageUrl,
                 Description = evtDetail.Description,
-
                 EventStart = evtDetail.StartDate,
                 EventEnd = (evtDetail.EndDate ?? evtDetail.StartDate),
-
                 Quantity = booking.EventBookingQuantity ?? 1,
                 TotalCost = booking.EventBookingTotalCost ?? 0m,
                 UnitPrice = booking.EventBookingUnitPrice ?? (evtDetail.Price ?? 0m),
-
                 Status = status,
-
                 PositionLocation = evtDetail.PositionLocation ?? "",
                 PositionFloor = evtDetail.PositionFloor,
                 OrganizerShopName = evtDetail.OrganizerShopName ?? "",
-
                 QRCodeUrl = qrImg
             };
 
@@ -469,7 +491,6 @@ namespace Semester03.Areas.Client.Controllers
         {
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-            // Lấy booking qua repository cho đúng cấu trúc project
             var booking = await _bookingRepo.GetByIdAsync(bookingId);
 
             if (booking == null || booking.EventBookingUserId != userId)
@@ -483,9 +504,6 @@ namespace Semester03.Areas.Client.Controllers
             if (cancelQuantity > qty)
                 return Json(new { success = false, message = "Số vé cần hủy vượt quá số vé còn lại." });
 
-            // =======================================
-            // B1: Tính lại số vé còn và tiền hoàn
-            // =======================================
             int remainingQty = qty - cancelQuantity;
             decimal unitPrice = booking.EventBookingUnitPrice ?? 0;
             decimal refundAmount = unitPrice * cancelQuantity;
@@ -493,13 +511,9 @@ namespace Semester03.Areas.Client.Controllers
             booking.EventBookingQuantity = remainingQty;
             booking.EventBookingTotalCost = remainingQty * unitPrice;
 
-            // PaymentStatus: 1 = Paid, 2 = Partial Refund, 3 = Full Refund
             booking.EventBookingPaymentStatus = remainingQty > 0 ? 2 : 3;
-
-            // Status: 1 = Active, 0 = Cancelled
             booking.EventBookingStatus = remainingQty > 0 ? 1 : 0;
 
-            // Lưu log nhỏ vào notes
             string smallLog =
                 $"[Cancel {DateTime.Now:dd/MM HH:mm}] Hủy {cancelQuantity} vé (còn {remainingQty}).";
 
@@ -508,9 +522,6 @@ namespace Semester03.Areas.Client.Controllers
                     ? smallLog
                     : booking.EventBookingNotes + "\n" + smallLog;
 
-            // =======================================
-            // B2: Ghi vào bảng history (FULL LOG)
-            // =======================================
             var history = new TblEventBookingHistory
             {
                 EventBookingHistoryBookingId = booking.EventBookingId,
@@ -525,16 +536,9 @@ namespace Semester03.Areas.Client.Controllers
             };
 
             _context.TblEventBookingHistories.Add(history);
-
-            // =======================================
-            // B3: Lưu DB
-            // =======================================
             _context.Update(booking);
             await _context.SaveChangesAsync();
 
-            // =======================================
-            // B4: Gửi email hủy vé sự kiện
-            // =======================================
             try
             {
                 var evt = await _eventRepo.GetEventByIdAsync(booking.EventBookingEventId);
@@ -551,7 +555,6 @@ namespace Semester03.Areas.Client.Controllers
             }
             catch
             {
-                // tránh crash nếu lỗi email
             }
 
             return Json(new
