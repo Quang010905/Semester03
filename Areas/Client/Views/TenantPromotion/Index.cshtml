@@ -1,9 +1,73 @@
-﻿@using Semester03.Models.ViewModels
+﻿@using System
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
+@using Semester03.Models.ViewModels
 @model TenantPromotionListVm
 
 @{
     Layout = "_LayoutClient";
     ViewData["Title"] = "Promotions";
+
+    // ===== HÀM XỬ LÝ ẢNH PROMOTION (CÓ FALLBACK) =====
+    Func<string, string> ImgPromotion = (raw) =>
+    {
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            // nếu là link tuyệt đối
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            // chuẩn hóa path
+            var file = raw.Replace("\\", "/").Trim();
+
+            // nếu trong chuỗi đã có "Content/Uploads/TenantPromotion" thì chỉ lấy tên file
+            var keyword = "Content/Uploads/TenantPromotion";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
+
+            // bỏ các prefix thừa
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            // lấy IWebHostEnvironment để kiểm tra file vật lý
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                // nếu không lấy được env thì trả luôn đường dẫn tương đối
+                return Url.Content("~/Content/Uploads/TenantPromotion/" + Uri.EscapeDataString(file));
+            }
+
+            var physical = System.IO.Path.Combine(env.WebRootPath ?? "wwwroot", "Content", "Uploads", "TenantPromotion", file);
+
+
+            if (System.IO.File.Exists(physical))
+            {
+                return Url.Content("~/Content/Uploads/TenantPromotion/" + Uri.EscapeDataString(file));
+            }
+
+            return noImageUrl;
+        }
+        catch
+        {
+            return noImageUrl;
+        }
+    };
 }
 
 @section Styles {
@@ -126,9 +190,7 @@
         <div class="promo-grid">
             @foreach (var p in Model.ActivePromotions)
             {
-                var img = string.IsNullOrWhiteSpace(p.Img)
-                ? Url.Content("~/Content/Uploads/noimage.png")
-                : Url.Content("~/Content/Uploads/TenantPromotion/" + p.Img);
+                var img = ImgPromotion(p.Img);
 
                 <a href="@Url.Action("Detail", "TenantPromotion", new { area="Client", id = p.Id })"
                    class="promo-card text-decoration-none text-dark">
@@ -181,9 +243,7 @@
     <div class="promo-grid">
         @foreach (var p in Model.ExpiredPromotions)
         {
-            var img = string.IsNullOrWhiteSpace(p.Img)
-            ? Url.Content("~/Content/Uploads/noimage.png")
-            : Url.Content("~/Content/Uploads/TenantPromotion/" + p.Img);
+            var img = ImgPromotion(p.Img);
 
             <div class="promo-card expired-card">
                 <img src="@img" />
