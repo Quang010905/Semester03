@@ -1,5 +1,9 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.EventTicketDetailVm
 
+@using System
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
+
 @{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
     ViewData["Title"] = "Thông tin vé sự kiện";
@@ -11,6 +15,71 @@
         : Model.PositionFloor.HasValue
             ? $"{Model.PositionLocation} - Tầng {Model.PositionFloor}"
             : Model.PositionLocation;
+
+    // ===== HÀM ẢNH CHO EVENT (DÙNG CHUNG LOGIC VỚI VIEW EVENT) =====
+    Func<string, string> ImgEvent = (raw) =>
+    {
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            // nếu là URL tuyệt đối thì trả luôn
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            // chuẩn hóa path
+            var file = raw.Replace("\\", "/").Trim();
+
+            // nếu raw chứa "Content/Uploads/Events" thì chỉ lấy file name cuối
+            var keyword = "Content/Uploads/Events";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
+
+            // bỏ prefix "wwwroot/", "~/" hoặc "/"
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            // lấy IWebHostEnvironment để check file thật trong wwwroot
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                // fallback: cứ trỏ vào thư mục Events
+                return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
+            }
+
+            var physical = System.IO.Path.Combine(
+                env.WebRootPath ?? "wwwroot",
+                "Content", "Uploads", "Events", file
+            );
+
+            if (System.IO.File.Exists(physical))
+            {
+                return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
+            }
+            else
+            {
+                return noImageUrl;
+            }
+        }
+        catch
+        {
+            return noImageUrl;
+        }
+    };
 }
 
 <style>
@@ -71,16 +140,6 @@
         border-top: 1px dashed #e2e8f0;
     }
 
-    .qr-box {
-        display: flex;
-        justify-content: center;
-    }
-
-        .qr-box img {
-            width: 160px;
-            height: 160px;
-        }
-
     .stamp-status {
         position: absolute;
         top: 22px;
@@ -140,7 +199,8 @@
         Thông tin vé sự kiện
     </div>
 
-    <img src="@Model.EventImg" class="ticket-poster" />
+    <!-- DÙNG HÀM ImgEvent THAY VÌ DÙNG TRỰC TIẾP Model.EventImg -->
+    <img src="@ImgEvent(Model.EventImg)" class="ticket-poster" />
 
     <div class="ticket-body">
 
@@ -170,13 +230,6 @@
                 @dayOfWeek, @Model.EventStart.ToString("dd/MM/yyyy")
             </div>
 
-            <div class="qr-box mt-3">
-                <img src="@Model.QRCodeUrl" />
-            </div>
-
-            <div class="ticket-label mt-2 text-center">
-                Đưa mã này cho nhân viên check-in tại sự kiện
-            </div>
         </div>
 
         <div class="ticket-section">

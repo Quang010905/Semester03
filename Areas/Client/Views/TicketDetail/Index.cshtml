@@ -1,16 +1,85 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.TicketDetailVm
 
+@using System
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
+@using System.Linq
+
 @{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
     ViewData["Title"] = "Thông tin vé xem phim";
 
     var dayOfWeek = Model.Showtime.ToString("dddd", new System.Globalization.CultureInfo("vi-VN"));
+
+    // ===== HÀM ẢNH CHO MOVIE / POSTER =====
+    Func<string, string> ImgMovie = (raw) =>
+    {
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            // nếu đã là URL tuyệt đối
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            // chuẩn hóa
+            var file = raw.Replace("\\", "/").Trim();
+
+            // nếu raw chứa "Content/Uploads/Movie" thì chỉ lấy file name cuối
+            var keyword = "Content/Uploads/Movie";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
+
+            // bỏ prefix "wwwroot/", "~/" hoặc "/"
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            // lấy IWebHostEnvironment để check file thật
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                // fallback: cứ trỏ vào thư mục Movie
+                return Url.Content("~/Content/Uploads/Movie/" + Uri.EscapeDataString(file));
+            }
+
+            var physical = System.IO.Path.Combine(
+                env.WebRootPath ?? "wwwroot",
+                "Content", "Uploads", "Movie", file
+                );
+
+
+            if (System.IO.File.Exists(physical))
+            {
+                return Url.Content("~/Content/Uploads/Movie/" + Uri.EscapeDataString(file));
+            }
+            else
+            {
+                return noImageUrl;
+            }
+        }
+        catch
+        {
+            return noImageUrl;
+        }
+    };
 }
 
-@using System.Linq
-
 <style>
-    .ticket-wrapper {x
+    .ticket-wrapper {
         max-width: 700px;
         margin: auto;
         background: #fff;
@@ -56,7 +125,6 @@
         color: #000;
     }
 
-
     .stamp-used {
         width: 240px;
         opacity: 0.7;
@@ -99,7 +167,8 @@
         Thông tin vé xem phim
     </div>
 
-    <img src="@Model.MovieImg" class="ticket-poster" />
+    <!-- DÙNG HÀM ImgMovie THAY VÌ DÙNG TRỰC TIẾP Model.MovieImg -->
+    <img src="@ImgMovie(Model.MovieImg)" class="ticket-poster" />
 
     @if (Model.IsUsed)
     {
@@ -122,8 +191,6 @@
             <div class="ticket-value">
                 @dayOfWeek, @Model.Showtime.ToString("dd/MM/yyyy")
             </div>
-
-            
         </div>
 
         <div class="ticket-section">
@@ -154,9 +221,7 @@
             <div>@Model.TheaterAddress</div>
         </div>
 
-        <!-- ==========================
-             KHỐI HỦY VÉ NHIỀU GHẾ
-             ========================== -->
+        <!-- KHỐI HỦY VÉ NHIỀU GHẾ GIỮ NGUYÊN -->
         <div class="ticket-section mt-3">
             <button class="btn btn-danger w-100" type="button" onclick="toggleCancelBox()">
                 Hủy vé (chọn ghế)
@@ -171,7 +236,6 @@
                 }
                 else
                 {
-                    @* checkbox cho từng ghế *@
                     @foreach (var s in Model.Seats)
                     {
                         <div class="form-check">
@@ -242,7 +306,6 @@
             });
         }
 
-        // Gửi request hủy ghế bằng fetch (không dùng jQuery)
         function submitCancel() {
             var selected = [];
             document.querySelectorAll(".seat-check:checked").forEach(function (chk) {
@@ -262,7 +325,6 @@
 
             var bodyParams = new URLSearchParams();
             selected.forEach(function (id) {
-                // ASP.NET Core binding: seatIds=1&seatIds=2&...
                 bodyParams.append("seatIds", id);
             });
 
@@ -286,13 +348,10 @@
                 });
         }
 
-        // Gắn sự kiện change cho checkbox sau khi DOM load
         document.addEventListener("DOMContentLoaded", function () {
             document.querySelectorAll(".seat-check").forEach(function (chk) {
                 chk.addEventListener("change", renderSelectedSeats);
             });
-
-            // render lần đầu (chưa chọn ghế nào)
             renderSelectedSeats();
         });
     </script>
