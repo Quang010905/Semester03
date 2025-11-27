@@ -78,6 +78,22 @@ namespace Semester03.Areas.Client.Controllers
                 return BadRequest("Invalid date");
 
             var list = _showRepo.GetShowtimesForMovieOnDate(movieId, dt);
+
+            // 🔥 CHẶN SUẤT CHIẾU ĐÃ QUA GIỜ (CHỈ ÁP DỤNG CHO NGÀY HÔM NAY)
+            if (dt.Date == DateTime.Now.Date)
+            {
+                var now = DateTime.Now;
+
+                // Tùy ViewModel của bạn, chỉnh lại thuộc tính thời gian cho đúng:
+                // Ví dụ nếu trong list có property là StartTime:
+                list = list
+                    .Where(s => s.StartTime > now)
+                    .ToList();
+
+                // Hoặc nếu property là ShowtimeStart thì dùng:
+                // list = list.Where(s => s.ShowtimeStart > now).ToList();
+            }
+
             return PartialView("_ShowtimeGrid", list);
         }
 

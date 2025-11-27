@@ -10,7 +10,7 @@
 @using System.Linq
 
 <style>
-    .ticket-wrapper {
+    .ticket-wrapper {x
         max-width: 700px;
         margin: auto;
         background: #fff;
@@ -56,17 +56,6 @@
         color: #000;
     }
 
-    .qr-box {
-        text-align: center;
-        margin-top: 15px;
-    }
-
-        .qr-box img {
-            width: 180px;
-            height: 180px;
-            border-radius: 12px;
-            background: white;
-        }
 
     .stamp-used {
         width: 240px;
@@ -134,13 +123,7 @@
                 @dayOfWeek, @Model.Showtime.ToString("dd/MM/yyyy")
             </div>
 
-            <div class="qr-box mt-3">
-                <img src="@Model.QRCodeUrl" />
-            </div>
-
-            <div class="ticket-label mt-2 text-center">
-                Đưa mã này cho nhân viên soát vé để vào rạp
-            </div>
+            
         </div>
 
         <div class="ticket-section">
