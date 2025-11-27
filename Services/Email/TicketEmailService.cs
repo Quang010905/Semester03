@@ -30,9 +30,8 @@ namespace Semester03.Services.Email
             _logger = logger;
         }
 
-
         // ====================================================================
-        // 1) EMAIL VÉ XEM PHIM (ĐẶT VÉ THÀNH CÔNG)
+        // 1) EMAIL VÉ XEM PHIM
         // ====================================================================
         public Task SendTicketsEmailAsync(int userId, List<int> showtimeSeatIds)
         {
@@ -51,13 +50,13 @@ namespace Semester03.Services.Email
                 return;
 
             if (showtimeSeatIds == null || !showtimeSeatIds.Any())
-            {
-                _logger.LogWarning("SendTicketsEmailAsync: no showtimeSeatIds for user {UserId}", userId);
                 return;
-            }
 
             var repo = new TicketRepository(_db);
             var ticketDetails = await repo.GetTicketDetailsByShowtimeSeatIdsAsync(showtimeSeatIds);
+
+            if (ticketDetails == null || !ticketDetails.Any())
+                return;
 
             var ticketVmList = ticketDetails
                 .Select(t => new TicketEmailItemVm
@@ -70,12 +69,6 @@ namespace Semester03.Services.Email
                     Price = t.Price
                 })
                 .ToList();
-
-            if (!ticketVmList.Any())
-            {
-                _logger.LogWarning("SendTicketsEmailAsync: ticketVmList empty for user {UserId}", userId);
-                return;
-            }
 
             var baseTotal = ticketVmList.Sum(t => t.Price);
             var effectiveOriginal = originalAmount ?? baseTotal;
@@ -104,7 +97,6 @@ namespace Semester03.Services.Email
                 html);
         }
 
-
         // ====================================================================
         // 2) EMAIL HỦY VÉ XEM PHIM
         // ====================================================================
@@ -123,7 +115,7 @@ namespace Semester03.Services.Email
                 UserName = user.UsersFullName ?? user.UsersUsername,
                 MovieName = movieName,
                 Showtime = showtime,
-                CancelledSeats = cancelledSeats ?? new List<string>(),
+                CancelledSeats = cancelledSeats,
                 RefundAmount = refundAmount
             };
 
@@ -136,7 +128,6 @@ namespace Semester03.Services.Email
                 "Hủy vé xem phim – Xác nhận",
                 html);
         }
-
 
         // ====================================================================
         // 3) EMAIL HỦY VÉ SỰ KIỆN
@@ -170,8 +161,7 @@ namespace Semester03.Services.Email
 
             string html = await _renderer.RenderViewToStringAsync(
                 "~/Areas/Client/Views/Emails/EventCancelEmail.cshtml",
-                model
-            );
+                model);
 
             string subject = $"Hủy vé sự kiện – Mã #{bookingId}";
 
@@ -187,53 +177,96 @@ namespace Semester03.Services.Email
             }
         }
 
-
         // ====================================================================
-        // 4) EMAIL ĐẶT VÉ SỰ KIỆN THÀNH CÔNG  ⭐⭐⭐
+        // 4) EMAIL ĐẶT VÉ SỰ KIỆN THÀNH CÔNG
         // ====================================================================
-        public async Task SendEventBookingSuccessEmailAsync(
-            int userId,
-            int bookingId,
-            string eventName,
-            DateTime eventStart,
-            DateTime? eventEnd,
-            string location,
-            string organizer,
-            int quantity,
-            decimal unitPrice,
-            decimal totalAmount,
-            DateTime purchaseDate)
+        public async Task SendEventBookingSuccessEmailAsync(int bookingId)
         {
-            var user = await _db.TblUsers.FindAsync(userId);
-            if (user == null || string.IsNullOrWhiteSpace(user.UsersEmail))
+            var booking = await _db.TblEventBookings
+                .Include(b => b.EventBookingEvent)
+                .FirstOrDefaultAsync(b => b.EventBookingId == bookingId);
+
+            if (booking == null)
             {
-                _logger.LogWarning("SendEventBookingSuccessEmailAsync: user {UserId} not found or has no email.", userId);
+                _logger.LogWarning("SendEventBookingSuccessEmailAsync: booking {BookingId} not found.", bookingId);
                 return;
             }
+
+            var user = await _db.TblUsers.FindAsync(booking.EventBookingUserId);
+            if (user == null || string.IsNullOrWhiteSpace(user.UsersEmail))
+            {
+                _logger.LogWarning("SendEventBookingSuccessEmailAsync: user {UserId} not found or no email.",
+                    booking.EventBookingUserId);
+                return;
+            }
+
+            var ev = booking.EventBookingEvent;
+            if (ev == null)
+            {
+                _logger.LogWarning("SendEventBookingSuccessEmailAsync: event not loaded for booking {BookingId}.", bookingId);
+                return;
+            }
+
+            // ================= LẤY ORGANIZER + LOCATION QUA EventRepository =================
+            string organizerName = "ABCD Mall";
+            string location = string.Empty;
+
+            try
+            {
+                var eventRepo = new EventRepository(_db);
+                // overload có userId giống như bạn đã dùng trong controller
+                var evtDetail = await eventRepo.GetEventByIdAsync(ev.EventId, booking.EventBookingUserId);
+
+                if (evtDetail != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(evtDetail.OrganizerShopName))
+                    {
+                        organizerName = evtDetail.OrganizerShopName;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(evtDetail.PositionLocation))
+                    {
+                        location = evtDetail.PositionLocation;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "SendEventBookingSuccessEmailAsync: error when reading organizer/location from EventRepository");
+                // nếu lỗi thì dùng mặc định organizerName = "ABCD Mall", location = ""
+            }
+
+            decimal unitPrice = booking.EventBookingUnitPrice ?? 0m;
+            int qty = booking.EventBookingQuantity ?? 1;
+            decimal totalAmount = booking.EventBookingTotalCost ?? (unitPrice * qty);
 
             var model = new EventBookingEmailVm
             {
                 UserFullName = string.IsNullOrWhiteSpace(user.UsersFullName)
                     ? user.UsersUsername
                     : user.UsersFullName,
-                BookingId = bookingId,
-                EventName = eventName,
-                EventStart = eventStart,
-                EventEnd = eventEnd,
-                Location = location ?? "",
-                OrganizerName = organizer ?? "",
-                Quantity = quantity,
+
+                BookingId = booking.EventBookingId,
+
+                EventName = ev.EventName,
+                EventStart = ev.EventStart,
+                EventEnd = ev.EventEnd,
+
+                Location = location,          // 👈 GIỜ ĐÃ GÁN LOCATION ĐÚNG
+                OrganizerName = organizerName, // 👈 VÀ ORGANIZER LẤY TỪ REPO
+
+                Quantity = qty,
                 UnitPrice = unitPrice,
                 TotalAmount = totalAmount,
-                PurchaseDate = purchaseDate
+
+                PurchaseDate = DateTime.UtcNow
             };
 
             string html = await _renderer.RenderViewToStringAsync(
                 "~/Areas/Client/Views/Emails/EventBookingEmail.cshtml",
-                model
-            );
+                model);
 
-            string subject = $"Xác nhận đặt vé sự kiện – Mã #{bookingId}";
+            string subject = $"ABCD Mall – Xác nhận đặt vé sự kiện #{booking.EventBookingId}";
 
             try
             {

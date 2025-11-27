@@ -58,6 +58,7 @@ namespace Semester03.Areas.Client.Controllers
 
             decimal pricePerTicket = evt.Price ?? 0m;
 
+            // fallback nếu trong TblEvents chưa mapping Price
             if (pricePerTicket <= 0m)
             {
                 try
@@ -132,6 +133,7 @@ namespace Semester03.Areas.Client.Controllers
                 // ===== LẤY GIÁ =====
                 decimal pricePerTicket = evt.Price ?? 0m;
 
+                // fallback
                 if (pricePerTicket <= 0m)
                 {
                     try
@@ -179,29 +181,16 @@ namespace Semester03.Areas.Client.Controllers
                         notes: notes
                     );
 
-                    // Gửi email xác nhận đặt vé sự kiện (chỉ khi có userId)
+                    // Gửi email xác nhận đặt vé sự kiện
                     _ = Task.Run(async () =>
                     {
                         try
                         {
-                            if (booking.EventBookingUserId != 0)
-                            {
-                                await _ticketEmailService.SendEventBookingSuccessEmailAsync(
-                                    userId: booking.EventBookingUserId,
-                                    bookingId: booking.EventBookingId,
-                                    eventName: evt.Title,
-                                    eventStart: evt.StartDate,
-                                    eventEnd: evt.EndDate,
-                                    location: evt.PositionLocation,
-                                    organizer: evt.OrganizerShopName,
-                                    quantity: booking.EventBookingQuantity ?? quantity,
-                                    unitPrice: pricePerTicket,
-                                    totalAmount: booking.EventBookingTotalCost ?? totalCost,
-                                    purchaseDate: DateTime.Now
-                                );
-                            }
+                            await _ticketEmailService.SendEventBookingSuccessEmailAsync(booking.EventBookingId);
                         }
-                        catch { }
+                        catch
+                        {
+                        }
                     });
 
                     if (IsAjaxRequest())
@@ -290,31 +279,10 @@ namespace Semester03.Areas.Client.Controllers
                     return RedirectToAction("PaymentFailed", new { message = "Không tìm thấy booking hoặc không cập nhật được trạng thái thanh toán." });
                 }
 
-                // ========== GỬI EMAIL XÁC NHẬN ĐẶT VÉ SỰ KIỆN SAU KHI THANH TOÁN THÀNH CÔNG ==========
+                // Gửi email xác nhận đặt vé sự kiện sau khi thanh toán thành công
                 try
                 {
-                    var booking = await _bookingRepo.GetByIdAsync(bookingId);
-                    if (booking != null && booking.EventBookingUserId != 0)
-                    {
-                        var evt = await _eventRepo.GetEventByIdAsync(booking.EventBookingEventId);
-
-                        if (evt != null)
-                        {
-                            await _ticketEmailService.SendEventBookingSuccessEmailAsync(
-                                userId: booking.EventBookingUserId,
-                                bookingId: booking.EventBookingId,
-                                eventName: evt.Title,
-                                eventStart: evt.StartDate,
-                                eventEnd: evt.EndDate,
-                                location: evt.PositionLocation,
-                                organizer: evt.OrganizerShopName,
-                                quantity: booking.EventBookingQuantity ?? 1,
-                                unitPrice: booking.EventBookingUnitPrice ?? (evt.Price ?? 0m),
-                                totalAmount: booking.EventBookingTotalCost ?? 0m,
-                                purchaseDate: DateTime.Now
-                            );
-                        }
-                    }
+                    await _ticketEmailService.SendEventBookingSuccessEmailAsync(bookingId);
                 }
                 catch (Exception exMail)
                 {
