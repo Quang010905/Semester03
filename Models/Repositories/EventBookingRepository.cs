@@ -68,7 +68,7 @@ namespace Semester03.Models.Repositories
 
         /// <summary>
         /// Overload tạo booking từ entity có sẵn.
-        /// Đảm bảo set: Quantity, UnitPrice, OrderGroup, Date nếu chưa có.
+        /// Đảm bảo set: Quantity, UnitPrice, Date nếu chưa có.
         /// </summary>
         public async Task<TblEventBooking> CreateBookingAsync(TblEventBooking booking)
         {
@@ -120,16 +120,7 @@ namespace Semester03.Models.Repositories
             }
             catch { }
 
-            // ====== ĐẢM BẢO OrderGroup (GUID) ======
-            try
-            {
-                if (booking.EventBookingOrderGroup == null ||
-                    booking.EventBookingOrderGroup == Guid.Empty)
-                {
-                    booking.EventBookingOrderGroup = Guid.NewGuid();
-                }
-            }
-            catch { }
+            // Không còn xử lý OrderGroup vì đã bỏ cột EventBooking_OrderGroup
 
             _db.TblEventBookings.Add(booking);
             await _db.SaveChangesAsync();
@@ -210,15 +201,7 @@ namespace Semester03.Models.Repositories
                 // nếu cột kiểu DateTime, bạn có thể đổi sang DateTime.UtcNow.Date
             }
 
-            // ====== OrderGroup (GUID) ======
-            try
-            {
-                entity.EventBookingOrderGroup = Guid.NewGuid();
-            }
-            catch
-            {
-                // nếu kiểu khác Guid thì bạn đổi cho phù hợp
-            }
+            // Không còn OrderGroup (GUID) vì đã bỏ cột EventBooking_OrderGroup
 
             _db.TblEventBookings.Add(entity);
             await _db.SaveChangesAsync();

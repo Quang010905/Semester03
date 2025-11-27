@@ -4,8 +4,7 @@
 @inject Semester03.Models.Repositories.TenantRepository _tenantRepo
 @inject Semester03.Models.Repositories.EventRepository _event_repo
 @using Semester03.Areas.Client.Models.ViewModels
-@inject Semester03.Models.Repositories.TenantRepository _tenantRepo
-@inject Semester03.Models.Repositories.EventRepository _event_repo
+
 @{
     var hideCenterMainFlag = (ViewData["HideCenterMain"] as bool?) ?? false;
     var routeController = (ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty);
@@ -25,6 +24,26 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"] - @(ViewData["MallName"])</title>
+
+    @* CSP meta: cho phép CDN dùng trong layout (cdn.jsdelivr.net, fonts.googleapis.com, fonts.gstatic.com)
+       Lưu ý: server header CSP (Program.cs) sẽ override header meta; giữ meta này để hỗ trợ dev.
+       Nếu bạn set CSP ở server, hãy sync domain ở server header như trong Program.cs. *@
+    <meta http-equiv="Content-Security-Policy"
+          content="
+            default-src 'self' https: data:;
+            script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://sandbox.vnpayment.vn;
+            style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://sandbox.vnpayment.vn;
+            img-src 'self' data: https://sandbox.vnpayment.vn https://cdn.jsdelivr.net;
+            connect-src 'self' https://sandbox.vnpayment.vn https:;
+            frame-src https://sandbox.vnpayment.vn;
+            font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net;
+            object-src 'none';
+          " />
+
+    @* Ensure timer global exists early to avoid "timer is not defined" from any script *@
+    <script>
+        window.timer = window.timer || null;
+    </script>
 
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -192,44 +211,56 @@
             }
 
         @@media (max-width: 767px) {
-            .hero {
-                min-height: 220px;
-                padding: 1rem 0;
-            }
+            .hero
 
-            .mall-nav {
-                flex-direction: column;
-                gap: .25rem;
-            }
+        {
+            min-height: 220px;
+            padding: 1rem 0;
+        }
+
+        .mall-nav {
+            flex-direction: column;
+            gap: .25rem;
+        }
+
         }
 
         @@media (min-width: 1200px) {
-            .col-lg-10 {
-                flex: 0 0 83.333333%;
-                max-width: 83.333333%;
-            }
+            .col-lg-10
 
-            .col-lg-2 {
-                flex: 0 0 16.666667%;
-                max-width: 16.666667%;
-            }
+        {
+            flex: 0 0 83.333333%;
+            max-width: 83.333333%;
+        }
+
+        .col-lg-2 {
+            flex: 0 0 16.666667%;
+            max-width: 16.666667%;
+        }
+
         }
 
         @@media (min-width: 1600px) {
-            :root {
-                --main-max-width: 1800px;
-            }
+            : root
+
+        {
+            --main-max-width: 1800px;
+        }
+
         }
 
         @@media (min-width: 768px) {
-            .mall-nav .dropdown:hover > .dropdown-menu {
-                display: block;
-                margin-top: 0;
-            }
+            .mall-nav .dropdown:hover > .dropdown-menu
 
-            .mall-nav .dropdown-menu {
-                pointer-events: auto;
-            }
+        {
+            display: block;
+            margin-top: 0;
+        }
+
+        .mall-nav .dropdown-menu {
+            pointer-events: auto;
+        }
+
         }
 
         /* layout grid: main + sidebar */
@@ -249,13 +280,16 @@
             }
 
         @@media (max-width: 991px) {
-            .layout-grid {
-                grid-template-columns: 1fr;
-            }
+            .layout-grid
 
-                .layout-grid .sidebar-col {
-                    width: auto;
-                }
+        {
+            grid-template-columns: 1fr;
+        }
+
+        .layout-grid .sidebar-col {
+            width: auto;
+        }
+
         }
 
         /* Upcoming events vertical scroll box */
@@ -322,36 +356,42 @@
             }
 
         @@media (min-width: 768px) {
-            .small-event-slider::-webkit-scrollbar {
-                width: 10px;
-            }
+            .small-event-slider::-webkit-scrollbar
 
-            .small-event-slider::-webkit-scrollbar-thumb {
-                background: rgba(148, 163, 184, 0.6);
-                border-radius: 999px;
-            }
+        {
+            width: 10px;
+        }
 
-            .small-event-slider {
-                scrollbar-gutter: stable;
-            }
+        .small-event-slider::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.6);
+            border-radius: 999px;
+        }
+
+        .small-event-slider {
+            scrollbar-gutter: stable;
+        }
+
         }
 
         @@media (max-width: 767px) {
-            .small-event-slider {
-                height: auto;
-                max-height: none;
-                overflow-y: visible;
-                padding: .5rem 0;
-                box-shadow: none;
-            }
+            .small-event-slider
 
-                .small-event-slider .small-card {
-                    padding: .35rem;
-                }
+        {
+            height: auto;
+            max-height: none;
+            overflow-y: visible;
+            padding: .5rem 0;
+            box-shadow: none;
+        }
 
-            .layout-grid .sidebar-col {
-                order: 2;
-            }
+        .small-event-slider .small-card {
+            padding: .35rem;
+        }
+
+        .layout-grid .sidebar-col {
+            order: 2;
+        }
+
         }
     </style>
 
@@ -680,7 +720,7 @@
         </div>
     </footer>
 
-    <!-- Bootstrap JS -->
+    <!-- Bootstrap JS (CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- AJAX logout handling -->
