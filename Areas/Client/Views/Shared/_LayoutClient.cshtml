@@ -4,8 +4,7 @@
 @inject Semester03.Models.Repositories.TenantRepository _tenantRepo
 @inject Semester03.Models.Repositories.EventRepository _event_repo
 @using Semester03.Areas.Client.Models.ViewModels
-@inject Semester03.Models.Repositories.TenantRepository _tenantRepo
-@inject Semester03.Models.Repositories.EventRepository _event_repo
+
 @{
     var hideCenterMainFlag = (ViewData["HideCenterMain"] as bool?) ?? false;
     var routeController = (ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty);
@@ -17,6 +16,9 @@
 
     // Only hide hero+main when flag is true and current route is Cinema/Index
     var hideCenterMain = hideCenterMainFlag && isCinemaIndexRoute;
+    var isHomeIndexRoute =
+        string.Equals(routeController, "Home", System.StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(routeAction, "Index", System.StringComparison.OrdinalIgnoreCase);
 }
 
 <!DOCTYPE html>
@@ -33,59 +35,84 @@
 
     <style>
         :root {
-            --main-max-width: 1600px;
+            --main-max-width: 1500px;
             --primary-color: #2563eb;
             --secondary-color: #6b7280;
-            --accent-gradient: linear-gradient(135deg, #ff7a18, #ff4b6e, #ffd166);
-            --card-radius: 0.95rem;
-            --shadow-lg: 0 18px 45px rgba(15, 23, 42, 0.12);
-            --transition: all 0.25s ease-in-out;
+            --accent-gradient: linear-gradient(135deg, #4f46e5, #ec4899);
+            --card-radius: 1rem;
+            --shadow-lg: 0 22px 60px rgba(15, 23, 42, 0.18);
+            --transition: all 0.22s ease;
         }
 
         body {
             font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-            background: radial-gradient(circle at top, #fef3c7 0, #ffe4e6 26%, #eff6ff 55%, #f9fafb 100%);
-            color: #111827;
+            background: radial-gradient(circle at top, #eff6ff 0, #e0f2fe 22%, #fef3c7 55%, #fdf2f8 85%), #f9fafb;
+            color: #0f172a;
+            min-height: 100vh;
         }
 
         a, a:hover, a:focus {
             text-decoration: none;
         }
 
-        /* Top hero style used if any page uses generic hero class */
-        .hero {
-            background: linear-gradient(120deg, rgba(37, 99, 235, 0.7), rgba(236, 72, 153, 0.55)), url('/images/hero-default.jpg') center/cover no-repeat;
-            color: #fff;
-            min-height: 360px;
+        /* HEADER / NAVBAR -------------------------------------------------- */
+        .top-shell {
+            backdrop-filter: blur(14px);
+            background: linear-gradient( 120deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.92) );
+            border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+        }
+
+        .sticky-top-shadow {
+            box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+        }
+
+        .mall-brand {
             display: flex;
             align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 2rem 0;
-            border-radius: var(--card-radius);
-            box-shadow: var(--shadow-lg);
+            gap: .75rem;
         }
 
-        .search-box {
-            background: rgba(255, 255, 255, 0.98);
-            padding: .6rem 1rem;
+        .mall-brand-logo {
+            height: 46px;
+            width: 46px;
             border-radius: 999px;
-            box-shadow: 0 14px 45px rgba(15, 23, 42, 0.12);
-            transition: var(--transition);
-            border: 1px solid rgba(148, 163, 184, 0.3);
+            background: radial-gradient(circle at 25% 0, #fee2e2, #bfdbfe 40%, #a5b4fc 100%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
         }
 
-            .search-box:hover {
-                box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
-                transform: translateY(-1px);
+            .mall-brand-logo img {
+                height: 42px;
+                width: auto;
+                border-radius: 999px;
             }
 
+        .mall-brand-text-title {
+            font-weight: 800;
+            font-size: 1.1rem;
+            letter-spacing: -0.03em;
+        }
+
+        .mall-brand-text-sub {
+            font-size: .75rem;
+            color: #6b7280;
+        }
+
+        .content-maxwide {
+            max-width: var(--main-max-width);
+            margin: 0 auto;
+        }
+
         .mall-nav .nav-link {
-            color: #0f172a;
+            color: #111827;
             font-weight: 500;
+            font-size: .9rem;
             transition: var(--transition);
             position: relative;
-            padding-bottom: .3rem;
+            padding-bottom: .25rem;
         }
 
             .mall-nav .nav-link::after {
@@ -102,7 +129,7 @@
 
             .mall-nav .nav-link:hover::after,
             .mall-nav .nav-link.active::after {
-                width: 75%;
+                width: 70%;
             }
 
             .mall-nav .nav-link:hover,
@@ -111,113 +138,230 @@
                 font-weight: 600;
             }
 
-        .store-card {
-            border-radius: var(--card-radius);
+        .user-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .3rem .7rem;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.03);
+        }
+
+        .btn-icon-circle {
+            border-radius: 999px;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .notif-badge {
+            transform: translate(40%, -40%);
+        }
+
+        /* HERO ------------------------------------------------------------- */
+        .hero {
+            background: radial-gradient(circle at top left, #4f46e5, #ec4899);
+            color: #fff;
+            min-height: 260px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: left;
+            padding: 2.2rem 2.5rem;
+            border-radius: 1.4rem;
+            box-shadow: var(--shadow-lg);
+            position: relative;
             overflow: hidden;
         }
 
-            .store-card img {
-                object-fit: cover;
-                height: 160px;
-                width: 100%;
+            .hero::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: radial-gradient(circle at 10% 10%, rgba(239, 246, 255, 0.15), transparent 55%), radial-gradient(circle at 90% 0%, rgba(248, 250, 252, 0.2), transparent 55%), radial-gradient(circle at 80% 90%, rgba(255, 251, 235, 0.1), transparent 55%);
+                pointer-events: none;
             }
 
-        .category-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: var(--card-radius);
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 520px;
         }
 
-        .badge-promo {
-            background: var(--accent-gradient);
-            color: #fff;
+        .hero-title {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            margin-bottom: .35rem;
+        }
+
+        .hero-sub {
+            font-size: .92rem;
+            opacity: 0.9;
+            max-width: 420px;
+        }
+
+        /* MAIN LAYOUT ------------------------------------------------------ */
+        .layout-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 340px;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+
+            .layout-grid .main-col {
+                align-self: stretch;
+            }
+
+            .layout-grid .sidebar-col {
+                width: 340px;
+            }
+
+        .main-shell {
+            margin-top: 1.8rem;
+        }
+
+        .card-shell {
+            background: #ffffff;
+            border-radius: 1.1rem;
+            padding: 1.2rem 1.3rem;
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
         }
 
         footer {
             background: #020617;
             color: #cbd5f5;
-            padding: 3rem 0;
+            padding: 3rem 0 2rem;
             font-size: 0.9rem;
+            margin-top: 2.5rem;
         }
 
-        .sticky-top-shadow {
-            box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
+        /* SIDEBAR: EVENTS -------------------------------------------------- */
+        .sidebar-section-title {
+            font-size: .88rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: #6b7280;
+            margin-bottom: .35rem;
         }
 
-        .content-maxwide {
-            max-width: var(--main-max-width);
-            margin: auto;
-            padding: 0 1rem;
+        .small-event-slider {
+            height: 500px;
+            max-height: 500px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: .4rem;
+            background: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
         }
 
-        .user-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: .5rem;
-        }
-
-        .hover-scale:hover {
-            transform: scale(1.03);
-            transition: var(--transition);
-        }
-
-        #featuredStoresCarousel .carousel-inner {
-            padding: 0 1rem;
-        }
-
-        #featuredStoresCarousel .carousel-control-prev,
-        #featuredStoresCarousel .carousel-control-next {
-            width: 3%;
-            top: 50%;
-            transform: translateY(-50%);
-            opacity: 0.7;
-        }
-
-            #featuredStoresCarousel .carousel-control-prev:hover,
-            #featuredStoresCarousel .carousel-control-next:hover {
-                opacity: 1;
+            .small-event-slider .slider-track {
+                display: block;
             }
 
-        #featuredStoresCarousel .carousel-control-prev-icon,
-        #featuredStoresCarousel .carousel-control-next-icon {
-            background-size: 2rem 2rem;
-        }
-
-        input, select, button {
-            transition: var(--transition);
-        }
-
-            button:hover {
-                transform: translateY(-1px);
+            .small-event-slider .slider-item {
+                display: block;
+                margin-bottom: .7rem;
             }
+
+            .small-event-slider .small-card {
+                display: flex;
+                gap: .75rem;
+                align-items: flex-start;
+                padding: .55rem .6rem;
+                border-radius: .9rem;
+                transition: transform .12s ease, box-shadow .12s ease, background .15s ease;
+                background: linear-gradient(135deg, #f9fafb, #ffffff);
+                border: 1px solid rgba(226, 232, 240, 0.9);
+            }
+
+                .small-event-slider .small-card:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+                    background: #ffffff;
+                }
+
+            .small-event-slider .small-poster {
+                width: 110px;
+                height: 82px;
+                object-fit: cover;
+                border-radius: .8rem;
+                flex-shrink: 0;
+                box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
+            }
+
+            .small-event-slider .small-card-body {
+                flex: 1;
+            }
+
+            .small-event-slider .small-title {
+                font-size: .9rem;
+                font-weight: 700;
+                margin-bottom: .2rem;
+            }
+
+            .small-event-slider .small-meta {
+                color: #6b7280;
+                font-size: .78rem;
+                margin-bottom: .3rem;
+            }
+
+        .sidebar-seeall {
+            font-size: .76rem;
+            font-weight: 600;
+            color: #2563eb;
+        }
+
+            .sidebar-seeall i {
+                vertical-align: middle;
+            }
+
+        /* RESPONSIVE ------------------------------------------------------- */
+        @@media (max-width: 991px) {
+            .layout-grid {
+                grid-template-columns: 1fr;
+            }
+
+                .layout-grid .sidebar-col {
+                    width: auto;
+                }
+
+            .main-shell {
+                margin-top: 1.3rem;
+            }
+
+            .hero {
+                padding: 1.7rem 1.5rem;
+                min-height: 220px;
+            }
+
+            .hero-title {
+                font-size: 1.65rem;
+            }
+        }
 
         @@media (max-width: 767px) {
-            .hero {
-                min-height: 220px;
-                padding: 1rem 0;
-            }
-
             .mall-nav {
                 flex-direction: column;
                 gap: .25rem;
             }
-        }
 
-        @@media (min-width: 1200px) {
-            .col-lg-10 {
-                flex: 0 0 83.333333%;
-                max-width: 83.333333%;
-            }
-
-            .col-lg-2 {
-                flex: 0 0 16.666667%;
-                max-width: 16.666667%;
+            .small-event-slider {
+                height: auto;
+                max-height: none;
+                box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
             }
         }
 
         @@media (min-width: 1600px) {
             :root {
-                --main-max-width: 1800px;
+                --main-max-width: 1700px;
             }
         }
 
@@ -231,152 +375,34 @@
                 pointer-events: auto;
             }
         }
-
-        /* layout grid: main + sidebar */
-        .layout-grid {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 340px;
-            gap: 1.25rem;
-            align-items: start;
-        }
-
-            .layout-grid .main-col {
-                align-self: start;
-            }
-
-            .layout-grid .sidebar-col {
-                width: 340px;
-            }
-
-        @@media (max-width: 991px) {
-            .layout-grid {
-                grid-template-columns: 1fr;
-            }
-
-                .layout-grid .sidebar-col {
-                    width: auto;
-                }
-        }
-
-        /* Upcoming events vertical scroll box */
-        .small-event-slider {
-            height: 520px;
-            max-height: 520px;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            padding: .6rem;
-            background: #ffffff;
-            border-radius: .9rem;
-            box-shadow: 0 16px 45px rgba(15, 23, 42, 0.10);
-        }
-
-            .small-event-slider .slider-track {
-                display: block;
-            }
-
-            .small-event-slider .slider-item {
-                display: block;
-                margin-bottom: .75rem;
-            }
-
-            .small-event-slider .small-card {
-                display: flex;
-                gap: .75rem;
-                align-items: flex-start;
-                padding: .55rem;
-                border-radius: .75rem;
-                transition: transform .12s ease, box-shadow .12s ease, background .15s ease;
-                background: linear-gradient(135deg, #f9fafb, #ffffff);
-                border: 1px solid rgba(226, 232, 240, 0.8);
-            }
-
-                .small-event-slider .small-card:hover {
-                    transform: translateY(-4px);
-                    box-shadow: 0 22px 45px rgba(15, 23, 42, 0.16);
-                    background: #ffffff;
-                }
-
-            .small-event-slider .small-poster {
-                width: 120px;
-                height: 90px;
-                object-fit: cover;
-                border-radius: .75rem;
-                flex-shrink: 0;
-                box-shadow: 0 14px 30px rgba(15, 23, 42, 0.35);
-            }
-
-            .small-event-slider .small-card-body {
-                flex: 1;
-            }
-
-            .small-event-slider .small-title {
-                font-size: .95rem;
-                font-weight: 700;
-                margin-bottom: .25rem;
-            }
-
-            .small-event-slider .small-meta {
-                color: #6b7280;
-                font-size: .82rem;
-                margin-bottom: .5rem;
-            }
-
-        @@media (min-width: 768px) {
-            .small-event-slider::-webkit-scrollbar {
-                width: 10px;
-            }
-
-            .small-event-slider::-webkit-scrollbar-thumb {
-                background: rgba(148, 163, 184, 0.6);
-                border-radius: 999px;
-            }
-
-            .small-event-slider {
-                scrollbar-gutter: stable;
-            }
-        }
-
-        @@media (max-width: 767px) {
-            .small-event-slider {
-                height: auto;
-                max-height: none;
-                overflow-y: visible;
-                padding: .5rem 0;
-                box-shadow: none;
-            }
-
-                .small-event-slider .small-card {
-                    padding: .35rem;
-                }
-
-            .layout-grid .sidebar-col {
-                order: 2;
-            }
-        }
     </style>
 
     @RenderSection("Styles", required: false)
 </head>
 <body>
-    <!-- Header / Topbar -->
-    <header class="bg-white sticky-top sticky-top-shadow">
-        <div class="container">
+    <!-- HEADER -->
+    <header class="top-shell sticky-top sticky-top-shadow">
+        <div class="content-maxwide">
             <div class="d-flex align-items-center justify-content-between py-2">
-                <div class="d-flex align-items-center">
-                    <a class="d-flex align-items-center text-decoration-none"
+                <!-- Logo + name -->
+                <div class="mall-brand">
+                    <a class="text-decoration-none d-flex align-items-center"
                        href="@Url.Action("Index", "Home", new { area = "Client" })">
-                        <img src="/images/logo.png" alt="logo" style="height:48px; width:auto;" />
-                        <div class="ms-2">
-                            <div style="font-weight:700; font-size:1.05rem;">
+                        <div class="mall-brand-logo">
+                            <img src="/images/logo.png" alt="logo" />
+                        </div>
+                        <div class="mall-brand-text ms-1">
+                            <div class="mall-brand-text-title">
                                 @ViewData["MallName"]
                             </div>
-                            <small class="text-muted">
+                            <div class="mall-brand-text-sub">
                                 @(ViewData["MallAddress"] ?? "123 Main Street")
-                            </small>
+                            </div>
                         </div>
                     </a>
                 </div>
 
+                <!-- NAV -->
                 <nav class="d-none d-md-flex align-items-center gap-3 mall-nav">
                     <div class="nav-item dropdown">
                         <a class="nav-link" href="@Url.Action("Index", "Stores", new { area = "Client" })"
@@ -403,13 +429,14 @@
                     <a class="nav-link" href="@Url.Action("Contact", "Home", new { area = "Client" })">Contact</a>
                 </nav>
 
+                <!-- Right controls -->
                 <div class="d-flex align-items-center gap-2">
 
-                    @* Chỉ hiện icon profile khi đã đăng nhập *@
+                    @* Profile (only when logged in) *@
                     @if (User?.Identity?.IsAuthenticated == true)
                     {
-                        <div class="dropdown me-2">
-                            <button class="btn btn-sm btn-outline-secondary"
+                        <div class="dropdown me-1">
+                            <button class="btn btn-sm btn-outline-secondary btn-icon-circle"
                                     id="profileDropdown"
                                     data-bs-toggle="dropdown"
                                     aria-expanded="false">
@@ -417,32 +444,25 @@
                             </button>
 
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-
                                 <li>
                                     <a class="dropdown-item"
                                        href="@Url.Action("Profile", "Profile", new { area = "Client" })">
                                         View Profile
                                     </a>
                                 </li>
-
-                                <!-- ⭐ NEW: My Tickets -->
                                 <li>
                                     <a class="dropdown-item"
                                        href="@Url.Action("MyTickets", "Ticket", new { area = "Client" })">
                                         Vé của tôi
                                     </a>
                                 </li>
-
-                                <!-- ⭐ NEW: My Complaints -->
                                 <li>
                                     <a class="dropdown-item"
                                        href="@Url.Action("MyComplaints", "Complaint", new { area = "Client" })">
                                         Khiếu nại
                                     </a>
                                 </li>
-
                                 <li><hr class="dropdown-divider" /></li>
-
                                 <li>
                                     <form method="post"
                                           asp-area="Client"
@@ -454,20 +474,19 @@
                                     </form>
                                 </li>
                             </ul>
-
                         </div>
                     }
 
-                    <!-- Notifications dropdown (giữ nguyên, chỉ còn 1 bản) -->
+                    <!-- Notifications -->
                     <div class="dropdown">
-                        <button class="btn btn-sm btn-outline-secondary position-relative"
+                        <button class="btn btn-sm btn-outline-secondary btn-icon-circle position-relative"
                                 id="notifDropdown"
                                 data-bs-toggle="dropdown"
                                 aria-expanded="false">
                             <i class="bi bi-bell"></i>
                             @if (ViewBag.UnreadNotificationsCount != null && (int)ViewBag.UnreadNotificationsCount > 0)
                             {
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                <span class="position-absolute top-0 start-100 badge rounded-pill bg-danger notif-badge">
                                     @ViewBag.UnreadNotificationsCount
                                 </span>
                             }
@@ -487,8 +506,8 @@
                         </ul>
                     </div>
 
-                    <!-- Account area -->
-                    <div id="accountArea">
+                    <!-- Account text badge / Login -->
+                    <div id="accountArea" class="d-none d-md-block">
                         @if (User?.Identity?.IsAuthenticated == true)
                         {
                             var name = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
@@ -496,9 +515,8 @@
 
                             <div class="user-badge" id="userBadge">
                                 <span class="small text-muted">Hello,</span>
-                                <strong class="me-2">@name</strong>
+                                <strong class="me-1">@name</strong>
 
-                                <!-- Giữ nguyên form logout + JS -->
                                 <form id="headerLogoutForm"
                                       method="post"
                                       asp-area="Client"
@@ -524,66 +542,54 @@
                         }
                     </div>
                 </div>
-
             </div>
         </div>
-
-        <!-- Secondary nav (search) -->
-        <nav class="bg-light border-top border-bottom">
-            <div class="container d-flex align-items-center py-2 gap-3">
-                <form class="flex-grow-1"
-                      method="get"
-                      action="@Url.Action("Search", "Mall", new { area = "Client" })"
-                      role="search">
-                    <div class="input-group search-box">
-                        <span class="input-group-text bg-transparent border-0 ps-1 pe-0">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="search"
-                               name="q"
-                               class="form-control border-0"
-                               placeholder="Search stores, dining, events, movies..."
-                               aria-label="Search"
-                               value="@(ViewData["SearchQuery"] ?? "")" />
-                        <select name="type"
-                                class="form-select d-none d-lg-block border-0"
-                                style="max-width:220px;">
-                            <option value="">All</option>
-                            <option value="store">Store</option>
-                            <option value="dining">Dining</option>
-                            <option value="event">Event</option>
-                            <option value="movie">Movie</option>
-                            <option value="promo">Promotion</option>
-                        </select>
-                        <button class="btn btn-primary rounded-pill px-4" type="submit">
-                            Search
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </nav>
     </header>
 
     @* When hideCenterMain = true and route is Cinema/Index, layout skips Hero + Main *@
     @if (!hideCenterMain)
     {
-        <!-- Hero area -->
-        <section>
-            @await Html.PartialAsync("_Hero")
-        </section>
-
-        <!-- Main content -->
-        <main class="container-fluid my-4">
+        <main class="container-fluid py-3">
             <div class="content-maxwide">
-                <div class="layout-grid">
+
+                @* ✅ Chỉ hiển thị hero ở Home/Index *@
+                @if (isHomeIndexRoute)
+                {
+                    <section class="mb-3">
+                        @await Html.PartialAsync("_Hero")
+                    </section>
+                }
+
+                <!-- Main layout -->
+                <div class="main-shell layout-grid">
                     <div class="main-col">
-                        @RenderBody()
+                        <div class="card-shell">
+                            @RenderBody()
+                        </div>
                     </div>
 
+                    <!-- SIDEBAR -->
                     <aside class="sidebar-col">
 
+                    <!-- SIDEBAR -->
+                    <aside class="sidebar-col">
+                        @* ==== CINEMA COUPON: chỉ hiện khi model là CinemaHomeVm ==== *@
+                        @if (ViewData.Model is CinemaHomeVm cinemaModel)
+                        {
+                            <div class="mb-3">
+                                <div class="card-shell p-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <h6 class="mb-0 sidebar-section-title text-uppercase">
+                                            Cinema Coupon
+                                        </h6>
+                                    </div>
+                                    @await Html.PartialAsync("_CouponPartial", cinemaModel)
+                                </div>
+                            </div>
+                        }
+
+                        @* ==== UPCOMING EVENTS ==== *@
                         @{
-                            // Get top upcoming events for sidebar
                             var topEvents = await _event_repo.GetUpcomingEventsAsync(12);
 
                             Func<string, string> Img = (raw) =>
@@ -601,7 +607,7 @@
                                     return Url.Content("~/" + s);
 
                                 if (s.StartsWith("images", StringComparison.OrdinalIgnoreCase) ||
-                                    s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
+                                            s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
                                     return Url.Content("~/" + s);
 
                                 if (raw.StartsWith("/"))
@@ -611,23 +617,16 @@
                             };
                         }
 
-                        @if (ViewData.Model is CinemaHomeVm cinemaModel)
-                        {
-                            <div class="mb-4">
-                                <div class="p-3 bg-white rounded shadow-sm">
-                                    <div class="d-flex align-items-center justify-content-between mb-2">
-                                        <h6 class="mb-0">Coupon</h6>
-                                    </div>
-                                    @await Html.PartialAsync("_CouponPartial", cinemaModel)
-                                </div>
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <div class="sidebar-section-title">Upcoming Events</div>
+                                <a class="sidebar-seeall"
+                                   href="@Url.Action("Index", "Event", new { area = "Client" })">
+                                    See all <i class="bi bi-arrow-right-short"></i>
+                                </a>
                             </div>
-                        }
 
-                        <div class="mb-4">
-                            <div class="d-flex align-items-center justify-content-between mb-2"></div>
-                            <h6>Event</h6>
-                            <!-- Vertical scroll box -->
-                            <div class="slider-wrapper small-event-slider mb-2">
+                            <div class="small-event-slider mb-2">
                                 <div class="slider-track">
                                     @foreach (var e in topEvents ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.EventCardVm>())
                                     {
@@ -637,34 +636,26 @@
                                         : "--";
 
                                         <div class="slider-item">
-                                            <div class="card movie-card event-card position-relative h-100 small-card">
+                                            <div class="small-card">
                                                 <img src="@imgUrl"
-                                                     class="movie-poster card-img-top small-poster"
+                                                     class="small-poster"
                                                      alt="@(e.Title ?? "Event")" />
-                                                <div class="small-card-body" style="flex:1">
-                                                    <div class="small-title">
+                                                <div class="small-card-body">
+                                                    <div class="small-title" title="@e.Title">
                                                         @(!string.IsNullOrWhiteSpace(e.Title) ? e.Title : "Event")
                                                     </div>
-                                                    <div class="small-meta text-muted">@start</div>
-                                                    <div class="mt-2">
-                                                        <a class="btn btn-sm btn-light rounded-pill px-3"
-                                                           href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">
-                                                            View details
-                                                        </a>
+                                                    <div class="small-meta">
+                                                        <i class="bi bi-calendar-event"></i> @start
                                                     </div>
+                                                    <a class="btn btn-sm btn-light rounded-pill px-3"
+                                                       href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">
+                                                        View details
+                                                    </a>
                                                 </div>
                                             </div>
                                         </div>
                                     }
                                 </div>
-                            </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <div class="p-3 bg-light rounded">
-                                <h6>Promotions</h6>
-                                @* Removed extra <ul> wrapper to avoid nested UL *@
-                                @await Html.PartialAsync("_PromotionsPartial")
                             </div>
                         </div>
                     </aside>
@@ -674,8 +665,8 @@
     }
 
     <!-- Footer -->
-    <footer class="mt-5">
-        <div class="container">
+    <footer>
+        <div class="content-maxwide">
             @await Html.PartialAsync("_Footer")
         </div>
     </footer>
@@ -713,11 +704,10 @@
                         headers: headers,
                         body: params.toString()
                     }).then(function (resp) {
-                        if (resp.ok) {
+                        if (resp.ok)    
                             window.location.reload();
                             return;
                         }
-
                         console.warn('AJAX logout failed (status ' + resp.status + '), falling back to normal submit');
                         logoutForm.submit();
                     }).catch(function (err) {
