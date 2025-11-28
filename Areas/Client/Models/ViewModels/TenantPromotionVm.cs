@@ -13,5 +13,7 @@ namespace Semester03.Models.ViewModels
         public string Description { get; set; } = "";
         public DateTime? PromotionStart { get; set; }
         public DateTime? PromotionEnd { get; set; }
+       
+
     }
 }

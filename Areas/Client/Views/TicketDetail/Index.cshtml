@@ -616,7 +616,7 @@
                 <div class="ticket-section">
                     <div class="row text-center">
                         <div class="col-md-5 mb-3 mb-md-0">
-                            <div class="ticket-label">Phòng chiếu</div>
+                            <div class="ticket-label">SCREENING ROOM</div>
                             <div class="ticket-value">@Model.Screen</div>
                         </div>
                         <div class="col-md-7">
@@ -645,13 +645,13 @@
                 <div class="ticket-section mt-3">
                     <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
                         <div>
-                            <div class="ticket-label mb-1">Quản lý vé</div>
+                            <div class="ticket-label mb-1">TICKET MANAGEMENT</div>
                             <div class="ticket-subinfo">
-                                Bạn có thể chọn từng ghế để hủy trước giờ chiếu (nếu chính sách rạp cho phép).
+                            You can select individual seats to cancel before the showtime (if the cinema's policy allows)..
                             </div>
                         </div>
                         <button class="btn btn-danger" type="button" onclick="toggleCancelBox()">
-                            <i class="bi bi-x-circle"></i> Hủy vé (chọn ghế)
+                            <i class="bi bi-x-circle"></i> Cancel (select seats)
                         </button>
                     </div>
 
@@ -659,15 +659,15 @@
                         <div class="cancel-panel mt-3">
                             <div class="cancel-title">
                                 <i class="bi bi-exclamation-triangle-fill"></i>
-                                Hủy ghế đã chọn
+                                Cancel selected seats
                             </div>
                             <div class="cancel-hint">
-                                Chọn những ghế bạn muốn hủy. Hệ thống sẽ hoàn tiền tương ứng với từng ghế theo giá vé.
+                                Select the seats you want to cancel. The system will refund the corresponding amount for each seat based on the ticket price.
                             </div>
 
                             @if (Model.Seats == null || !Model.Seats.Any())
                             {
-                                <div class="ticket-label">Bạn không còn ghế nào có thể hủy.</div>
+                            <div class="ticket-label">You no longer have any tickets that can be canceled.</div>
                             }
                             else
                             {
@@ -692,9 +692,9 @@
                                 </div>
 
                                 <div class="cancel-selected-box">
-                                    <div class="cancel-selected-title">Danh sách ghế sẽ hủy:</div>
+                                    <div class="cancel-selected-title">List of seats to be canceled:</div>
                                     <div id="selectedSeatsBox">
-                                        <span class="ticket-label text-muted">Chưa chọn ghế nào.</span>
+                                        <span class="ticket-label text-muted">None seats selected.</span>
                                     </div>
                                 </div>
 
@@ -703,7 +703,7 @@
                                         Đóng lại, không hủy nữa
                                     </button>
                                     <button class="btn btn-primary w-100" type="button" onclick="submitCancel()">
-                                        Xác nhận hủy những ghế đã chọn
+                                    Confirm cancellation of selected seats
                                     </button>
                                 </div>
                                 <!-- Overlay xác nhận hủy -->
@@ -714,13 +714,13 @@
                                             Xác nhận hủy vé
                                         </div>
                                         <div class="cancel-confirm-text" id="cancelConfirmText">
-                                            Bạn có chắc muốn hủy 0 ghế?
+                                                Are you sure you want to cancel 0 seats?
                                         </div>
                                         <div class="cancel-confirm-actions">
                                             <button type="button"
                                                     class="btn btn-outline-secondary"
                                                     onclick="hideCancelConfirm()">
-                                                Không, quay lại
+                                                No, go back
                                             </button>
                                             <button type="button"
                                                     class="btn btn-danger"
@@ -740,7 +740,7 @@
         </div>
     </div>
 
-    
+        
         @section Scripts {
     <script>
         // =======================
@@ -764,7 +764,7 @@
             var content = document.createElement("div");
             var title = document.createElement("div");
             title.className = "cancel-toast-content-title";
-            title.textContent = success ? "Hủy vé thành công" : "Hủy vé thất bại";
+            title.textContent = success ? "Cancel thành công" : "Cancel thất bại";
 
             var text = document.createElement("div");
             text.className = "cancel-toast-content-text";
@@ -828,7 +828,7 @@
             });
 
             if (selectedLabels.length === 0) {
-                box.innerHTML = '<span class="ticket-label text-muted">Chưa chọn ghế nào.</span>';
+                box.innerHTML = '<span class="ticket-label text-muted">NO SEATS SELECTED.</span>';
             } else {
                 selectedLabels.forEach(function (seat) {
                     var span = document.createElement("span");
@@ -865,13 +865,13 @@
             });
 
             if (pendingSeatIds.length === 0) {
-                showCancelToast(false, "Bạn chưa chọn ghế để hủy.");
+                showCancelToast(false, "You haven't chosen seats to cancel.");
                 return;
             }
 
             var txt = document.getElementById("cancelConfirmText");
             if (txt) {
-                txt.textContent = "Bạn có chắc muốn hủy " + pendingSeatIds.length + " ghế?";
+                txt.textContent = "Are you sure you want to cancel " + pendingSeatIds.length + " seats?";
             }
 
             var overlay = document.getElementById("cancelConfirmOverlay");
@@ -890,7 +890,7 @@
         function doSubmitCancel() {
             if (!pendingSeatIds || pendingSeatIds.length === 0) {
                 hideCancelConfirm();
-                showCancelToast(false, "Bạn chưa chọn ghế để hủy.");
+                showCancelToast(false, "You haven't selected any seat to cancel.");
                 return;
             }
 
@@ -912,7 +912,7 @@
             })
                 .then(function (response) { return response.json(); })
                 .then(function (res) {
-                    var msg = res.message || (res.success ? "Đã hủy vé thành công." : "Không thể hủy vé.");
+                    var msg = res.message || (res.success ? "Ticket cancellation successful." : "Cannot cancel the ticket.");
                     showCancelToast(res.success, msg);
 
                     if (res.success) {

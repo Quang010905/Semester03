@@ -30,6 +30,7 @@ namespace Semester03.Areas.Client.Controllers
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger;
         }
+
         private int? GetCurrentUserId()
         {
             if (User?.Identity == null || !User.Identity.IsAuthenticated) return null;
@@ -47,9 +48,10 @@ namespace Semester03.Areas.Client.Controllers
             if (int.TryParse(id, out var uid)) return uid;
             return null;
         }
+
         public async Task<IActionResult> Index(int page = 1)
         {
-            const int PageSize = 9; 
+            const int PageSize = 9;
 
             ViewData["Title"] = "Events";
             ViewData["MallName"] = ViewData["MallName"] ?? "ABCD Mall";
@@ -78,6 +80,7 @@ namespace Semester03.Areas.Client.Controllers
 
             return View(ev);
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddComment(int eventId, int rate, string text)
@@ -103,12 +106,13 @@ namespace Semester03.Areas.Client.Controllers
             {
                 return Json(new { success = false, message = "Please enter your comment content." });
             }
-            var evtExists = await _repo.EventExistsAsync(eventId);
 
+            var evtExists = await _repo.EventExistsAsync(eventId);
             if (!evtExists)
             {
                 return Json(new { success = false, message = "The event does not exist or has been discontinued." });
             }
+
             await _repo.AddCommentAsync(eventId, userId.Value, rate, text);
 
             return Json(new

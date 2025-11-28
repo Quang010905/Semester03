@@ -26,6 +26,7 @@
                 return noImageUrl;
             if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 return raw;
+
             var file = raw.Replace("\\", "/").Trim();
             var keyword = "Content/Uploads/Events";
             var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
@@ -34,6 +35,7 @@
                 var lastSlash = file.LastIndexOf('/');
                 if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
             }
+
             if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
                 file = file.Substring("wwwroot/".Length);
             if (file.StartsWith("~/"))
@@ -43,6 +45,7 @@
 
             if (string.IsNullOrWhiteSpace(file))
                 return noImageUrl;
+
             var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
             if (env == null)
             {

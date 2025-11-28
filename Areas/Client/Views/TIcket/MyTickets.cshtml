@@ -9,14 +9,15 @@
 
     var now = DateTime.Now;
 
+    // ===== GROUP MOVIE TICKETS BY STATUS (match backend enum/strings) =====
     var futureMovies = Model.MovieTickets.Where(t => t.Status == "UPCOMING").ToList();
     var pastMovies = Model.MovieTickets.Where(t => t.Status == "WATCHED").ToList();
     var cancelledMovies = Model.MovieTickets.Where(t => t.Status == "CANCELLED").ToList();
-        // ===== GROUP VÉ SỰ KIỆN THEO TRẠNG THÁI =====
+
+    // ===== GROUP EVENT TICKETS BY STATUS =====
     var upcomingEvents = Model.EventTickets.Where(e => e.Status == "Upcoming").ToList();
     var pastEvents = Model.EventTickets.Where(e => e.Status == "Past").ToList();
     var cancelledEvents = Model.EventTickets.Where(e => e.Status == "Cancelled").ToList();
-
 
     // ===== HÌNH PHIM (dựa theo Cinema) =====
     Func<string, string> ImgMovie = (raw) =>
@@ -335,25 +336,22 @@
 
     /* Responsive nhẹ cho mobile ----------------------------- */
     @@media (max-width: 575.98px) {
-        .big-tab-bar
+        .big-tab-bar {
+            flex-direction: column;
+        }
 
-    {
-        flex-direction: column;
-    }
+        .subtab-bar {
+            flex-wrap: wrap;
+        }
 
-    .subtab-bar {
-        flex-wrap: wrap;
-    }
-
-    .ticket-img {
-        height: 190px;
-    }
-
+        .ticket-img {
+            height: 190px;
+        }
     }
 </style>
 
-
 <script>
+    // Big tabs: movie vs event
     function showBigTab(tab) {
         movieTab.style.display = tab === 'movie' ? 'block' : 'none';
         eventTab.style.display = tab === 'event' ? 'block' : 'none';
@@ -361,24 +359,7 @@
         btnBigEvent.classList.toggle("active", tab === 'event');
     }
 
-    function showMovieSubTab(sub) {
-        movieFuture.style.display    = sub === 'future'    ? 'block' : 'none';
-        moviePast.style.display      = sub === 'past'      ? 'block' : 'none';
-        movieCancelled.style.display = sub === 'cancelled' ? 'block' : 'none';
-
-        btnMovieFuture.classList.toggle("active", sub === 'future');
-        btnMoviePast.classList.toggle("active", sub === 'past');
-        btnMovieCancelled.classList.toggle("active", sub === 'cancelled');
-    }
-</script>
-<script>
-    function showBigTab(tab) {
-        movieTab.style.display = tab === 'movie' ? 'block' : 'none';
-        eventTab.style.display = tab === 'event' ? 'block' : 'none';
-        btnBigMovie.classList.toggle("active", tab === 'movie');
-        btnBigEvent.classList.toggle("active", tab === 'event');
-    }
-
+    // Subtabs for movie tickets
     function showMovieSubTab(sub) {
         movieFuture.style.display    = sub === 'future'    ? 'block' : 'none';
         moviePast.style.display      = sub === 'past'      ? 'block' : 'none';
@@ -389,7 +370,7 @@
         btnMovieCancelled.classList.toggle("active", sub === 'cancelled');
     }
 
-    // 🔹 TAB CON CHO VÉ SỰ KIỆN
+    // Subtabs for event tickets
     function showEventSubTab(sub) {
         eventUpcoming.style.display   = sub === 'upcoming'  ? 'block' : 'none';
         eventPast.style.display       = sub === 'past'      ? 'block' : 'none';
@@ -401,19 +382,18 @@
     }
 </script>
 
-
 <div class="container my-4">
 
-    <h2 class="fw-bold mb-4">🎟 Vé của tôi</h2>
+    <h2 class="fw-bold mb-4">🎟 My Tickets</h2>
 
     <!-- TAB LỚN -->
     <div class="big-tab-bar">
-        <button id="btnBigMovie" class="big-tab-btn active" onclick="showBigTab('movie')">🎬 Movie tickets</button>
-        <button id="btnBigEvent" class="big-tab-btn" onclick="showBigTab('event')">🎉 Event tickets</button>
+        <button id="btnBigMovie" class="big-tab-btn active" onclick="showBigTab('movie')">🎬 Movie Tickets</button>
+        <button id="btnBigEvent" class="big-tab-btn" onclick="showBigTab('event')">🎉 Event Tickets</button>
     </div>
 
     <!-- ================================================= -->
-    <!--              TAB 1 — PHIM -->
+    <!--              TAB 1 — MOVIE -->
     <!-- ================================================= -->
     <div id="movieTab">
 
@@ -423,9 +403,7 @@
             <button id="btnMovieCancelled" class="subtab-btn" onclick="showMovieSubTab('cancelled')">Cancelled</button>
         </div>
 
-        <!-- ========================= -->
-        <!-- ⭐ SẮP XEM -->
-        <!-- ========================= -->
+        <!-- ⭐ UPCOMING MOVIES -->
         <div id="movieFuture">
             @if (!futureMovies.Any())
             {
@@ -451,16 +429,15 @@
 
                                     <div class="ticket-time">@t.Showtime.ToString("dd/MM/yyyy")</div>
                                     <div class="ticket-time">@t.Showtime.ToString("HH:mm")</div>
-                                    <!-- 👉 THÊM LẠI SỐ LƯỢNG VÉ -->
                                     <div class="ticket-time">Number of tickets: @t.Quantity</div>
 
-                                    <!-- Xem chi tiết -->
+                                    <!-- View details -->
                                     <a href="@Url.Action("Index", "TicketDetail", new { area = "Client", id = t.TicketId })"
                                        class="btn btn-primary btn-sm w-100 mt-2">
                                         View details
                                     </a>
 
-                                    <!-- Hủy vé: chỉ dẫn tới trang chi tiết -->
+                                    <!-- Cancel -> go to detail page -->
                                     <a href="@Url.Action("Index", "TicketDetail", new { area = "Client", id = t.TicketId })"
                                        class="btn btn-danger btn-sm w-100 mt-2">
                                         Cancel ticket
@@ -475,13 +452,11 @@
             }
         </div>
 
-        <!-- ========================= -->
-        <!-- ⭐ ĐÃ XEM -->
-        <!-- ========================= -->
+        <!-- ⭐ WATCHED MOVIES -->
         <div id="moviePast" style="display:none;">
             @if (!pastMovies.Any())
             {
-                <div class="empty-box">You have not seen any movies yet.</div>
+                <div class="empty-box">You have not watched any movies yet.</div>
             }
             else
             {
@@ -503,7 +478,6 @@
 
                                     <div class="ticket-time">@t.Showtime.ToString("dd/MM/yyyy")</div>
                                     <div class="ticket-time">@t.Showtime.ToString("HH:mm")</div>
-                                    <!-- 👉 THÊM LẠI SỐ LƯỢNG VÉ -->
                                     <div class="ticket-time">Number of tickets: @t.Quantity</div>
 
                                     <a href="@Url.Action("Index", "TicketDetail", new { area = "Client", id = t.TicketId })"
@@ -520,13 +494,11 @@
             }
         </div>
 
-        <!-- ========================= -->
-        <!-- ⭐ ĐÃ HỦY -->
-        <!-- ========================= -->
+        <!-- ⭐ CANCELLED MOVIES -->
         <div id="movieCancelled" style="display:none;">
             @if (!cancelledMovies.Any())
             {
-                <div class="empty-box">You have not canceled any tickets yet..</div>
+                <div class="empty-box">You have not canceled any tickets yet.</div>
             }
             else
             {
@@ -548,7 +520,6 @@
 
                                     <div class="ticket-time">@t.Showtime.ToString("dd/MM/yyyy")</div>
                                     <div class="ticket-time">@t.Showtime.ToString("HH:mm")</div>
-                                    <!-- 👉 THÊM LẠI SỐ LƯỢNG VÉ -->
                                     <div class="ticket-time">Number of tickets: @t.Quantity</div>
 
                                     <a href="@Url.Action("Index", "TicketDetail", new { area = "Client", id = t.TicketId })"
@@ -568,41 +539,38 @@
     </div>
 
     <!-- ================================================= -->
-    <!--              TAB 2 — SỰ KIỆN -->
-    <!-- ================================================= -->
-    <!-- ================================================= -->
-    <!--              TAB 2 — SỰ KIỆN -->
+    <!--              TAB 2 — EVENTS -->
     <!-- ================================================= -->
     <div id="eventTab" style="display:none;">
 
         @if (!Model.EventTickets.Any())
         {
-            <div class="empty-box">You have not booked any event tickets yet..</div>
+            <div class="empty-box">You have not booked any event tickets yet.</div>
         }
         else
         {
-            <!-- SUBTAB cho sự kiện -->
+            <!-- SUBTAB for events -->
             <div class="subtab-bar mb-3">
                 <button id="btnEventUpcoming"
                         class="subtab-btn active"
                         onclick="showEventSubTab('upcoming')">
-                    Coming soon
+                    Upcoming
                 </button>
 
                 <button id="btnEventPast"
                         class="subtab-btn"
                         onclick="showEventSubTab('past')">
-                    took place
+                    Past events
                 </button>
 
                 <button id="btnEventCancelled"
                         class="subtab-btn"
                         onclick="showEventSubTab('cancelled')">
-                    Canceled
+                    Cancelled
                 </button>
             </div>
 
-            <!-- 🔹 SẮP DIỄN RA -->
+            <!-- 🔹 UPCOMING EVENTS -->
             <div id="eventUpcoming">
                 @if (!upcomingEvents.Any())
                 {
@@ -629,7 +597,7 @@
 
                                         <a href="@Url.Action("Details", "EventBooking", new { area = "Client", id = e.BookingId })"
                                            class="btn btn-primary btn-sm w-100 mt-2">
-                                            See details
+                                            View details
                                         </a>
                                     </div>
                                 </div>
@@ -639,11 +607,11 @@
                 }
             </div>
 
-            <!-- 🔹 ĐÃ DIỄN RA -->
+            <!-- 🔹 PAST EVENTS -->
             <div id="eventPast" style="display:none;">
                 @if (!pastEvents.Any())
                 {
-                    <div class="empty-box">There are no events you have attended yet..</div>
+                    <div class="empty-box">You have not attended any events yet.</div>
                 }
                 else
                 {
@@ -676,11 +644,11 @@
                 }
             </div>
 
-            <!-- 🔹 ĐÃ HỦY -->
+            <!-- 🔹 CANCELLED EVENTS -->
             <div id="eventCancelled" style="display:none;">
                 @if (!cancelledEvents.Any())
                 {
-                    <div class="empty-box">You have not canceled any event tickets yet..</div>
+                    <div class="empty-box">You have not canceled any event tickets yet.</div>
                 }
                 else
                 {
@@ -715,6 +683,4 @@
         }
     </div>
 
-
 </div>
-    

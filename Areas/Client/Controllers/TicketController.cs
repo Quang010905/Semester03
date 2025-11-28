@@ -57,9 +57,9 @@ namespace Semester03.Areas.Client.Controllers
                     var movie = showtime.ShowtimeMovie;
 
                     string status =
-                        t.TicketStatus == "cancelled" ? "Đã hủy"
-                        : showtime.ShowtimeStart <= now ? "Đã xem"
-                        : "Sắp chiếu";
+                        t.TicketStatus == "cancelled" ? "Canceled"
+                        : showtime.ShowtimeStart <= now ? "Seen"
+                        : "Coming up";
 
                     return new
                     {
@@ -103,9 +103,9 @@ namespace Semester03.Areas.Client.Controllers
                 var ev = e.EventBookingEvent;
 
                 string status =
-                    e.EventBookingStatus == 0 ? "Đã hủy"
-                    : ev.EventEnd <= now ? "Đã diễn ra"
-                    : "Sắp diễn ra";
+                    e.EventBookingStatus == 0 ? "Cancelled"
+                    : ev.EventEnd <= now ? "Occurred"
+                    : "Coming up";
 
                 return new MyEventTicketVm
                 {
@@ -139,7 +139,7 @@ namespace Semester03.Areas.Client.Controllers
 
             if (ticket == null || ticket.TicketBuyerUserId != userId)
             {
-                TempData["Error"] = "Không tìm thấy vé hoặc vé không thuộc về bạn.";
+                TempData["Error"] = "Ticket not found or ticket does not belong to you.";
                 return RedirectToAction("MyTickets");
             }
 
@@ -147,7 +147,7 @@ namespace Semester03.Areas.Client.Controllers
 
             if (showtime - DateTime.Now < TimeSpan.FromHours(24))
             {
-                TempData["Error"] = "Bạn chỉ được hủy vé trước 24 giờ.";
+                TempData["Error"] = "You can only cancel the ticket at least 24 hours in advance.";
                 return RedirectToAction("MyTickets");
             }
 
@@ -175,7 +175,7 @@ namespace Semester03.Areas.Client.Controllers
             }
 
             TempData[ok ? "Success" : "Error"] =
-                ok ? "Hủy vé thành công!" : "Hủy vé thất bại!";
+                ok ? "Cancel thành công!" : "Cancel thất bại!";
 
             return RedirectToAction("Index", "TicketDetail", new { area = "Client", id = ticket.TicketId });
         }
