@@ -229,8 +229,23 @@ namespace Semester03.Models.Repositories
         {
             return await _db.TblTenantPositions
                 .Include(p => p.TenantPositionAssignedTenant)
+                .ThenInclude(t => t.TenantUser)
                 .Include(p => p.TenantPositionAssignedCinema)
                 .FirstOrDefaultAsync(p => p.TenantPositionId == id);
+        }
+
+        public async Task<List<TblTenantPosition>> GetExpiringLeasesWithContactAsync(int daysThreshold = 30)
+        {
+            var today = DateTime.Now;
+            var thresholdDate = today.AddDays(daysThreshold);
+
+            return await _db.TblTenantPositions
+                .Include(p => p.TenantPositionAssignedTenant)
+                    .ThenInclude(t => t.TenantUser) // Quan trọng: Include TenantUser để lấy Email
+                .Where(p => p.PositionLeaseEnd.HasValue &&
+                            p.PositionLeaseEnd.Value > today &&
+                            p.PositionLeaseEnd.Value <= thresholdDate)
+                .ToListAsync();
         }
     }
 }

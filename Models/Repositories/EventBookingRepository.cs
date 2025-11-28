@@ -104,7 +104,7 @@ namespace Semester03.Models.Repositories
                 if (booking.EventBookingDate == null ||
                     booking.EventBookingDate == default)
                 {
-                    booking.EventBookingDate = DateOnly.FromDateTime(DateTime.UtcNow);
+                    booking.EventBookingDate = DateOnly.FromDateTime(DateTime.Now);
                 }
             }
             catch { }
@@ -183,11 +183,11 @@ namespace Semester03.Models.Repositories
             // ====== Date ======
             try
             {
-                entity.EventBookingDate = DateOnly.FromDateTime(DateTime.UtcNow);
+                entity.EventBookingDate = DateOnly.FromDateTime(DateTime.Now);
             }
             catch
             {
-                // nếu cột kiểu DateTime, bạn có thể đổi sang DateTime.UtcNow.Date
+                // nếu cột kiểu DateTime, bạn có thể đổi sang DateTime.Now.Date
             }
 
             // Không còn OrderGroup (GUID) vì đã bỏ cột EventBooking_OrderGroup
