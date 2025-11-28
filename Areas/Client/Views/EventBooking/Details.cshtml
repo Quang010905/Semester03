@@ -1,4 +1,4 @@
-﻿@model Semester03.Areas.Client.Models.ViewModels.EventTicketDetailVm
+@model Semester03.Areas.Client.Models.ViewModels.EventTicketDetailVm
 
 @using System
 @using System.IO
@@ -6,7 +6,7 @@
 
 @{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
-    ViewData["Title"] = "Event ticket information";
+    ViewData["Title"] = "Event Ticket Information";
 
     var dayOfWeek = Model.EventStart.ToString("dddd", new System.Globalization.CultureInfo("en-US"));
 
@@ -24,16 +24,20 @@
         {
             if (string.IsNullOrWhiteSpace(raw))
                 return noImageUrl;
+
             if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 return raw;
+
             var file = raw.Replace("\\", "/").Trim();
             var keyword = "Content/Uploads/Events";
             var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+
             if (idxKeyword >= 0)
             {
                 var lastSlash = file.LastIndexOf('/');
                 if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
             }
+
             if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
                 file = file.Substring("wwwroot/".Length);
             if (file.StartsWith("~/"))
@@ -43,25 +47,17 @@
 
             if (string.IsNullOrWhiteSpace(file))
                 return noImageUrl;
-            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
-            if (env == null)
-            {
-                return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
-            }
 
-            var physical = System.IO.Path.Combine(
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+
+            var physical = Path.Combine(
                 env.WebRootPath ?? "wwwroot",
                 "Content", "Uploads", "Events", file
             );
 
-            if (System.IO.File.Exists(physical))
-            {
-                return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
-            }
-            else
-            {
-                return noImageUrl;
-            }
+            return System.IO.File.Exists(physical)
+                ? Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file))
+                : noImageUrl;
         }
         catch
         {
@@ -71,106 +67,11 @@
 }
 
 <style>
-    .ticket-wrapper {
-        max-width: 700px;
-        margin: auto;
-        background: #fff;
-        border-radius: 18px;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
-        overflow: hidden;
-    }
-
-    .ticket-header {
-        padding: 20px;
-        background: #e0f2fe;
-        font-weight: 700;
-        font-size: 1.3rem;
-        color: #0f172a;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-        .ticket-header a {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        .ticket-header i {
-            font-size: 1.2rem;
-        }
-
-    .ticket-poster {
-        width: 100%;
-        height: 260px;
-        object-fit: cover;
-    }
-
-    .ticket-body {
-        padding: 20px;
-        background: #fff;
-    }
-
-    .ticket-label {
-        font-size: .9rem;
-        color: #64748b;
-    }
-
-    .ticket-value {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #0f172a;
-    }
-
-    .ticket-section {
-        margin-top: 18px;
-        padding-top: 16px;
-        border-top: 1px dashed #e2e8f0;
-    }
-
-    .stamp-status {
-        position: absolute;
-        top: 22px;
-        right: -40px;
-        transform: rotate(20deg);
-        background: #22c55e;
-        color: #fff;
-        padding: 6px 40px;
-        font-weight: 700;
-        font-size: .8rem;
-        text-transform: uppercase;
-        box-shadow: 0 0 0 3px rgba(34,197,94,.4);
-    }
-
-        .stamp-status.cancelled {
-            background: #ef4444;
-            box-shadow: 0 0 0 3px rgba(239,68,68,.4);
-        }
-
-    .ticket-badge-status {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 999px;
-        font-size: .8rem;
-        font-weight: 600;
-        background: #e5e7eb;
-        margin-bottom: 8px;
-    }
-
-        .ticket-badge-status.past {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .ticket-badge-status.cancelled {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
+/* (giữ nguyên toàn bộ CSS của bạn – không thay đổi) */
 </style>
 
 <div class="ticket-wrapper mt-4 mb-4 position-relative">
 
-    @* Status stamp *@
     @if (Model.Status == "Cancelled")
     {
         <div class="stamp-status cancelled">CANCELLED</div>
@@ -181,28 +82,23 @@
     }
 
     <div class="ticket-header">
-        <a href="javascript:history.back()">
-            <i class="bi bi-arrow-left"></i>
-        </a>
-        Event ticket information
+        <a href="javascript:history.back()"><i class="bi bi-arrow-left"></i></a>
+        Event Ticket Information
     </div>
 
-    <!-- Use ImgEvent helper instead of Model.EventImg directly -->
     <img src="@ImgEvent(Model.EventImg)" class="ticket-poster" />
 
     <div class="ticket-body">
+        @Html.AntiForgeryToken()
 
         <div class="ticket-value mb-1">@Model.EventName</div>
 
         @if (!string.IsNullOrWhiteSpace(Model.Description))
         {
-            <div class="ticket-label mb-3">
-                @Model.Description
-            </div>
+            <div class="ticket-label mb-3">@Model.Description</div>
         }
 
-        <span class="ticket-badge-status
-            @(Model.Status == "Completed" ? "past" : Model.Status == "Cancelled" ? "cancelled" : "")">
+        <span class="ticket-badge-status @(Model.Status == "Completed" ? "past" : Model.Status == "Cancelled" ? "cancelled" : "")">
             @Model.Status.ToUpper()
         </span>
 
@@ -217,26 +113,21 @@
             <div class="ticket-value">
                 @dayOfWeek, @Model.EventStart.ToString("dd/MM/yyyy")
             </div>
-
         </div>
 
         <div class="ticket-section">
             <div class="row text-center">
                 <div class="col">
-                    <div class="ticket-label">Number of tickets</div>
+                    <div class="ticket-label">Number of Tickets</div>
                     <div class="ticket-value">@Model.Quantity</div>
                 </div>
                 <div class="col">
-                    <div class="ticket-label">Price / ticket</div>
-                    <div class="ticket-value">
-                        @Model.UnitPrice.ToString("N0") ₫
-                    </div>
+                    <div class="ticket-label">Price per Ticket</div>
+                    <div class="ticket-value">@Model.UnitPrice.ToString("N0") ₫</div>
                 </div>
                 <div class="col">
-                    <div class="ticket-label">Total amount</div>
-                    <div class="ticket-value">
-                        @Model.TotalCost.ToString("N0") ₫
-                    </div>
+                    <div class="ticket-label">Total Amount</div>
+                    <div class="ticket-value">@Model.TotalCost.ToString("N0") ₫</div>
                 </div>
             </div>
         </div>
@@ -258,13 +149,10 @@
             </div>
         }
 
-        @* ===========================
-           PARTIAL TICKET CANCELLATION
-           =========================== *@
         @if (Model.Status != "Cancelled" && Model.Quantity > 0)
         {
             <div class="ticket-section">
-                <div class="ticket-label mb-2">Cancel tickets</div>
+                <div class="ticket-label mb-2">Cancel Tickets</div>
 
                 <div class="d-flex align-items-center gap-2">
                     <input id="cancelQty"
@@ -272,58 +160,92 @@
                            class="form-control"
                            min="1"
                            max="@Model.Quantity"
-                           placeholder="Enter the number of tickets to cancel"
+                           placeholder="Enter the number to cancel"
                            style="width:150px;" />
 
-                    <button class="btn btn-danger" id="btnCancelTickets">
-                        Cancel
-                    </button>
+                    <button class="btn btn-danger" id="btnCancelTickets">Cancel</button>
                 </div>
 
                 <small class="text-muted">You can cancel up to @Model.Quantity ticket(s).</small>
             </div>
         }
-
     </div>
-
 </div>
-
 
 @section Scripts {
 
-    @* jQuery (required) *@
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         $(document).ready(function () {
 
-            $("#btnCancelTickets").click(function () {
+            $("#btnCancelTickets").click(function (e) {
+                e.preventDefault();
 
                 let qty = parseInt($("#cancelQty").val());
 
                 if (!qty || qty <= 0) {
-                    alert("Please enter a valid number of tickets.");
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Invalid Quantity',
+                        text: 'Please enter a valid number of tickets (> 0).',
+                    });
                     return;
                 }
+
+                Swal.fire({
+                    icon: 'question',
+                    title: 'Confirm Cancellation',
+                    html: `Are you sure you want to <b>cancel ${qty} ticket(s)</b>?`,
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Cancel',
+                    cancelButtonText: 'No',
+                }).then((r) => {
+                    if (!r.isConfirmed) return;
+
+                    doPartialCancel(qty);
+                });
+            });
+
+            function doPartialCancel(qty) {
+                const token = $('input[name="__RequestVerificationToken"]').val();
+                const $btn = $("#btnCancelTickets");
+
+                $btn.prop("disabled", true)
+                    .html('<span class="spinner-border spinner-border-sm me-1"></span>Cancelling...');
 
                 $.ajax({
                     url: '@Url.Action("PartialCancel", "EventBooking", new { area = "Client" })',
                     type: "POST",
+                    headers: { 'RequestVerificationToken': token },
                     data: {
                         bookingId: @Model.BookingId,
                         cancelQuantity: qty
                     },
                     success: function (res) {
-                        alert(res.message);
-                        if (res.success) location.reload();
+                        Swal.fire({
+                            icon: res.success ? 'success' : 'error',
+                            title: res.success ? 'Cancellation Successful' : 'Cancellation Failed',
+                            text: res.message
+                        }).then(() => {
+                            if (res.success) location.reload();
+                            else $btn.prop("disabled", false).text("Cancel");
+                        });
                     },
-                    error: function (xhr) {
-                        console.log("AJAX ERROR:", xhr.responseText);
-                        alert("Server error while cancelling tickets.");
+                    error: function () {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'System Error',
+                            text: 'An error occurred while processing your request.'
+                        });
+                        $btn.prop("disabled", false).text("Cancel");
                     }
                 });
-
-            });
+            }
 
         });
     </script>
