@@ -9,7 +9,7 @@
 
 @if (promos.Any())
 {
-    <ul class="list-unstyled small mb-0">
+    <ul class="list-unstyled small mb-0 mall-promo-list">
         @foreach (var p in promos)
         {
             <li class="mb-2">
@@ -30,16 +30,22 @@ else
 }
 
 <style>
+    .mall-promo-list {
+        padding-left: 0;
+    }
+
     .promo-item-link {
         position: relative;
         padding: .25rem .35rem;
-        border-radius: .5rem;
-        transition: background 0.2s ease, transform 0.15s ease;
+        border-radius: .8rem;
+        transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+        color: #111827;
     }
 
         .promo-item-link:hover {
             background: rgba(255, 148, 114, 0.09);
             transform: translateX(3px);
+            box-shadow: 0 10px 22px rgba(248, 113, 113, 0.18);
         }
 
     .promo-dot {

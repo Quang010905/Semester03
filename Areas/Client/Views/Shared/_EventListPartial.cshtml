@@ -33,13 +33,13 @@
                     .ToList();
 }
 
-<div class="card shadow-sm rounded-4">
-    <ul class="list-group list-group-flush">
+<div class="mall-upcoming-card">
+    <ul class="list-group list-group-flush mall-upcoming-list">
 
         @if (!items.Any())
         {
-            <li class="list-group-item text-center text-muted py-4">
-                Hiện chưa có sự kiện sắp diễn ra.
+            <li class="list-group-item text-center text-muted py-4 bg-transparent border-0">
+                No upcoming events at the moment.
             </li>
         }
         else
@@ -47,39 +47,101 @@
             @foreach (var e in items)
             {
                 var start = e.StartDate?.ToString("dd MMM yyyy HH:mm") ?? "--";
+                var title = string.IsNullOrWhiteSpace(e.Title) ? "Event" : e.Title;
 
-                <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })"
-                   class="list-group-item list-group-item-action d-flex gap-3 py-3">
-
-                    <img src="@Img(e.ImageUrl)" class="rounded-3"
-                         style="width:84px;height:84px;object-fit:cover;box-shadow:0 8px 18px rgba(15,23,42,0.25);" />
-
-                    <div class="w-100">
-                        <div class="d-flex justify-content-between">
-                            <strong class="text-truncate">
-                                @e.Title
-                            </strong>
-                            <small class="text-muted">@start</small>
+                <li class="list-group-item mall-upcoming-item border-0">
+                    <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })"
+                       class="d-flex gap-3 text-decoration-none align-items-center">
+                        <div class="mall-upcoming-thumb-wrapper">
+                            <img src="@Img(e.ImageUrl)" class="mall-upcoming-thumb" alt="@title" />
                         </div>
 
-                        @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
-                        {
-                            <div class="text-muted small text-truncate mt-1">
-                                @e.ShortDescription
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <strong class="mall-upcoming-title text-truncate" title="@title">
+                                    @title
+                                </strong>
+                                <small class="mall-upcoming-date text-nowrap ms-2">
+                                    @start
+                                </small>
                             </div>
-                        }
-                    </div>
 
-                </a>
+                            @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
+                            {
+                                <div class="mall-upcoming-desc text-muted small mt-1" title="@e.ShortDescription">
+                                    @e.ShortDescription
+                                </div>
+                            }
+                        </div>
+                    </a>
+                </li>
             }
         }
     </ul>
 </div>
 
 <style>
-    .list-group-item-action:hover {
-        background: #f9fafb !important;
-        transform: translateY(-1px);
-        transition: .15s;
+    .mall-upcoming-card {
+        border-radius: 1.1rem;
+        background: radial-gradient(circle at 0 0, #eff6ff, #ffffff);
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+        overflow: hidden;
+    }
+
+    .mall-upcoming-list {
+        border-radius: inherit;
+    }
+
+    .mall-upcoming-item {
+        padding: .65rem .8rem;
+        background-color: transparent;
+        transition: background 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease;
+    }
+
+        .mall-upcoming-item + .mall-upcoming-item {
+            border-top: 1px dashed rgba(203, 213, 225, 0.9) !important;
+        }
+
+        .mall-upcoming-item > a {
+            color: inherit;
+        }
+
+        .mall-upcoming-item:hover {
+            background: #f9fafb;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.12);
+        }
+
+    .mall-upcoming-thumb-wrapper {
+        flex-shrink: 0;
+    }
+
+    .mall-upcoming-thumb {
+        border-radius: .9rem;
+        width: 86px;
+        height: 86px;
+        object-fit: cover;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.35);
+    }
+
+    .mall-upcoming-title {
+        font-size: .92rem;
+        font-weight: 600;
+        color: #0f172a;
+        max-width: 180px;
+    }
+
+    .mall-upcoming-date {
+        font-size: .75rem;
+        color: #6b7280;
+    }
+
+    .mall-upcoming-desc {
+        font-size: .8rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 </style>

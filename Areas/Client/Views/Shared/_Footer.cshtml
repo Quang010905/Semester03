@@ -2,47 +2,49 @@
     var mallName = ViewData["MallName"] ?? "ABCDMall";
 }
 
-<footer class="pt-5 pb-4 text-muted mall-footer">
-    <div class="row gy-4">
-        <div class="col-md-4">
-            <h5 class="fw-bold text-white">@mallName</h5>
-            <p class="small mb-1 text-footer-light">
-                Address:
-                @((ViewData["MallAddress"] ?? "123 Le Loi, Ho Chi Minh City").ToString())
-            </p>
-            <p class="small mb-0 text-footer-light">
-                Phone:
-                @((ViewData["MallPhone"] ?? "0123 456 789").ToString())
-            </p>
-        </div>
+<footer class="mall-footer pt-5 pb-4 text-muted">
+    <div class="container">
+        <div class="row gy-4">
+            <div class="col-md-4">
+                <h5 class="fw-bold text-white mb-2">@mallName</h5>
+                <p class="small mb-1 text-footer-light">
+                    Address:
+                    @((ViewData["MallAddress"] ?? "123 Le Loi, Ho Chi Minh City").ToString())
+                </p>
+                <p class="small mb-0 text-footer-light">
+                    Phone:
+                    @((ViewData["MallPhone"] ?? "0123 456 789").ToString())
+                </p>
+            </div>
 
-        <div class="col-md-2">
-            <h6 class="text-uppercase text-footer-heading small fw-bold">About</h6>
-            <ul class="list-unstyled small mb-0">
-                <li><a href="@Url.Action("About","Home")" class="footer-link">About us</a></li>
-                <li><a href="@Url.Action("Contact","Home")" class="footer-link">Contact</a></li>
-            </ul>
-        </div>
+            <div class="col-md-2">
+                <h6 class="text-uppercase text-footer-heading small fw-bold">About</h6>
+                <ul class="list-unstyled small mb-0">
+                    <li><a href="@Url.Action("About", "Home")" class="footer-link">About us</a></li>
+                    <li><a href="@Url.Action("Contact", "Home")" class="footer-link">Contact</a></li>
+                </ul>
+            </div>
 
-        <div class="col-md-3">
-            <h6 class="text-uppercase text-footer-heading small fw-bold">Support</h6>
-            <ul class="list-unstyled small mb-0">
-                <li><a href="@Url.Action("Help","Home")" class="footer-link">FAQ & Help</a></li>
-                <li><a href="@Url.Action("Parking","Mall")" class="footer-link">Parking information</a></li>
-            </ul>
-        </div>
+            <div class="col-md-3">
+                <h6 class="text-uppercase text-footer-heading small fw-bold">Support</h6>
+                <ul class="list-unstyled small mb-0">
+                    <li><a href="@Url.Action("Help", "Home")" class="footer-link">FAQ & Help</a></li>
+                    <li><a href="@Url.Action("Parking", "Mall")" class="footer-link">Parking information</a></li>
+                </ul>
+            </div>
 
-        <div class="col-md-3 text-md-end">
-            <small class="d-block text-footer-light">
-                © @(DateTime.Now.Year) @mallName
-            </small>
-            <small class="d-block text-footer-light">
-                Crafted with <span class="text-heart">♥</span> for your mall experience.
-            </small>
-            <div class="mt-2">
-                <a href="#" class="footer-social-icon"><i class="bi bi-facebook"></i></a>
-                <a href="#" class="footer-social-icon"><i class="bi bi-instagram"></i></a>
-                <a href="#" class="footer-social-icon"><i class="bi bi-tiktok"></i></a>
+            <div class="col-md-3 text-md-end">
+                <small class="d-block text-footer-light">
+                    © @(DateTime.Now.Year) @mallName
+                </small>
+                <small class="d-block text-footer-light">
+                    Crafted with <span class="text-heart">♥</span> for your mall experience.
+                </small>
+                <div class="mt-2">
+                    <a href="#" class="footer-social-icon"><i class="bi bi-facebook"></i></a>
+                    <a href="#" class="footer-social-icon"><i class="bi bi-instagram"></i></a>
+                    <a href="#" class="footer-social-icon"><i class="bi bi-tiktok"></i></a>
+                </div>
             </div>
         </div>
     </div>
@@ -50,8 +52,8 @@
 
 <style>
     .mall-footer {
-        background: radial-gradient(circle at top, #141633 0, #050816 55%, #020617 100%);
-        border-top: 1px solid rgba(148, 163, 184, 0.3);
+        background: radial-gradient(circle at top, #111827 0, #020617 65%, #020617 100%);
+        border-top: 1px solid rgba(148, 163, 184, 0.35);
     }
 
     .text-footer-light {
@@ -107,7 +109,7 @@
         width: 32px;
         height: 32px;
         border-radius: 999px;
-        background: rgba(15, 23, 42, 0.8);
+        background: rgba(15, 23, 42, 0.85);
         color: #e5e7eb;
         margin-left: .25rem;
         margin-right: .25rem;

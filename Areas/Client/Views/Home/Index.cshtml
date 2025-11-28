@@ -64,8 +64,6 @@
         {
             return noImageUrl;
         }
-
-
     };
 
     // ========== HÀM ẢNH PROMOTION ==========
@@ -190,27 +188,98 @@
 
 @section Styles {
     <style>
+        :root {
+            --evt-primary: #2563eb;
+            --evt-secondary: #4f46e5;
+            --promo-primary: #f97316;
+            --promo-secondary: #ef4444;
+            --feat-primary: #ec4899;
+            --feat-secondary: #8b5cf6;
+        }
+
+        body {
+            background: radial-gradient(circle at top, #f9fafb 0, #e5e7eb 35%, #f9fafb 80%);
+        }
+
+        .events-home-wrapper {
+            position: relative;
+        }
+
+            .events-home-wrapper::before {
+                content: "";
+                position: absolute;
+                inset: -120px 10% auto;
+                height: 220px;
+                background: radial-gradient(circle at 10% 0, rgba(59, 130, 246, .12), transparent 60%), radial-gradient(circle at 90% 0, rgba(236, 72, 153, .12), transparent 60%);
+                opacity: .7;
+                z-index: -1;
+            }
+
         /* ===== KHUNG SECTION + HEADER ===== */
         .home-section {
             position: relative;
             margin-bottom: 3.5rem;
-            padding-bottom: 2.5rem;
         }
 
-            /* 3 line mảnh chia từng section */
-            .home-section::after {
-                content: "";
-                position: absolute;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                height: 3px;
-                background: linear-gradient(90deg, transparent, rgba(148,163,184,.5), transparent), linear-gradient(90deg, transparent, rgba(209,213,219,.7), transparent), linear-gradient(90deg, transparent, rgba(148,163,184,.5), transparent);
-                background-repeat: no-repeat;
-                background-size: 100% 1px, 90% 1px, 70% 1px;
-                background-position: 0 0, 5% 1px, 15% 2px;
-                opacity: .85;
+        .home-section-inner {
+            position: relative;
+            padding: 2.1rem 1.8rem 2.4rem;
+            border-radius: 1.8rem;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 20px 55px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(148, 163, 184, 0.18);
+            overflow: hidden;
+        }
+
+        /* glow gradient theo từng section */
+        .section-events .home-section-inner::before,
+        .section-promos .home-section-inner::before,
+        .section-featured .home-section-inner::before {
+            content: "";
+            position: absolute;
+            inset: -40%;
+            opacity: .9;
+            mix-blend-mode: screen;
+            pointer-events: none;
+            z-index: -1;
+            animation: sectionGlow 22s linear infinite alternate;
+        }
+
+        .section-events .home-section-inner::before {
+            background: radial-gradient(circle at 0 0, rgba(59, 130, 246, .25), transparent 55%), radial-gradient(circle at 100% 100%, rgba(129, 140, 248, .22), transparent 60%);
+        }
+
+        .section-promos .home-section-inner::before {
+            background: radial-gradient(circle at 10% 0, rgba(249, 115, 22, .25), transparent 55%), radial-gradient(circle at 100% 100%, rgba(239, 68, 68, .25), transparent 60%);
+        }
+
+        .section-featured .home-section-inner::before {
+            background: radial-gradient(circle at 0 0, rgba(236, 72, 153, .25), transparent 55%), radial-gradient(circle at 100% 100%, rgba(129, 140, 248, .25), transparent 60%);
+        }
+
+        @@keyframes sectionGlow {
+            0% {
+                transform: translate3d(0, 0, 0) scale(1);
             }
+
+            100% {
+                transform: translate3d(3%, -3%, 0) scale(1.05);
+            }
+        }
+
+        /* line chia section ở dưới cùng */
+        .home-section::after {
+            content: "";
+            position: absolute;
+            left: 4%;
+            right: 4%;
+            bottom: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(148, 163, 184, .58), transparent), linear-gradient(90deg, transparent, rgba(209, 213, 219, .8), transparent);
+            background-repeat: no-repeat;
+            background-size: 100% 1px, 70% 1px;
+            background-position: 0 0, 15% 1px;
+            opacity: .9;
+        }
 
         .home-section-header {
             text-align: center;
@@ -231,102 +300,419 @@
             font-size: 2rem;
             text-transform: uppercase;
             letter-spacing: .08em;
-            background: linear-gradient(90deg, #0d6efd, #4f46e5);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
             margin-bottom: .25rem;
+            display: inline-block;
+            position: relative;
         }
+
+            .home-section-title::after {
+                content: "";
+                position: absolute;
+                left: 50%;
+                transform: translateX(-50%);
+                bottom: -0.4rem;
+                width: 120px;
+                height: 3px;
+                border-radius: 999px;
+                background: linear-gradient(90deg, #0d6efd, #4f46e5);
+                box-shadow: 0 8px 20px rgba(37, 99, 235, 0.5);
+            }
+
+            .home-section-title.promo-title {
+                color: #ef4444;
+            }
+
+                .home-section-title.promo-title::after {
+                    background: linear-gradient(90deg, #f97316, #ef4444);
+                    box-shadow: 0 8px 20px rgba(248, 113, 22, 0.5);
+                }
+
+            .home-section-title.featured-title {
+                color: #ec4899;
+            }
+
+                .home-section-title.featured-title::after {
+                    background: linear-gradient(90deg, #ec4899, #8b5cf6);
+                    box-shadow: 0 8px 20px rgba(236, 72, 153, 0.5);
+                }
 
         .home-section-sub {
             font-size: .95rem;
             color: #6b7280;
             max-width: 580px;
-            margin: 0 auto;
-        }
-
-        .home-section-title.promo-title {
-            background: none;
-            color: #ef4444;
-            -webkit-text-fill-color: #ef4444;
-        }
-
-        .home-section-title.featured-title {
-            background: none;
-            color: #fbbf24;
-            -webkit-text-fill-color: #fbbf24;
+            margin: 0.8rem auto 0;
         }
 
         /* ===== COMMON CARD ===== */
+        /* ===== COMMON CARD – NEW STYLE ===== */
         .card-common {
-            border-radius: 1.1rem;
+            border-radius: 1.4rem;
             overflow: hidden;
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 12px 34px rgba(0,0,0,0.06);
-            transition: .2s ease;
+            background: linear-gradient(145deg, #f9fafb, #ffffff);
+            border: 1px solid rgba(229, 231, 235, 0.95);
+            box-shadow: 0 14px 38px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(148, 163, 184, 0.12);
+            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
             display: flex;
             flex-direction: column;
+            position: relative;
         }
 
             .card-common:hover {
                 transform: translateY(-4px);
-                box-shadow: 0 16px 40px rgba(0,0,0,0.1);
+                box-shadow: 0 20px 52px rgba(15, 23, 42, 0.18);
+                border-color: rgba(59, 130, 246, 0.35);
+                background: radial-gradient(circle at top left, #eff6ff, #ffffff);
             }
 
-            .card-common img {
-                height: 220px;
-                object-fit: cover;
-                width: 100%;
-                display: block;
-            }
+        .card-inner {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .card-img-wrapper {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-common img {
+            height: 210px;
+            object-fit: cover;
+            width: 100%;
+            display: block;
+            transform: scale(1.03);
+            transition: transform .6s ease-out, filter .4s ease-out;
+            filter: saturate(1.05) contrast(1.02);
+        }
+
+        .card-common:hover img {
+            transform: scale(1.08);
+            filter: saturate(1.18) contrast(1.06);
+        }
+
+        .card-img-gradient {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(15, 23, 42, .55), transparent 60%);
+            pointer-events: none;
+        }
 
         .card-body-common {
-            padding: 1rem;
-            text-align: center;
+            padding: 0.9rem 1rem 0.5rem;
+            text-align: left;
             flex: 1;
         }
 
-        .card-title-common {
-            font-size: 1.05rem;
-            font-weight: 700;
-            margin-bottom: 0.4rem;
-            color: #111827;
+        .card-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .5rem;
+            margin-bottom: .45rem;
         }
 
         .card-label {
             font-size: 0.75rem;
             background: #eff6ff;
-            padding: 0.25rem 0.65rem;
+            padding: 0.25rem 0.7rem;
             border-radius: 999px;
             font-weight: 600;
             color: #1d4ed8;
-            display: inline-block;
-            margin-bottom: 0.4rem;
+            display: inline-flex;
+            align-items: center;
+            gap: .25rem;
+            white-space: nowrap;
         }
+
+            .card-label i {
+                font-size: .85rem;
+            }
+
+        .card-badge-soft {
+            font-size: .7rem;
+            border-radius: 999px;
+            padding: 0.1rem 0.6rem;
+            background: #f3f4f6;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+
+        .card-title-common {
+            font-size: 1.02rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            color: #111827;
+        }
+
+            .card-title-common a {
+                color: inherit;
+                text-decoration: none;
+            }
+
+                .card-title-common a:hover {
+                    text-decoration: underline;
+                }
 
         .card-desc {
             color: #6b7280;
             font-size: 0.86rem;
-            line-height: 1.4;
+            line-height: 1.5;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            margin-bottom: .45rem;
         }
 
-        .card-meta {
-            font-size: 0.78rem;
+        .card-meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .25rem .6rem;
+            font-size: .78rem;
             color: #9ca3af;
+            margin-bottom: .4rem;
         }
 
-        .empty-state {
-            padding: 2.5rem;
-            background: #f8fafc;
-            border-radius: 1rem;
-            text-align: center;
-            border: 1px solid #e5e7eb;
-            font-size: 1rem;
+        .card-meta-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: .25rem;
+        }
+
+            .card-meta-chip i {
+                font-size: .8rem;
+            }
+
+        .card-footer-common {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem 0.85rem;
+            margin-top: auto;
+            font-size: .78rem;
             color: #6b7280;
+            border-top: 1px dashed #e5e7eb;
+        }
+
+        .card-footer-left {
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+        }
+
+            .card-footer-left i {
+                color: #9ca3af;
+            }
+
+        .card-footer-link {
+            font-weight: 600;
+            color: #2563eb;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: .15rem;
+        }
+
+            .card-footer-link i {
+                font-size: .82rem;
+                transition: transform .16s ease;
+            }
+
+            .card-footer-link:hover {
+                color: #1d4ed8;
+                text-decoration: none;
+            }
+
+                .card-footer-link:hover i {
+                    transform: translateX(2px);
+                }
+
+        /* ===== EVENT CARD – DATE PILL ===== */
+        .event-card .event-date-pill {
+            position: absolute;
+            left: 12px;
+            bottom: 12px;
+            width: 46px;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, .5);
+            font-size: .68rem;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+        }
+
+        .event-date-day {
+            display: block;
+            background: #f9fafb;
+            text-align: center;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: #111827;
+            padding: .05rem 0;
+        }
+
+        .event-date-month {
+            display: block;
+            background: linear-gradient(135deg, var(--evt-primary), var(--evt-secondary));
+            color: #f9fafb;
+            text-align: center;
+            padding: .1rem 0 .15rem;
+        }
+
+        .event-card .card-img-gradient {
+            background: linear-gradient(to top, rgba(15, 23, 42, .65), transparent 60%);
+        }
+
+        /* ===== PROMO CARD ===== */
+        .promo-card .discount-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 2;
+            border-radius: 999px;
+            padding: .3rem .9rem;
+            font-size: .72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, var(--promo-primary), var(--promo-secondary));
+            color: #ffffff;
+            box-shadow: 0 10px 20px rgba(248, 113, 22, .5);
+        }
+
+        .promo-card .card-label {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+        .promo-card .card-meta-chip i {
+            color: #fb923c;
+        }
+
+        /* ===== FEATURED STORES CARD ===== */
+        .store-card .card-label {
+            background: #f3e8ff;
+            color: #6d28d9;
+        }
+
+        .store-card .rating {
+            display: inline-flex;
+            align-items: center;
+            gap: .15rem;
+            font-size: .85rem;
+            color: #f59e0b;
+        }
+
+            .store-card .rating span.count {
+                font-size: .75rem;
+                color: #9ca3af;
+            }
+
+
+        /* ===== BUTTONS ===== */
+        .btn-soft-primary {
+            border-radius: 999px;
+            padding: .4rem 1.4rem;
+            font-weight: 600;
+            font-size: .88rem;
+            border: 1px solid rgba(37, 99, 235, .25);
+            color: #1d4ed8;
+            background: #eff6ff;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, .15);
+        }
+
+            .btn-soft-primary:hover {
+                background: #dbeafe;
+                color: #1d4ed8;
+                border-color: rgba(37, 99, 235, .55);
+            }
+
+        .btn-soft-danger {
+            border-radius: 999px;
+            padding: .4rem 1.4rem;
+            font-weight: 600;
+            font-size: .88rem;
+            border: 1px solid rgba(239, 68, 68, .25);
+            color: #b91c1c;
+            background: #fef2f2;
+            box-shadow: 0 10px 20px rgba(239, 68, 68, .18);
+        }
+
+            .btn-soft-danger:hover {
+                background: #fee2e2;
+                color: #b91c1c;
+                border-color: rgba(239, 68, 68, .6);
+            }
+
+        /* ===== FEATURED STORES CAROUSEL ===== */
+        #featuredStoresCarousel {
+            position: relative;
+        }
+
+            #featuredStoresCarousel .carousel-inner {
+                padding: .3rem 2.5rem 0;
+            }
+
+            #featuredStoresCarousel .carousel-control-prev,
+            #featuredStoresCarousel .carousel-control-next {
+                width: 46px;
+                height: 46px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: rgba(15, 23, 42, 0.7);
+                border-radius: 50%;
+                border: 1px solid rgba(248, 250, 252, 0.8);
+                box-shadow: 0 12px 28px rgba(15, 23, 42, 0.7);
+                opacity: 1;
+            }
+
+                #featuredStoresCarousel .carousel-control-prev:hover,
+                #featuredStoresCarousel .carousel-control-next:hover {
+                    background: rgba(15, 23, 42, 0.9);
+                }
+
+            #featuredStoresCarousel .carousel-control-prev {
+                left: 0;
+            }
+
+            #featuredStoresCarousel .carousel-control-next {
+                right: 0;
+            }
+
+            #featuredStoresCarousel .carousel-control-prev-icon,
+            #featuredStoresCarousel .carousel-control-next-icon {
+                filter: invert(1);
+            }
+
+        /* ===== RESPONSIVE ===== */
+        @@media (max-width: 992px) {
+            .home-section-inner {
+                padding: 1.6rem 1.2rem 2rem;
+            }
+
+            #featuredStoresCarousel .carousel-inner {
+                padding-inline: 1.8rem;
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .home-section-inner {
+                padding: 1.4rem 1.1rem 1.8rem;
+                border-radius: 1.4rem;
+            }
+
+            .home-section-title {
+                font-size: 1.6rem;
+            }
+
+            #featuredStoresCarousel .carousel-inner {
+                padding-inline: 1.1rem;
+            }
+
+            #featuredStoresCarousel .carousel-control-prev,
+            #featuredStoresCarousel .carousel-control-next {
+                width: 38px;
+                height: 38px;
+            }
         }
     </style>
 }
@@ -334,125 +720,154 @@
 <div class="container py-5 events-home-wrapper">
 
     <!-- ===================== UPCOMING EVENTS ===================== -->
-    <section class="home-section">
-        <div class="home-section-header">
-            <div class="home-section-kicker">ABCD Mall</div>
-            <h2 class="home-section-title">Upcoming Events</h2>
-            <p class="home-section-sub">
-                Upcoming activities at the shopping center – book your tickets in advance so you don't miss out on the fun experience.
-            </p>
-        </div>
-
-        @if (!topEvents.Any())
-        {
-            <div class="empty-state">
-                <i class="bi bi-calendar-x fs-2 d-block mb-2"></i>
-                No events available at the moment.
+    <section class="home-section section-events">
+        <div class="home-section-inner">
+            <div class="home-section-header">
+                <div class="home-section-kicker">ABCD Mall</div>
+                <h2 class="home-section-title">Upcoming Events</h2>
+                <p class="home-section-sub">
+                    Upcoming activities at the shopping center – book your tickets in advance so you don't miss out on the fun experience.
+                </p>
             </div>
-        }
-        else
-        {
-            <div class="row g-4">
-                @foreach (var e in topEvents)
-                {
-                    <div class="col-12 col-md-6 col-lg-4">
-                        <div class="card-common h-100">
-                            <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">
-                                <img src="@ImgEvent(e.ImageUrl)" alt="@e.Title" />
-                            </a>
-                            <div class="card-body-common">
-                                <div class="card-label">@ViewData["MallName"]</div>
 
-                                <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })"
-                                   class="text-decoration-none text-dark">
-                                    <div class="card-title-common text-truncate">@e.Title</div>
-                                </a>
+            @if (!topEvents.Any())
+            {
+                <div class="empty-state">
+                    <i class="bi bi-calendar-x fs-2 d-block mb-2"></i>
+                    No events available at the moment.
+                </div>
+            }
+            else
+            {
+                <div class="row g-4">
+                    @foreach (var e in topEvents)
+                    {
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="card-common event-card h-100">
+                                <div class="card-img-wrapper">
+                                    <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">
+                                        <img src="@ImgEvent(e.ImageUrl)" alt="@e.Title" />
+                                    </a>
+                                    <div class="card-img-gradient"></div>
 
-                                @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
-                                {
-                                    <p class="card-desc mb-2" title="@e.ShortDescription">@e.ShortDescription</p>
-                                }
-
-                                <p class="card-meta mb-0">
-                                    <i class="bi bi-calendar-event me-1"></i>
-                                    @e.StartDate?.ToString("dd/MM/yyyy")
-                                    @if (e.EndDate.HasValue)
+                                    @if (e.StartDate.HasValue)
                                     {
-                                        @: – @e.EndDate?.ToString("dd/MM/yyyy")
+                                        <div class="event-date-pill">
+                                            <span class="event-date-day">
+                                                @e.StartDate.Value.ToString("dd")
+                                            </span>
+                                            <span class="event-date-month">
+                                                @e.StartDate.Value.ToString("MMM")
+                                            </span>
+                                        </div>
                                     }
-                                </p>
+                                </div>
+
+                                <div class="card-body-common">
+                                    <div class="card-label">
+                                        <i class="bi bi-geo-alt"></i>
+                                        @ViewData["MallName"]
+                                    </div>
+
+                                    <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })"
+                                       class="text-decoration-none text-dark">
+                                        <div class="card-title-common text-truncate">@e.Title</div>
+                                    </a>
+
+                                    @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
+                                    {
+                                        <p class="card-desc mb-2" title="@e.ShortDescription">@e.ShortDescription</p>
+                                    }
+
+                                    <p class="card-meta mb-0">
+                                        <i class="bi bi-calendar-event me-1"></i>
+                                        @e.StartDate?.ToString("dd/MM/yyyy")
+                                        @if (e.EndDate.HasValue)
+                                        {
+                                            @: – @e.EndDate?.ToString("dd/MM/yyyy")
+                                        }
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                }
-            </div>
-        }
+                    }
+                </div>
+            }
 
-        <!-- Nút SEE ALL EVENTS -->
-        <div class="text-center mt-4">
-            <a href="@Url.Action("Index", "Event", new { area = "Client" })"
-               class="btn btn-outline-primary rounded-pill px-4">
-                See all events
-            </a>
+            <!-- Nút SEE ALL EVENTS -->
+            <div class="text-center mt-4">
+                <a href="@Url.Action("Index", "Event", new { area = "Client" })"
+                   class="btn btn-soft-primary">
+                    See all events
+                </a>
+            </div>
         </div>
     </section>
 
     <!-- ===================== LATEST PROMOTIONS ===================== -->
     @if (ViewBag.TopPromotions != null && ((List<TenantPromotionVm>)ViewBag.TopPromotions).Any())
     {
-        <section class="home-section">
-            <div class="home-section-header">
-                <div class="home-section-kicker">
-
+        <section class="home-section section-promos">
+            <div class="home-section-inner">
+                <div class="home-section-header">
+                    <div class="home-section-kicker"></div>
+                    <h2 class="home-section-title promo-title">Latest Promotions</h2>
+                    <p class="home-section-sub">
+                        Grab the hottest deals from your favorite stores at ABCD Mall.
+                    </p>
                 </div>
-                <h2 class="home-section-title promo-title">Latest Promotions</h2>
-                <p class="home-section-sub">
-                    Grab the hottest deals from your favorite stores at ABCD Mall.
-                </p>
-            </div>
 
-            <div class="row g-4">
-                @foreach (var p in (List<TenantPromotionVm>)ViewBag.TopPromotions)
-                {
-                    var img = ImgPromotion(p.Img);
+                <div class="row g-4">
+                    @foreach (var p in (List<TenantPromotionVm>)ViewBag.TopPromotions)
+                    {
+                        var img = ImgPromotion(p.Img);
 
-                    <div class="col-12 col-md-6 col-lg-4">
-                        <div class="card-common h-100 position-relative">
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="card-common promo-card h-100 position-relative">
 
-                            @if (p.DiscountPercent.HasValue)
-                            {
-                                <span class="position-absolute top-0 start-0 m-2 badge bg-danger">
-                                    @p.DiscountPercent% OFF
-                                </span>
-                            }
-                            else if (p.DiscountAmount.HasValue)
-                            {
-                                <span class="position-absolute top-0 start-0 m-2 badge bg-danger">
-                                    @p.DiscountAmount.Value.ToString("#,0") ₫
-                                </span>
-                            }
+                                <div class="card-img-wrapper">
+                                    @if (p.DiscountPercent.HasValue)
+                                    {
+                                        <span class="discount-badge">
+                                            @p.DiscountPercent% OFF
+                                        </span>
+                                    }
+                                    else if (p.DiscountAmount.HasValue)
+                                    {
+                                        <span class="discount-badge">
+                                            @p.DiscountAmount.Value.ToString("#,0") ₫
+                                        </span>
+                                    }
 
-                            <a href="@Url.Action("Detail", "TenantPromotion", new { area = "Client", id = p.Id })">
-                                <img src="@img" alt="@p.Title" />
-                            </a>
-                            <div class="card-body-common">
-                                <div class="card-title-common">@p.Title</div>
-                                <p class="card-meta mb-0">
-                                    <i class="bi bi-clock-history me-1"></i>
-                                    @p.PromotionStart?.ToString("dd/MM/yyyy") – @p.PromotionEnd?.ToString("dd/MM/yyyy")
-                                </p>
+                                    <a href="@Url.Action("Detail", "TenantPromotion", new { area = "Client", id = p.Id })">
+                                        <img src="@img" alt="@p.Title" />
+                                    </a>
+                                    <div class="card-img-gradient"></div>
+                                </div>
+
+                                <div class="card-body-common">
+                                    <div class="card-label">
+                                        <i class="bi bi-gift"></i>
+                                        Promotion
+                                    </div>
+                                    <div class="card-title-common">@p.Title</div>
+                                    <p class="card-meta mb-0">
+                                        <i class="bi bi-clock-history me-1"></i>
+                                        @p.PromotionStart?.ToString("dd/MM/yyyy") – @p.PromotionEnd?.ToString("dd/MM/yyyy")
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                }
-            </div>
+                    }
+                </div>
 
-            <!-- Nút SEE ALL PROMOTIONS -->
-            <div class="text-center mt-4">
-                <a href="@Url.Action("Index", "TenantPromotion", new { area = "Client" })"
-                   class="btn btn-outline-danger rounded-pill px-4">
-                    See all promotions
-                </a>
+                <!-- Nút SEE ALL PROMOTIONS -->
+                <div class="text-center mt-4">
+                    <a href="@Url.Action("Index", "TenantPromotion", new { area = "Client" })"
+                       class="btn btn-soft-danger">
+                        See all promotions
+                    </a>
+                </div>
             </div>
         </section>
     }
@@ -460,58 +875,67 @@
     <!-- ===================== FEATURED STORES ===================== -->
     @if (featuredStores.Any())
     {
-        <section class="home-section">
-            <div class="home-section-header">
-                <div class="home-section-kicker">Đề xuất</div>
-                <h2 class="home-section-title featured-title">Featured Stores</h2>
-                <p class="home-section-sub">
-                    The highest-rated stores by customers – stop by to experience the best service.
-                </p>
-            </div>
-
-            <div id="featuredStoresCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
-                <div class="carousel-inner">
-                    @for (int i = 0; i < featuredStores.Count; i += 3)
-                    {
-                        <div class="carousel-item @(i == 0 ? "active" : "")">
-                            <div class="row g-4 d-flex justify-content-start flex-wrap">
-                                @for (int j = i; j < i + 3 && j < featuredStores.Count; j++)
-                                {
-                                    var s = featuredStores[j];
-                                    var img = ImgTenant(s.TenantImg);
-
-                                    <div class="col-12 col-md-4">
-                                        <div class="card-common h-100">
-                                            <a href="@Url.Action("Details", "Stores", new { area = "Client", id = s.TenantId })">
-                                                <img src="@img" alt="@s.TenantName" />
-                                            </a>
-                                            <div class="card-body-common">
-                                                <div class="card-label">@s.TenantTypeName</div>
-                                                <a href="@Url.Action("Details", "Stores", new { area = "Client", id = s.TenantId })"
-                                                   class="text-decoration-none text-dark">
-                                                    <div class="card-title-common text-truncate">@s.TenantName</div>
-                                                </a>
-                                                <div class="mb-1">
-                                                    <span class="text-warning">★★★★★</span>
-                                                </div>
-                                                <p class="card-desc" title="@s.TenantDescription">@s.TenantDescription</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    }
+        <section class="home-section section-featured">
+            <div class="home-section-inner">
+                <div class="home-section-header">
+                    <div class="home-section-kicker">Recommendation</div>
+                    <h2 class="home-section-title featured-title">Featured Stores</h2>
+                    <p class="home-section-sub">
+                        The highest-rated stores by customers – stop by to experience the best service.
+                    </p>
                 </div>
 
-                <button class="carousel-control-prev" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="prev">
-                    <span class="carousel-control-prev-icon"></span>
-                    <span class="visually-hidden">Previous</span>
-                </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="next">
-                    <span class="carousel-control-next-icon"></span>
-                    <span class="visually-hidden">Next</span>
-                </button>
+                <div id="featuredStoresCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+                    <div class="carousel-inner">
+                        @for (int i = 0; i < featuredStores.Count; i += 3)
+                        {
+                            <div class="carousel-item @(i == 0 ? "active" : "")">
+                                <div class="row g-4 d-flex justify-content-start flex-wrap">
+                                    @for (int j = i; j < i + 3 && j < featuredStores.Count; j++)
+                                    {
+                                        var s = featuredStores[j];
+                                        var img = ImgTenant(s.TenantImg);
+
+                                        <div class="col-12 col-md-4">
+                                            <div class="card-common store-card h-100">
+                                                <div class="card-img-wrapper">
+                                                    <a href="@Url.Action("Details", "Stores", new { area = "Client", id = s.TenantId })">
+                                                        <img src="@img" alt="@s.TenantName" />
+                                                    </a>
+                                                    <div class="card-img-gradient"></div>
+                                                </div>
+                                                <div class="card-body-common">
+                                                    <div class="card-label">
+                                                        <i class="bi bi-shop"></i>
+                                                        @s.TenantTypeName
+                                                    </div>
+                                                    <a href="@Url.Action("Details", "Stores", new { area = "Client", id = s.TenantId })"
+                                                       class="text-decoration-none text-dark">
+                                                        <div class="card-title-common text-truncate">@s.TenantName</div>
+                                                    </a>
+                                                    <div class="rating">
+                                                        <span class="star">★★★★★</span>
+                                                        <span class="count">Top rated</span>
+                                                    </div>
+                                                    <p class="card-desc" title="@s.TenantDescription">@s.TenantDescription</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <button class="carousel-control-prev" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                </div>
             </div>
         </section>
     }
