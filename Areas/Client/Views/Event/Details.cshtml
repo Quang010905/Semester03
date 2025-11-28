@@ -598,7 +598,7 @@
                     else if (Model.IsUpcoming && Model.Status == 1)
                     {
                         <span class="tag-pill tag-upcoming">
-                            <i class="bi bi-calendar2-event"></i> Sắp diễn ra
+                            <i class="bi bi-calendar2-event"></i> Coming up
                         </span>
                     }
                     else if (Model.IsPast)
@@ -668,7 +668,7 @@
                                 else
                                 {
                                     <span class="text-muted small">
-                                        Bạn cần đăng nhập để đánh giá.
+                                        You need to log in to leave a review.
                                     </span>
                                 }
                             </div>
@@ -676,7 +676,7 @@
 
                         <div class="avg-rate-box">
                             <span class="big-rate">@displayAvg.ToString("0.0") / 5</span>
-                            <span>(@Model.CommentCount bình luận)</span>
+                            <span>(@Model.CommentCount Comment)</span>
                         </div>
                     </div>
 
@@ -690,22 +690,22 @@
                             <textarea id="commentText"
                                   class="form-control mb-2"
                                   rows="3"
-                                  placeholder="Chia sẻ trải nghiệm của bạn về sự kiện..."></textarea>
+                                  placeholder="Share your experience about the event..."></textarea>
                             <div class="d-flex gap-2 align-items-center flex-wrap">
                                 <button id="submitComment" class="btn btn-primary btn-sm">
-                                    <i class="bi bi-send me-1"></i>Gửi bình luận
+                                    <i class="bi bi-send me-1"></i>Post a comment
                                 </button>
                                 <small class="text-muted">
-                                    Bình luận có thể được kiểm duyệt trước khi hiển thị.
+                                    Comments may be moderated before being displayed.
                                 </small>
                             </div>
                         }
                         else
                         {
                             <div class="alert alert-info py-2 mb-2">
-                                Bạn cần
-                                <a href="@Url.Action("Login", "Account", new { area = "Client" })">đăng nhập</a>
-                                để bình luận và đánh giá sự kiện này.
+                                You need to
+                                <a href="@Url.Action("Login", "Account", new { area = "Client" })">login</a>
+                                to comment on and evaluate this event.
                             </div>
                         }
                     </div>
@@ -824,12 +824,12 @@
                     </p>
 
                     <p>
-                        <strong>Trạng thái:</strong>
+                        <strong>Status:</strong>
                         @{
                             string statusTextSide;
                             if (Model.IsPast) statusTextSide = "Đã kết thúc";
                             else if (Model.IsOngoing && Model.Status == 1) statusTextSide = "Đang diễn ra";
-                            else if (Model.IsUpcoming && Model.Status == 1) statusTextSide = "Sắp diễn ra";
+                            else if (Model.IsUpcoming && Model.Status == 1) statusTextSide = "Coming up";
                             else if (Model.Status == 1) statusTextSide = "Đang mở";
                             else statusTextSide = "Không hoạt động";
                         }

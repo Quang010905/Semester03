@@ -249,13 +249,13 @@
 <div class="ticket-wrapper mt-4 mb-4 position-relative">
 
     @* Stamp trạng thái *@
-    @if (Model.Status == "Đã hủy")
+    @if (Model.Status == "Cancelled")
     {
-        <div class="stamp-status cancelled">ĐÃ HỦY</div>
+        <div class="stamp-status cancelled">Cancelled</div>
     }
-    else if (Model.Status == "Đã diễn ra")
+    else if (Model.Status == "Occurred")
     {
-        <div class="stamp-status">ĐÃ DIỄN RA</div>
+        <div class="stamp-status">Occurred</div>
     }
 
     <div class="ticket-header">
@@ -282,7 +282,7 @@
         }
 
         <span class="ticket-badge-status
-            @(Model.Status == "Đã diễn ra" ? "past" : Model.Status == "Đã hủy" ? "cancelled" : "")">
+            @(Model.Status == "Occurred" ? "past" : Model.Status == "Cancelled" ? "Cancelled" : "")">
             @Model.Status.ToUpper()
         </span>
 
@@ -303,17 +303,17 @@
         <div class="ticket-section">
             <div class="row text-center">
                 <div class="col">
-                    <div class="ticket-label">Số lượng vé</div>
+                    <div class="ticket-label">Number of tickets</div>
                     <div class="ticket-value">@Model.Quantity</div>
                 </div>
                 <div class="col">
-                    <div class="ticket-label">Giá / vé</div>
+                    <div class="ticket-label">Price / ticket</div>
                     <div class="ticket-value">
                         @Model.UnitPrice.ToString("N0") đ
                     </div>
                 </div>
                 <div class="col">
-                    <div class="ticket-label">Tổng tiền</div>
+                    <div class="ticket-label">Total</div>
                     <div class="ticket-value">
                         @Model.TotalCost.ToString("N0") đ
                     </div>
@@ -326,13 +326,13 @@
             <div class="ticket-section">
                 @if (!string.IsNullOrWhiteSpace(locationText))
                 {
-                    <div class="ticket-label">Địa điểm</div>
+                    <div class="ticket-label">Location</div>
                     <div class="ticket-value">@locationText</div>
                 }
 
                 @if (!string.IsNullOrWhiteSpace(Model.OrganizerShopName))
                 {
-                    <div class="ticket-label mt-2">Đơn vị tổ chức</div>
+                    <div class="ticket-label mt-2">Organizer</div>
                     <div class="ticket-value">@Model.OrganizerShopName</div>
                 }
             </div>
@@ -341,10 +341,10 @@
         @* ===========================
            PHẦN HỦY VÉ SỰ KIỆN
            =========================== *@
-        @if (Model.Status != "Đã hủy" && Model.Quantity > 0)
+        @if (Model.Status != "Cancelled" && Model.Quantity > 0)
         {
             <div class="ticket-section">
-                <div class="ticket-label mb-2">Hủy bớt vé</div>
+                <div class="ticket-label mb-2">Cancel some tickets</div>
 
                 <div class="d-flex align-items-center gap-2">
                     <input id="cancelQty"
@@ -352,15 +352,15 @@
                            class="form-control"
                            min="1"
                            max="@Model.Quantity"
-                           placeholder="Nhập số vé muốn hủy"
+                           placeholder="Enter the ticket number you want to cancel"
                            style="width:150px;" />
 
                     <button class="btn btn-danger" id="btnCancelTickets">
-                        Hủy vé
+                        Cancel
                     </button>
                 </div>
 
-                <small class="text-muted">Chỉ có thể hủy tối đa @Model.Quantity vé.</small>
+                <small class="text-muted">You can only cancel up to @Model.Quantity tickets.</small>
             </div>
         }
 
@@ -390,8 +390,8 @@
                 if (!qty || qty <= 0) {
                     Swal.fire({
                         icon: 'warning',
-                        title: 'Số lượng không hợp lệ',
-                        text: 'Vui lòng nhập số vé muốn hủy (> 0).',
+                        title: 'Invalid quantity',
+                        text: 'Please enter the ticket number you want to cancel (> 0).',
                         confirmButtonColor: '#2563eb'
                     });
                     return;
@@ -400,11 +400,11 @@
                 // Hỏi xác nhận trước khi gọi API
                 Swal.fire({
                     icon: 'question',
-                    title: 'Xác nhận hủy vé',
-                    html: `Bạn chắc chắn muốn <b>hủy ${qty} vé</b> cho sự kiện này?`,
+                    title: 'Confirm ticket cancellationé',
+                    html: `Are you sure want to <b>cancel ${qty} tickets</b> for this event?`,
                     showCancelButton: true,
-                    confirmButtonText: 'Đồng ý',
-                    cancelButtonText: 'Không',
+                    confirmButtonText: 'Yes',
+                    cancelButtonText: 'No',
                     confirmButtonColor: '#dc2626',
                     cancelButtonColor: '#6b7280'
                 }).then(function (result) {
@@ -439,7 +439,7 @@
 
                         Swal.fire({
                             icon: res.success ? 'success' : 'error',
-                            title: res.success ? 'Hủy vé thành công' : 'Không thể hủy vé',
+                            title: res.success ? 'Cancel thành công' : 'Không thể hủy vé',
                             text: res.message,
                             confirmButtonColor: '#2563eb'
                         }).then(function () {
@@ -448,7 +448,7 @@
                                 location.reload();
                             } else {
                                 // bật lại nút nếu thất bại
-                                $btn.prop("disabled", false).text('Hủy vé');
+                                $btn.prop("disabled", false).text('Cancel');
                             }
                         });
                     },
@@ -462,7 +462,7 @@
                             confirmButtonColor: '#2563eb'
                         });
 
-                        $btn.prop("disabled", false).text('Hủy vé');
+                        $btn.prop("disabled", false).text('Cancel');
                     }
                 });
             }

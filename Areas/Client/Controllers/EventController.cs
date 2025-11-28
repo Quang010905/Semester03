@@ -94,7 +94,7 @@ namespace Semester03.Areas.Client.Controllers
         {
             if (!(User?.Identity?.IsAuthenticated ?? false))
             {
-                return Json(new { success = false, message = "Bạn phải đăng nhập để bình luận." });
+                return Json(new { success = false, message = "You need to log in to comment." });
             }
 
             var userId = GetCurrentUserId();
@@ -105,18 +105,18 @@ namespace Semester03.Areas.Client.Controllers
                 _logger?.LogWarning("AddComment: Unable to parse user id from claims. Claims: {claims}",
                     string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
                 */
-                return Json(new { success = false, message = "Không xác định được người dùng." });
+                return Json(new { success = false, message = "User cannot be identified.." });
             }
 
             if (rate < 1 || rate > 5)
             {
-                return Json(new { success = false, message = "Điểm đánh giá không hợp lệ (1-5)." });
+                return Json(new { success = false, message = "Invalid rating (1-5)." });
             }
 
             text = (text ?? "").Trim();
             if (string.IsNullOrWhiteSpace(text))
             {
-                return Json(new { success = false, message = "Vui lòng nhập nội dung bình luận." });
+                return Json(new { success = false, message = "Please enter a comment." });
             }
 
             // Sử dụng repository để kiểm tra event tồn tại
@@ -124,7 +124,7 @@ namespace Semester03.Areas.Client.Controllers
 
             if (!evtExists)
             {
-                return Json(new { success = false, message = "Sự kiện không tồn tại hoặc đã ngừng." });
+                return Json(new { success = false, message = "The event does not exist or has ended." });
             }
 
             // Gọi repository để thêm comment
@@ -133,7 +133,7 @@ namespace Semester03.Areas.Client.Controllers
             return Json(new
             {
                 success = true,
-                message = "Bình luận đã được gửi, sẽ hiển thị cho mọi người sau khi được duyệt."
+                message = "Your comment has been submitted and will be visible to everyone once approved."
             });
         }
     }

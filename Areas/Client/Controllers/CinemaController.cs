@@ -64,19 +64,19 @@ namespace Semester03.Areas.Client.Controllers
         public async Task<IActionResult> AddComment(int movieId, int rate, string text)
         {
             if (!User.Identity.IsAuthenticated)
-                return Unauthorized(new { success = false, message = "Bạn cần đăng nhập để bình luận." });
+                return Unauthorized(new { success = false, message = "You need to log in to comment." });
 
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                               ?? User.FindFirst("UserId")?.Value;
 
             if (!int.TryParse(userIdClaim, out var userId))
             {
-                return Unauthorized(new { success = false, message = "Không xác định user." });
+                return Unauthorized(new { success = false, message = "User not identified." });
             }
 
             await _repo.AddCommentAsync(movieId, userId, rate, text);
 
-            return Json(new { success = true, message = "Cảm ơn bạn! Bình luận sẽ xuất hiện sau khi được duyệt." });
+            return Json(new { success = true, message = "Thank you! Your comment will appear after it has been approved." });
         }
 
         [HttpGet]

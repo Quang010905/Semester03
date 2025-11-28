@@ -39,9 +39,9 @@ namespace Semester03.Models.Repositories
             return data.Select(x =>
             {
                 string status =
-                    x.Status == 0 ? "Đã hủy" :
-                    x.EventEnd <= now ? "Đã diễn ra" :
-                    "Sắp diễn ra";
+                    x.Status == 0 ? "Canceled" :
+                    x.EventEnd <= now ? "Occurred" :
+                    "Coming up";
 
                 return new MyEventTicketVm
                 {

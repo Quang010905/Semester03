@@ -300,12 +300,12 @@ namespace Semester03.Areas.Client.Controllers
 
                     if (coupon.CouponMinimumPointsRequired.HasValue &&
                         (user.UsersPoints ?? 0) < coupon.CouponMinimumPointsRequired.Value)
-                        return Json(new { success = false, message = "Bạn không đủ điểm để sử dụng mã này." });
+                        return Json(new { success = false, message = "You don't have enough points to use this code." });
 
                     var used = await _context.TblCouponUsers
                         .AnyAsync(x => x.CouponId == couponId.Value && x.UsersId == buyerId.Value);
                     if (used)
-                        return Json(new { success = false, message = "Bạn đã sử dụng mã này rồi." });
+                        return Json(new { success = false, message = "You have already used this code." });
 
                     discountAmount = Math.Floor(originalTotal * (coupon.CouponDiscountPercent / 100m));
                     finalAmount = Math.Max(0m, originalTotal - discountAmount);
@@ -963,7 +963,7 @@ namespace Semester03.Areas.Client.Controllers
 
                 var user = _context.TblUsers.FirstOrDefault(u => u.UsersId == userId);
                 if (user == null)
-                    return Unauthorized(new { success = false, message = "Không tìm thấy người dùng." });
+                    return Unauthorized(new { success = false, message = "User not found." });
 
                 if (coupon.CouponMinimumPointsRequired.HasValue &&
                     (user.UsersPoints ?? 0) < coupon.CouponMinimumPointsRequired.Value)
@@ -971,12 +971,12 @@ namespace Semester03.Areas.Client.Controllers
                     {
                         success = false,
                         message =
-                            $"Bạn không đủ điểm để sử dụng mã này. Cần {coupon.CouponMinimumPointsRequired} điểm."
+                            $"You don't have enough points to use this code. Need {coupon.CouponMinimumPointsRequired} points."
                     });
 
                 var used = _context.TblCouponUsers.Any(x => x.CouponId == couponId && x.UsersId == userId);
                 if (used)
-                    return BadRequest(new { success = false, message = "Bạn đã sử dụng mã này rồi." });
+                    return BadRequest(new { success = false, message = "You have already used this code." });
 
                 decimal disc = Math.Floor(amount * (coupon.CouponDiscountPercent / 100m));
                 decimal newTotal = Math.Max(0m, amount - disc);

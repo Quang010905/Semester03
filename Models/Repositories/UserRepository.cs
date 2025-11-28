@@ -248,7 +248,7 @@ namespace Semester03.Models.Repositories
                     .AnyAsync(u => u.UsersPhone == phone && u.UsersId != userId);
 
                 if (phoneExists)
-                    return (false, "Số điện thoại đã được sử dụng bởi tài khoản khác.");
+                    return (false, "The phone number has already been used by another account.");
             }
 
             // Gán lại dữ liệu

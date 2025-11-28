@@ -72,33 +72,33 @@
 
         <div class="section">
             <p>Xin chào <strong>@Model.UserName</strong>,</p>
-            <p>Bạn vừa thực hiện hủy vé cho sự kiện:</p>
+            <p>You have just canceled the ticket for the event:</p>
 
-            <div class="label">Tên sự kiện</div>
+            <div class="label">Event name</div>
             <div class="value">@Model.EventName</div>
 
-            <div class="label mt-3">Mã đặt vé</div>
+            <div class="label mt-3">Booking code</div>
             <div class="value">#@Model.BookingId</div>
 
             <br />
 
-            <div class="label">Số vé đã hủy</div>
+            <div class="label">Number of canceled tickets</div>
             <div class="value">@Model.CancelledQty vé</div>
 
-            <div class="label mt-3">Số vé còn lại</div>
+            <div class="label mt-3">Remaining tickets</div>
             <div class="value">@Model.RemainingQty vé</div>
 
-            <div class="label mt-3">Số tiền hoàn lại</div>
+            <div class="label mt-3">Refund amount</div>
             <div class="value">@Model.RefundAmount.ToString("N0") đ</div>
         </div>
 
         <div class="section">
-            <p>Nếu bạn không thực hiện yêu cầu này, vui lòng liên hệ ngay với bộ phận hỗ trợ.</p>
-            <p>Cảm ơn bạn đã sử dụng dịch vụ ABCD Mall.</p>
+            <p>If you do not comply with this request, please contact the support department immediately.</p>
+            <p>Thank you for using ABCD Mall's services.</p>
         </div>
 
         <div class="footer">
-            Email này được gửi tự động. Vui lòng không phản hồi lại.
+            This email was sent automatically. Please do not reply.
         </div>
 
     </div>

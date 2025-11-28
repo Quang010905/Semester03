@@ -179,7 +179,7 @@ namespace Semester03.Services.Email
 
             await _emailSender.SendEmailAsync(
                 user.UsersEmail,
-                "Hủy vé xem phim – Xác nhận",
+                "Cancel xem phim – Xác nhận",
                 html);
         }
 
@@ -217,7 +217,7 @@ namespace Semester03.Services.Email
                 "~/Areas/Client/Views/Emails/EventCancelEmail.cshtml",
                 model);
 
-            string subject = $"Hủy vé sự kiện – Mã #{bookingId}";
+            string subject = $"Cancel sự kiện – Mã #{bookingId}";
 
             try
             {

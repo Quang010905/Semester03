@@ -115,7 +115,7 @@ namespace Semester03.Areas.Client.Controllers
             int userId = GetUserId();
 
             if (seatIds == null || seatIds.Length == 0)
-                return Json(new { success = false, message = "Bạn chưa chọn ghế cần hủy." });
+                return Json(new { success = false, message = "You haven't chosen seats to cancel." });
 
             var distinctIds = seatIds.Distinct().ToList();
             var tickets = new List<Semester03.Models.Entities.TblTicket>();
@@ -150,7 +150,7 @@ namespace Semester03.Areas.Client.Controllers
                 return Json(new
                 {
                     success = false,
-                    message = "Bạn chỉ được hủy vé trước giờ chiếu 24 giờ."
+                    message = "You can only cancel the ticket up to 24 hours before the showtime.."
                 });
             }
 
@@ -201,7 +201,7 @@ namespace Semester03.Areas.Client.Controllers
                 // Nếu gửi mail lỗi thì vẫn coi là hủy vé thành công
             }
 
-            string msg = $"Đã hủy {cancelled} ghế, hoàn lại {totalRefund:N0}đ.";
+            string msg = $"Cancelled {cancelled} seats, refunded {totalRefund:N0}đ.";
 
             return Json(new
             {

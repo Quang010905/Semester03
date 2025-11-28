@@ -332,9 +332,9 @@ namespace Semester03.Areas.Client.Controllers
             var now = DateTime.Now;
 
             string status =
-                (booking.EventBookingStatus ?? 0) == 0 ? "Đã hủy" :
-                (evtDetail.EndDate ?? evtDetail.StartDate) <= now ? "Đã diễn ra" :
-                "Sắp diễn ra";
+                (booking.EventBookingStatus ?? 0) == 0 ? "Cancelled" :
+                (evtDetail.EndDate ?? evtDetail.StartDate) <= now ? "Occurred" :
+                "Coming up";
 
             string qrUrl = Url.Action(
                 "Details",
@@ -483,7 +483,7 @@ namespace Semester03.Areas.Client.Controllers
             booking.EventBookingStatus = remainingQty > 0 ? 1 : 0;
 
             string smallLog =
-                $"[Cancel {DateTime.Now:dd/MM HH:mm}] Hủy {cancelQuantity} vé (còn {remainingQty}).";
+                $"[Cancel {DateTime.Now:dd/MM HH:mm}] Cancel {cancelQuantity} tickets ( {remainingQty}remained).";
 
             booking.EventBookingNotes =
                 string.IsNullOrWhiteSpace(booking.EventBookingNotes)
@@ -528,7 +528,7 @@ namespace Semester03.Areas.Client.Controllers
             return Json(new
             {
                 success = true,
-                message = $"Đã hủy {cancelQuantity} vé, hoàn lại {refundAmount:N0}đ."
+                message = $" {cancelQuantity} tickets have been canceled {refundAmount:N0}đ have been refunded."
             });
         }
     }
