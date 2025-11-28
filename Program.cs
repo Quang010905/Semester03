@@ -56,6 +56,7 @@ builder.Services.AddScoped<CategoryRepository>();
 builder.Services.AddScoped<UserActivityRepository>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<UserActivityRepository>();
+builder.Services.AddScoped<RoleRepository>();
 
 
 
