@@ -305,6 +305,7 @@
                         </a>
                         <div class="card-body-common">
                             <div class="card-label">@ViewData["MallName"]</div>
+
                             <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })"
                                class="text-decoration-none text-dark">
                                 <div class="card-title-common text-truncate">@e.Title</div>
@@ -313,6 +314,14 @@
                             {
                                 <p class="card-desc" title="@e.ShortDescription">@e.ShortDescription</p>
                             }
+                            <p class="card-desc mb-1">
+                                <i class="bi bi-calendar-event"></i>
+                                @e.StartDate?.ToString("dd/MM/yyyy")
+                                @if (e.EndDate.HasValue)
+                                {
+                                    @: – @e.EndDate?.ToString("dd/MM/yyyy")
+                                }
+                            </p>
                         </div>
                     </div>
                 </div>
