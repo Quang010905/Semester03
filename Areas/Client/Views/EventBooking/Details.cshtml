@@ -83,102 +83,168 @@
 }
 
 <style>
+    /* TICKET WRAPPER – sáng, nổi, sạch */
     .ticket-wrapper {
-        max-width: 700px;
-        margin: auto;
-        background: #fff;
-        border-radius: 18px;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        max-width: 780px;
+        margin: 2rem auto;
+        background: #ffffff;
+        border-radius: 22px;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
         overflow: hidden;
+        position: relative;
+        border: 1px solid #e5e7eb;
+        transition: transform .18s ease, box-shadow .18s ease;
     }
 
+        .ticket-wrapper:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+        }
+
+    /* HEADER – gradient sáng xanh */
     .ticket-header {
-        padding: 20px;
-        background: #e0f2fe;
+        padding: 18px 22px;
+        background: linear-gradient(135deg, #3b82f6, #60a5fa);
         font-weight: 700;
-        font-size: 1.3rem;
-        color: #0f172a;
+        font-size: 1.15rem;
+        color: #ffffff;
         display: flex;
         align-items: center;
         gap: 10px;
+        letter-spacing: .01em;
     }
 
         .ticket-header a {
-            color: inherit;
-            text-decoration: none;
+            color: white;
+            opacity: .9;
+            transition: opacity .15s ease;
         }
 
-        .ticket-header i {
-            font-size: 1.2rem;
-        }
+            .ticket-header a:hover {
+                opacity: 1;
+            }
 
+    /* POSTER – sáng + bo nhẹ */
     .ticket-poster {
         width: 100%;
         height: 260px;
         object-fit: cover;
+        background: #f3f4f6;
+        display: block;
     }
 
+    /* BODY – sáng */
     .ticket-body {
-        padding: 20px;
-        background: #fff;
+        padding: 22px 26px;
+        background: #ffffff;
+        color: #1f2937;
     }
 
     .ticket-label {
-        font-size: .9rem;
-        color: #64748b;
+        font-size: .88rem;
+        color: #6b7280;
+        font-weight: 500;
     }
 
     .ticket-value {
         font-size: 1.1rem;
         font-weight: 700;
-        color: #0f172a;
+        color: #111827;
     }
 
+    /* SECTION DIVIDER – sáng, mảnh */
     .ticket-section {
-        margin-top: 18px;
+        margin-top: 20px;
         padding-top: 16px;
-        border-top: 1px dashed #e2e8f0;
+        border-top: 1px dashed rgba(148, 163, 184, 0.5);
     }
 
-    .stamp-status {
-        position: absolute;
-        top: 22px;
-        right: -40px;
-        transform: rotate(20deg);
-        background: #22c55e;
-        color: #fff;
-        padding: 6px 40px;
-        font-weight: 700;
-        font-size: .8rem;
-        text-transform: uppercase;
-        box-shadow: 0 0 0 3px rgba(34,197,94,.4);
-    }
-
-        .stamp-status.cancelled {
-            background: #ef4444;
-            box-shadow: 0 0 0 3px rgba(239,68,68,.4);
-        }
-
+    /* STATUS BADGE */
     .ticket-badge-status {
         display: inline-block;
-        padding: 4px 10px;
+        padding: 5px 14px;
         border-radius: 999px;
-        font-size: .8rem;
-        font-weight: 600;
+        font-size: .78rem;
+        font-weight: 700;
         background: #e5e7eb;
-        margin-bottom: 8px;
+        color: #111827;
+        margin-bottom: 12px;
     }
 
         .ticket-badge-status.past {
-            background: #dcfce7;
-            color: #166534;
+            background: #d1fae5;
+            color: #065f46;
         }
 
         .ticket-badge-status.cancelled {
             background: #fee2e2;
             color: #b91c1c;
         }
+
+    /* BIG STATUS STAMP */
+    .stamp-status {
+        position: absolute;
+        top: 20px;
+        right: -40px;
+        transform: rotate(20deg);
+        background: #22c55e;
+        color: #ffffff;
+        padding: 6px 46px;
+        font-weight: 800;
+        font-size: .78rem;
+        text-transform: uppercase;
+        box-shadow: 0 0 0 3px rgba(34, 197, 94, .3);
+    }
+
+        .stamp-status.cancelled {
+            background: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, .3);
+        }
+
+    /* INPUT */
+    #cancelQty.form-control {
+        background: #ffffff;
+        border-radius: 10px;
+        border: 1px solid #d1d5db;
+        color: #111827;
+    }
+
+        #cancelQty.form-control:focus {
+            box-shadow: 0 0 0 1px #3b82f6;
+            border-color: #3b82f6;
+        }
+
+    /* CANCEL BUTTON */
+    #btnCancelTickets.btn-danger {
+        border-radius: 10px;
+        font-weight: 600;
+        padding: 8px 22px;
+        background: #ef4444;
+        border: none;
+        box-shadow: 0 6px 18px rgba(239, 68, 68, .25);
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+
+        #btnCancelTickets.btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(239, 68, 68, .35);
+        }
+
+    /* MOBILE FIXES */
+    @@media (max-width: 575.98px) {
+        .ticket-body
+
+    {
+        padding: 18px;
+    }
+
+    .ticket-poster {
+        height: 200px;
+    }
+
+    }
 </style>
+
 
 <div class="ticket-wrapper mt-4 mb-4 position-relative">
 
@@ -203,6 +269,8 @@
     <img src="@ImgEvent(Model.EventImg)" class="ticket-poster" />
 
     <div class="ticket-body">
+        @Html.AntiForgeryToken()
+
 
         <div class="ticket-value mb-1">@Model.EventName</div>
 
@@ -301,42 +369,109 @@
 </div>
 
 
+
+
 @section Scripts {
 
-    @* THÊM jQuery – BẮT BUỘC *@
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- jQuery (dùng CDN jsdelivr cho đúng CSP) -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+
+    <!-- SweetAlert2 đẹp đẹp -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         $(document).ready(function () {
 
-            $("#btnCancelTickets").click(function () {
+            $("#btnCancelTickets").click(function (e) {
+                e.preventDefault(); // chặn reload default
 
                 let qty = parseInt($("#cancelQty").val());
 
                 if (!qty || qty <= 0) {
-                    alert("Vui lòng nhập số vé hợp lệ.");
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Số lượng không hợp lệ',
+                        text: 'Vui lòng nhập số vé muốn hủy (> 0).',
+                        confirmButtonColor: '#2563eb'
+                    });
                     return;
                 }
+
+                // Hỏi xác nhận trước khi gọi API
+                Swal.fire({
+                    icon: 'question',
+                    title: 'Xác nhận hủy vé',
+                    html: `Bạn chắc chắn muốn <b>hủy ${qty} vé</b> cho sự kiện này?`,
+                    showCancelButton: true,
+                    confirmButtonText: 'Đồng ý',
+                    cancelButtonText: 'Không',
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#6b7280'
+                }).then(function (result) {
+                    if (!result.isConfirmed) return;
+
+                    // Nếu user bấm Đồng ý thì mới hủy
+                    doPartialCancel(qty);
+                });
+            });
+
+            function doPartialCancel(qty) {
+                const token = $('input[name="__RequestVerificationToken"]').val();
+                const $btn = $("#btnCancelTickets");
+
+                // Disable nút + đổi nội dung cho có cảm giác đang xử lý
+                $btn.prop("disabled", true).html(
+                    '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Đang hủy...'
+                );
 
                 $.ajax({
                     url: '@Url.Action("PartialCancel", "EventBooking", new { area = "Client" })',
                     type: "POST",
+                    headers: {
+                        'RequestVerificationToken': token
+                    },
                     data: {
                         bookingId: @Model.BookingId,
                         cancelQuantity: qty
                     },
                     success: function (res) {
-                        alert(res.message);
-                        if (res.success) location.reload();
+                        console.log("RES:", res);
+
+                        Swal.fire({
+                            icon: res.success ? 'success' : 'error',
+                            title: res.success ? 'Hủy vé thành công' : 'Không thể hủy vé',
+                            text: res.message,
+                            confirmButtonColor: '#2563eb'
+                        }).then(function () {
+                            if (res.success) {
+                                // reload để cập nhật lại số lượng, trạng thái
+                                location.reload();
+                            } else {
+                                // bật lại nút nếu thất bại
+                                $btn.prop("disabled", false).text('Hủy vé');
+                            }
+                        });
                     },
                     error: function (xhr) {
-                        console.log("AJAX ERROR:", xhr.responseText);
-                        alert("Lỗi server khi hủy vé.");
+                        console.log("AJAX ERROR:", xhr.status, xhr.responseText);
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi hệ thống',
+                            text: 'Đã xảy ra lỗi khi hủy vé. Vui lòng thử lại sau.',
+                            confirmButtonColor: '#2563eb'
+                        });
+
+                        $btn.prop("disabled", false).text('Hủy vé');
                     }
                 });
-
-            });
+            }
 
         });
     </script>
 }
+
+
+
+
+

@@ -12,6 +12,11 @@
     var futureMovies = Model.MovieTickets.Where(t => t.Status == "Sắp chiếu").ToList();
     var pastMovies = Model.MovieTickets.Where(t => t.Status == "Đã xem").ToList();
     var cancelledMovies = Model.MovieTickets.Where(t => t.Status == "Đã hủy").ToList();
+        // ===== GROUP VÉ SỰ KIỆN THEO TRẠNG THÁI =====
+    var upcomingEvents = Model.EventTickets.Where(e => e.Status == "Sắp diễn ra").ToList();
+    var pastEvents = Model.EventTickets.Where(e => e.Status == "Đã diễn ra").ToList();
+    var cancelledEvents = Model.EventTickets.Where(e => e.Status == "Đã hủy").ToList();
+
 
     // ===== HÌNH PHIM (dựa theo Cinema) =====
     Func<string, string> ImgMovie = (raw) =>
@@ -133,6 +138,7 @@
 }
 
 <style>
+    /* TAB LỚN / NHỎ ----------------------------------------- */
     .big-tab-bar {
         display: flex;
         gap: 14px;
@@ -146,11 +152,18 @@
         border: none;
         font-weight: 700;
         cursor: pointer;
+        transition: background .18s ease, color .18s ease, transform .16s ease, box-shadow .16s ease;
     }
+
+        .big-tab-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.18);
+        }
 
         .big-tab-btn.active {
             background: #2563eb;
-            color: white;
+            color: #ffffff;
+            box-shadow: 0 14px 32px rgba(37, 99, 235, 0.4);
         }
 
     .subtab-bar {
@@ -161,72 +174,184 @@
 
     .subtab-btn {
         padding: 8px 20px;
-        border-radius: 20px;
+        border-radius: 999px;
         background: #e5e7eb;
         border: none;
         font-weight: 700;
         cursor: pointer;
+        font-size: .9rem;
+        transition: background .18s ease, color .18s ease, transform .16s ease, box-shadow .16s ease;
     }
+
+        .subtab-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 22px rgba(148, 163, 184, 0.4);
+        }
 
         .subtab-btn.active {
             background: #2563eb;
-            color: white;
+            color: #ffffff;
         }
 
+    /* CARD VÉ ------------------------------------------------ */
     .ticket-card {
-        background: #1e293b;
-        color: white;
-        border-radius: 14px;
+        background: #0f172a; /* xanh đậm */
+        color: #ffffff;
+        border-radius: 18px;
         overflow: hidden;
+        border: 1px solid #020617;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.45);
+        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, filter .18s ease;
     }
 
+        .ticket-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 26px 70px rgba(15, 23, 42, 0.60);
+            border-color: #2563eb;
+        }
+
+    /* Phần poster: nền trắng, ảnh “float” giống demo */
     .ticket-img {
         width: 100%;
-        height: 170px;
-        object-fit: cover;
+        height: 200px;
+        object-fit: contain;
+        background: radial-gradient(circle at top, #ffffff 0, #f3f4f6 55%, #e5e7eb 100%);
+        padding: 10px 10px 0 10px;
+        display: block;
     }
 
-    .ticket-body {
-        padding: 12px;
+    .ticket-body,
+    .event-body {
+        padding: 14px 14px 16px;
+        background: #111827;
     }
 
     .ticket-title {
-        font-size: .95rem;
+        font-size: 1rem;
         font-weight: 800;
+        margin-top: 6px;
+        margin-bottom: 6px;
     }
 
     .ticket-time {
-        font-size: .85rem;
+        font-size: .86rem;
         color: #dbeafe;
+        line-height: 1.2;
     }
 
+    /* BADGE TRẠNG THÁI -------------------------------------- */
     .badge-status {
-        padding: 4px 10px;
-        border-radius: 6px;
+        padding: 4px 12px;
+        border-radius: 999px;
         font-size: .7rem;
-        font-weight: 700;
+        font-weight: 800;
         display: inline-block;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+        color: #f9fafb;
     }
 
     .badge-upcoming {
-        background: #2563eb;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
     }
 
     .badge-watched {
-        background: #16a34a;
+        background: linear-gradient(135deg, #16a34a, #22c55e);
     }
 
     .badge-cancelled {
-        background: #dc2626;
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
     }
 
+    /* Nút trong card (xem chi tiết / hủy vé) ---------------- */
+    .ticket-card .btn {
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: .9rem;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.35);
+        border: none;
+        transition: transform .14s ease, box-shadow .14s ease, filter .14s ease;
+    }
+
+        .ticket-card .btn + .btn {
+            margin-top: .35rem;
+        }
+
+    .ticket-card .btn-primary {
+        background: #2563eb;
+    }
+
+        .ticket-card .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 16px 38px rgba(37, 99, 235, 0.65);
+            filter: brightness(1.03);
+        }
+
+    .ticket-card .btn-danger {
+        background: #ef4444;
+    }
+
+        .ticket-card .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 16px 38px rgba(220, 38, 38, 0.65);
+            filter: brightness(1.03);
+        }
+
+    .ticket-card .btn-outline-light {
+        border: 1px solid rgba(209, 213, 219, 0.9);
+        background: transparent;
+        color: #e5e7eb;
+    }
+
+        .ticket-card .btn-outline-light:hover {
+            background: #f9fafb;
+            color: #0f172a;
+            transform: translateY(-2px);
+        }
+
+    .ticket-card .btn-outline-danger {
+        border: 1px solid rgba(248, 113, 113, 0.9);
+        color: #fecaca;
+        background: transparent;
+    }
+
+        .ticket-card .btn-outline-danger:hover {
+            background: #fee2e2;
+            color: #7f1d1d;
+            transform: translateY(-2px);
+        }
+
+    /* Hộp trống --------------------------------------------- */
     .empty-box {
         background: #cffafe;
         padding: 14px;
         border-radius: 10px;
         color: #075985;
+        border: 1px solid #0ea5e9;
+    }
+
+    /* Responsive nhẹ cho mobile ----------------------------- */
+    @@media (max-width: 575.98px) {
+        .big-tab-bar
+
+    {
+        flex-direction: column;
+    }
+
+    .subtab-bar {
+        flex-wrap: wrap;
+    }
+
+    .ticket-img {
+        height: 190px;
+    }
+
     }
 </style>
+
 
 <script>
     function showBigTab(tab) {
@@ -246,6 +371,36 @@
         btnMovieCancelled.classList.toggle("active", sub === 'cancelled');
     }
 </script>
+<script>
+    function showBigTab(tab) {
+        movieTab.style.display = tab === 'movie' ? 'block' : 'none';
+        eventTab.style.display = tab === 'event' ? 'block' : 'none';
+        btnBigMovie.classList.toggle("active", tab === 'movie');
+        btnBigEvent.classList.toggle("active", tab === 'event');
+    }
+
+    function showMovieSubTab(sub) {
+        movieFuture.style.display    = sub === 'future'    ? 'block' : 'none';
+        moviePast.style.display      = sub === 'past'      ? 'block' : 'none';
+        movieCancelled.style.display = sub === 'cancelled' ? 'block' : 'none';
+
+        btnMovieFuture.classList.toggle("active", sub === 'future');
+        btnMoviePast.classList.toggle("active", sub === 'past');
+        btnMovieCancelled.classList.toggle("active", sub === 'cancelled');
+    }
+
+    // 🔹 TAB CON CHO VÉ SỰ KIỆN
+    function showEventSubTab(sub) {
+        eventUpcoming.style.display   = sub === 'upcoming'  ? 'block' : 'none';
+        eventPast.style.display       = sub === 'past'      ? 'block' : 'none';
+        eventCancelled.style.display  = sub === 'cancelled' ? 'block' : 'none';
+
+        btnEventUpcoming.classList.toggle("active", sub === 'upcoming');
+        btnEventPast.classList.toggle("active", sub === 'past');
+        btnEventCancelled.classList.toggle("active", sub === 'cancelled');
+    }
+</script>
+
 
 <div class="container my-4">
 
@@ -415,6 +570,9 @@
     <!-- ================================================= -->
     <!--              TAB 2 — SỰ KIỆN -->
     <!-- ================================================= -->
+    <!-- ================================================= -->
+    <!--              TAB 2 — SỰ KIỆN -->
+    <!-- ================================================= -->
     <div id="eventTab" style="display:none;">
 
         @if (!Model.EventTickets.Any())
@@ -423,44 +581,140 @@
         }
         else
         {
-            <div class="row g-4">
-                @foreach (var e in Model.EventTickets)
+            <!-- SUBTAB cho sự kiện -->
+            <div class="subtab-bar mb-3">
+                <button id="btnEventUpcoming"
+                        class="subtab-btn active"
+                        onclick="showEventSubTab('upcoming')">
+                    Sắp diễn ra
+                </button>
+
+                <button id="btnEventPast"
+                        class="subtab-btn"
+                        onclick="showEventSubTab('past')">
+                    Đã diễn ra
+                </button>
+
+                <button id="btnEventCancelled"
+                        class="subtab-btn"
+                        onclick="showEventSubTab('cancelled')">
+                    Đã hủy
+                </button>
+            </div>
+
+            <!-- 🔹 SẮP DIỄN RA -->
+            <div id="eventUpcoming">
+                @if (!upcomingEvents.Any())
                 {
-                    var poster = ImgEvent(e.EventImage);
+                    <div class="empty-box">Không có vé sự kiện sắp diễn ra.</div>
+                }
+                else
+                {
+                    <div class="row g-4">
+                        @foreach (var e in upcomingEvents)
+                        {
+                            var poster = ImgEvent(e.EventImage);
 
-                    <div class="col-6 col-md-4 col-lg-3">
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="ticket-card">
+                                    <img src="@poster" class="ticket-img" />
+                                    <div class="event-body">
+                                        <span class="badge-status badge-upcoming">
+                                            @e.Status.ToUpper()
+                                        </span>
+                                        <div class="ticket-title">@e.EventName</div>
+                                        <div class="ticket-time">@e.EventStart.ToString("dd/MM/yyyy HH:mm")</div>
+                                        <div class="ticket-time">Số lượng: @e.Quantity</div>
+                                        <div class="ticket-time">Tổng tiền: @e.TotalCost.ToString("N0") đ</div>
 
-                        <div class="ticket-card">
-
-                            <img src="@poster" class="ticket-img" />
-
-                            <div class="event-body">
-
-                                <span class="badge-status @(e.Status == "Sắp diễn ra" ? "badge-upcoming" : e.Status == "Đã diễn ra" ? "badge-watched" : "badge-cancelled")">
-                                    @e.Status.ToUpper()
-                                </span>
-
-                                <div class="ticket-title">@e.EventName</div>
-
-                                <div class="ticket-time">@e.EventStart.ToString("dd/MM/yyyy HH:mm")</div>
-
-                                <div class="ticket-time">Số lượng: @e.Quantity</div>
-                                <div class="ticket-time">Tổng tiền: @e.TotalCost.ToString("N0") đ</div>
-
-                                <a href="@Url.Action("Details", "EventBooking", new { area = "Client", id = e.BookingId })"
-                                   class="btn btn-primary btn-sm w-100 mt-2">
-                                    Xem chi tiết
-                                </a>
-
+                                        <a href="@Url.Action("Details", "EventBooking", new { area = "Client", id = e.BookingId })"
+                                           class="btn btn-primary btn-sm w-100 mt-2">
+                                            Xem chi tiết
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
+                        }
+                    </div>
+                }
+            </div>
 
-                        </div>
+            <!-- 🔹 ĐÃ DIỄN RA -->
+            <div id="eventPast" style="display:none;">
+                @if (!pastEvents.Any())
+                {
+                    <div class="empty-box">Chưa có sự kiện nào bạn đã tham gia.</div>
+                }
+                else
+                {
+                    <div class="row g-4">
+                        @foreach (var e in pastEvents)
+                        {
+                            var poster = ImgEvent(e.EventImage);
 
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="ticket-card">
+                                    <img src="@poster" class="ticket-img" />
+                                    <div class="event-body">
+                                        <span class="badge-status badge-watched">
+                                            @e.Status.ToUpper()
+                                        </span>
+                                        <div class="ticket-title">@e.EventName</div>
+                                        <div class="ticket-time">@e.EventStart.ToString("dd/MM/yyyy HH:mm")</div>
+                                        <div class="ticket-time">Số lượng: @e.Quantity</div>
+                                        <div class="ticket-time">Tổng tiền: @e.TotalCost.ToString("N0") đ</div>
+
+                                        <a href="@Url.Action("Details", "EventBooking", new { area = "Client", id = e.BookingId })"
+                                           class="btn btn-outline-light btn-sm w-100 mt-2">
+                                            Xem lại vé
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- 🔹 ĐÃ HỦY -->
+            <div id="eventCancelled" style="display:none;">
+                @if (!cancelledEvents.Any())
+                {
+                    <div class="empty-box">Bạn chưa hủy vé sự kiện nào.</div>
+                }
+                else
+                {
+                    <div class="row g-4">
+                        @foreach (var e in cancelledEvents)
+                        {
+                            var poster = ImgEvent(e.EventImage);
+
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="ticket-card" style="opacity:.6;">
+                                    <img src="@poster" class="ticket-img" />
+                                    <div class="event-body">
+                                        <span class="badge-status badge-cancelled">
+                                            @e.Status.ToUpper()
+                                        </span>
+                                        <div class="ticket-title">@e.EventName</div>
+                                        <div class="ticket-time">@e.EventStart.ToString("dd/MM/yyyy HH:mm")</div>
+                                        <div class="ticket-time">Số lượng: @e.Quantity</div>
+                                        <div class="ticket-time">Tổng tiền: @e.TotalCost.ToString("N0") đ</div>
+
+                                        <a href="@Url.Action("Details", "EventBooking", new { area = "Client", id = e.BookingId })"
+                                           class="btn btn-outline-danger btn-sm w-100 mt-2">
+                                            Xem lại vé
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
                     </div>
                 }
             </div>
         }
     </div>
+
 
 </div>
     
