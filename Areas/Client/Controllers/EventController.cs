@@ -30,16 +30,10 @@ namespace Semester03.Areas.Client.Controllers
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger;
         }
-
-        // Helper: lấy user id hiện tại an toàn từ claims
         private int? GetCurrentUserId()
         {
             if (User?.Identity == null || !User.Identity.IsAuthenticated) return null;
-
-            // ưu tiên NameIdentifier (đây là claim bạn set khi sign-in)
             var id = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            // fallback: một số hệ thống có thể dùng "UserId" hoặc DefaultNameClaimType
             if (string.IsNullOrWhiteSpace(id))
             {
                 id = User.FindFirst("UserId")?.Value;
@@ -53,11 +47,9 @@ namespace Semester03.Areas.Client.Controllers
             if (int.TryParse(id, out var uid)) return uid;
             return null;
         }
-
-        // Trang danh sách sự kiện
         public async Task<IActionResult> Index(int page = 1)
         {
-            const int PageSize = 9; // 3 cột * 3 hàng
+            const int PageSize = 9; 
 
             ViewData["Title"] = "Events";
             ViewData["MallName"] = ViewData["MallName"] ?? "ABCD Mall";
@@ -86,54 +78,43 @@ namespace Semester03.Areas.Client.Controllers
 
             return View(ev);
         }
-
-        // ⭐ COMMENT EVENT – AJAX
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddComment(int eventId, int rate, string text)
         {
             if (!(User?.Identity?.IsAuthenticated ?? false))
             {
-                return Json(new { success = false, message = "Bạn phải đăng nhập để bình luận." });
+                return Json(new { success = false, message = "You must be logged in to comment." });
             }
 
             var userId = GetCurrentUserId();
             if (!userId.HasValue)
             {
-                // optional: log claims for debugging (uncomment if needed)
-                /*
-                _logger?.LogWarning("AddComment: Unable to parse user id from claims. Claims: {claims}",
-                    string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
-                */
-                return Json(new { success = false, message = "Không xác định được người dùng." });
+                return Json(new { success = false, message = "Unable to identify user." });
             }
 
             if (rate < 1 || rate > 5)
             {
-                return Json(new { success = false, message = "Điểm đánh giá không hợp lệ (1-5)." });
+                return Json(new { success = false, message = "Invalid rating (must be between 1 and 5)." });
             }
 
             text = (text ?? "").Trim();
             if (string.IsNullOrWhiteSpace(text))
             {
-                return Json(new { success = false, message = "Vui lòng nhập nội dung bình luận." });
+                return Json(new { success = false, message = "Please enter your comment content." });
             }
-
-            // Sử dụng repository để kiểm tra event tồn tại
             var evtExists = await _repo.EventExistsAsync(eventId);
 
             if (!evtExists)
             {
-                return Json(new { success = false, message = "Sự kiện không tồn tại hoặc đã ngừng." });
+                return Json(new { success = false, message = "The event does not exist or has been discontinued." });
             }
-
-            // Gọi repository để thêm comment
             await _repo.AddCommentAsync(eventId, userId.Value, rate, text);
 
             return Json(new
             {
                 success = true,
-                message = "Bình luận đã được gửi, sẽ hiển thị cho mọi người sau khi được duyệt."
+                message = "Your comment has been submitted and will be visible to everyone after approval."
             });
         }
     }

@@ -6,17 +6,16 @@
 
 @{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
-    ViewData["Title"] = "Thông tin vé sự kiện";
+    ViewData["Title"] = "Event ticket information";
 
-    var dayOfWeek = Model.EventStart.ToString("dddd", new System.Globalization.CultureInfo("vi-VN"));
+    var dayOfWeek = Model.EventStart.ToString("dddd", new System.Globalization.CultureInfo("en-US"));
 
     var locationText = string.IsNullOrWhiteSpace(Model.PositionLocation)
         ? ""
         : Model.PositionFloor.HasValue
-            ? $"{Model.PositionLocation} - Tầng {Model.PositionFloor}"
+            ? $"{Model.PositionLocation} - Floor {Model.PositionFloor}"
             : Model.PositionLocation;
 
-    // ===== HÀM ẢNH CHO EVENT (DÙNG CHUNG LOGIC VỚI VIEW EVENT) =====
     Func<string, string> ImgEvent = (raw) =>
     {
         var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
@@ -25,15 +24,9 @@
         {
             if (string.IsNullOrWhiteSpace(raw))
                 return noImageUrl;
-
-            // nếu là URL tuyệt đối thì trả luôn
             if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 return raw;
-
-            // chuẩn hóa path
             var file = raw.Replace("\\", "/").Trim();
-
-            // nếu raw chứa "Content/Uploads/Events" thì chỉ lấy file name cuối
             var keyword = "Content/Uploads/Events";
             var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
             if (idxKeyword >= 0)
@@ -41,8 +34,6 @@
                 var lastSlash = file.LastIndexOf('/');
                 if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
             }
-
-            // bỏ prefix "wwwroot/", "~/" hoặc "/"
             if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
                 file = file.Substring("wwwroot/".Length);
             if (file.StartsWith("~/"))
@@ -52,12 +43,9 @@
 
             if (string.IsNullOrWhiteSpace(file))
                 return noImageUrl;
-
-            // lấy IWebHostEnvironment để check file thật trong wwwroot
             var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
             if (env == null)
             {
-                // fallback: cứ trỏ vào thư mục Events
                 return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
             }
 
@@ -182,24 +170,24 @@
 
 <div class="ticket-wrapper mt-4 mb-4 position-relative">
 
-    @* Stamp trạng thái *@
-    @if (Model.Status == "Đã hủy")
+    @* Status stamp *@
+    @if (Model.Status == "Cancelled")
     {
-        <div class="stamp-status cancelled">ĐÃ HỦY</div>
+        <div class="stamp-status cancelled">CANCELLED</div>
     }
-    else if (Model.Status == "Đã diễn ra")
+    else if (Model.Status == "Completed")
     {
-        <div class="stamp-status">ĐÃ DIỄN RA</div>
+        <div class="stamp-status">COMPLETED</div>
     }
 
     <div class="ticket-header">
         <a href="javascript:history.back()">
             <i class="bi bi-arrow-left"></i>
         </a>
-        Thông tin vé sự kiện
+        Event ticket information
     </div>
 
-    <!-- DÙNG HÀM ImgEvent THAY VÌ DÙNG TRỰC TIẾP Model.EventImg -->
+    <!-- Use ImgEvent helper instead of Model.EventImg directly -->
     <img src="@ImgEvent(Model.EventImg)" class="ticket-poster" />
 
     <div class="ticket-body">
@@ -214,15 +202,15 @@
         }
 
         <span class="ticket-badge-status
-            @(Model.Status == "Đã diễn ra" ? "past" : Model.Status == "Đã hủy" ? "cancelled" : "")">
+            @(Model.Status == "Completed" ? "past" : Model.Status == "Cancelled" ? "cancelled" : "")">
             @Model.Status.ToUpper()
         </span>
 
         <div class="ticket-section">
-            <div class="ticket-label">Mã đặt vé:</div>
+            <div class="ticket-label">Booking ID:</div>
             <div class="ticket-value">@Model.BookingId</div>
 
-            <div class="ticket-label mt-3">Thời gian:</div>
+            <div class="ticket-label mt-3">Time:</div>
             <div class="ticket-value" style="color:#e00063">
                 @Model.EventStart.ToString("HH:mm") - @Model.EventEnd.ToString("HH:mm")
             </div>
@@ -235,19 +223,19 @@
         <div class="ticket-section">
             <div class="row text-center">
                 <div class="col">
-                    <div class="ticket-label">Số lượng vé</div>
+                    <div class="ticket-label">Number of tickets</div>
                     <div class="ticket-value">@Model.Quantity</div>
                 </div>
                 <div class="col">
-                    <div class="ticket-label">Giá / vé</div>
+                    <div class="ticket-label">Price / ticket</div>
                     <div class="ticket-value">
-                        @Model.UnitPrice.ToString("N0") đ
+                        @Model.UnitPrice.ToString("N0") ₫
                     </div>
                 </div>
                 <div class="col">
-                    <div class="ticket-label">Tổng tiền</div>
+                    <div class="ticket-label">Total amount</div>
                     <div class="ticket-value">
-                        @Model.TotalCost.ToString("N0") đ
+                        @Model.TotalCost.ToString("N0") ₫
                     </div>
                 </div>
             </div>
@@ -258,25 +246,25 @@
             <div class="ticket-section">
                 @if (!string.IsNullOrWhiteSpace(locationText))
                 {
-                    <div class="ticket-label">Địa điểm</div>
+                    <div class="ticket-label">Location</div>
                     <div class="ticket-value">@locationText</div>
                 }
 
                 @if (!string.IsNullOrWhiteSpace(Model.OrganizerShopName))
                 {
-                    <div class="ticket-label mt-2">Đơn vị tổ chức</div>
+                    <div class="ticket-label mt-2">Organizer</div>
                     <div class="ticket-value">@Model.OrganizerShopName</div>
                 }
             </div>
         }
 
         @* ===========================
-           PHẦN HỦY VÉ SỰ KIỆN
+           PARTIAL TICKET CANCELLATION
            =========================== *@
-        @if (Model.Status != "Đã hủy" && Model.Quantity > 0)
+        @if (Model.Status != "Cancelled" && Model.Quantity > 0)
         {
             <div class="ticket-section">
-                <div class="ticket-label mb-2">Hủy bớt vé</div>
+                <div class="ticket-label mb-2">Cancel tickets</div>
 
                 <div class="d-flex align-items-center gap-2">
                     <input id="cancelQty"
@@ -284,15 +272,15 @@
                            class="form-control"
                            min="1"
                            max="@Model.Quantity"
-                           placeholder="Nhập số vé muốn hủy"
+                           placeholder="Enter the number of tickets to cancel"
                            style="width:150px;" />
 
                     <button class="btn btn-danger" id="btnCancelTickets">
-                        Hủy vé
+                        Cancel
                     </button>
                 </div>
 
-                <small class="text-muted">Chỉ có thể hủy tối đa @Model.Quantity vé.</small>
+                <small class="text-muted">You can cancel up to @Model.Quantity ticket(s).</small>
             </div>
         }
 
@@ -303,7 +291,7 @@
 
 @section Scripts {
 
-    @* THÊM jQuery – BẮT BUỘC *@
+    @* jQuery (required) *@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
     <script>
@@ -314,7 +302,7 @@
                 let qty = parseInt($("#cancelQty").val());
 
                 if (!qty || qty <= 0) {
-                    alert("Vui lòng nhập số vé hợp lệ.");
+                    alert("Please enter a valid number of tickets.");
                     return;
                 }
 
@@ -331,7 +319,7 @@
                     },
                     error: function (xhr) {
                         console.log("AJAX ERROR:", xhr.responseText);
-                        alert("Lỗi server khi hủy vé.");
+                        alert("Server error while cancelling tickets.");
                     }
                 });
 

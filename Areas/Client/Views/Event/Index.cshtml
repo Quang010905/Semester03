@@ -6,10 +6,8 @@
 @using Semester03.Areas.Client.Models.ViewModels
 
 @{
-    ViewData["Title"] = "Sự kiện";
+    ViewData["Title"] = "Events";
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
-
-    // Hàm xử lý ảnh sự kiện – giống style ImgEvent bên Tickets
     Func<string, string> Img = (raw) =>
     {
         var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
@@ -18,15 +16,10 @@
         {
             if (string.IsNullOrWhiteSpace(raw))
                 return noImageUrl;
-
-            // Link external
             if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 return raw;
 
-            // Chuẩn hóa path
             var file = raw.Replace("\\", "/").Trim();
-
-            // Nếu path chứa "Content/Uploads/Events" thì lấy filename cuối
             var keyword = "Content/Uploads/Events";
             var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
             if (idxKeyword >= 0)
@@ -34,8 +27,6 @@
                 var lastSlash = file.LastIndexOf('/');
                 if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
             }
-
-            // Bỏ prefix không cần thiết
             if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
                 file = file.Substring("wwwroot/".Length);
             if (file.StartsWith("~/"))
@@ -46,7 +37,6 @@
             if (string.IsNullOrWhiteSpace(file))
                 return noImageUrl;
 
-            // Lấy env để kiểm tra file thực tế
             var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
             if (env == null)
             {
@@ -114,9 +104,7 @@
 }
 
 <div class="container py-3">
-
-    <!-- ░░ SỰ KIỆN SẮP DIỄN RA ░░ -->
-    <h2 class="fw-bold mb-3">Sự kiện sắp diễn ra</h2>
+    <h2 class="fw-bold mb-3">Upcoming Events</h2>
 
     <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
         @foreach (var e in upcoming)
@@ -150,12 +138,11 @@
         }
     </div>
 
-    <!-- ░░ SỰ KIỆN ĐÃ DIỄN RA (PAST + PAGINATION) ░░ -->
-    <h3 class="fw-bold mt-5 mb-3">Sự kiện đã diễn ra</h3>
+    <h3 class="fw-bold mt-5 mb-3">Past Events</h3>
 
     @if (!past.Any())
     {
-        <p class="text-muted">Hiện chưa có sự kiện nào đã diễn ra.</p>
+        <p class="text-muted">There are no past events yet.</p>
     }
     else
     {
@@ -187,15 +174,13 @@
                                     }
                                 </span>
 
-                                <span class="badge bg-danger">Đã kết thúc</span>
+                                <span class="badge bg-danger">Ended</span>
                             </div>
                         </div>
                     </div>
                 </div>
             }
         </div>
-
-        <!-- PHÂN TRANG -->
         @if (pastPaged.TotalPages > 1)
         {
             <nav class="mt-4" aria-label="Page navigation">
