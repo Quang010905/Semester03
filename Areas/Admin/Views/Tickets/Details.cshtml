@@ -35,11 +35,44 @@
 
                     <dt class="col-sm-3">Purchased At</dt>
                     <dd class="col-sm-9">@Model.TicketCreatedAt</dd>
+
+                    <dt class="col-sm-3">QR Data</dt>
+                    <dd class="col-sm-9">
+                        @if (!string.IsNullOrEmpty(Model.TicketQr))
+                        {
+                            <code class="text-xs">@Model.TicketQr</code>
+                        }
+                        else
+                        {
+                            <span class="text-muted font-italic">No QR code generated</span>
+                        }
+                    </dd>
                 </dl>
             </div>
         </div>
     </div>
+
     <div class="col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Ticket QR Code</h6>
+            </div>
+            <div class="card-body text-center">
+                @if (!string.IsNullOrEmpty(Model.TicketQr))
+                {
+                    <div id="qrcode" style="display: flex; justify-content: center;"></div>
+                    <p class="mt-2 small text-muted">Scan to verify ticket</p>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="fas fa-qrcode fa-3x text-gray-300 mb-3"></i>
+                        <p>No QR Code Available</p>
+                    </div>
+                }
+            </div>
+        </div>
+
         <div class="card shadow mb-4">
             <div class="card-header py-3">
                 <h6 class="m-0 font-weight-bold text-primary">Buyer Details</h6>
@@ -76,19 +109,44 @@
             <dd class="col-sm-10">@Model.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeScreen?.ScreenName</dd>
 
             <dt class="col-sm-2">Seat</dt>
-            <dd class="col-sm-10">@Model.TicketShowtimeSeat?.ShowtimeSeatSeat?.SeatLabel</dd>
+            <dd class="col-sm-10">
+                <span class="badge badge-info" style="font-size: 1rem;">
+                    @Model.TicketShowtimeSeat?.ShowtimeSeatSeat?.SeatLabel
+                </span>
+            </dd>
         </dl>
     </div>
-    <div classs="card-footer" style="padding: 1.25rem;">
+    <div class="card-footer" style="padding: 1.25rem;">
         <a asp-action="Index" class="btn btn-secondary">Back to List</a>
         @if (Model.TicketStatus.ToLower() == "sold")
         {
-            <form asp-action="Cancel" asp-route-id="@Model.TicketId" method="post">
-                <button type.Submit() class="btn btn-danger"
-                        onclick="return confirm('Are you sure you want to cancel this ticket and refund the customer? This action cannot be undone.')">
-                    <i class="fas fa-times"></i> Cancel Ticket
-                </button>
-            </form>
+            <div class="float-right">
+                <form asp-action="Cancel" asp-route-id="@Model.TicketId" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-danger"
+                            onclick="return confirm('Are you sure you want to cancel this ticket and refund the customer? This action cannot be undone.')">
+                        <i class="fas fa-times"></i> Cancel Ticket
+                    </button>
+                </form>
+            </div>
         }
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var qrData = "@Html.Raw(Model.TicketQr)";
+            if (qrData) {
+                new QRCode(document.getElementById("qrcode"), {
+                    text: qrData,
+                    width: 150,
+                    height: 150,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            }
+        });
+    </script>
+}
