@@ -381,16 +381,21 @@ namespace Semester03.Areas.Client.Controllers
                 }
             }
 
-            if (!response.Success)
+            // 🔴 kiểm tra trực tiếp mã phản hồi của VNPAY
+            var vnpResponseCode = Request.Query["vnp_ResponseCode"].ToString();
+
+            if (string.IsNullOrEmpty(vnpResponseCode) || vnpResponseCode != "00")
             {
+                // user hủy / lỗi thanh toán
                 return RedirectToAction("PaymentFailed", new
                 {
                     showtimeId,
                     seatIds,
-                    message = $"Thanh toán thất bại (Mã lỗi: {response.VnPayResponseCode})"
+                    message = $"Thanh toán thất bại (Mã lỗi: {vnpResponseCode})"
                 });
             }
 
+            // ✅ thành công
             return RedirectToAction("PaymentSuccess", new
             {
                 showtimeId,
@@ -402,17 +407,18 @@ namespace Semester03.Areas.Client.Controllers
             });
         }
 
+
         // =========================
         //  PAYMENT SUCCESS
         // =========================
         [HttpGet]
         public async Task<IActionResult> PaymentSuccess(
-            int showtimeId,
-            string seatIds,
-            int? couponId,
-            decimal originalAmount = 0m,
-            decimal discountAmount = 0m,
-            decimal finalAmount = 0m)
+    int showtimeId,
+    string seatIds,
+    int? couponId,
+    decimal originalAmount = 0m,
+    decimal discountAmount = 0m,
+    decimal finalAmount = 0m)
         {
             var rawParts = (seatIds ?? "")
                 .Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -426,6 +432,7 @@ namespace Semester03.Areas.Client.Controllers
 
             try
             {
+                // ====== Xử lý seatIds như cũ ======
                 if (parsedIds.Any())
                 {
                     showtimeSeatIds = parsedIds;
@@ -522,122 +529,122 @@ namespace Semester03.Areas.Client.Controllers
                 decimal effectiveDiscountAmount = discountAmount;
                 int pointsAwarded = 0;
 
+                // ================== PHẦN DÙNG ADO.NET – ĐÃ SỬA ==================
                 var conn = _context.Database.GetDbConnection();
-                await using (conn)
+                if (conn.State != ConnectionState.Open)
+                    await conn.OpenAsync();       // KHÔNG using / Dispose conn – EF vẫn giữ lifetime
+
+                await using (var dbTx = await conn.BeginTransactionAsync())
                 {
-                    await conn.OpenAsync();
-
-                    using (var dbTx = await conn.BeginTransactionAsync())
+                    try
                     {
-                        try
-                        {
-                            string inClause = string.Join(",", showtimeSeatIds);
+                        string inClause = string.Join(",", showtimeSeatIds);
 
-                            var showtimeSeatRows = new List<(int ShowtimeSeatId, int SeatId, int ShowtimeId)>();
-                            using (var cmd = conn.CreateCommand())
-                            {
-                                cmd.Transaction = dbTx;
-                                cmd.CommandType = CommandType.Text;
-                                cmd.CommandText = $@"
+                        var showtimeSeatRows = new List<(int ShowtimeSeatId, int SeatId, int ShowtimeId)>();
+                        using (var cmd = conn.CreateCommand())
+                        {
+                            cmd.Transaction = dbTx;
+                            cmd.CommandType = CommandType.Text;
+                            cmd.CommandText = $@"
                                     SELECT ShowtimeSeat_ID, ShowtimeSeat_SeatID, ShowtimeSeat_ShowtimeID
                                     FROM dbo.Tbl_ShowtimeSeat
                                     WHERE ShowtimeSeat_ID IN ({inClause})
                                 ";
-                                using var reader = await cmd.ExecuteReaderAsync();
-                                while (await reader.ReadAsync())
-                                {
-                                    var ssid = reader.GetInt32(0);
-                                    var seatId = reader.GetInt32(1);
-                                    var stid = reader.GetInt32(2);
-                                    showtimeSeatRows.Add((ssid, seatId, stid));
-                                }
-                                reader.Close();
-                            }
-
-                            if (!showtimeSeatRows.Any())
+                            using var reader = await cmd.ExecuteReaderAsync();
+                            while (await reader.ReadAsync())
                             {
-                                await dbTx.RollbackAsync();
-                                ViewData["SeatLabels"] = new List<string>();
-                                ViewData["ShowtimeId"] = showtimeId;
-                                ViewData["OriginalAmount"] = 0m;
-                                ViewData["DiscountAmount"] = 0m;
-                                ViewData["TotalAmount"] = 0m;
-                                ViewData["PricePerSeat"] = pricePerSeat;
-                                ViewData["ShowtimeSeatIds"] = "";
-                                ViewData["PointsAwarded"] = 0;
-                                return View();
+                                var ssid = reader.GetInt32(0);
+                                var seatId = reader.GetInt32(1);
+                                var stid = reader.GetInt32(2);
+                                showtimeSeatRows.Add((ssid, seatId, stid));
                             }
+                            reader.Close();
+                        }
 
-                            var seatIdDistinct = showtimeSeatRows.Select(x => x.SeatId).Distinct().ToList();
-                            var seatIdListStr = string.Join(",", seatIdDistinct);
-                            var seatLabelsById = new Dictionary<int, string>();
-                            using (var cmd = conn.CreateCommand())
-                            {
-                                cmd.Transaction = dbTx;
-                                cmd.CommandType = CommandType.Text;
-                                cmd.CommandText = $@"
+                        if (!showtimeSeatRows.Any())
+                        {
+                            await dbTx.RollbackAsync();
+                            ViewData["SeatLabels"] = new List<string>();
+                            ViewData["ShowtimeId"] = showtimeId;
+                            ViewData["OriginalAmount"] = 0m;
+                            ViewData["DiscountAmount"] = 0m;
+                            ViewData["TotalAmount"] = 0m;
+                            ViewData["PricePerSeat"] = pricePerSeat;
+                            ViewData["ShowtimeSeatIds"] = "";
+                            ViewData["PointsAwarded"] = 0;
+                            return View();
+                        }
+
+                        var seatIdDistinct = showtimeSeatRows.Select(x => x.SeatId).Distinct().ToList();
+                        var seatIdListStr = string.Join(",", seatIdDistinct);
+                        var seatLabelsById = new Dictionary<int, string>();
+                        using (var cmd = conn.CreateCommand())
+                        {
+                            cmd.Transaction = dbTx;
+                            cmd.CommandType = CommandType.Text;
+                            cmd.CommandText = $@"
                                     SELECT Seat_ID, Seat_Label
                                     FROM dbo.Tbl_Seat
                                     WHERE Seat_ID IN ({seatIdListStr})
                                 ";
-                                using var reader = await cmd.ExecuteReaderAsync();
-                                while (await reader.ReadAsync())
-                                {
-                                    var id = reader.GetInt32(0);
-                                    var lbl = reader.IsDBNull(1) ? "" : reader.GetString(1);
-                                    seatLabelsById[id] = lbl;
-                                }
-                                reader.Close();
-                            }
-
-                            var seatMappings = showtimeSeatRows
-                                .Select(r => new
-                                {
-                                    r.ShowtimeSeatId,
-                                    Label = seatLabelsById.ContainsKey(r.SeatId) ? seatLabelsById[r.SeatId] : "",
-                                    r.ShowtimeId
-                                })
-                                .ToList();
-
-                            var labels = seatMappings.Select(m => m.Label).ToList();
-                            var seatCount = labels.Count;
-                            var baseTotal = pricePerSeat * seatCount;
-
-                            if (effectiveOriginalAmount <= 0) effectiveOriginalAmount = baseTotal;
-                            if (effectiveFinalAmount <= 0) effectiveFinalAmount = baseTotal;
-                            if (effectiveDiscountAmount <= 0) effectiveDiscountAmount = effectiveOriginalAmount - effectiveFinalAmount;
-                            if (effectiveDiscountAmount < 0) effectiveDiscountAmount = 0m;
-
-                            seatMappingsResult = seatMappings
-                                .Select(m => (m.ShowtimeSeatId, m.Label))
-                                .ToList();
-
-                            var existingTicketSeatIds = new HashSet<int>();
-                            using (var cmd = conn.CreateCommand())
+                            using var reader = await cmd.ExecuteReaderAsync();
+                            while (await reader.ReadAsync())
                             {
-                                cmd.Transaction = dbTx;
-                                cmd.CommandType = CommandType.Text;
-                                cmd.CommandText = $@"
+                                var id = reader.GetInt32(0);
+                                var lbl = reader.IsDBNull(1) ? "" : reader.GetString(1);
+                                seatLabelsById[id] = lbl;
+                            }
+                            reader.Close();
+                        }
+
+                        var seatMappings = showtimeSeatRows
+                            .Select(r => new
+                            {
+                                r.ShowtimeSeatId,
+                                Label = seatLabelsById.ContainsKey(r.SeatId) ? seatLabelsById[r.SeatId] : "",
+                                r.ShowtimeId
+                            })
+                            .ToList();
+
+                        var labels = seatMappings.Select(m => m.Label).ToList();
+                        var seatCount = labels.Count;
+                        var baseTotal = pricePerSeat * seatCount;
+
+                        if (effectiveOriginalAmount <= 0) effectiveOriginalAmount = baseTotal;
+                        if (effectiveFinalAmount <= 0) effectiveFinalAmount = baseTotal;
+                        if (effectiveDiscountAmount <= 0) effectiveDiscountAmount = effectiveOriginalAmount - effectiveFinalAmount;
+                        if (effectiveDiscountAmount < 0) effectiveDiscountAmount = 0m;
+
+                        seatMappingsResult = seatMappings
+                            .Select(m => (m.ShowtimeSeatId, m.Label))
+                            .ToList();
+
+                        var existingTicketSeatIds = new HashSet<int>();
+                        using (var cmd = conn.CreateCommand())
+                        {
+                            cmd.Transaction = dbTx;
+                            cmd.CommandType = CommandType.Text;
+                            cmd.CommandText = $@"
                                     SELECT Ticket_ShowtimeSeatID
                                     FROM dbo.Tbl_Ticket
                                     WHERE Ticket_ShowtimeSeatID IN ({inClause})
                                 ";
-                                using var reader = await cmd.ExecuteReaderAsync();
-                                while (await reader.ReadAsync())
-                                {
-                                    if (!reader.IsDBNull(0))
-                                    {
-                                        existingTicketSeatIds.Add(reader.GetInt32(0));
-                                    }
-                                }
-                                reader.Close();
-                            }
-
-                            using (var cmd = conn.CreateCommand())
+                            using var reader = await cmd.ExecuteReaderAsync();
+                            while (await reader.ReadAsync())
                             {
-                                cmd.Transaction = dbTx;
-                                cmd.CommandType = CommandType.Text;
-                                cmd.CommandText = $@"
+                                if (!reader.IsDBNull(0))
+                                {
+                                    existingTicketSeatIds.Add(reader.GetInt32(0));
+                                }
+                            }
+                            reader.Close();
+                        }
+
+                        using (var cmd = conn.CreateCommand())
+                        {
+                            cmd.Transaction = dbTx;
+                            cmd.CommandType = CommandType.Text;
+                            cmd.CommandText = $@"
                                     UPDATE dbo.Tbl_ShowtimeSeat
                                     SET ShowtimeSeat_Status = @status,
                                         ShowtimeSeat_UpdatedAt = @now,
@@ -646,48 +653,46 @@ namespace Semester03.Areas.Client.Controllers
                                     WHERE ShowtimeSeat_ID IN ({inClause})
                                 ";
 
-                                var pStatus = cmd.CreateParameter();
-                                pStatus.ParameterName = "@status";
-                                pStatus.Value = "sold";
-                                cmd.Parameters.Add(pStatus);
+                            var pStatus = cmd.CreateParameter();
+                            pStatus.ParameterName = "@status";
+                            pStatus.Value = "sold";
+                            cmd.Parameters.Add(pStatus);
 
-                                var pNow = cmd.CreateParameter();
-                                pNow.ParameterName = "@now";
-                                pNow.Value = DateTime.Now;
-                                cmd.Parameters.Add(pNow);
+                            var pNow = cmd.CreateParameter();
+                            pNow.ParameterName = "@now";
+                            pNow.Value = DateTime.Now;
+                            cmd.Parameters.Add(pNow);
 
-                                var pReservedBy = cmd.CreateParameter();
-                                pReservedBy.ParameterName = "@reservedBy";
-                                pReservedBy.Value = (object?)buyerId ?? DBNull.Value;
-                                cmd.Parameters.Add(pReservedBy);
+                            var pReservedBy = cmd.CreateParameter();
+                            pReservedBy.ParameterName = "@reservedBy";
+                            pReservedBy.Value = (object?)buyerId ?? DBNull.Value;
+                            cmd.Parameters.Add(pReservedBy);
 
-                                var pReservedAt = cmd.CreateParameter();
-                                pReservedAt.ParameterName = "@reservedAt";
-                                pReservedAt.Value = (object?)DateTime.Now ?? DBNull.Value;
-                                cmd.Parameters.Add(pReservedAt);
+                            var pReservedAt = cmd.CreateParameter();
+                            pReservedAt.ParameterName = "@reservedAt";
+                            pReservedAt.Value = (object?)DateTime.Now ?? DBNull.Value;
+                            cmd.Parameters.Add(pReservedAt);
 
-                                await cmd.ExecuteNonQueryAsync();
-                            }
+                            await cmd.ExecuteNonQueryAsync();
+                        }
 
-                            var toInsert = seatMappings
-                                .Where(m => !existingTicketSeatIds.Contains(m.ShowtimeSeatId))
-                                .ToList();
+                        var toInsert = seatMappings
+                            .Where(m => !existingTicketSeatIds.Contains(m.ShowtimeSeatId))
+                            .ToList();
 
-                            if (toInsert.Any())
+                        if (toInsert.Any())
+                        {
+                            var purchasedAt = DateTime.Now;
+
+                            foreach (var m in toInsert)
                             {
-                                var purchasedAt = DateTime.Now;
-                                var ticketsInserted = 0;
+                                var qrPayload =
+                                    $"TICKET|ST={showtimeId}|SS={m.ShowtimeSeatId}|SEAT={m.Label}|U={buyerId?.ToString() ?? "GUEST"}|TS={DateTime.UtcNow:yyyyMMddHHmmss}";
 
-                                foreach (var m in toInsert)
-                                {
-                                    // Tạo payload QR lưu vào cột Ticket_QR (DB)
-                                    var qrPayload =
-                                        $"TICKET|ST={showtimeId}|SS={m.ShowtimeSeatId}|SEAT={m.Label}|U={buyerId?.ToString() ?? "GUEST"}|TS={DateTime.UtcNow:yyyyMMddHHmmss}";
-
-                                    using var cmd = conn.CreateCommand();
-                                    cmd.Transaction = dbTx;
-                                    cmd.CommandType = CommandType.Text;
-                                    cmd.CommandText = @"
+                                using var cmd = conn.CreateCommand();
+                                cmd.Transaction = dbTx;
+                                cmd.CommandType = CommandType.Text;
+                                cmd.CommandText = @"
                                         INSERT INTO dbo.Tbl_Ticket
                                             (Ticket_ShowtimeSeatID,
                                              Ticket_BuyerUserID,
@@ -704,174 +709,169 @@ namespace Semester03.Areas.Client.Controllers
                                              @qrCode)
                                     ";
 
-                                    var pShowtimeSeatId = cmd.CreateParameter();
-                                    pShowtimeSeatId.ParameterName = "@showtimeSeatId";
-                                    pShowtimeSeatId.Value = m.ShowtimeSeatId;
-                                    cmd.Parameters.Add(pShowtimeSeatId);
+                                var pShowtimeSeatId = cmd.CreateParameter();
+                                pShowtimeSeatId.ParameterName = "@showtimeSeatId";
+                                pShowtimeSeatId.Value = m.ShowtimeSeatId;
+                                cmd.Parameters.Add(pShowtimeSeatId);
 
-                                    var pBuyerId = cmd.CreateParameter();
-                                    pBuyerId.ParameterName = "@buyerId";
-                                    pBuyerId.Value = (object?)buyerId ?? DBNull.Value;
-                                    cmd.Parameters.Add(pBuyerId);
+                                var pBuyerId = cmd.CreateParameter();
+                                pBuyerId.ParameterName = "@buyerId";
+                                pBuyerId.Value = (object?)buyerId ?? DBNull.Value;
+                                cmd.Parameters.Add(pBuyerId);
 
-                                    var pStatus2 = cmd.CreateParameter();
-                                    pStatus2.ParameterName = "@status";
-                                    pStatus2.Value = "sold";
-                                    cmd.Parameters.Add(pStatus2);
+                                var pStatus2 = cmd.CreateParameter();
+                                pStatus2.ParameterName = "@status";
+                                pStatus2.Value = "sold";
+                                cmd.Parameters.Add(pStatus2);
 
-                                    var pPrice = cmd.CreateParameter();
-                                    pPrice.ParameterName = "@price";
-                                    pPrice.Value = (object)pricePerSeat ?? DBNull.Value;
-                                    cmd.Parameters.Add(pPrice);
+                                var pPrice = cmd.CreateParameter();
+                                pPrice.ParameterName = "@price";
+                                pPrice.Value = (object)pricePerSeat ?? DBNull.Value;
+                                cmd.Parameters.Add(pPrice);
 
-                                    var pPurchasedAt = cmd.CreateParameter();
-                                    pPurchasedAt.ParameterName = "@purchasedAt";
-                                    pPurchasedAt.Value = purchasedAt;
-                                    cmd.Parameters.Add(pPurchasedAt);
+                                var pPurchasedAt = cmd.CreateParameter();
+                                pPurchasedAt.ParameterName = "@purchasedAt";
+                                pPurchasedAt.Value = purchasedAt;
+                                cmd.Parameters.Add(pPurchasedAt);
 
-                                    var pQr = cmd.CreateParameter();
-                                    pQr.ParameterName = "@qrCode";
-                                    pQr.Value = (object)qrPayload ?? DBNull.Value;
-                                    cmd.Parameters.Add(pQr);
+                                var pQr = cmd.CreateParameter();
+                                pQr.ParameterName = "@qrCode";
+                                pQr.Value = (object)qrPayload ?? DBNull.Value;
+                                cmd.Parameters.Add(pQr);
 
-                                    var inserted = await cmd.ExecuteNonQueryAsync();
-                                    ticketsInserted += inserted;
-                                }
-
-                                _logger.LogInformation("Inserted {Count} new ticket(s) for showtime {ShowtimeId}",
-                                    toInsert.Count, showtimeId);
-                            }
-                            else
-                            {
-                                _logger.LogInformation(
-                                    "No new tickets to insert for showtime {ShowtimeId}: tickets already exist for provided seats.",
-                                    showtimeId);
+                                await cmd.ExecuteNonQueryAsync();
                             }
 
-                            if (buyerId.HasValue)
-                            {
-                                var points = (int)Math.Floor(effectiveFinalAmount / 100m);
-                                pointsAwarded = points;
+                            _logger.LogInformation("Inserted {Count} new ticket(s) for showtime {ShowtimeId}",
+                                toInsert.Count, showtimeId);
+                        }
+                        else
+                        {
+                            _logger.LogInformation(
+                                "No new tickets to insert for showtime {ShowtimeId}: tickets already exist for provided seats.",
+                                showtimeId);
+                        }
 
-                                if (points > 0)
-                                {
-                                    using var cmd = conn.CreateCommand();
-                                    cmd.Transaction = dbTx;
-                                    cmd.CommandType = CommandType.Text;
-                                    cmd.CommandText = @"
+                        if (buyerId.HasValue)
+                        {
+                            var points = (int)Math.Floor(effectiveFinalAmount / 100m);
+                            pointsAwarded = points;
+
+                            if (points > 0)
+                            {
+                                using var cmd = conn.CreateCommand();
+                                cmd.Transaction = dbTx;
+                                cmd.CommandType = CommandType.Text;
+                                cmd.CommandText = @"
                                         UPDATE dbo.Tbl_Users
                                         SET Users_Points = ISNULL(Users_Points, 0) + @points,
                                             Users_UpdatedAt = @now
                                         WHERE Users_ID = @userId
                                     ";
-                                    var pPoints = cmd.CreateParameter();
-                                    pPoints.ParameterName = "@points";
-                                    pPoints.Value = points;
-                                    cmd.Parameters.Add(pPoints);
+                                var pPoints = cmd.CreateParameter();
+                                pPoints.ParameterName = "@points";
+                                pPoints.Value = points;
+                                cmd.Parameters.Add(pPoints);
 
-                                    var pNow2 = cmd.CreateParameter();
-                                    pNow2.ParameterName = "@now";
-                                    pNow2.Value = DateTime.Now;
-                                    cmd.Parameters.Add(pNow2);
+                                var pNow2 = cmd.CreateParameter();
+                                pNow2.ParameterName = "@now";
+                                pNow2.Value = DateTime.Now;
+                                cmd.Parameters.Add(pNow2);
 
-                                    var pUserId = cmd.CreateParameter();
-                                    pUserId.ParameterName = "@userId";
-                                    pUserId.Value = buyerId.Value;
-                                    cmd.Parameters.Add(pUserId);
+                                var pUserId = cmd.CreateParameter();
+                                pUserId.ParameterName = "@userId";
+                                pUserId.Value = buyerId.Value;
+                                cmd.Parameters.Add(pUserId);
 
-                                    var updated = await cmd.ExecuteNonQueryAsync();
-                                    if (updated > 0)
-                                    {
-                                        _logger.LogInformation("Awarded {Points} points to user {UserId}", points,
-                                            buyerId.Value);
-                                    }
-                                    else
-                                    {
-                                        _logger.LogWarning(
-                                            "Failed to award points: user {UserId} not found.", buyerId.Value);
-                                    }
-                                }
-                            }
-
-                            await dbTx.CommitAsync();
-
-                            if (couponId.HasValue && couponId.Value > 0 && buyerId.HasValue)
-                            {
-                                try
+                                var updated = await cmd.ExecuteNonQueryAsync();
+                                if (updated > 0)
                                 {
-                                    var exists = await _context.TblCouponUsers
-                                        .AnyAsync(x => x.CouponId == couponId.Value && x.UsersId == buyerId.Value);
-                                    if (!exists)
-                                    {
-                                        await _context.Database.ExecuteSqlRawAsync(
-                                            "INSERT INTO dbo.Tbl_CouponUser (Coupon_ID, Users_ID) VALUES ({0}, {1})",
-                                            couponId.Value, buyerId.Value
-                                        );
-                                        _logger.LogInformation("Coupon {CouponId} marked used by user {UserId}",
-                                            couponId.Value, buyerId.Value);
-                                    }
-                                }
-                                catch (Exception exCoupon)
-                                {
-                                    _logger.LogError(exCoupon,
-                                        "Error recording coupon usage for user {UserId}", buyerId);
-                                }
-                            }
-
-                            try
-                            {
-                                if (buyerId.HasValue)
-                                {
-                                    _logger.LogInformation(
-                                        "PaymentSuccess: Calling SendTicketsEmailAsync for user {UserId}",
+                                    _logger.LogInformation("Awarded {Points} points to user {UserId}", points,
                                         buyerId.Value);
-
-                                    await _ticketEmailService.SendTicketsEmailAsync(
-                                        buyerId.Value,
-                                        showtimeSeatIds,
-                                        effectiveOriginalAmount,
-                                        effectiveDiscountAmount,
-                                        effectiveFinalAmount);
                                 }
                                 else
                                 {
                                     _logger.LogWarning(
-                                        "PaymentSuccess: buyerId is null, skipping SendTicketsEmailAsync.");
+                                        "Failed to award points: user {UserId} not found.", buyerId.Value);
                                 }
                             }
-                            catch (Exception exEmail)
-                            {
-                                _logger.LogError(exEmail,
-                                    "Error sending ticket email after successful commit for user {UserId}", buyerId);
-                            }
                         }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex,
-                                "Error while finalizing payment and writing seats/tickets - rolling back.");
-                            try { await dbTx.RollbackAsync(); }
-                            catch (Exception rbEx)
-                            {
-                                _logger.LogError(rbEx, "Error while rolling back transaction.");
-                            }
 
-                            ViewData["PaymentProcessingError"] = ex.Message;
-                            ViewData["SeatLabels"] = new List<string>();
-                            ViewData["ShowtimeId"] = showtimeId;
-                            ViewData["OriginalAmount"] = 0m;
-                            ViewData["DiscountAmount"] = 0m;
-                            ViewData["TotalAmount"] = 0m;
-                            ViewData["PricePerSeat"] = pricePerSeat;
-                            ViewData["ShowtimeSeatIds"] = "";
-                            ViewData["PointsAwarded"] = 0;
-                            return View();
-                        }
-                        finally
+                        await dbTx.CommitAsync();
+
+                        if (couponId.HasValue && couponId.Value > 0 && buyerId.HasValue)
                         {
-                            await conn.CloseAsync();
+                            try
+                            {
+                                var exists = await _context.TblCouponUsers
+                                    .AnyAsync(x => x.CouponId == couponId.Value && x.UsersId == buyerId.Value);
+                                if (!exists)
+                                {
+                                    await _context.Database.ExecuteSqlRawAsync(
+                                        "INSERT INTO dbo.Tbl_CouponUser (Coupon_ID, Users_ID) VALUES ({0}, {1})",
+                                        couponId.Value, buyerId.Value
+                                    );
+                                    _logger.LogInformation("Coupon {CouponId} marked used by user {UserId}",
+                                        couponId.Value, buyerId.Value);
+                                }
+                            }
+                            catch (Exception exCoupon)
+                            {
+                                _logger.LogError(exCoupon,
+                                    "Error recording coupon usage for user {UserId}", buyerId);
+                            }
+                        }
+
+                        try
+                        {
+                            if (buyerId.HasValue)
+                            {
+                                _logger.LogInformation(
+                                    "PaymentSuccess: Calling SendTicketsEmailAsync for user {UserId}",
+                                    buyerId.Value);
+
+                                await _ticketEmailService.SendTicketsEmailAsync(
+                                    buyerId.Value,
+                                    showtimeSeatIds,
+                                    effectiveOriginalAmount,
+                                    effectiveDiscountAmount,
+                                    effectiveFinalAmount);
+                            }
+                            else
+                            {
+                                _logger.LogWarning(
+                                    "PaymentSuccess: buyerId is null, skipping SendTicketsEmailAsync.");
+                            }
+                        }
+                        catch (Exception exEmail)
+                        {
+                            _logger.LogError(exEmail,
+                                "Error sending ticket email after successful commit for user {UserId}", buyerId);
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex,
+                            "Error while finalizing payment and writing seats/tickets - rolling back.");
+                        try { await dbTx.RollbackAsync(); }
+                        catch (Exception rbEx)
+                        {
+                            _logger.LogError(rbEx, "Error while rolling back transaction.");
+                        }
+
+                        ViewData["PaymentProcessingError"] = ex.Message;
+                        ViewData["SeatLabels"] = new List<string>();
+                        ViewData["ShowtimeId"] = showtimeId;
+                        ViewData["OriginalAmount"] = 0m;
+                        ViewData["DiscountAmount"] = 0m;
+                        ViewData["TotalAmount"] = 0m;
+                        ViewData["PricePerSeat"] = pricePerSeat;
+                        ViewData["ShowtimeSeatIds"] = "";
+                        ViewData["PointsAwarded"] = 0;
+                        return View();
+                    }
                 }
+                // KHÔNG Dispose/Close conn ở đây – DbContext sẽ lo
 
                 var seatLabelList = seatMappingsResult.Select(x => x.SeatLabel).ToList();
 
@@ -901,6 +901,7 @@ namespace Semester03.Areas.Client.Controllers
                 return View();
             }
         }
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]

@@ -1,65 +1,116 @@
 ﻿@{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
     ViewData["Title"] = "Payment failed";
+    var message = ViewData["ErrorMessage"] as string
+                  ?? "Your payment could not be completed. Please try again or choose another method.";
 }
 
 @section Styles {
     <style>
-        .payment-result-wrapper {
-            max-width: 640px;
+        .payment-fail-shell {
+            max-width: 760px;
             margin: 3rem auto;
         }
 
-        .payment-result-card {
-            background: radial-gradient(circle at top,#fee2e2 0,#ffffff 45%);
-            border-radius: 18px;
-            box-shadow: 0 18px 46px rgba(127,29,29,0.35);
-            padding: 2.2rem 2rem;
+        .payment-fail-container {
+            background: radial-gradient(circle at top, #fee2e2 0, #ffffff 55%);
+            border-radius: 20px;
+            box-shadow: 0 18px 50px rgba(127,29,29,0.25);
+            padding: 2.4rem 2.1rem 2rem;
             text-align: center;
-            border: 1px solid #fecaca;
+            border: 1px solid rgba(248,113,113,0.7);
         }
 
         .failure-icon {
-            width: 82px;
-            height: 82px;
+            width: 86px;
+            height: 86px;
             border-radius: 50%;
             background: #fee2e2;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 1rem auto;
+            margin: 0 auto 1.1rem auto;
             color: #dc2626;
-            font-size: 2.4rem;
-            box-shadow: 0 12px 26px rgba(248,113,113,0.75);
+            font-size: 2.5rem;
+            box-shadow: 0 16px 40px rgba(248,113,113,0.85);
         }
 
-        .payment-result-card h2 {
+        .payment-fail-title {
+            font-size: 1.7rem;
             font-weight: 750;
             color: #b91c1c;
+            margin-bottom: .4rem;
         }
 
-        .payment-result-card p {
-            color: #4b5563;
+        .payment-fail-text {
             font-size: .95rem;
+            color: #4b5563;
+            max-width: 520px;
+            margin: 0 auto 1.4rem;
+        }
+
+        .payment-fail-hint {
+            background: #fef2f2;
+            border-radius: 14px;
+            padding: .9rem 1rem;
+            border: 1px solid #fecaca;
+            font-size: .88rem;
+            color: #7f1d1d;
+            text-align: left;
+            max-width: 520px;
+            margin: 0 auto 1.2rem;
+        }
+
+        .payment-fail-actions {
+            display: flex;
+            justify-content: center;
+            gap: .75rem;
+            flex-wrap: wrap;
         }
     </style>
 }
 
-<div class="payment-result-wrapper">
-    <div class="payment-result-card">
+<div class="payment-fail-shell">
+    <div class="payment-fail-container">
         <div class="failure-icon">
             <i class="bi bi-x-circle"></i>
         </div>
-        <h2 class="mb-3">Payment failed</h2>
-        <p>
-            @(ViewData["ErrorMessage"] ?? "Your payment could not be completed. Please try again or choose another method.")
-        </p>
 
-        <a asp-area="Client"
-           asp-controller="Cinema"
-           asp-action="Index"
-           class="btn btn-primary mt-3">
-            <i class="bi bi-film me-1"></i> Back to movies
-        </a>
+        <div class="payment-fail-title">Payment failed</div>
+        <p class="payment-fail-text">@message</p>
+
+        <div class="payment-fail-hint">
+            <strong>What you can try:</strong>
+            <ul class="mb-0 ps-3">
+                <li>Re-open the payment page and complete all required steps on VNPAY.</li>
+                <li>Check your internet connection or try with another browser / device.</li>
+                <li>If you were charged but see no ticket, contact our cinema support hotline.</li>
+            </ul>
+        </div>
+
+        <div class="payment-fail-actions mt-3">
+            <a href="@Url.Action("Index", "Cinema", new { area = "Client" })"
+               class="btn btn-primary">
+                <i class="bi bi-film me-1"></i> Back to movies
+            </a>
+        </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const icon = document.querySelector(".failure-icon");
+            if (!icon) return;
+
+            icon.style.transform = "scale(0.7)";
+            icon.style.opacity = "0";
+            icon.style.transition = "transform .25s ease-out, opacity .25s ease-out";
+
+            setTimeout(() => {
+                icon.style.transform = "scale(1)";
+                icon.style.opacity = "1";
+            }, 60);
+        });
+    </script>
+}
