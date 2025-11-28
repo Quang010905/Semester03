@@ -81,6 +81,7 @@
         border-radius: 18px;
         box-shadow: 0 12px 40px rgba(0,0,0,0.15);
         overflow: hidden;
+        position: relative;
     }
 
     .ticket-header {
@@ -169,6 +170,88 @@
             background: #fee2e2;
             color: #b91c1c;
         }
+
+    /* CENTER RESULT OVERLAY */
+    .cancel-result-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.55);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .cancel-result-box {
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 18px 22px 16px;
+        max-width: 360px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.5);
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        animation: toastIn .2s ease-out;
+    }
+
+        .cancel-result-box.success {
+            border-top: 4px solid #22c55e;
+        }
+
+        .cancel-result-box.error {
+            border-top: 4px solid #ef4444;
+        }
+
+    .cancel-result-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 8px;
+        font-size: 1.6rem;
+    }
+
+    .cancel-result-box.success .cancel-result-icon {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .cancel-result-box.error .cancel-result-icon {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .cancel-result-title {
+        font-weight: 800;
+        font-size: 1.1rem;
+        margin-bottom: 4px;
+        color: #111827;
+    }
+
+    .cancel-result-text {
+        font-size: .9rem;
+        color: #4b5563;
+        margin-bottom: 6px;
+    }
+
+    .cancel-result-note {
+        font-size: .8rem;
+        color: #9ca3af;
+    }
+
+    @@keyframes toastIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 </style>
 
 <div class="ticket-wrapper mt-4 mb-4 position-relative">
@@ -220,7 +303,6 @@
             <div class="ticket-value">
                 @dayOfWeek, @Model.EventStart.ToString("dd/MM/yyyy")
             </div>
-
         </div>
 
         <div class="ticket-section">
@@ -269,6 +351,9 @@
             <div class="ticket-section">
                 <div class="ticket-label mb-2">Cancel tickets</div>
 
+                @* Token chống CSRF, không cần form *@
+                @Html.AntiForgeryToken()
+
                 <div class="d-flex align-items-center gap-2">
                     <input id="cancelQty"
                            type="number"
@@ -283,51 +368,141 @@
                     </button>
                 </div>
 
-                <small class="text-muted">You can cancel up to @Model.Quantity ticket(s).</small>
+                <small class="text-muted">
+                    You can cancel up to @Model.Quantity ticket(s), at least 24 hours before the event starts.
+                </small>
             </div>
         }
 
     </div>
 
+    <!-- CENTER RESULT OVERLAY -->
+    <div id="evtCancelResultOverlay" class="cancel-result-overlay">
+        <div id="evtCancelResultBox" class="cancel-result-box">
+            <div id="evtCancelResultIcon" class="cancel-result-icon">
+                <i class="bi bi-check2"></i>
+            </div>
+            <div id="evtCancelResultTitle" class="cancel-result-title">
+                Cancellation successful
+            </div>
+            <div id="evtCancelResultText" class="cancel-result-text">
+                Your request has been processed.
+            </div>
+            <div class="cancel-result-note">
+                The page will refresh to update your ticket information.
+            </div>
+        </div>
+    </div>
+
 </div>
 
-
 @section Scripts {
-
-    @* jQuery (required) *@
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
     <script>
-        $(document).ready(function () {
+        function showEventCenterResult(success, message, autoReload) {
+            var overlay = document.getElementById("evtCancelResultOverlay");
+            var box = document.getElementById("evtCancelResultBox");
+            var icon = document.getElementById("evtCancelResultIcon");
+            var title = document.getElementById("evtCancelResultTitle");
+            var text = document.getElementById("evtCancelResultText");
 
-            $("#btnCancelTickets").click(function () {
+            if (!overlay || !box) {
+                alert(message || (success ? "Cancellation successful" : "Cancellation failed"));
+                if (autoReload) {
+                    location.reload();
+                }
+                return;
+            }
 
-                let qty = parseInt($("#cancelQty").val());
+            box.classList.remove("success", "error");
+            if (success) {
+                box.classList.add("success");
+                icon.innerHTML = '<i class="bi bi-check2"></i>';
+                title.textContent = "Cancellation successful";
+            } else {
+                box.classList.add("error");
+                icon.innerHTML = '<i class="bi bi-x-lg"></i>';
+                title.textContent = "Cancellation failed";
+            }
+
+            text.textContent = message || (success
+                ? "Your cancellation request has been processed."
+                : "Unable to cancel the ticket, please try again.");
+
+            overlay.style.display = "flex";
+
+            setTimeout(function () {
+                overlay.style.display = "none";
+                if (autoReload) {
+                    location.reload();
+                }
+            }, 1600);
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var btn = document.getElementById("btnCancelTickets");
+            if (!btn) return;
+
+            btn.addEventListener("click", function () {
+                var input = document.getElementById("cancelQty");
+                var qty = parseInt(input.value, 10);
 
                 if (!qty || qty <= 0) {
-                    alert("Please enter a valid number of tickets.");
+                    showEventCenterResult(false, "Please enter a valid number of tickets.", false);
                     return;
                 }
 
-                $.ajax({
-                    url: '@Url.Action("PartialCancel", "EventBooking", new { area = "Client" })',
-                    type: "POST",
-                    data: {
-                        bookingId: @Model.BookingId,
-                        cancelQuantity: qty
-                    },
-                    success: function (res) {
-                        alert(res.message);
-                        if (res.success) location.reload();
-                    },
-                    error: function (xhr) {
-                        console.log("AJAX ERROR:", xhr.responseText);
-                        alert("Server error while cancelling tickets.");
-                    }
-                });
+                var token = document.querySelector('input[name="__RequestVerificationToken"]');
+                var tokenValue = token ? token.value : "";
 
+                var url = "@Url.Action("PartialCancel", "EventBooking", new { area = "Client" })";
+
+                var bodyParams = new URLSearchParams();
+                bodyParams.append("bookingId", "@Model.BookingId");
+                bodyParams.append("cancelQuantity", qty);
+                if (tokenValue) {
+                    bodyParams.append("__RequestVerificationToken", tokenValue);
+                }
+
+                fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                    },
+                    body: bodyParams.toString()
+                })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            // ví dụ 400 vì antiforgery fail...
+                            return response.text().then(function () { return null; });
+                        }
+                        return response.text();
+                    })
+                    .then(function (text) {
+                        if (!text) {
+                            showEventCenterResult(false, "Server returned invalid result.", false);
+                            return;
+                        }
+
+                        var res = null;
+                        try {
+                            res = JSON.parse(text);
+                        } catch (e) {
+                            console.error("JSON parse error", e, text);
+                        }
+
+                        if (!res) {
+                            showEventCenterResult(false, "Server returned invalid JSON result.", false);
+                            return;
+                        }
+
+                        var msg = res.message || (res.success ? "Cancellation successful." : "Cancellation failed.");
+                        showEventCenterResult(res.success, msg, true);
+                    })
+                    .catch(function (err) {
+                        console.error(err);
+                        showEventCenterResult(false, "An error occurred while sending the cancellation request.", false);
+                    });
             });
-
         });
     </script>
 }

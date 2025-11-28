@@ -34,7 +34,7 @@ namespace Semester03.Areas.Client.Controllers
         }
 
         // ================================
-        // TRANG CHI TIẾT VÉ + DANH SÁCH GHẾ
+        // TICKET DETAIL PAGE + SEAT LIST
         // ================================
         public async Task<IActionResult> Index(int id)
         {
@@ -57,7 +57,7 @@ namespace Semester03.Areas.Client.Controllers
             string qrImg = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" +
                            System.Net.WebUtility.UrlEncode(qrUrl);
 
-            // Lấy toàn bộ vé cùng suất chiếu của user
+            // Get all tickets for this showtime of the current user
             var allTicketsOfUser = await _ticketRepo.GetTicketsByUserAsync(userId);
 
             var sameShowtimeTickets = allTicketsOfUser
@@ -107,7 +107,7 @@ namespace Semester03.Areas.Client.Controllers
         }
 
         // ================================
-        // API HỦY NHIỀU GHẾ
+        // API: CANCEL MULTIPLE SEATS
         // ================================
         [HttpPost]
         public async Task<IActionResult> CancelSelectedSeats([FromForm] int[] seatIds)
@@ -128,29 +128,29 @@ namespace Semester03.Areas.Client.Controllers
             }
 
             if (!tickets.Any())
-                return Json(new { success = false, message = "Không tìm thấy vé hợp lệ." });
+                return Json(new { success = false, message = "No valid tickets were found." });
 
-            // Kiểm tra tất cả vé đều thuộc user hiện tại
+            // Ensure all tickets belong to the current user
             if (tickets.Any(t => t.TicketBuyerUserId != userId))
             {
                 return Json(new
                 {
                     success = false,
-                    message = "Phát hiện vé không thuộc tài khoản hiện tại."
+                    message = "Detected a ticket that does not belong to the current account."
                 });
             }
 
-            // Giả sử tất cả vé cùng một suất chiếu
+            // Assume all tickets are for the same showtime
             var sample = tickets.First();
             var showtimeStart = sample.TicketShowtimeSeat.ShowtimeSeatShowtime.ShowtimeStart;
 
-            // Khóa hủy trước 24h
+            // Cancellation locked within 24 hours of showtime
             if (showtimeStart - DateTime.Now < TimeSpan.FromHours(24))
             {
                 return Json(new
                 {
                     success = false,
-                    message = "You can only cancel the ticket up to 24 hours before the showtime.."
+                    message = "You can only cancel tickets up to 24 hours before the showtime."
                 });
             }
 
@@ -160,7 +160,7 @@ namespace Semester03.Areas.Client.Controllers
 
             foreach (var t in tickets)
             {
-                // Nếu đã hủy rồi thì bỏ qua
+                // Skip tickets that are already cancelled
                 if (string.Equals(t.TicketStatus, "cancelled", StringComparison.OrdinalIgnoreCase))
                     continue;
 
@@ -177,12 +177,12 @@ namespace Semester03.Areas.Client.Controllers
                 return Json(new
                 {
                     success = false,
-                    message = "Không có ghế nào được hủy (có thể do đã bị hủy trước đó)."
+                    message = "No seats were cancelled (they may have already been cancelled earlier)."
                 });
             }
 
             // =========================
-            // GỬI EMAIL XÁC NHẬN HỦY
+            // SEND CANCELLATION EMAIL
             // =========================
             try
             {
@@ -198,7 +198,7 @@ namespace Semester03.Areas.Client.Controllers
             }
             catch
             {
-                // Nếu gửi mail lỗi thì vẫn coi là hủy vé thành công
+                // If email fails, still treat the cancellation as successful
             }
 
             string msg = $"Cancelled {cancelled} seats, refunded {totalRefund:N0}đ.";

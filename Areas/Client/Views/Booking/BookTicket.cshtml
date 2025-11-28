@@ -1,7 +1,29 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.BookTicketVm
+
 @{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
     ViewData["Title"] = "Book tickets";
+
+    // Lấy đường dẫn poster từ model, có thể null/rỗng
+    var rawPoster = (Model.Movie?.PosterUrl ?? string.Empty).Trim();
+
+    // Tự tách tên file từ đường dẫn (không dùng System.IO.Path)
+    string fileName = string.Empty;
+    if (!string.IsNullOrEmpty(rawPoster))
+    {
+        var lastSlash = rawPoster.LastIndexOf('/');
+        var lastBackslash = rawPoster.LastIndexOf('\\');
+        var idx = Math.Max(lastSlash, lastBackslash);
+
+        fileName = (idx >= 0 && idx < rawPoster.Length - 1)
+            ? rawPoster.Substring(idx + 1)
+            : rawPoster;
+    }
+
+    // Nếu không có tên file -> dùng ảnh mặc định
+    var posterUrl = string.IsNullOrEmpty(fileName)
+        ? Url.Content("~/Content/Uploads/noimage.png")
+        : Url.Content("~/Content/Uploads/Movies/" + fileName);
 }
 
 @section Styles {
@@ -87,7 +109,7 @@
 
 <div class="container py-4 movie-shell">
     <div class="mb-3 movie-head">
-        <img src="@Url.Content(Model.Movie?.PosterUrl ?? "~/Admin/img/download (5).jpg")"
+        <img src="@posterUrl"
              alt="@Model.Movie?.Title"
              class="rounded shadow-sm" />
         <div>
@@ -97,7 +119,7 @@
                 @if (Model.Movie?.DurationMin != null)
                 {
                     @Model.Movie.DurationMin
-                    }
+                }
                 else
                 {
                     @("--")
