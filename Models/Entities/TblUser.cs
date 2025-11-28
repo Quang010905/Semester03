@@ -41,5 +41,6 @@ public partial class TblUser
 
     public virtual ICollection<TblTicket> TblTickets { get; set; } = new List<TblTicket>();
 
-    public virtual TblRole UsersRole { get; set; } = null!;
+    //public virtual TblRole UsersRole { get; set; } ;
+    public virtual TblRole? UsersRole { get; set; }
 }
