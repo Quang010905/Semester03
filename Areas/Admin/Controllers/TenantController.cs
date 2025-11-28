@@ -101,9 +101,10 @@ namespace Semester03.Areas.Admin.Controllers
             string? userId = Request.Form["UserId"];
             string? description = Request.Form["Description"];
             string? tenantStatus = Request.Form["TenantStatus"];
+            int uId = Convert.ToInt32(userId);
             int status = Convert.ToInt32(tenantStatus); // null => 0
             string fileName = "";
-            string pathSave = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
+            string pathSave = Path.Combine(_webHostEnvironment.WebRootPath, "Content/Uploads/Tenant");
             Directory.CreateDirectory(pathSave);
             try
             {
@@ -133,7 +134,7 @@ namespace Semester03.Areas.Admin.Controllers
                     TempData["ErrorMessage"] = "Please enter enough information!";
                     return RedirectToAction("CreateTenant", new { id = userId });
                 }
-                bool exists = await _tenantRepo.CheckTenantNameAsync(tenantName);
+                bool exists = await _tenantRepo.CheckTenantNameAsync(tenantName, uId);
                 if (exists)
                 {
                     TempData["ErrorMessage"] = "Tenant name already exist";
@@ -194,8 +195,9 @@ namespace Semester03.Areas.Admin.Controllers
             string? tenantStatus = Request.Form["TenantStatus"];
             int status = Convert.ToInt32(tenantStatus);
             int tenantId = Convert.ToInt32(Id);
+            int uId = Convert.ToInt32(userId);
             string fileName = "";
-            string pathSave = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
+            string pathSave = Path.Combine(_webHostEnvironment.WebRootPath, "Content/Uploads/Tenant");
 
             Directory.CreateDirectory(pathSave);
 
@@ -228,7 +230,7 @@ namespace Semester03.Areas.Admin.Controllers
                     return RedirectToAction("CreateTenant", new { id = userId });
                 }
 
-                bool exists = await _tenantRepo.CheckTenantNameAsync(tenantName, tenantId);
+                bool exists = await _tenantRepo.CheckTenantNameAsync(tenantName, uId, tenantId);
                 if (exists)
                 {
                     TempData["ErrorMessage"] = "Tenant name already exist";
@@ -246,11 +248,10 @@ namespace Semester03.Areas.Admin.Controllers
                 };
 
                 bool result = await _tenantRepo.Update(model);
-                if (!result)
-                {
-                    TempData["ErrorMessage"] = "Update failed, tenant not found!";
-                }
-                TempData["SuccessMessage"] = "Update tenant success!";
+               
+                    TempData["SuccessMessage"] = "Update tenant success!";
+
+                
             }
             catch (Exception ex)
             {

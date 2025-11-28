@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Semester03.Areas.Admin.Models;
 using Semester03.Areas.Partner.Models;
 using Semester03.Models.Repositories;
 
@@ -49,19 +50,27 @@ namespace Semester03.Areas.Partner.Controllers
             ViewBag.PageSize = pageSize;
             ViewBag.StartIndex = (page - 1) * pageSize + 1;
             ViewBag.Search = search ?? "";
-
             return View();
         }
         [HttpPost]
-        public async Task<ActionResult> AddCategory(IFormFile upFile)
+        public async Task<ActionResult> AddProduct(IFormFile upFile)
         {
-            string? categoryName = Request.Form["CategoryName"];
-            string? tenant = Request.Form["TenantId"];
-            int tenantId = int.Parse(tenant);
-            string? categoryStatus = Request.Form["CategoryStatus"];
-            int status = Convert.ToInt32(categoryStatus);
+            string? productName = Request.Form["ProductName"];
+            string? cate = Request.Form["CateId"];
+            int cateId = int.Parse(cate);
+            string? productStatus = Request.Form["ProductStatus"];
+            int status = Convert.ToInt32(productStatus);
+            string? pPrice = Request.Form["proPrice"];
+            int price = Convert.ToInt32(pPrice);
+            string? description = Request.Form["proDescription"];
+            bool exists = await _productRepo.CheckProductNameAsync(productName, cateId);
+            if (exists)
+            {
+                TempData["ErrorMessage"] = "Product name already exist";
+                return RedirectToAction("Index", "Product", new { id = cateId });
+            }
             string fileName = "";
-            string pathSave = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
+            string pathSave = Path.Combine(_webHostEnvironment.WebRootPath, "Content/Uploads/Product");
             Directory.CreateDirectory(pathSave);
             try
             {
@@ -80,65 +89,75 @@ namespace Semester03.Areas.Partner.Controllers
                 {
                     fileName = "noimage.png";
                 }
-                if (string.IsNullOrWhiteSpace(categoryName))
+                if (string.IsNullOrWhiteSpace(productName))
                 {
                     TempData["ErrorMessage"] = "Please enter enough information!";
-                    return RedirectToAction("Index", "Category");
+                    return RedirectToAction("Index", "Product", new { id = cateId });
+                }
+                if (string.IsNullOrWhiteSpace(description))
+                {
+                    TempData["ErrorMessage"] = "Please enter enough information!";
+                    return RedirectToAction("Index", "Product", new { id = cateId });
                 }
 
-
-                var entity = new Category
+                var entity = new Product
                 {
-                    Name = categoryName,
-                    Image = fileName,
-                    TenantId = tenantId,
-                    Status = status
+                    Name = productName,
+                    Img = fileName,
+                    CateId = cateId,
+                    Status = status,
+                    Description = description,
+                    Price = price,
+                    CreatedAt = DateTime.Now
                 };
 
-                await _categoryRepo.AddCategory(entity);
+                await _productRepo.AddProduct(entity);
 
-                TempData["SuccessMessage"] = "Add tenant success!";
+                TempData["SuccessMessage"] = "Add product success!";
             }
             catch (Exception)
             {
 
                 throw;
             }
-            return RedirectToAction("Index", "Category", new { id = tenantId });
+            return RedirectToAction("Index", "Product", new { id = cateId });
         }
 
         public async Task<ActionResult> Edit(int id)
         {
-            var itemCate = await _categoryRepo.FindById(id);
-            ViewBag.itemCategory = itemCate;
+            var itemPro = await _productRepo.FindById(id);
+            ViewBag.itemPro = itemPro;
             return View();
         }
         [HttpGet]
-        public async Task<ActionResult> DeleteCate(int id, int tenantId)
+        public async Task<ActionResult> DeletePro(int id, int cateId)
         {
-            bool res = await _categoryRepo.DeleteCategory(id);
+            bool res = await _productRepo.DeleteProduct(id);
             if (res)
             {
-                TempData["SuccessMessage"] = "Delete category success";
+                TempData["SuccessMessage"] = "Delete product success";
             }
             else
             {
-                TempData["ErrorMessage"] = "Please delete products in this category";
+                TempData["ErrorMessage"] = "Please delete product fail";
             }
-            return RedirectToAction("Index", "Category", new { id = tenantId });
+            return RedirectToAction("Index", "Product", new { id = cateId });
         }
 
-        public async Task<ActionResult> UpdateCategory(IFormFile upFile)
+        public async Task<ActionResult> UpdatePro(IFormFile upFile)
         {
-            string? cate = Request.Form["CategoryId"];
-            string? tenant = Request.Form["TenantId"];
-            string? cateName = Request.Form["CategoryName"];
-            string? cateStatus = Request.Form["CategoryStatus"];
-            int status = Convert.ToInt32(cateStatus);
-            int tenantId = Convert.ToInt32(tenant);
-            int cateId = Convert.ToInt32(cate);
+            string? productId = Request.Form["ProductId"];
+            int proId = Convert.ToInt32(productId);
+            string? productName = Request.Form["ProductName"];
+            string? cate = Request.Form["CateId"];
+            int cateId = int.Parse(cate);
+            string? productStatus = Request.Form["ProductStatus"];
+            int status = productStatus == null ? 0 : 1;
+            string? pPrice = Request.Form["ProductPrice"];
+            decimal price = Convert.ToDecimal(pPrice);
+            string? description = Request.Form["proDescription"];
             string fileName = "";
-            string pathSave = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
+            string pathSave = Path.Combine(_webHostEnvironment.WebRootPath, "Content/Uploads/Product");
 
             Directory.CreateDirectory(pathSave);
 
@@ -159,27 +178,26 @@ namespace Semester03.Areas.Partner.Controllers
                 {
                     fileName = Request.Form["OldImage"];
                 }
-                bool exists = await _categoryRepo.CheckCategoryNameAsync(cateName, cateId);
+                bool exists = await _categoryRepo.CheckCategoryNameAsync(productName, cateId, proId);
                 if (exists)
                 {
-                    TempData["ErrorMessage"] = "Category name already exist";
-                    return RedirectToAction("Index", "Category", new { id = tenantId });
+                    TempData["ErrorMessage"] = "Product name already exist";
+                    return RedirectToAction("Index", "Product", new { id = cateId });
                 }
-                var model = new Category
+                var entity = new Product
                 {
-                    Id = cateId,
-                    Name = cateName,
-                    Image = fileName,
+                    Id = int.Parse(productId),
+                    Name = productName,
+                    Img = fileName,
+                    CateId = cateId,
                     Status = status,
-                    TenantId = tenantId,
+                    Description = description,
+                    Price = price,
+                    CreatedAt = DateTime.Now
                 };
 
-                bool result = await _categoryRepo.UpdateCategory(model);
-                if (!result)
-                {
-                    TempData["ErrorMessage"] = "Update failed, category not found!";
-                }
-                TempData["SuccessMessage"] = "Update category success!";
+                bool result = await _productRepo.UpdateProduct(entity);
+                TempData["SuccessMessage"] = "Update product success!";
             }
             catch (Exception ex)
             {
@@ -187,7 +205,7 @@ namespace Semester03.Areas.Partner.Controllers
                 TempData["ErrorMessage"] = "Error: " + error;
             }
 
-            return RedirectToAction("Index", "Category", new { id = tenantId });
+            return RedirectToAction("Index", "Product", new { id = cateId });
         }
     }
 }

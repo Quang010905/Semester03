@@ -61,9 +61,15 @@ namespace Semester03.Areas.Partner.Controllers
             string? tenant = Request.Form["TenantId"];
             int tenantId = int.Parse(tenant);
             string? categoryStatus = Request.Form["CategoryStatus"];
-            int status = Convert.ToInt32(categoryStatus); 
+            int status = Convert.ToInt32(categoryStatus);
+            bool exists = await _categoryRepo.CheckCategoryNameAsync(categoryName, tenantId);
+            if (exists)
+            {
+                TempData["ErrorMessage"] = "Category name already exist";
+                return RedirectToAction("Index", "Category", new { id = tenantId });
+            }
             string fileName = "";
-            string pathSave = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
+            string pathSave = Path.Combine(_webHostEnvironment.WebRootPath, "Content/Uploads/ProductCategory");
             Directory.CreateDirectory(pathSave);
             try
             {
@@ -88,7 +94,7 @@ namespace Semester03.Areas.Partner.Controllers
                     return RedirectToAction("Index", "Category");
                 }
 
-            
+
                 var entity = new Category
                 {
                     Name = categoryName,
@@ -106,7 +112,7 @@ namespace Semester03.Areas.Partner.Controllers
 
                 throw;
             }
-            return RedirectToAction("Index", "Category", new {id = tenantId});
+            return RedirectToAction("Index", "Category", new { id = tenantId });
         }
 
         public async Task<ActionResult> Edit(int id)
@@ -136,11 +142,12 @@ namespace Semester03.Areas.Partner.Controllers
             string? tenant = Request.Form["TenantId"];
             string? cateName = Request.Form["CategoryName"];
             string? cateStatus = Request.Form["CategoryStatus"];
-            int status = Convert.ToInt32(cateStatus);
+            int status = cateStatus == null ? 0 : 1;
             int tenantId = Convert.ToInt32(tenant);
             int cateId = Convert.ToInt32(cate);
+
             string fileName = "";
-            string pathSave = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
+            string pathSave = Path.Combine(_webHostEnvironment.WebRootPath, "Content/Uploads/ProductCategory");
 
             Directory.CreateDirectory(pathSave);
 
@@ -161,7 +168,9 @@ namespace Semester03.Areas.Partner.Controllers
                 {
                     fileName = Request.Form["OldImage"];
                 }
-                bool exists = await _categoryRepo.CheckCategoryNameAsync(cateName, cateId);
+
+
+                bool exists = await _categoryRepo.CheckCategoryNameAsync(cateName, tenantId, cateId);
                 if (exists)
                 {
                     TempData["ErrorMessage"] = "Category name already exist";
@@ -173,14 +182,9 @@ namespace Semester03.Areas.Partner.Controllers
                     Name = cateName,
                     Image = fileName,
                     Status = status,
-                    TenantId = tenantId,
                 };
 
                 bool result = await _categoryRepo.UpdateCategory(model);
-                if (!result)
-                {
-                    TempData["ErrorMessage"] = "Update failed, category not found!";
-                }
                 TempData["SuccessMessage"] = "Update category success!";
             }
             catch (Exception ex)

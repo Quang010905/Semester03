@@ -21,7 +21,7 @@ namespace Semester03.Areas.Admin.Controllers
         // Index - async, dùng repository thay vì new DbContext()
         public async Task<IActionResult> Index(int page = 1, string search = "")
         {
-            const int pageSize = 2;
+            const int pageSize = 10;
 
             // Lấy toàn bộ tenant types từ repository (async)
             var list = await _tenantTypeRepo.GetAllAsync();

@@ -48,7 +48,7 @@
             </div>
             <div class="form-group mb-3">
                 <label for="proPrice">Price</label>
-                <input type="text" class="form-control" name="proPriceFormatted" placeholder="e.g. 10.000" id="proPriceFormatted" style="width: 300px;" />
+                <input type="text" class="form-control" name="proPriceFormatted" placeholder="e.g. 10.000" id="proPriceFormatted" style="width: 300px;" required/>
                 <input type="hidden" name="proPrice" id="proPrice" />
             </div>
             <div class="form-group mb-3">
@@ -72,20 +72,20 @@
         }
     </form>
 
-    <form method="get" action="@Url.Action("Index", "Category")">
+    <form method="get" action="@Url.Action("Index", "Product")">
         <div>
             <strong>Search</strong>
         </div>
         <div class="input-group mb-3" style="width: 300px;">
-            <input type="text" name="search" value="@ViewBag.Search" placeholder="Enter category name..." class="form-control" />
+            <input type="text" name="search" value="@ViewBag.Search" placeholder="Enter product name..." class="form-control" />
             <div class="input-group-append">
                 <button type="submit" class="btn btn-primary">Search</button>
             </div>
         </div>
 
-        @if (ViewBag.listCategory != null)
+        @if (ViewBag.listProduct != null)
         {
-            var ls = (List<Semester03.Areas.Partner.Models.Category>)ViewBag.listCategory;
+            var ls = (List<Semester03.Areas.Partner.Models.Product>)ViewBag.listProduct;
             if (ls != null && ls.Count > 0)
             {
                 int i = ViewBag.StartIndex;
@@ -119,8 +119,9 @@
                                         <tr>
                                             <th scope="row">@i</th>
                                             <td>@item.Name</td>
+                                            <td>@(item.Price.ToString("N0") + " VND")</td>
                                             <td>
-                                                <img src="@Url.Content("~/uploads/" + item.Image)" style="max-width: 100px; max-height: 100px; display: block; margin-bottom: 10px;" />
+                                                <img src="@Url.Content("~/Content/Uploads/Product/" + item.Img)" style="max-width: 100px; max-height: 100px; display: block; margin-bottom: 10px;" />
                                             </td>
                                             <td>
                                                 @if (item.Status == 1)
@@ -133,10 +134,10 @@
                                                 }
                                             </td>
                                             <td>
-                                                <a href="@Url.Action("Edit", "Category", new {id = item.Id})">
+                                                <a href="@Url.Action("Edit", "Product", new {id = item.Id, tenantId = ViewBag.tenantId})">
                                                     <img src="@Url.Content("~/Icon/pen.png")" style="width:1vw; height:2vh;" />
                                                 </a>
-                                                <a href="@Url.Action("DeleteCate", "Category", new {id = item.Id, tenantId = item.TenantId})" onclick="return confirm('Are you sure to delete this category ?')">
+                                                <a href="@Url.Action("DeletePro", "Product", new {id = item.Id, cateId = item.CateId})" onclick="return confirm('Are you sure to delete this product ?')">
                                                     <img src="@Url.Content("~/Icon/delete.png")" style="width:1vw; height:2vh;" />
                                                 </a>
                                             </td>
@@ -211,7 +212,7 @@
                     </tfoot>
                     <tbody>
                         <tr>
-                            <td colspan="4" class="text-center">No Category.</td>
+                            <td colspan="4" class="text-center">No Product.</td>
                         </tr>
                     </tbody>
                 </table>

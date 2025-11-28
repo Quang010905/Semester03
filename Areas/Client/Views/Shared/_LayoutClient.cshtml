@@ -531,7 +531,6 @@
                 </div>
 
                 <!-- NAV -->
-                <!-- NAV -->
                 <nav class="mall-nav d-none d-md-flex align-items-center gap-1">
                     <div class="nav-item dropdown">
                         <a class="nav-link @(routeController == "Stores" ? "active" : "")"
@@ -562,7 +561,7 @@
                         Map
                     </a>
 
-                    @* ĐÃ XÓA Entertainment *@
+                    @* Entertainment removed *@
 
                     <a class="nav-link @(routeController == "Event" ? "active" : "")"
                        href="@Url.Action("Index", "Event", new { area = "Client" })">
@@ -589,15 +588,15 @@
                     {
                         var name = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
                         ?? User.Identity.Name ?? "User";
-                        var initial = string.IsNullOrWhiteSpace(name)
-                        ? "U"
-                        : name.Trim()[0].ToString().ToUpper();
+                        var initialUser = string.IsNullOrWhiteSpace(name)
+                            ? "U"
+                            : name.Trim()[0].ToString().ToUpper();
 
                         <div class="dropdown me-1">
                             <a href="#" class="user-menu-trigger" id="profileDropdown"
                                data-bs-toggle="dropdown" aria-expanded="false">
                                 <div class="user-avatar">
-                                    <span class="user-avatar-initial">@initial</span>
+                                    <span class="user-avatar-initial">@initialUser</span>
                                 </div>
                             </a>
 
@@ -605,12 +604,12 @@
                                  aria-labelledby="profileDropdown">
                                 <div class="user-menu-header">
                                     <div class="user-menu-name">@name</div>
-                                    <div class="user-menu-sub">Quản lý tài khoản của bạn</div>
+                                    <div class="user-menu-sub">Manage your account</div>
                                 </div>
 
                                 <a class="dropdown-item"
                                    href="@Url.Action("Profile", "Profile", new { area = "Client" })">
-                                    <i class="bi bi-person-lines-fill me-2"></i> View Profile
+                                    <i class="bi bi-person-lines-fill me-2"></i> Profile
                                 </a>
 
                                 <a class="dropdown-item"
@@ -668,7 +667,7 @@
                         </ul>
                     </div>
 
-                    @* LOGIN BUTTON KHI CHƯA ĐĂNG NHẬP *@
+                    @* LOGIN BUTTON WHEN NOT AUTHENTICATED *@
                     @if (User?.Identity?.IsAuthenticated != true)
                     {
                         <a id="loginLink"
@@ -688,7 +687,7 @@
         <main class="container-fluid py-3">
             <div class="content-maxwide">
 
-                @* Chỉ hiển thị hero ở Home/Index *@
+                @* Only show hero on Home/Index *@
                 @if (isHomeIndexRoute)
                 {
                     <section class="mb-3">
@@ -706,7 +705,7 @@
 
                     <!-- SIDEBAR -->
                     <aside class="sidebar-col">
-                        @* ==== CINEMA COUPON: chỉ hiện khi model là CinemaHomeVm ==== *@
+                        @* ==== CINEMA COUPON: only when model is CinemaHomeVm ==== *@
                         @if (ViewData.Model is CinemaHomeVm cinemaModel)
                         {
                             <div class="mb-3">
@@ -765,8 +764,8 @@
                                     {
                                         var imgUrl = Img(e.ImageUrl);
                                         var start = e.StartDate.HasValue
-                                        ? e.StartDate.Value.ToString("dd MMM HH:mm")
-                                        : "--";
+                                            ? e.StartDate.Value.ToString("dd MMM HH:mm")
+                                            : "--";
 
                                         <div class="slider-item">
                                             <div class="small-card">
