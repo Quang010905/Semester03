@@ -16,6 +16,13 @@
         <span class="tab-title">Customer account</span>
     </a>
 
+    <a href="#" class="browser-tab">
+        <span class="tab-icon">
+            <i class="fa-solid fa-user-shield"></i>
+        </span>
+        <span class="tab-title">Admin Account</span>
+    </a>
+
 
     <a href="#" class="browser-tab">
         <span class="tab-icon"> 
@@ -70,7 +77,7 @@
                         <span class="status-dot @(c.Status == 1 ? "active-dot" : "inactive-dot")"></span>
 
                         <div class="btn-group">
-                            <a href="@Url.Action("Edit","Users",new{area="Admin"})"
+                            <a href="@Url.Action("Edit","Users",new{area="Admin", id = c.Id})"
                                class="btn btn-primary btn-sm">
                                 Edit
                             </a>
@@ -99,7 +106,7 @@
 
 <!-- TAB: PARTNER ACCOUNT -->
 <div id="partner-tab-content" style="padding: 20px; display: none;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0px;">
         <h3>Partner Accounts</h3>
         <a asp-area="Admin" asp-controller="Tenant" asp-action="Index" class="btn btn-info">
             Tenant
@@ -141,6 +148,8 @@
                         <span class="status-dot @(c.Status == 1 ? "active-dot" : "inactive-dot")"></span>
 
                         <div class="btn-group">
+                 
+
                             <a href="@Url.Action("Edit","Users",new{area="Admin", id = c.Id})"
                                class="btn btn-primary btn-sm">
                                 Edit
@@ -159,6 +168,65 @@
         </tbody>
     </table>
 </div>
+
+
+
+
+
+
+<!-- TAB: ADMIN ACCOUNT -->
+<div id="admin-tab-content" style="padding: 20px; display: none;">
+    <h3>Admin Accounts</h3>
+    <div class="search-container">
+        <input type="text" placeholder="Search..." class="search-admin-input">
+        <i class="fa fa-search search-icon"></i>
+    </div>
+
+    <table class="table table-bordered table-hover mt-3">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Fullname</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Created</th>
+                <th class="text-center">Action</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var a in ViewBag.Admin)
+            {
+                <tr>
+                    <td>@a.Id</td>
+                    <td>@a.Username</td>
+                    <td>@a.FullName</td>
+                    <td>@a.Email</td>
+                    <td>@a.Phone</td>
+                    <td>@a.CreatedAt.ToString("dd/MM/yyyy")</td>
+                    <td class="text-center">
+                        <span class="status-dot @(a.Status == 1 ? "active-dot" : "inactive-dot")"></span>
+
+                        <div class="btn-group">
+                            <a href="@Url.Action("Edit","Users",new{area="Admin", id = a.Id})"
+                               class="btn btn-primary btn-sm">
+                                Edit
+                            </a>
+                            <a href="@Url.Action("ResetPassword","User",new{id=a.Id, area="Admin"})"
+                               class="btn btn-warning btn-sm">
+                                Reset
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+
+
 
 
 
@@ -405,13 +473,32 @@
         width: 280px;
     }
 
-    .search-partner-input {
+    .search-partner-input  {
         width: 100%;
         padding: 10px 40px 10px 15px;
         border-radius: 25px;
         border: 1px solid #ccc;
         transition: 0.3s;
     }
+
+    .search-admin-input {
+        width: 100%;
+        padding: 10px 40px 10px 15px;
+        border-radius: 25px;
+        border: 1px solid #ccc;
+        transition: 0.3s;
+    }
+
+
+
+    .search-admin-input {
+        width: 100%;
+        padding: 10px 40px 10px 15px;
+        border-radius: 25px;
+        border: 1px solid #ccc;
+        transition: 0.3s;
+    }
+
 
     .search-input:focus {
         border-color: #4e73df;
@@ -448,14 +535,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const tabs = document.querySelectorAll(".browser-tab");
     const partnerTab = tabs[0];
     const customerTab = tabs[1];
-    const createTab = tabs[2] ; 
+    const adminTab = tabs[2]; 
+    const createTab = tabs[3] ; 
     const inactiveTab = document.querySelector(".undo-tab");
 
     const partnerContent = document.getElementById("partner-tab-content");
     const customerContent = document.getElementById("customer-tab-content");
     const createAccount = document.getElementById("create-account-tab-content")
+        const adminContent = document.getElementById("admin-tab-content");
 
-    const inactiveContent = document.getElementById("inactive-tab-content"); // nếu có
+    const inactiveContent = document.getElementById("inactive-tab-content"); 
 
 
 
@@ -482,6 +571,8 @@ document.addEventListener("DOMContentLoaded", () => {
         safeHide(customerContent);
             safeHide(createAccount)
         safeHide(inactiveContent);
+     safeHide(adminContent);
+
     }
 
     function deactivateAllTabs() {
@@ -512,6 +603,16 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+        if (adminTab) {
+        adminTab.addEventListener("click", (e) => {
+            e.preventDefault();
+            deactivateAllTabs();
+            hideAllContent();
+
+            adminTab.classList.add("active");
+            safeShow(adminContent);
+        });
+    }
 
         if (createTab) {
                     createTab.addEventListener("click", (e) => {

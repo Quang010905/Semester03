@@ -219,6 +219,37 @@ namespace Semester03.Models.Repositories
         }
 
 
+
+
+
+        public async Task<List<User>> GetAllAdminAsync()
+        {
+            return await _context.TblUsers
+                .Where(x => x.UsersRoleId == 1)  // admin
+                .Select(x => new User
+                {
+                    Id = x.UsersId,
+                    Username = x.UsersUsername,
+                    Password = x.UsersPassword,
+                    FullName = x.UsersFullName,
+                    Email = x.UsersEmail,
+                    Phone = x.UsersPhone,
+                    Role = x.UsersRoleId,
+                    Point = x.UsersPoints ?? 0,
+                    Status = x.UsersStatus ?? 1,
+                    CreatedAt = (DateTime)x.UsersCreatedAt,
+                    UpdatedAt = (DateTime)x.UsersUpdatedAt,
+                })
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
+        }
+
+
+
+
+
+
+
         // Cập nhật hồ sơ người dùng (họ tên, email, phone, password)
         public async Task<(bool Success, string? Error)> UpdateProfileAsync(
             int userId,
