@@ -30,5 +30,6 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public DateTime ShowtimeStart { get; set; }
         public string SeatLabel { get; set; }
         public decimal Price { get; set; }
+        public string QrCode { get; set; }
     }
 }

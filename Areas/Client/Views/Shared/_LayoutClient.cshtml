@@ -16,6 +16,7 @@
 
     // Only hide hero+main when flag is true and current route is Cinema/Index
     var hideCenterMain = hideCenterMainFlag && isCinemaIndexRoute;
+
     var isHomeIndexRoute =
         string.Equals(routeController, "Home", System.StringComparison.OrdinalIgnoreCase) &&
         string.Equals(routeAction, "Index", System.StringComparison.OrdinalIgnoreCase);
@@ -27,6 +28,23 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"] - @(ViewData["MallName"])</title>
+
+    @* CSP meta *@
+    <meta http-equiv="Content-Security-Policy"
+          content="
+            default-src 'self' https: data:;
+            script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://sandbox.vnpayment.vn;
+            style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://sandbox.vnpayment.vn;
+            img-src 'self' data: https://sandbox.vnpayment.vn https://cdn.jsdelivr.net;
+            connect-src 'self' https://sandbox.vnpayment.vn https:;
+            frame-src https://sandbox.vnpayment.vn;
+            font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net;
+            object-src 'none';
+          " />
+
+    <script>
+        window.timer = window.timer || null;
+    </script>
 
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -58,7 +76,7 @@
         /* HEADER / NAVBAR -------------------------------------------------- */
         .top-shell {
             backdrop-filter: blur(14px);
-            background: linear-gradient( 120deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.92) );
+            background: linear-gradient(120deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.92));
             border-bottom: 1px solid rgba(148, 163, 184, 0.25);
         }
 
@@ -84,11 +102,11 @@
             box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
         }
 
-            .mall-brand-logo img {
-                height: 42px;
-                width: auto;
-                border-radius: 999px;
-            }
+        .mall-brand-logo img {
+            height: 42px;
+            width: auto;
+            border-radius: 999px;
+        }
 
         .mall-brand-text-title {
             font-weight: 800;
@@ -115,28 +133,28 @@
             padding-bottom: .25rem;
         }
 
-            .mall-nav .nav-link::after {
-                content: '';
-                position: absolute;
-                left: 0;
-                bottom: 0;
-                width: 0;
-                height: 2px;
-                border-radius: 999px;
-                background-image: var(--accent-gradient);
-                transition: width 0.2s ease;
-            }
+        .mall-nav .nav-link::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 0;
+            height: 2px;
+            border-radius: 999px;
+            background-image: var(--accent-gradient);
+            transition: width 0.2s ease;
+        }
 
-            .mall-nav .nav-link:hover::after,
-            .mall-nav .nav-link.active::after {
-                width: 70%;
-            }
+        .mall-nav .nav-link:hover::after,
+        .mall-nav .nav-link.active::after {
+            width: 70%;
+        }
 
-            .mall-nav .nav-link:hover,
-            .mall-nav .nav-link.active {
-                color: #111827;
-                font-weight: 600;
-            }
+        .mall-nav .nav-link:hover,
+        .mall-nav .nav-link.active {
+            color: #111827;
+            font-weight: 600;
+        }
 
         .user-badge {
             display: inline-flex;
@@ -177,13 +195,16 @@
             overflow: hidden;
         }
 
-            .hero::before {
-                content: '';
-                position: absolute;
-                inset: 0;
-                background: radial-gradient(circle at 10% 10%, rgba(239, 246, 255, 0.15), transparent 55%), radial-gradient(circle at 90% 0%, rgba(248, 250, 252, 0.2), transparent 55%), radial-gradient(circle at 80% 90%, rgba(255, 251, 235, 0.1), transparent 55%);
-                pointer-events: none;
-            }
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 10% 10%, rgba(239, 246, 255, 0.15), transparent 55%),
+                radial-gradient(circle at 90% 0%, rgba(248, 250, 252, 0.2), transparent 55%),
+                radial-gradient(circle at 80% 90%, rgba(255, 251, 235, 0.1), transparent 55%);
+            pointer-events: none;
+        }
 
         .hero-content {
             position: relative;
@@ -212,13 +233,13 @@
             align-items: flex-start;
         }
 
-            .layout-grid .main-col {
-                align-self: stretch;
-            }
+        .layout-grid .main-col {
+            align-self: stretch;
+        }
 
-            .layout-grid .sidebar-col {
-                width: 340px;
-            }
+        .layout-grid .sidebar-col {
+            width: 340px;
+        }
 
         .main-shell {
             margin-top: 1.8rem;
@@ -261,56 +282,56 @@
             box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
         }
 
-            .small-event-slider .slider-track {
-                display: block;
-            }
+        .small-event-slider .slider-track {
+            display: block;
+        }
 
-            .small-event-slider .slider-item {
-                display: block;
-                margin-bottom: .7rem;
-            }
+        .small-event-slider .slider-item {
+            display: block;
+            margin-bottom: .7rem;
+        }
 
-            .small-event-slider .small-card {
-                display: flex;
-                gap: .75rem;
-                align-items: flex-start;
-                padding: .55rem .6rem;
-                border-radius: .9rem;
-                transition: transform .12s ease, box-shadow .12s ease, background .15s ease;
-                background: linear-gradient(135deg, #f9fafb, #ffffff);
-                border: 1px solid rgba(226, 232, 240, 0.9);
-            }
+        .small-event-slider .small-card {
+            display: flex;
+            gap: .75rem;
+            align-items: flex-start;
+            padding: .55rem .6rem;
+            border-radius: .9rem;
+            transition: transform .12s ease, box-shadow .12s ease, background .15s ease;
+            background: linear-gradient(135deg, #f9fafb, #ffffff);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+        }
 
-                .small-event-slider .small-card:hover {
-                    transform: translateY(-3px);
-                    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
-                    background: #ffffff;
-                }
+        .small-event-slider .small-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+            background: #ffffff;
+        }
 
-            .small-event-slider .small-poster {
-                width: 110px;
-                height: 82px;
-                object-fit: cover;
-                border-radius: .8rem;
-                flex-shrink: 0;
-                box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
-            }
+        .small-event-slider .small-poster {
+            width: 110px;
+            height: 82px;
+            object-fit: cover;
+            border-radius: .8rem;
+            flex-shrink: 0;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
+        }
 
-            .small-event-slider .small-card-body {
-                flex: 1;
-            }
+        .small-event-slider .small-card-body {
+            flex: 1;
+        }
 
-            .small-event-slider .small-title {
-                font-size: .9rem;
-                font-weight: 700;
-                margin-bottom: .2rem;
-            }
+        .small-event-slider .small-title {
+            font-size: .9rem;
+            font-weight: 700;
+            margin-bottom: .2rem;
+        }
 
-            .small-event-slider .small-meta {
-                color: #6b7280;
-                font-size: .78rem;
-                margin-bottom: .3rem;
-            }
+        .small-event-slider .small-meta {
+            color: #6b7280;
+            font-size: .78rem;
+            margin-bottom: .3rem;
+        }
 
         .sidebar-seeall {
             font-size: .76rem;
@@ -318,19 +339,19 @@
             color: #2563eb;
         }
 
-            .sidebar-seeall i {
-                vertical-align: middle;
-            }
+        .sidebar-seeall i {
+            vertical-align: middle;
+        }
 
         /* RESPONSIVE ------------------------------------------------------- */
-        @@media (max-width: 991px) {
+        @media (max-width: 991px) {
             .layout-grid {
                 grid-template-columns: 1fr;
             }
 
-                .layout-grid .sidebar-col {
-                    width: auto;
-                }
+            .layout-grid .sidebar-col {
+                width: auto;
+            }
 
             .main-shell {
                 margin-top: 1.3rem;
@@ -346,7 +367,7 @@
             }
         }
 
-        @@media (max-width: 767px) {
+        @media (max-width: 767px) {
             .mall-nav {
                 flex-direction: column;
                 gap: .25rem;
@@ -356,16 +377,20 @@
                 height: auto;
                 max-height: none;
                 box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+                overflow-y: visible;
+                padding: .5rem 0;
+            }
+
+            .small-event-slider .small-card {
+                padding: .35rem;
+            }
+
+            .layout-grid .sidebar-col {
+                order: 2;
             }
         }
 
-        @@media (min-width: 1600px) {
-            :root {
-                --main-max-width: 1700px;
-            }
-        }
-
-        @@media (min-width: 768px) {
+        @media (min-width: 768px) {
             .mall-nav .dropdown:hover > .dropdown-menu {
                 display: block;
                 margin-top: 0;
@@ -373,6 +398,25 @@
 
             .mall-nav .dropdown-menu {
                 pointer-events: auto;
+            }
+
+            .small-event-slider::-webkit-scrollbar {
+                width: 10px;
+            }
+
+            .small-event-slider::-webkit-scrollbar-thumb {
+                background: rgba(148, 163, 184, 0.6);
+                border-radius: 999px;
+            }
+
+            .small-event-slider {
+                scrollbar-gutter: stable;
+            }
+        }
+
+        @media (min-width: 1600px) {
+            :root {
+                --main-max-width: 1700px;
             }
         }
     </style>
@@ -389,7 +433,7 @@
                     <a class="text-decoration-none d-flex align-items-center"
                        href="@Url.Action("Index", "Home", new { area = "Client" })">
                         <div class="mall-brand-logo">
-                            <img src="/images/logo.png" alt="logo" />
+                            <img src="@Url.Content("~/images/logo.png")" alt="logo" />
                         </div>
                         <div class="mall-brand-text ms-1">
                             <div class="mall-brand-text-title">
@@ -511,7 +555,7 @@
                         @if (User?.Identity?.IsAuthenticated == true)
                         {
                             var name = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
-                            ?? User.Identity.Name ?? "User";
+                                       ?? User.Identity.Name ?? "User";
 
                             <div class="user-badge" id="userBadge">
                                 <span class="small text-muted">Hello,</span>
@@ -552,7 +596,7 @@
         <main class="container-fluid py-3">
             <div class="content-maxwide">
 
-                @* ✅ Chỉ hiển thị hero ở Home/Index *@
+                @* Chỉ hiển thị hero ở Home/Index *@
                 @if (isHomeIndexRoute)
                 {
                     <section class="mb-3">
@@ -567,9 +611,6 @@
                             @RenderBody()
                         </div>
                     </div>
-
-                    <!-- SIDEBAR -->
-                    <aside class="sidebar-col">
 
                     <!-- SIDEBAR -->
                     <aside class="sidebar-col">
@@ -607,7 +648,7 @@
                                     return Url.Content("~/" + s);
 
                                 if (s.StartsWith("images", StringComparison.OrdinalIgnoreCase) ||
-                                            s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
+                                    s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
                                     return Url.Content("~/" + s);
 
                                 if (raw.StartsWith("/"))
@@ -628,12 +669,12 @@
 
                             <div class="small-event-slider mb-2">
                                 <div class="slider-track">
-                                    @foreach (var e in topEvents ?? Enumerable.Empty<Semester03.Areas.Client.Models.ViewModels.EventCardVm>())
+                                    @foreach (var e in topEvents ?? Enumerable.Empty<EventCardVm>())
                                     {
                                         var imgUrl = Img(e.ImageUrl);
                                         var start = e.StartDate.HasValue
-                                        ? e.StartDate.Value.ToString("dd MMM HH:mm")
-                                        : "--";
+                                            ? e.StartDate.Value.ToString("dd MMM HH:mm")
+                                            : "--";
 
                                         <div class="slider-item">
                                             <div class="small-card">
@@ -671,7 +712,7 @@
         </div>
     </footer>
 
-    <!-- Bootstrap JS -->
+    <!-- Bootstrap JS (CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- AJAX logout handling -->
@@ -704,7 +745,7 @@
                         headers: headers,
                         body: params.toString()
                     }).then(function (resp) {
-                        if (resp.ok)    
+                        if (resp.ok) {
                             window.location.reload();
                             return;
                         }

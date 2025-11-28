@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Semester03.Areas.Admin.Models;
+using Semester03.Areas.Client.Models.ViewModels;
 using Semester03.Models.Entities;
 using Semester03.Models.Repositories;
 using System.Globalization;
@@ -23,19 +24,7 @@ namespace Semester03.Areas.Admin.Controllers
             _context = context;
         }
 
-        // --- Helper method to populate dropdowns ---
-        private void PopulateDropdowns(object selectedMovie = null, object selectedScreen = null)
-        {
-            // Get Movie list
-            ViewData["MovieList"] = new SelectList(
-                _context.TblMovies.Where(m => m.MovieStatus == 1).OrderBy(m => m.MovieTitle),
-                "MovieId", "MovieTitle", selectedMovie);
-
-            // Get Screen list
-            ViewData["ScreenList"] = new SelectList(
-                _context.TblScreens.OrderBy(s => s.ScreenName),
-                "ScreenId", "ScreenName", selectedScreen);
-        }
+        
 
         // GET: Admin/Showtimes
         public async Task<IActionResult> Index(DateTime? date)
@@ -97,6 +86,19 @@ namespace Semester03.Areas.Admin.Controllers
             {
                 TempData["Error"] = $"Invalid Date: {ShowtimeStart}. Please use yyyy-MM-ddTHH:mm format.";
                 return RedirectToAction(nameof(Index));
+            }
+
+            int hour = tblShowtime.ShowtimeStart.Hour;
+            if (tblShowtime.ShowtimeStart.TimeOfDay < new TimeSpan(8, 0, 0))
+            {
+                TempData["Error"] = "Showtime must start after 08:00 AM and before 12:00 AM..";
+                return RedirectToAction(nameof(Index), new { date = tblShowtime.ShowtimeStart.Date });
+            }
+
+            if (tblShowtime.ShowtimeStart < DateTime.Now)
+            {
+                TempData["Error"] = "Cannot schedule a showtime in the past.";
+                return RedirectToAction(nameof(Index), new { date = tblShowtime.ShowtimeStart.Date });
             }
 
             int duration = await _showtimeRepo.GetMovieDurationAsync(tblShowtime.ShowtimeMovieId);
@@ -165,6 +167,16 @@ namespace Semester03.Areas.Admin.Controllers
                 return Json(new { success = false, message = $"Invalid Date: {newStartTime}" });
             }
 
+            if (parsedDate.TimeOfDay < new TimeSpan(8, 0, 0))
+            {
+                return Json(new { success = false, message = "Showtime must start after 08:00 AM and before 12:00 AM." });
+            }
+
+            if (parsedDate < DateTime.Now)
+            {
+                return Json(new { success = false, message = "Cannot move showtime to the past." });
+            }
+
             var showtime = await _showtimeRepo.GetByIdAsync(id);
             if (showtime == null) return Json(new { success = false, message = "Not found." });
 
@@ -194,6 +206,14 @@ namespace Semester03.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteFromCalendar(int id, DateTime returnDate)
         {
+            var showtime = await _showtimeRepo.GetByIdAsync(id);
+            if (showtime == null) return NotFound();
+            if (showtime.ShowtimeStart < DateTime.Now)
+            {
+                TempData["Error"] = "Cannot delete a past or ongoing showtime.";
+                return RedirectToAction(nameof(Index), new { date = returnDate });
+            }
+
             // Check dependencies
             bool hasSeats = await _context.TblShowtimeSeats.AnyAsync(s => s.ShowtimeSeatShowtimeId == id && s.ShowtimeSeatStatus == "sold");
             if (hasSeats)
@@ -201,6 +221,7 @@ namespace Semester03.Areas.Admin.Controllers
                 TempData["Error"] = "Cannot delete: Tickets have already been sold!";
                 return RedirectToAction(nameof(Index), new { date = returnDate });
             }
+
 
             await _showtimeRepo.DeleteAsync(id);
             TempData["Success"] = "Showtime deleted.";

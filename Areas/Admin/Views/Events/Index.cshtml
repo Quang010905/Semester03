@@ -4,13 +4,76 @@
     ViewData["Title"] = "Event Management";
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
 
-    // --- ADDED: Separate lists for better UX ---
     var pendingEvents = Model.Where(e => e.EventStatus == 0).ToList();
-    var otherEvents = Model.Where(e => e.EventStatus != 0).ToList();
+    var activeEvents = Model.Where(e => e.EventStatus == 1).ToList();
+    // Date for JS validation
+    var todayIso = DateTime.Now.ToString("yyyy-MM-dd");
 }
 
-<h1 class="h3 mb-2 text-gray-800">Event Management</h1>
-<p class="mb-4">Approve, reject, or manage all promotional events from tenants.</p>
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<style>
+    /* Select2 Fixes */
+    .select2-container .select2-selection--single {
+        height: 38px !important;
+        border: 1px solid #d1d3e2;
+        border-radius: 0.35rem;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 36px;
+        padding-left: 12px;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+    }
+
+    .select2-container {
+        z-index: 9999;
+    }
+
+    .fc-day-past {
+        background-color: #f8f9fa;
+        cursor: not-allowed;
+    }
+
+    /* Image Preview */
+    .img-preview-container {
+        width: 100%;
+        height: 150px;
+        border: 2px dashed #d1d3e2;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #f8f9fc;
+        cursor: pointer;
+        position: relative;
+    }
+
+        .img-preview-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+    .overlay-text {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0,0,0,0.5);
+        color: white;
+        font-size: 0.7rem;
+        text-align: center;
+        padding: 2px;
+    }
+</style>
+
+<h1 class="h3 mb-4 text-gray-800">Event Management</h1>
 
 @if (TempData["Success"] != null)
 {
@@ -21,128 +84,320 @@
     <div class="alert alert-danger">@TempData["Error"]</div>
 }
 
-<p>
-    <a asp-action="Create" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Create Event Manually
-    </a>
-</p>
+<ul class="nav nav-tabs mb-4" id="eventTabs" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link active" id="calendar-tab" data-toggle="tab" href="#calendarView" role="tab"><i class="fas fa-calendar-alt mr-2"></i> Calendar</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="list-tab" data-toggle="tab" href="#listView" role="tab">
+            <i class="fas fa-list mr-2"></i> Approval
+            @if (pendingEvents.Any())
+            {
+                <span class="badge badge-danger ml-1">@pendingEvents.Count</span>
+            }
+        </a>
+    </li>
+</ul>
 
-<div class="card shadow mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-warning">Pending Approval (@pendingEvents.Count)</h6>
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="calendarView">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Schedule Overview</h6>
+                <button class="btn btn-primary btn-sm" onclick="openCreateModal()"><i class="fas fa-plus"></i> New Event</button>
+            </div>
+            <div class="card-body"><div id='calendar'></div></div>
+        </div>
     </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-bordered" width="100%" cellspacing="0">
-                <thead>
-                    <tr>
-                        <th>Event Name</th>
-                        <th>Tenant</th>
-                        <th>Start Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (!pendingEvents.Any())
-                    {
-                        <tr>
-                            <td colspan="4" class="text-center">No events pending approval.</td>
-                        </tr>
-                    }
-                    @foreach (var item in pendingEvents)
-                    {
-                        <tr>
-                            <td>
-                                <a asp-action="Details" asp-route-id="@item.EventId">
-                                    @Html.DisplayFor(modelItem => item.EventName)
-                                </a>
-                                <br>
-                                <small>@item.EventTenantPosition?.TenantPositionLocation</small>
-                            </td>
-                            <td>
-                                @item.EventTenantPosition?.TenantPositionAssignedTenant?.TenantName
-                            </td>
-                            <td>
-                                @item.EventStart.ToString("g")
-                            </td>
-                            <td style="min-width: 220px;">
-                                <form asp-action="Approve" asp-route-id="@item.EventId" method="post" style="display: inline;">
-                                    <button type="submit" class="btn btn-success btn-sm">
-                                        <i class="fas fa-check"></i> Approve
-                                    </button>
-                                </form>
-                                <form asp-action="Reject" asp-route-id="@item.EventId" method="post" style="display: inline;">
-                                    <button type="submit" class="btn btn-danger btn-sm">
-                                        <i class="fas fa-times"></i> Reject
-                                    </button>
-                                </form>
-                                <a asp-action="Edit" asp-route-id="@item.EventId" class="btn btn-secondary btn-sm" title="Edit before approving">
-                                    <i class="fas fa-pen"></i>
-                                </a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+
+    <div class="tab-pane fade" id="listView">
+        <div class="card shadow mb-4 border-left-warning">
+            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-warning">Pending Approvals</h6></div>
+            <div class="card-body">
+                @if (!pendingEvents.Any())
+                {
+                    <div class="text-center text-muted">No pending events.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="thead-light"><tr><th>Event</th><th>Location</th><th>Time</th><th>Action</th></tr></thead>
+                            <tbody>
+                                @foreach (var item in pendingEvents)
+                                {
+                                    bool isLate = item.EventStart <= DateTime.Now;
+                                    <tr class="@(isLate ? "table-secondary" : "")">
+                                        <td><strong>@item.EventName</strong> @if(isLate){
+                                        <small class="text-danger d-block">Started/Ended</small>
+                                    }
+    </td>
+                                    <td>@item.EventTenantPosition?.TenantPositionLocation</td>
+                                    <td>@item.EventStart.ToString("dd/MM HH:mm")</td>
+                                    <td>
+                                        @if (item.EventEnd > DateTime.Now)
+                                        {
+                                            <form asp-action="Approve" asp-route-id="@item.EventId" method="post" class="d-inline"><button class="btn btn-success btn-sm"><i class="fas fa-check"></i></button></form>
+                                        }
+                                        <form asp-action="Reject" asp-route-id="@item.EventId" method="post" class="d-inline"><button class="btn btn-danger btn-sm"><i class="fas fa-times"></i></button></form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                                }
+            </div>
+        </div>
+
+        <div class="card shadow mb-4 mt-4">
+            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Active Events</h6></div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="dataTable">
+                        <thead><tr><th>Name</th><th>Start</th><th>End</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody>
+                            @foreach (var item in activeEvents)
+                            {
+                                bool isPast = item.EventStart <= DateTime.Now;
+                                <tr class="@(isPast ? "text-muted bg-light" : "")">
+                                    <td>@item.EventName</td>
+                                    <td>@item.EventStart.ToString("g")</td>
+                                    <td>@item.EventEnd.ToString("g")</td>
+                                    <td>@(isPast ? "Started/Ended" : "Upcoming")</td>
+                                    <td>
+                                        <button class="btn @(isPast ? "btn-info" : "btn-warning") btn-sm" onclick="fetchAndEdit(@item.EventId)">
+                                            <i class="fas @(isPast ? "fa-eye" : "fa-edit")"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="card shadow mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">All Active & Inactive Events</h6>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                <thead>
-                    <tr>
-                        <th>Image</th>
-                        <th>Event Name</th>
-                        <th>Location</th>
-                        <th>Start Date</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in otherEvents)
-                    {
-                        <tr>
-                            <td>
-                                <img src="@(string.IsNullOrEmpty(item.EventImg) ? "~/Content/Uploads/noimage.png" : "/Content/Uploads/Events/" + item.EventImg)"
-                                     alt="@item.EventName" style="width: 100px; height: 70px; object-fit: cover;" onerror="this.onerror=null; this.src='/Content/Uploads/noimage.png';" />
-                            </td>
-                            <td>@Html.DisplayFor(modelItem => item.EventName)</td>
-                            <td>@Html.DisplayFor(modelItem => item.EventTenantPosition.TenantPositionLocation)</td>
-                            <td>@item.EventStart.ToString("g")</td>
-                            <td>
-                                @if (item.EventStatus == 1)
-                                {
-                                    <span class="badge badge-success">Active</span>
-                                }
-                                else
-                                {
-                                    <span class="badge badge-secondary">Inactive</span>
-                                }
-                            </td>
-                            <td>
-                                <a asp-action="Edit" asp-route-id="@item.EventId" class="btn btn-warning btn-sm">Edit</a>
-                                <a asp-action="Details" asp-route-id="@item.EventId" class="btn btn-info btn-sm">Details</a>
-                                <a asp-action="Delete" asp-route-id="@item.EventId" class="btn btn-danger btn-sm">Delete</a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+<div class="modal fade" id="saveEventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalTitle">Event Details</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <form asp-action="SaveEvent" method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <input type="hidden" name="EventId" id="Input_EventId" value="0" />
+                    <input type="hidden" name="EventStatus" value="1" />
+
+                    <div id="editModeFeatures" class="mb-3 p-2 bg-gray-100 rounded text-right" style="display:none;">
+                        <a href="#" id="btnViewDetails" class="btn btn-info btn-sm"><i class="fas fa-eye mr-1"></i> Full Details</a>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-md-6 form-group">
+                                    <label class="font-weight-bold">Name</label>
+                                    <input type="text" name="EventName" id="Input_Name" class="form-control" required />
+                                </div>
+                                <div class="col-md-6 form-group">
+                                    <label class="font-weight-bold">Location</label>
+                                    <select name="EventTenantPositionId" id="Input_Pos" class="form-control select2-modal" asp-items="@ViewBag.PositionList" required style="width: 100%"></select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 form-group">
+                                    <label class="font-weight-bold">Start</label>
+                                    <input type="datetime-local" name="EventStart" id="Input_Start" class="form-control" required />
+                                </div>
+                                <div class="col-md-6 form-group">
+                                    <label class="font-weight-bold">End</label>
+                                    <input type="datetime-local" name="EventEnd" id="Input_End" class="form-control" required />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 form-group">
+                                    <label class="font-weight-bold">Max Slots</label>
+                                    <input type="number" name="EventMaxSlot" id="Input_Slots" class="form-control" value="100" min="1" required />
+                                </div>
+                                <div class="col-md-6 form-group">
+                                    <label class="font-weight-bold">Price</label>
+                                    <input type="number" name="EventUnitPrice" id="Input_Price" class="form-control" value="0" min="0" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label class="font-weight-bold">Image</label>
+                            <div class="img-preview-container" onclick="$('#Input_ImageFile').click();">
+                                <img id="Modal_ImgPreview" src="/Content/Uploads/noimage.png" onerror="this.src='/Content/Uploads/noimage.png';" />
+                                <div class="overlay-text">Click to Change</div>
+                            </div>
+                            <input type="file" name="imageFile" id="Input_ImageFile" class="d-none" accept="image/*" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Description</label>
+                        <textarea name="EventDescription" id="Input_Desc" class="form-control" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-danger" id="btnDelete" style="display:none;" onclick="deleteEvent()">Delete</button>
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </div>
+            </form>
+            <form id="deleteForm" asp-action="DeleteEvent" method="post"><input type="hidden" name="id" id="Delete_Id" /></form>
         </div>
     </div>
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+
     <script>
-        $(document).ready(function() {
-          $('#dataTable').DataTable({"order": [[ 3, "desc" ]]});
+        document.addEventListener('DOMContentLoaded', function() {
+            $('.select2-modal').select2({ dropdownParent: $('#saveEventModal'), placeholder: "-- Search Location --", allowClear: true, width: '100%' });
+
+            // Image Preview
+            $('#Input_ImageFile').change(function(e) {
+                if (this.files && this.files[0]) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) { $('#Modal_ImgPreview').attr('src', e.target.result); }
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
+                events: '@Url.Action("GetCalendarData", "Events")',
+                selectable: true, editable: true,
+
+                // Block past selection
+                selectAllow: function(selectInfo) {
+                    var today = new Date(); today.setHours(0,0,0,0);
+                    return new Date(selectInfo.startStr) >= today;
+                },
+
+                select: function(info) {
+                    var startStr = toISOLocal(info.start);
+                    var endStr = toISOLocal(info.end);
+                    if (info.allDay) {
+                        var dStart = new Date(info.start); dStart.setHours(9,0);
+                        var dEnd = new Date(info.end);
+                        if (dEnd.getDate() !== dStart.getDate()) dEnd.setDate(dEnd.getDate() - 1);
+                        dEnd.setHours(18,0);
+                        startStr = toISOLocal(dStart); endStr = toISOLocal(dEnd);
+                    }
+                    openCreateModal(startStr, endStr);
+                    calendar.unselect();
+                },
+                eventClick: function(info) { info.jsEvent.preventDefault(); fetchAndEdit(info.event.id); },
+                eventDrop: function(info) { handleReschedule(info); },
+                eventResize: function(info) { handleReschedule(info); }
+            });
+
+            $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) { calendar.render(); });
+            calendar.render();
+            $('#dataTable').DataTable({ "order": [[ 1, "desc" ]] });
+
+            // --- Functions ---
+            window.openCreateModal = function(start, end) {
+                $('#modalTitle').text('Create New Event');
+                $('#modalTitle').parent().removeClass('bg-warning bg-secondary').addClass('bg-primary');
+                $('#Input_EventId').val(0);
+                $('#editModeFeatures').hide(); $('#btnDelete').hide();
+
+                // Enable inputs
+                $('#saveEventModal input, #saveEventModal textarea, #saveEventModal select').prop('disabled', false);
+                $('#saveEventModal button[type="submit"]').show();
+
+                // Reset
+                $('#Input_Name').val(''); $('#Input_Desc').val(''); $('#Input_Slots').val(100); $('#Input_Price').val(0);
+                $('#Input_Pos').val('').trigger('change');
+                $('#Modal_ImgPreview').attr('src', '/Content/Uploads/noimage.png');
+                $('#Input_ImageFile').val('');
+
+                var now = new Date();
+                if(!start) start = toISOLocal(now);
+                if(!end) { var e = new Date(now); e.setHours(e.getHours()+2); end = toISOLocal(e); }
+
+                $('#Input_Start').val(start); $('#Input_End').val(end);
+                $('#saveEventModal').modal('show');
+            }
+
+            window.fetchAndEdit = function(id) {
+                fetch('/Admin/Events/GetEventJson/' + id)
+                    .then(res => res.json())
+                    .then(data => {
+                        $('#Input_EventId').val(data.id);
+                        var start = new Date(data.eventStart);
+                        var now = new Date();
+                        var isPast = start <= now;
+
+                        if (isPast) {
+                            // READ-ONLY
+                            $('#modalTitle').text('View Event (ReadOnly)');
+                            $('#modalTitle').parent().removeClass('bg-warning bg-primary').addClass('bg-secondary');
+                            $('#saveEventModal input, #saveEventModal textarea, #saveEventModal select').prop('disabled', true);
+                            $('#saveEventModal button[type="submit"]').hide();
+                            $('#btnDelete').hide();
+                        } else {
+                            // EDIT
+                            $('#modalTitle').text('Edit Event: ' + data.eventName);
+                            $('#modalTitle').parent().removeClass('bg-secondary bg-primary').addClass('bg-warning');
+                            $('#saveEventModal input, #saveEventModal textarea, #saveEventModal select').prop('disabled', false);
+                            $('#saveEventModal button[type="submit"]').show();
+                            $('#btnDelete').show();
+                        }
+
+                        $('#editModeFeatures').show();
+                        $('#btnViewDetails').attr('href', '/Admin/Events/Details/' + data.id);
+
+                        $('#Input_Name').val(data.eventName);
+                        $('#Input_Desc').val(data.eventDescription);
+                        $('#Input_Start').val(data.eventStart);
+                        $('#Input_End').val(data.eventEnd);
+                        $('#Input_Slots').val(data.eventMaxSlot);
+                        $('#Input_Price').val(data.eventUnitPrice);
+                        $('#Input_Pos').val(data.eventTenantPositionId).trigger('change');
+                        var imgSrc = data.eventImg ? '/Content/Uploads/Events/' + data.eventImg : '/Content/Uploads/noimage.png';
+                        $('#Modal_ImgPreview').attr('src', imgSrc);
+
+                        $('#saveEventModal').modal('show');
+                    });
+            }
+
+            function handleReschedule(info) {
+                var token = $('input[name="__RequestVerificationToken"]').val();
+                var start = toISOLocal(info.event.start);
+                var end = toISOLocal(info.event.end || info.event.start);
+
+                $.post('@Url.Action("RescheduleEvent", "Events")', {
+                    id: info.event.id, newStart: start, newEnd: end, __RequestVerificationToken: token
+                }).done(function(res) {
+                    if(!res.success) { alert(res.message); info.revert(); }
+                });
+            }
+
+            function toISOLocal(d) {
+                var z = n => ('0' + n).slice(-2);
+                return d.getFullYear() + '-' + z(d.getMonth()+1) + '-' + z(d.getDate()) + 'T' + z(d.getHours()) + ':' + z(d.getMinutes());
+            }
+
+            window.deleteEvent = function() {
+                if(confirm("Delete this event?")) {
+                    $('#Delete_Id').val($('#Input_EventId').val());
+                    $('#deleteForm').submit();
+                }
+            }
         });
     </script>
 }
