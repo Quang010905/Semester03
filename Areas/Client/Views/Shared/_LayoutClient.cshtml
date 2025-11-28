@@ -625,15 +625,14 @@
                                 <div class="dropdown-divider my-1"></div>
 
                                 <form method="post"
-                                      asp-area="Client"
-                                      asp-controller="Account"
-                                      asp-action="Logout"
+                                      action="/Client/Account/Logout"
                                       class="m-0">
                                     @Html.AntiForgeryToken()
                                     <button class="dropdown-item user-menu-logout" type="submit">
                                         <i class="bi bi-box-arrow-right me-2"></i> Logout
                                     </button>
                                 </form>
+
                             </div>
                         </div>
                     }
