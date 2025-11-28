@@ -1,275 +1,800 @@
-﻿@model Semester03.Areas.Client.Models.ViewModels.TicketDetailVm
+﻿    @model Semester03.Areas.Client.Models.ViewModels.TicketDetailVm
 
-@using System
-@using System.IO
-@using Microsoft.AspNetCore.Hosting
-@using System.Linq
+    @using System
+    @using System.IO
+    @using Microsoft.AspNetCore.Hosting
+    @using System.Linq
 
-@{
-    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
-    ViewData["Title"] = "Thông tin vé xem phim";
+    @{
+        Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+        ViewData["Title"] = "Thông tin vé xem phim";
 
-    var dayOfWeek = Model.Showtime.ToString("dddd", new System.Globalization.CultureInfo("vi-VN"));
+        var dayOfWeek = Model.Showtime.ToString("dddd", new System.Globalization.CultureInfo("vi-VN"));
 
-    // ===== HÀM ẢNH CHO MOVIE / POSTER =====
-    Func<string, string> ImgMovie = (raw) =>
-    {
-        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
-
-        try
+        // ===== HÀM ẢNH CHO MOVIE / POSTER =====
+        Func<string, string> ImgMovie = (raw) =>
         {
-            if (string.IsNullOrWhiteSpace(raw))
-                return noImageUrl;
+            var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
 
-            // nếu đã là URL tuyệt đối
-            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-                return raw;
-
-            // chuẩn hóa
-            var file = raw.Replace("\\", "/").Trim();
-
-            // nếu raw chứa "Content/Uploads/Movie" thì chỉ lấy file name cuối
-            var keyword = "Content/Uploads/Movie";
-            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
-            if (idxKeyword >= 0)
+            try
             {
-                var lastSlash = file.LastIndexOf('/');
-                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
-            }
+                if (string.IsNullOrWhiteSpace(raw))
+                    return noImageUrl;
 
-            // bỏ prefix "wwwroot/", "~/" hoặc "/"
-            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
-                file = file.Substring("wwwroot/".Length);
-            if (file.StartsWith("~/"))
-                file = file.Substring(2);
-            if (file.StartsWith("/"))
-                file = file.Substring(1);
+                // nếu đã là URL tuyệt đối
+                if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                    return raw;
 
-            if (string.IsNullOrWhiteSpace(file))
-                return noImageUrl;
+                // chuẩn hóa
+                var file = raw.Replace("\\", "/").Trim();
 
-            // lấy IWebHostEnvironment để check file thật
-            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
-            if (env == null)
-            {
-                // fallback: cứ trỏ vào thư mục Movie
-                return Url.Content("~/Content/Uploads/Movie/" + Uri.EscapeDataString(file));
-            }
+                // nếu raw chứa "Content/Uploads/Movie" thì chỉ lấy file name cuối
+                var keyword = "Content/Uploads/Movie";
+                var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+                if (idxKeyword >= 0)
+                {
+                    var lastSlash = file.LastIndexOf('/');
+                    if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+                }
 
-            var physical = System.IO.Path.Combine(
-                env.WebRootPath ?? "wwwroot",
-                "Content", "Uploads", "Movie", file
+                // bỏ prefix "wwwroot/", "~/" hoặc "/"
+                if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                    file = file.Substring("wwwroot/".Length);
+                if (file.StartsWith("~/"))
+                    file = file.Substring(2);
+                if (file.StartsWith("/"))
+                    file = file.Substring(1);
+
+                if (string.IsNullOrWhiteSpace(file))
+                    return noImageUrl;
+
+                // lấy IWebHostEnvironment để check file thật
+                var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+                if (env == null)
+                {
+                    // fallback: cứ trỏ vào thư mục Movie
+                    return Url.Content("~/Content/Uploads/Movie/" + Uri.EscapeDataString(file));
+                }
+
+                var physical = System.IO.Path.Combine(
+                    env.WebRootPath ?? "wwwroot",
+                    "Content", "Uploads", "Movie", file
                 );
 
-
-            if (System.IO.File.Exists(physical))
-            {
-                return Url.Content("~/Content/Uploads/Movie/" + Uri.EscapeDataString(file));
-            }
-            else
-            {
-                return noImageUrl;
-            }
-        }
-        catch
-        {
-            return noImageUrl;
-        }
-    };
-}
-
-<style>
-    .ticket-wrapper {
-        max-width: 700px;
-        margin: auto;
-        background: #fff;
-        border-radius: 18px;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
-        overflow: hidden;
-    }
-
-    .ticket-header {
-        padding: 20px;
-        background: #ffe0e9;
-        font-weight: 700;
-        font-size: 1.3rem;
-        color: #333;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-        .ticket-header i {
-            cursor: pointer;
-        }
-
-    .ticket-poster {
-        width: 100%;
-        height: 300px;
-        object-fit: cover;
-    }
-
-    .ticket-body {
-        padding: 20px;
-        background: #fff;
-    }
-
-    .ticket-label {
-        font-size: .9rem;
-        color: #666;
-    }
-
-    .ticket-value {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: #000;
-    }
-
-    .stamp-used {
-        width: 240px;
-        opacity: 0.7;
-        position: absolute;
-        right: 20px;
-        top: 350px;
-        transform: rotate(-20deg);
-    }
-
-    .ticket-section {
-        margin-top: 15px;
-        padding: 15px;
-        background: #fafafa;
-        border-radius: 12px;
-        border: 1px solid #eee;
-    }
-
-    .seat-badge {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 999px;
-        background: #e0f2fe;
-        color: #0f172a;
-        font-size: 0.8rem;
-        margin: 2px 4px 2px 0;
-    }
-
-    .seat-badge-cancel {
-        background: #fee2e2;
-        color: #b91c1c;
-    }
-</style>
-
-<div class="ticket-wrapper mt-4 mb-4 position-relative">
-
-    <div class="ticket-header">
-        <a href="javascript:history.back()">
-            <i class="bi bi-arrow-left"></i>
-        </a>
-        Thông tin vé xem phim
-    </div>
-
-    <!-- DÙNG HÀM ImgMovie THAY VÌ DÙNG TRỰC TIẾP Model.MovieImg -->
-    <img src="@ImgMovie(Model.MovieImg)" class="ticket-poster" />
-
-    @if (Model.IsUsed)
-    {
-        <img src="/images/stamp_used.png" class="stamp-used" />
-    }
-
-    <div class="ticket-body">
-
-        <div class="ticket-value mb-1">@Model.MovieTitle</div>
-        <div class="ticket-label mb-3">@Model.Genre - @Model.Duration phút</div>
-
-        <div class="ticket-section">
-            <div class="ticket-label">Mã đặt vé:</div>
-            <div class="ticket-value">@Model.TicketId</div>
-
-            <div class="ticket-label mt-3">Thời gian:</div>
-            <div class="ticket-value" style="color:#e00063">
-                @Model.Showtime.ToString("HH:mm") - @Model.EndTime.ToString("HH:mm")
-            </div>
-            <div class="ticket-value">
-                @dayOfWeek, @Model.Showtime.ToString("dd/MM/yyyy")
-            </div>
-        </div>
-
-        <div class="ticket-section">
-            <div class="row text-center">
-                <div class="col">
-                    <div class="ticket-label">Phòng chiếu</div>
-                    <div class="ticket-value">@Model.Screen</div>
-                </div>
-                <div class="col">
-                    <div class="ticket-label">Các ghế đã đặt</div>
-                    <div class="ticket-value">
-                        @if (Model.Seats != null && Model.Seats.Any())
-                        {
-                            @string.Join(", ", Model.Seats.Select(s => s.SeatLabel))
-                        }
-                        else
-                        {
-                            <span>Không có ghế nào.</span>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="ticket-section">
-            <div class="ticket-label">Rạp chiếu</div>
-            <div class="ticket-value">@Model.TheaterName</div>
-            <div>@Model.TheaterAddress</div>
-        </div>
-
-        <!-- KHỐI HỦY VÉ NHIỀU GHẾ GIỮ NGUYÊN -->
-        <div class="ticket-section mt-3">
-            <button class="btn btn-danger w-100" type="button" onclick="toggleCancelBox()">
-                Hủy vé (chọn ghế)
-            </button>
-
-            <div id="cancelBox" class="mt-3" style="display:none;">
-                <h5>Chọn ghế cần hủy</h5>
-
-                @if (Model.Seats == null || !Model.Seats.Any())
+                if (System.IO.File.Exists(physical))
                 {
-                    <div class="ticket-label">Bạn không còn ghế nào có thể hủy.</div>
+                    return Url.Content("~/Content/Uploads/Movie/" + Uri.EscapeDataString(file));
                 }
                 else
                 {
-                    @foreach (var s in Model.Seats)
-                    {
-                        <div class="form-check">
-                            <input class="form-check-input seat-check"
-                                   type="checkbox"
-                                   value="@s.TicketId"
-                                   id="seat_@s.TicketId"
-                                   data-seat-label="@s.SeatLabel" />
-                            <label class="form-check-label" for="seat_@s.TicketId">
-                                Ghế @s.SeatLabel (@s.Price.ToString("N0") đ)
-                            </label>
-                        </div>
-                    }
+                    return noImageUrl;
+                }
+            }
+            catch
+            {
+                return noImageUrl;
+            }
+        };
+    }
 
-                    <button class="btn btn-primary w-100 mt-3" type="button" onclick="submitCancel()">
-                        Xác nhận hủy những ghế đã chọn
-                    </button>
+    <style>
+        /* OVERLAY XÁC NHẬN HỦY GHẾ */
+        .cancel-confirm-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            display: none; /* mặc định ẩn */
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+        }
+
+        .cancel-confirm-dialog {
+            width: 320px;
+            max-width: 90%;
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 16px 18px 14px;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.45);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            animation: toastIn .2s ease-out;
+        }
+
+        .cancel-confirm-title {
+            font-weight: 800;
+            font-size: 1rem;
+            margin-bottom: 4px;
+            color: #111827;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+            .cancel-confirm-title i {
+                color: #ef4444;
+            }
+
+        .cancel-confirm-text {
+            font-size: .9rem;
+            color: #4b5563;
+            margin-bottom: 12px;
+        }
+
+        .cancel-confirm-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+            .cancel-confirm-actions .btn {
+                flex: 1 1 0;
+                border-radius: 999px;
+                font-weight: 600;
+                padding: 8px 12px;
+            }
+
+            .cancel-confirm-actions .btn-outline-secondary {
+                border: 1px solid #d1d5db;
+                background: #ffffff;
+                color: #4b5563;
+            }
+
+                .cancel-confirm-actions .btn-outline-secondary:hover {
+                    background: #f3f4f6;
                 }
 
-                <hr />
+        /* TOAST THÔNG BÁO HỦY VÉ */
+        .cancel-toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
 
-                <h6>Ghế muốn hủy:</h6>
-                <div id="selectedSeatsBox">
-                    <span class="ticket-label text-muted">Chưa chọn ghế nào.</span>
+        .cancel-toast {
+            min-width: 260px;
+            max-width: 360px;
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.35);
+            padding: 10px 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            border-left: 5px solid #22c55e;
+            animation: toastIn 0.2s ease-out;
+            font-size: .9rem;
+        }
+
+        .cancel-toast-error {
+            border-left-color: #ef4444;
+        }
+
+        .cancel-toast-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .cancel-toast-success .cancel-toast-icon {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .cancel-toast-error .cancel-toast-icon {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .cancel-toast-content-title {
+            font-weight: 700;
+            margin-bottom: 2px;
+            color: #111827;
+        }
+
+        .cancel-toast-content-text {
+            color: #4b5563;
+        }
+
+        .cancel-toast-close {
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 0;
+            margin-left: auto;
+            font-size: 1rem;
+        }
+
+        @@keyframes toastIn {
+            from
+
+        {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        }
+
+    
+        /* NỀN CHUNG NHẸ NHÀNG */
+    
+        .ticket-page-bg {
+            padding: 20px 0 40px;
+            background: radial-gradient(circle at top, #fee2e2 0, #e0f2fe 40%, #f9fafb 100%);
+        }
+
+        /* KHUNG CHÍNH */
+        .ticket-wrapper {
+            max-width: 820px;
+            margin: auto;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(226, 232, 240, 0.9);
+        }
+
+        .ticket-header {
+            padding: 16px 22px;
+            background: linear-gradient(90deg, #ffe4ef, #ffe4e6);
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #111827;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(248, 250, 252, 0.9);
+        }
+
+            .ticket-header a {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 32px;
+                height: 32px;
+                border-radius: 999px;
+                background: #f97373;
+                color: #fff;
+                text-decoration: none;
+                transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+            }
+
+                .ticket-header a:hover {
+                    background: #ef4444;
+                    transform: translateX(-2px);
+                    box-shadow: 0 8px 18px rgba(239, 68, 68, 0.45);
+                }
+
+        /* POSTER – cao hơn MyTickets 1 chút */
+        .ticket-media {
+            position: relative;
+            overflow: hidden;
+            background: #020617;
+        }
+
+        .ticket-poster {
+            width: 100%;
+            height: 380px; /* ~ giống MyTickets nhưng to hơn */
+            object-fit: cover;
+            display: block;
+            transform: scale(1.02);
+            transition: transform 0.9s ease-out;
+        }
+
+        .ticket-media::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(15, 23, 42, 0.4), transparent 25%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .ticket-wrapper:hover .ticket-poster {
+            transform: scale(1.06);
+        }
+
+        @@media (max-width: 768px) {
+            .ticket-poster {
+                height: 260px;
+            }
+        }
+
+        /* THÂN VÉ */
+        .ticket-body {
+            padding: 22px 22px 24px;
+            background: #ffffff;
+        }
+
+        .ticket-value-main {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #111827;
+        }
+
+        .ticket-subinfo {
+            font-size: .9rem;
+            color: #6b7280;
+        }
+
+        .ticket-label {
+            font-size: .8rem;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: #9ca3af;
+            font-weight: 600;
+        }
+
+        .ticket-value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .ticket-section {
+            margin-top: 16px;
+            padding: 14px 16px;
+            background: #f9fafb;
+            border-radius: 14px;
+            border: 1px solid rgba(226, 232, 240, 0.9);
+        }
+
+            .ticket-section + .ticket-section {
+                margin-top: 12px;
+            }
+
+        .ticket-section-strong {
+            background: linear-gradient(135deg, #eff6ff, #fdf2ff);
+        }
+
+        /* STAMP ĐÃ DÙNG */
+        .stamp-used {
+            width: 230px;
+            opacity: 0.6;
+            position: absolute;
+            right: 18px;
+            top: 270px;
+            transform: rotate(-18deg);
+            pointer-events: none;
+        }
+
+        @@media (max-width: 768px) {
+            .stamp-used {
+                top: 220px;
+                width: 180px;
+            }
+        }
+
+        /* GHẾ */
+        .seat-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: #e0f2fe;
+            color: #0f172a;
+            font-size: 0.8rem;
+            margin: 2px 4px 2px 0;
+        }
+
+        .seat-badge-cancel {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        /* NÚT – style riêng trong trang này */
+        .ticket-wrapper .btn {
+            font-weight: 600;
+            border-radius: 999px;
+            padding: 9px 18px;
+            border: none;
+            transition: transform .13s ease, box-shadow .13s ease, background .13s ease, opacity .13s ease;
+        }
+
+        .ticket-wrapper .btn-primary {
+            background: linear-gradient(135deg, #2563eb, #4f46e5);
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.45);
+        }
+
+            .ticket-wrapper .btn-primary:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 14px 32px rgba(37, 99, 235, 0.6);
+                opacity: .96;
+            }
+
+        .ticket-wrapper .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            box-shadow: 0 10px 25px rgba(248, 113, 113, 0.45);
+        }
+
+            .ticket-wrapper .btn-danger:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 14px 32px rgba(248, 113, 113, 0.65);
+                opacity: .96;
+            }
+
+        .ticket-wrapper .btn-outline-light {
+            background: #ffffff;
+            color: #111827;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 6px 15px rgba(15, 23, 42, 0.12);
+        }
+
+            .ticket-wrapper .btn-outline-light:hover {
+                background: #f9fafb;
+                transform: translateY(-1px);
+            }
+
+        /* BOX HỦY VÉ MỚI – ĐẸP HƠN */
+        #cancelBox {
+            margin-top: 14px;
+            padding-top: 0;
+            border-top: none;
+        }
+
+        .cancel-panel {
+            background: #ffffff;
+            border-radius: 18px;
+            border: 1px dashed rgba(148, 163, 184, 0.7);
+            padding: 14px 14px 12px;
+        }
+
+        .cancel-title {
+            font-size: .95rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+            .cancel-title i {
+                color: #ef4444;
+            }
+
+        .cancel-hint {
+            font-size: .85rem;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+
+        .seat-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        /* pill ghế */
+        .seat-pill {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            cursor: pointer;
+            font-size: .85rem;
+            color: #1e293b;
+            box-shadow: 0 6px 14px rgba(148, 163, 184, 0.25);
+            transition: background .15s ease, box-shadow .15s ease, transform .12s ease, border-color .15s ease;
+        }
+
+            .seat-pill:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 10px 20px rgba(148, 163, 184, 0.4);
+            }
+
+            .seat-pill input {
+                position: absolute;
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            .seat-pill.selected {
+                background: #fee2e2;
+                border-color: #fecaca;
+                box-shadow: 0 10px 24px rgba(248, 113, 113, 0.4);
+                color: #7f1d1d;
+            }
+
+        .seat-pill-code {
+            font-weight: 700;
+        }
+
+        .seat-pill-price {
+            font-size: .78rem;
+            color: rgba(30, 64, 175, 0.9);
+        }
+
+        .seat-pill.selected .seat-pill-price {
+            color: #b91c1c;
+        }
+
+        .cancel-summary {
+            margin-top: 10px;
+            padding: 8px 10px;
+            background: #fefce8;
+            border-radius: 999px;
+            font-size: .85rem;
+            color: #854d0e;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+            .cancel-summary strong {
+                font-weight: 800;
+            }
+
+        .cancel-selected-box {
+            margin-top: 8px;
+            padding-top: 6px;
+            border-top: 1px dashed rgba(209, 213, 219, 0.9);
+        }
+
+        .cancel-selected-title {
+            font-size: .85rem;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .cancel-actions {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        @@media (min-width: 576px) {
+            .cancel-actions {
+                flex-direction: row;
+                justify-content: flex-end;
+            }
+
+                .cancel-actions .btn {
+                    min-width: 220px;
+                }
+        }
+    </style>
+
+    <div class="ticket-page-bg">
+        <div class="ticket-wrapper mt-3 mb-3">
+
+            <div class="ticket-header">
+                <a href="javascript:history.back()">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                Thông tin vé xem phim
+            </div>
+
+            <div class="ticket-media">
+                <!-- DÙNG HÀM ImgMovie THAY VÌ DÙNG TRỰC TIẾP Model.MovieImg -->
+                <img src="@ImgMovie(Model.MovieImg)" class="ticket-poster" />
+            </div>
+
+            @if (Model.IsUsed)
+            {
+                <img src="/images/stamp_used.png" class="stamp-used" />
+            }
+
+            <div class="ticket-body">
+                <div class="ticket-value-main mb-1">@Model.MovieTitle</div>
+                <div class="ticket-subinfo mb-3">@Model.Genre - @Model.Duration phút</div>
+
+                <div class="ticket-section ticket-section-strong">
+                    <div class="ticket-label">Mã đặt vé</div>
+                    <div class="ticket-value mb-2">@Model.TicketId</div>
+
+                    <div class="ticket-label">Thời gian</div>
+                    <div class="ticket-value" style="color:#e00063">
+                        @Model.Showtime.ToString("HH:mm") - @Model.EndTime.ToString("HH:mm")
+                    </div>
+                    <div class="ticket-value">
+                        @dayOfWeek, @Model.Showtime.ToString("dd/MM/yyyy")
+                    </div>
+                </div>
+
+                <div class="ticket-section">
+                    <div class="row text-center">
+                        <div class="col-md-5 mb-3 mb-md-0">
+                            <div class="ticket-label">Phòng chiếu</div>
+                            <div class="ticket-value">@Model.Screen</div>
+                        </div>
+                        <div class="col-md-7">
+                            <div class="ticket-label">Các ghế đã đặt</div>
+                            <div class="ticket-value">
+                                @if (Model.Seats != null && Model.Seats.Any())
+                                {
+                                    @string.Join(", ", Model.Seats.Select(s => s.SeatLabel))
+                                }
+                                else
+                                {
+                                    <span>Không có ghế nào.</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ticket-section">
+                    <div class="ticket-label">Rạp chiếu</div>
+                    <div class="ticket-value">@Model.TheaterName</div>
+                    <div class="ticket-subinfo">@Model.TheaterAddress</div>
+                </div>
+
+                <!-- KHỐI HỦY VÉ NHIỀU GHẾ – GIAO DIỆN MỚI -->
+                <div class="ticket-section mt-3">
+                    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+                        <div>
+                            <div class="ticket-label mb-1">Quản lý vé</div>
+                            <div class="ticket-subinfo">
+                                Bạn có thể chọn từng ghế để hủy trước giờ chiếu (nếu chính sách rạp cho phép).
+                            </div>
+                        </div>
+                        <button class="btn btn-danger" type="button" onclick="toggleCancelBox()">
+                            <i class="bi bi-x-circle"></i> Hủy vé (chọn ghế)
+                        </button>
+                    </div>
+
+                    <div id="cancelBox" style="display:none;">
+                        <div class="cancel-panel mt-3">
+                            <div class="cancel-title">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                Hủy ghế đã chọn
+                            </div>
+                            <div class="cancel-hint">
+                                Chọn những ghế bạn muốn hủy. Hệ thống sẽ hoàn tiền tương ứng với từng ghế theo giá vé.
+                            </div>
+
+                            @if (Model.Seats == null || !Model.Seats.Any())
+                            {
+                                <div class="ticket-label">Bạn không còn ghế nào có thể hủy.</div>
+                            }
+                            else
+                            {
+                                <div class="seat-grid">
+                                    @foreach (var s in Model.Seats)
+                                    {
+                                        <label class="seat-pill">
+                                            <input type="checkbox"
+                                                   class="seat-check"
+                                                   value="@s.TicketId"
+                                                   data-seat-label="@s.SeatLabel"
+                                                   data-seat-price="@s.Price" />
+                                            <span class="seat-pill-code">Ghế @s.SeatLabel</span>
+                                            <span class="seat-pill-price">@s.Price.ToString("N0") đ</span>
+                                        </label>
+                                    }
+                                </div>
+
+                                <div class="cancel-summary" id="cancelSummary">
+                                    <span>Đã chọn <strong>0</strong> ghế</span>
+                                    <span>Ước tính hoàn: <strong>0 đ</strong></span>
+                                </div>
+
+                                <div class="cancel-selected-box">
+                                    <div class="cancel-selected-title">Danh sách ghế sẽ hủy:</div>
+                                    <div id="selectedSeatsBox">
+                                        <span class="ticket-label text-muted">Chưa chọn ghế nào.</span>
+                                    </div>
+                                </div>
+
+                                <div class="cancel-actions">
+                                    <button class="btn btn-outline-light w-100" type="button" onclick="toggleCancelBox()">
+                                        Đóng lại, không hủy nữa
+                                    </button>
+                                    <button class="btn btn-primary w-100" type="button" onclick="submitCancel()">
+                                        Xác nhận hủy những ghế đã chọn
+                                    </button>
+                                </div>
+                                <!-- Overlay xác nhận hủy -->
+                                <div id="cancelConfirmOverlay" class="cancel-confirm-overlay">
+                                    <div class="cancel-confirm-dialog">
+                                        <div class="cancel-confirm-title">
+                                            <i class="bi bi-exclamation-triangle-fill"></i>
+                                            Xác nhận hủy vé
+                                        </div>
+                                        <div class="cancel-confirm-text" id="cancelConfirmText">
+                                            Bạn có chắc muốn hủy 0 ghế?
+                                        </div>
+                                        <div class="cancel-confirm-actions">
+                                            <button type="button"
+                                                    class="btn btn-outline-secondary"
+                                                    onclick="hideCancelConfirm()">
+                                                Không, quay lại
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-danger"
+                                                    onclick="doSubmitCancel()">
+                                                Đồng ý hủy
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            }
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
+        </div>
     </div>
 
-</div>
-
-@section Scripts {
+    
+        @section Scripts {
     <script>
+        // =======================
+        // TOAST THÔNG BÁO HỦY VÉ
+        // =======================
+        function showCancelToast(success, message) {
+            var container = document.querySelector(".cancel-toast-container");
+            if (!container) {
+                container = document.createElement("div");
+                container.className = "cancel-toast-container";
+                document.body.appendChild(container);
+            }
+
+            var toast = document.createElement("div");
+            toast.className = "cancel-toast " + (success ? "cancel-toast-success" : "cancel-toast-error");
+
+            var icon = document.createElement("div");
+            icon.className = "cancel-toast-icon";
+            icon.innerHTML = success ? '<i class="bi bi-check2"></i>' : '<i class="bi bi-x-lg"></i>';
+
+            var content = document.createElement("div");
+            var title = document.createElement("div");
+            title.className = "cancel-toast-content-title";
+            title.textContent = success ? "Hủy vé thành công" : "Hủy vé thất bại";
+
+            var text = document.createElement("div");
+            text.className = "cancel-toast-content-text";
+            text.textContent = message || (success ? "Yêu cầu hủy vé đã được xử lý." : "Không thể hủy vé, vui lòng thử lại.");
+
+            content.appendChild(title);
+            content.appendChild(text);
+
+            var closeBtn = document.createElement("button");
+            closeBtn.className = "cancel-toast-close";
+            closeBtn.innerHTML = "&times;";
+            closeBtn.onclick = function () {
+                if (toast && toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            };
+
+            toast.appendChild(icon);
+            toast.appendChild(content);
+            toast.appendChild(closeBtn);
+
+            container.appendChild(toast);
+
+            setTimeout(function () {
+                if (toast && toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 3000);
+        }
+
         function toggleCancelBox() {
             var box = document.getElementById("cancelBox");
             if (!box) return;
@@ -283,48 +808,98 @@
 
         function renderSelectedSeats() {
             var box = document.getElementById("selectedSeatsBox");
+            var summary = document.getElementById("cancelSummary");
             if (!box) return;
 
             box.innerHTML = "";
 
-            var selected = [];
+            var selectedLabels = [];
+            var count = 0;
+            var totalRefund = 0;
+
             document.querySelectorAll(".seat-check:checked").forEach(function (chk) {
                 var label = chk.getAttribute("data-seat-label") || chk.value;
-                selected.push(label);
+                var priceStr = chk.getAttribute("data-seat-price") || "0";
+                var price = parseFloat(priceStr) || 0;
+
+                selectedLabels.push(label);
+                count++;
+                totalRefund += price;
             });
 
-            if (selected.length === 0) {
+            if (selectedLabels.length === 0) {
                 box.innerHTML = '<span class="ticket-label text-muted">Chưa chọn ghế nào.</span>';
-                return;
+            } else {
+                selectedLabels.forEach(function (seat) {
+                    var span = document.createElement("span");
+                    span.className = "seat-badge seat-badge-cancel";
+                    span.textContent = seat;
+                    box.appendChild(span);
+                });
             }
 
-            selected.forEach(function (seat) {
-                var span = document.createElement("span");
-                span.className = "seat-badge seat-badge-cancel";
-                span.textContent = seat;
-                box.appendChild(span);
+            if (summary) {
+                var formattedRefund = totalRefund.toLocaleString("vi-VN") + " đ";
+                summary.innerHTML =
+                    '<span>Đã chọn <strong>' + count + '</strong> ghế</span>' +
+                    '<span>Ước tính hoàn: <strong>' + formattedRefund + '</strong></span>';
+            }
+
+            document.querySelectorAll(".seat-pill").forEach(function (pill) {
+                var input = pill.querySelector("input.seat-check");
+                if (input && input.checked) {
+                    pill.classList.add("selected");
+                } else {
+                    pill.classList.remove("selected");
+                }
             });
         }
 
+        // Biến global lưu ghế chuẩn bị hủy
+        var pendingSeatIds = [];
+
         function submitCancel() {
-            var selected = [];
+            pendingSeatIds = [];
             document.querySelectorAll(".seat-check:checked").forEach(function (chk) {
-                selected.push(chk.value);
+                pendingSeatIds.push(chk.value);
             });
 
-            if (selected.length === 0) {
-                alert("Bạn chưa chọn ghế để hủy.");
+            if (pendingSeatIds.length === 0) {
+                showCancelToast(false, "Bạn chưa chọn ghế để hủy.");
                 return;
             }
 
-            if (!confirm("Bạn có chắc muốn hủy " + selected.length + " ghế?")) {
+            var txt = document.getElementById("cancelConfirmText");
+            if (txt) {
+                txt.textContent = "Bạn có chắc muốn hủy " + pendingSeatIds.length + " ghế?";
+            }
+
+            var overlay = document.getElementById("cancelConfirmOverlay");
+            if (overlay) {
+                overlay.style.display = "flex";
+            }
+        }
+
+        function hideCancelConfirm() {
+            var overlay = document.getElementById("cancelConfirmOverlay");
+            if (overlay) {
+                overlay.style.display = "none";
+            }
+        }
+
+        function doSubmitCancel() {
+            if (!pendingSeatIds || pendingSeatIds.length === 0) {
+                hideCancelConfirm();
+                showCancelToast(false, "Bạn chưa chọn ghế để hủy.");
                 return;
             }
+
+            hideCancelConfirm();
 
             var url = "@Url.Action("CancelSelectedSeats", "TicketDetail", new { area = "Client" })";
 
             var bodyParams = new URLSearchParams();
-            selected.forEach(function (id) {
+            pendingSeatIds.forEach(function (id) {
                 bodyParams.append("seatIds", id);
             });
 
@@ -337,22 +912,31 @@
             })
                 .then(function (response) { return response.json(); })
                 .then(function (res) {
-                    alert(res.message || "Đã xử lý xong.");
+                    var msg = res.message || (res.success ? "Đã hủy vé thành công." : "Không thể hủy vé.");
+                    showCancelToast(res.success, msg);
+
                     if (res.success) {
-                        location.reload();
+                        setTimeout(function () {
+                            location.reload();
+                        }, 1200);
                     }
                 })
                 .catch(function (err) {
                     console.error(err);
-                    alert("Có lỗi xảy ra khi gửi yêu cầu hủy vé.");
+                    showCancelToast(false, "Có lỗi xảy ra khi gửi yêu cầu hủy vé.");
                 });
         }
 
+        // 👉 GẮN SỰ KIỆN CHO CHECKBOX SAU KHI DOM LOAD
         document.addEventListener("DOMContentLoaded", function () {
             document.querySelectorAll(".seat-check").forEach(function (chk) {
                 chk.addEventListener("change", renderSelectedSeats);
             });
+
+            // render lần đầu
             renderSelectedSeats();
         });
     </script>
 }
+
+
