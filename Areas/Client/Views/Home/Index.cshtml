@@ -51,7 +51,6 @@
                 return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
             }
 
-            // ✅ Path.Combine – KHÔNG dùng .Combine trên string
             var physical = System.IO.Path.Combine(env.WebRootPath ?? "wwwroot", "Content", "Uploads", "Events", file);
 
             if (System.IO.File.Exists(physical))
@@ -284,6 +283,7 @@
 
 <div class="container py-5 events-home-wrapper">
 
+    <!-- UPCOMING EVENTS -->
     <h1 class="section-title">Upcoming Events</h1>
 
     @if (!topEvents.Any())
@@ -320,6 +320,15 @@
         </div>
     }
 
+    <!-- Nút SEE ALL EVENTS -->
+    <div class="text-center mt-4">
+        <a href="@Url.Action("Index", "Event", new { area = "Client" })"
+           class="btn btn-outline-primary rounded-pill px-4">
+            See all events
+        </a>
+    </div>
+
+    <!-- LATEST PROMOTIONS -->
     @if (ViewBag.TopPromotions != null && ((List<TenantPromotionVm>)ViewBag.TopPromotions).Any())
     {
         <h1 class="section-title mt-5 promo-title">Latest Promotions</h1>
@@ -358,8 +367,17 @@
                 </div>
             }
         </div>
+
+        <!-- Nút SEE ALL PROMOTIONS -->
+        <div class="text-center mt-4">
+            <a href="@Url.Action("Index", "TenantPromotion", new { area = "Client" })"
+               class="btn btn-outline-danger rounded-pill px-4">
+                See all promotions
+            </a>
+        </div>
     }
 
+    <!-- FEATURED STORES -->
     @if (featuredStores.Any())
     {
         <h1 class="section-title mt-5 featured-title">Featured Stores</h1>
