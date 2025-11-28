@@ -1,7 +1,6 @@
 ﻿@{
     var mallName = ViewData["MallName"] ?? "ABCD Mall";
 
-    // Nếu controller có set các số liệu thì dùng, không có thì để null -> fallback text
     int? totalEvents = ViewBag.TotalEvents as int?;
     int? totalStores = ViewBag.TotalStores as int?;
     int? totalMovies = ViewBag.TotalMovies as int?;
@@ -200,7 +199,6 @@
         overflow: hidden;
     }
 
-        /* hiệu ứng gradient chuyển động nhẹ */
         .hero-outer::before {
             content: "";
             position: absolute;
@@ -213,16 +211,13 @@
         }
 
     @@keyframes heroGlow {
-        0%
+        0% {
+            transform: translate3d(0, 0, 0) scale(1);
+        }
 
-    {
-        transform: translate3d(0, 0, 0) scale(1);
-    }
-
-    100% {
-        transform: translate3d(4%, -4%, 0) scale(1.06);
-    }
-
+        100% {
+            transform: translate3d(4%, -4%, 0) scale(1.06);
+        }
     }
 
     .hero-top {
@@ -479,79 +474,73 @@
 
     /* responsive */
     @@media (max-width: 992px) {
-        .hero-img
-
-    {
-        height: 420px;
-    }
-
-    .hero-inner {
-        max-width: 940px;
-    }
-
-    .hero-caption {
-        left: 24px;
-        right: 24px;
-        bottom: 24px;
-    }
-
-        .hero-caption h2 {
-            font-size: 1.5rem;
+        .hero-img {
+            height: 420px;
         }
 
+        .hero-inner {
+            max-width: 940px;
+        }
+
+        .hero-caption {
+            left: 24px;
+            right: 24px;
+            bottom: 24px;
+        }
+
+            .hero-caption h2 {
+                font-size: 1.5rem;
+            }
     }
 
     @@media (max-width: 576px) {
-        .hero-img-wrapper
-
-    {
-        height: 260px;
-    }
-
-    .hero-inner {
-        padding: 0 12px;
-        max-width: calc(100% - 24px);
-    }
-
-    .hero-caption {
-        left: 18px;
-        right: 18px;
-        bottom: 18px;
-    }
-
-        .hero-caption h2 {
-            font-size: 1.25rem;
+        .hero-img-wrapper {
+            height: 260px;
         }
 
-        .hero-caption p {
-            font-size: .85rem;
+        .hero-inner {
+            padding: 0 12px;
+            max-width: calc(100% - 24px);
         }
 
-    .hero-inner .carousel-control-prev,
-    .hero-inner .carousel-control-next {
-        width: 40px;
-        height: 40px;
-    }
-
-    .hero-inner .carousel-control-prev {
-        left: 6px;
-    }
-
-    .hero-inner .carousel-control-next {
-        right: 6px;
-    }
-
-    .hero-inner .custom-indicators {
-        bottom: 10px;
-        right: 18px;
-        gap: 6px;
-    }
-
-        .hero-inner .custom-indicators button {
-            width: 8px;
-            height: 8px;
+        .hero-caption {
+            left: 18px;
+            right: 18px;
+            bottom: 18px;
         }
 
+            .hero-caption h2 {
+                font-size: 1.25rem;
+            }
+
+            .hero-caption p {
+                font-size: .85rem;
+            }
+
+        .hero-inner .carousel-control-prev,
+        .hero-inner .carousel-control-next {
+            width: 40px;
+            height: 40px;
+        }
+
+        .hero-inner .carousel-control-prev {
+            left: 6px;
+        }
+
+        .hero-inner .carousel-control-next {
+            right: 6px;
+        }
+
+        .hero-inner .custom-indicators {
+            bottom: 10px;
+            right: 18px;
+            gap: 6px;
+        }
+
+            .hero-inner .custom-indicators button {
+                width: 8px;
+                height: 8px;
+            }
     }
 
     html, body {

@@ -1,8 +1,7 @@
 ﻿@*
   Partial View: _Header.cshtml
-  Displays header (logo, menu, notifications, user)
-  Used in _LayoutClient.cshtml
 *@
+
 @using Microsoft.AspNetCore.Mvc.Localization
 @inject IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
@@ -13,16 +12,19 @@
     var notifications = ViewBag.Notifications as List<string>;
 }
 
-<header class="bg-white sticky-top sticky-top-shadow">
+<header class="mall-header bg-white sticky-top mall-header-shadow">
     <div class="container">
         <div class="d-flex align-items-center justify-content-between py-2">
             <!-- Logo -->
             <div class="d-flex align-items-center">
-                <a class="d-flex align-items-center text-decoration-none" href="@Url.Action("Index", "Mall")">
-                    <img src="/images/logo.png" alt="logo" style="height:48px;width:auto;" />
+                <a class="d-flex align-items-center text-decoration-none mall-header-brand"
+                   href="@Url.Action("Index", "Mall")">
+                    <div class="mall-header-logo">
+                        <img src="/images/logo.png" alt="logo" />
+                    </div>
                     <div class="ms-2">
-                        <div style="font-weight:700;font-size:1.05rem;">@mallName</div>
-                        <small class="text-muted">123 Le Loi, HCMC</small>
+                        <div class="mall-header-title">@mallName</div>
+                        <small class="mall-header-sub">123 Le Loi, HCMC</small>
                     </div>
                 </a>
             </div>
@@ -33,7 +35,7 @@
                 {
                     foreach (var item in menu)
                     {
-                        <a class="text-muted text-decoration-none fw-medium" href="@item.Url">@item.Name</a>
+                        <a class="mall-header-link" href="@item.Url">@item.Name</a>
                     }
                 }
             </div>
@@ -41,7 +43,8 @@
             <!-- Notifications & Login -->
             <div class="d-flex align-items-center gap-2">
                 <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary position-relative" id="notifDropdown" data-bs-toggle="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary position-relative mall-header-icon-btn"
+                            id="notifDropdown" data-bs-toggle="dropdown">
                         <i class="bi bi-bell"></i>
                         @if (notifications != null && notifications.Any())
                         {
@@ -52,7 +55,7 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notifDropdown" style="width:320px;">
                         <li class="dropdown-header">Notifications</li>
-                        @if (notifications != null)
+                        @if (notifications != null && notifications.Any())
                         {
                             foreach (var n in notifications)
                             {
@@ -66,8 +69,72 @@
                     </ul>
                 </div>
 
-                <a href="/Account/Login" class="btn btn-sm btn-outline-primary">Login</a>
+                <a href="/Account/Login" class="btn btn-sm btn-outline-primary rounded-pill px-3">Login</a>
             </div>
         </div>
     </div>
 </header>
+
+<style>
+    .mall-header-shadow {
+        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.10);
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    }
+
+    .mall-header-brand {
+        color: inherit;
+    }
+
+    .mall-header-logo {
+        height: 44px;
+        width: 44px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: radial-gradient(circle at 10% 0, #fee2e2, #bfdbfe 40%, #a5b4fc 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
+    }
+
+        .mall-header-logo img {
+            height: 40px;
+            width: auto;
+        }
+
+    .mall-header-title {
+        font-weight: 800;
+        font-size: 1.05rem;
+        letter-spacing: -0.03em;
+        color: #0f172a;
+    }
+
+    .mall-header-sub {
+        font-size: .75rem;
+        color: #6b7280;
+    }
+
+    .mall-header-link {
+        font-size: .9rem;
+        color: #4b5563;
+        font-weight: 500;
+        padding: .35rem .8rem;
+        border-radius: 999px;
+        transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+    }
+
+        .mall-header-link:hover {
+            background: rgba(37, 99, 235, 0.06);
+            color: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+    .mall-header-icon-btn {
+        border-radius: 999px;
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>

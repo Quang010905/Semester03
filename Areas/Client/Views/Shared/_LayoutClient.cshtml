@@ -1,5 +1,4 @@
-﻿@* _LayoutClient.cshtml
-   Full layout for Mall website - Modern Premium + Colorful Shopping *@
+﻿@* _LayoutClient.cshtml – Mall Layout Premium *@
 @inject Semester03.Models.Repositories.TenantRepository _tenantRepo
 @inject Semester03.Models.Repositories.EventRepository _event_repo
 @using Semester03.Areas.Client.Models.ViewModels
@@ -13,7 +12,7 @@
         string.Equals(routeController, "Cinema", System.StringComparison.OrdinalIgnoreCase)
         && string.Equals(routeAction, "Index", System.StringComparison.OrdinalIgnoreCase);
 
-    // Only hide hero+main when flag is true and current route is Cinema/Index
+    // Chỉ ẩn center main khi có flag + đang ở Cinema/Index
     var hideCenterMain = hideCenterMainFlag && isCinemaIndexRoute;
 
     var isHomeIndexRoute =
@@ -28,7 +27,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"] - @(ViewData["MallName"])</title>
 
-    @* CSP meta *@
+    <!-- CSP -->
     <meta http-equiv="Content-Security-Policy"
           content="
             default-src 'self' https: data:;
@@ -45,7 +44,7 @@
         window.timer = window.timer || null;
     </script>
 
-    <!-- Bootstrap 5 CSS -->
+    <!-- Bootstrap 5 + Icons + Font -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -56,13 +55,15 @@
             --primary-color: #2563eb;
             --secondary-color: #6b7280;
             --accent-gradient: linear-gradient(135deg, #4f46e5, #ec4899);
+            --accent-soft: linear-gradient(120deg, #eff6ff, #fdf2f8);
             --card-radius: 1rem;
             --shadow-lg: 0 22px 60px rgba(15, 23, 42, 0.18);
+            --shadow-md: 0 16px 40px rgba(15, 23, 42, 0.14);
             --transition: all 0.22s ease;
         }
 
         body {
-            font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background: radial-gradient(circle at top, #eff6ff 0, #e0f2fe 22%, #fef3c7 55%, #fdf2f8 85%), #f9fafb;
             color: #0f172a;
             min-height: 100vh;
@@ -72,33 +73,66 @@
             text-decoration: none;
         }
 
-        /* HEADER / NAVBAR -------------------------------------------------- */
+        .content-maxwide {
+            max-width: var(--main-max-width);
+            margin: 0 auto;
+        }
+
+        /* ================= HEADER / TOP BAR ================= */
         .top-shell {
-            backdrop-filter: blur(14px);
-            background: linear-gradient(120deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.92));
-            border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+            backdrop-filter: blur(16px);
+            background: linear-gradient(120deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.96));
+            border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+            position: sticky;
+            top: 0;
+            z-index: 1030;
         }
 
         .sticky-top-shadow {
-            box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+            box-shadow: 0 14px 45px rgba(15, 23, 42, 0.14);
         }
 
+        /* mini topline (phone, open-hours…) nếu cần sau này
+                   hiện tại để subtle strip
+                */
+        .top-strip {
+            font-size: .75rem;
+            color: #6b7280;
+            padding: .25rem 0;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+        }
+
+            .top-strip span {
+                display: inline-flex;
+                align-items: center;
+                gap: .35rem;
+            }
+
+            .top-strip i {
+                font-size: .85rem;
+            }
+
+        .top-main-row {
+            padding: .55rem 0 .65rem;
+        }
+
+        /* BRANDING */
         .mall-brand {
             display: flex;
             align-items: center;
-            gap: .75rem;
+            gap: .8rem;
         }
 
         .mall-brand-logo {
             height: 46px;
             width: 46px;
             border-radius: 999px;
-            background: radial-gradient(circle at 25% 0, #fee2e2, #bfdbfe 40%, #a5b4fc 100%);
+            background: radial-gradient(circle at 20% 0, #fee2e2, transparent 45%), radial-gradient(circle at 80% 100%, #bfdbfe, #a5b4fc);
             display: inline-flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.35);
         }
 
             .mall-brand-logo img {
@@ -118,27 +152,25 @@
             color: #6b7280;
         }
 
-        .content-maxwide {
-            max-width: var(--main-max-width);
-            margin: 0 auto;
-        }
-
-        /* NAV TABS MỚI --------------------------------------------------- */
+        /* NAV DESKTOP */
         .mall-nav {
             background: rgba(15, 23, 42, 0.02);
-            padding: .25rem .4rem;
+            padding: .25rem .35rem;
             border-radius: 999px;
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+            display: inline-flex;
+            align-items: center;
+            gap: .15rem;
         }
 
             .mall-nav .nav-link {
                 position: relative;
-                padding: .45rem 1.15rem;
+                padding: .45rem 1.1rem;
                 border-radius: 999px;
                 font-size: .9rem;
                 font-weight: 500;
                 color: #111827;
-                transition: transform .15s ease, box-shadow .15s ease, color .15s ease;
+                transition: transform .15s ease, box-shadow .15s ease, color .15s ease, background .15s ease;
                 z-index: 1;
                 overflow: hidden;
             }
@@ -169,7 +201,24 @@
                     box-shadow: 0 10px 24px rgba(148, 163, 184, 0.35);
                 }
 
+            .mall-nav .dropdown-menu {
+                border-radius: 1rem;
+                border: 1px solid #e5e7eb;
+                box-shadow: 0 18px 45px rgba(15, 23, 42, 0.15);
+                padding: .35rem 0;
+                font-size: .9rem;
+            }
 
+                .mall-nav .dropdown-menu .dropdown-item {
+                    padding: .4rem 1rem;
+                }
+
+                    .mall-nav .dropdown-menu .dropdown-item:hover {
+                        background: #eff6ff;
+                        color: #1d4ed8;
+                    }
+
+        /* RIGHT CONTROL: USER + BELL + LOGIN */
         .btn-icon-circle {
             border-radius: 999px;
             width: 32px;
@@ -184,7 +233,6 @@
             transform: translate(40%, -40%);
         }
 
-        /* USER DROPDOWN MỚI ------------------------------------------- */
         .user-menu-trigger {
             padding: 0 !important;
         }
@@ -266,50 +314,38 @@
                 color: #b91c1c !important;
             }
 
-        /* HERO ------------------------------------------------------------- */
-        .hero {
-            background: radial-gradient(circle at top left, #4f46e5, #ec4899);
-            color: #fff;
-            min-height: 260px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: left;
-            padding: 2.2rem 2.5rem;
-            border-radius: 1.4rem;
-            box-shadow: var(--shadow-lg);
-            position: relative;
-            overflow: hidden;
+        /* MOBILE NAV (OFFCANVAS) */
+        .mobile-nav-toggle {
+            border-radius: 999px;
+            border: 1px solid #e5e7eb;
         }
 
-            .hero::before {
-                content: '';
-                position: absolute;
-                inset: 0;
-                background: radial-gradient(circle at 10% 10%, rgba(239, 246, 255, 0.15), transparent 55%), radial-gradient(circle at 90% 0%, rgba(248, 250, 252, 0.2), transparent 55%), radial-gradient(circle at 80% 90%, rgba(255, 251, 235, 0.1), transparent 55%);
-                pointer-events: none;
+        .offcanvas-header {
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .offcanvas-mall-title {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .offcanvas .nav-link {
+            padding: .6rem 0;
+            font-size: .95rem;
+            color: #111827;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+            .offcanvas .nav-link:last-child {
+                border-bottom: none;
             }
 
-        .hero-content {
-            position: relative;
-            z-index: 1;
-            max-width: 520px;
-        }
+            .offcanvas .nav-link.active {
+                color: #2563eb;
+                font-weight: 600;
+            }
 
-        .hero-title {
-            font-size: 2rem;
-            font-weight: 800;
-            letter-spacing: -0.04em;
-            margin-bottom: .35rem;
-        }
-
-        .hero-sub {
-            font-size: .92rem;
-            opacity: 0.9;
-            max-width: 420px;
-        }
-
-        /* MAIN LAYOUT ------------------------------------------------------ */
+        /* ================= MAIN LAYOUT ================= */
         .layout-grid {
             display: grid;
             grid-template-columns: minmax(0, 1fr) 340px;
@@ -332,28 +368,30 @@
         .card-shell {
             background: #ffffff;
             border-radius: 1.1rem;
-            padding: 1.2rem 1.3rem;
-            border: 1px solid rgba(226, 232, 240, 0.9);
-            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+            padding: 1.25rem 1.35rem;
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            box-shadow: var(--shadow-md);
         }
 
-        footer {
-            background: #020617;
-            color: #cbd5f5;
-            padding: 3rem 0 2rem;
-            font-size: 0.9rem;
-            margin-top: 2.5rem;
-        }
-
-        /* SIDEBAR: EVENTS -------------------------------------------------- */
+        /* ================= SIDEBAR: EVENTS + COUPON ================= */
         .sidebar-section-title {
-            font-size: .88rem;
+            font-size: .86rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: .08em;
             color: #6b7280;
             margin-bottom: .35rem;
         }
+
+        .sidebar-seeall {
+            font-size: .76rem;
+            font-weight: 600;
+            color: #2563eb;
+        }
+
+            .sidebar-seeall i {
+                vertical-align: middle;
+            }
 
         .small-event-slider {
             height: 500px;
@@ -417,17 +455,6 @@
                 margin-bottom: .3rem;
             }
 
-        .sidebar-seeall {
-            font-size: .76rem;
-            font-weight: 600;
-            color: #2563eb;
-        }
-
-            .sidebar-seeall i {
-                vertical-align: middle;
-            }
-
-        /* RESPONSIVE ------------------------------------------------------- */
         @@media (max-width: 991px) {
             .layout-grid {
                 grid-template-columns: 1fr;
@@ -438,23 +465,18 @@
                 }
 
             .main-shell {
-                margin-top: 1.3rem;
-            }
-
-            .hero {
-                padding: 1.7rem 1.5rem;
-                min-height: 220px;
-            }
-
-            .hero-title {
-                font-size: 1.65rem;
+                margin-top: 1.4rem;
             }
         }
 
         @@media (max-width: 767px) {
+            .top-main-row {
+                padding-top: .5rem;
+                padding-bottom: .55rem;
+            }
+
             .mall-nav {
-                flex-direction: column;
-                gap: .25rem;
+                display: none !important;
             }
 
             .small-event-slider {
@@ -503,6 +525,15 @@
                 --main-max-width: 1700px;
             }
         }
+
+        /* ================= FOOTER ================= */
+        footer {
+            background: #020617;
+            color: #cbd5f5;
+            padding: 3rem 0 2rem;
+            font-size: 0.9rem;
+            margin-top: 2.5rem;
+        }
     </style>
 
     @RenderSection("Styles", required: false)
@@ -511,7 +542,21 @@
     <!-- HEADER -->
     <header class="top-shell sticky-top sticky-top-shadow">
         <div class="content-maxwide">
-            <div class="d-flex align-items-center justify-content-between py-2">
+
+            <!-- Top strip (có thể thêm info nếu muốn) -->
+            <div class="top-strip d-none d-md-flex justify-content-between">
+                <span>
+                    <i class="bi bi-geo-alt"></i>
+                    @(ViewData["MallAddress"] ?? "123 Main Street")
+                </span>
+                <span>
+                    <i class="bi bi-clock-history"></i>
+                    Open daily • 10:00 – 22:00
+                </span>
+            </div>
+
+            <!-- Main header row -->
+            <div class="d-flex align-items-center justify-content-between top-main-row">
                 <!-- Logo + name -->
                 <div class="mall-brand">
                     <a class="text-decoration-none d-flex align-items-center"
@@ -530,8 +575,8 @@
                     </a>
                 </div>
 
-                <!-- NAV -->
-                <nav class="mall-nav d-none d-md-flex align-items-center gap-1">
+                <!-- NAV DESKTOP -->
+                <nav class="mall-nav d-none d-md-inline-flex">
                     <div class="nav-item dropdown">
                         <a class="nav-link @(routeController == "Stores" ? "active" : "")"
                            href="@Url.Action("Index", "Stores", new { area = "Client" })"
@@ -561,8 +606,6 @@
                         Map
                     </a>
 
-                    @* Entertainment removed *@
-
                     <a class="nav-link @(routeController == "Event" ? "active" : "")"
                        href="@Url.Action("Index", "Event", new { area = "Client" })">
                         Events
@@ -579,18 +622,16 @@
                     </a>
                 </nav>
 
-
                 <!-- Right controls -->
                 <div class="d-flex align-items-center gap-2">
-
                     @* USER MENU *@
                     @if (User?.Identity?.IsAuthenticated == true)
                     {
                         var name = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
                         ?? User.Identity.Name ?? "User";
                         var initialUser = string.IsNullOrWhiteSpace(name)
-                            ? "U"
-                            : name.Trim()[0].ToString().ToUpper();
+                        ? "U"
+                        : name.Trim()[0].ToString().ToUpper();
 
                         <div class="dropdown me-1">
                             <a href="#" class="user-menu-trigger" id="profileDropdown"
@@ -632,13 +673,12 @@
                                         <i class="bi bi-box-arrow-right me-2"></i> Logout
                                     </button>
                                 </form>
-
                             </div>
                         </div>
                     }
 
                     @* NOTIFICATIONS *@
-                    <div class="dropdown">
+                    <div class="dropdown d-none d-sm-block">
                         <button class="btn btn-sm btn-outline-secondary btn-icon-circle position-relative"
                                 id="notifDropdown"
                                 data-bs-toggle="dropdown"
@@ -666,27 +706,114 @@
                         </ul>
                     </div>
 
-                    @* LOGIN BUTTON WHEN NOT AUTHENTICATED *@
+                    @* LOGIN BUTTON *@
                     @if (User?.Identity?.IsAuthenticated != true)
                     {
                         <a id="loginLink"
-                           class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                           class="btn btn-sm btn-outline-primary rounded-pill px-3 d-none d-sm-inline-flex"
                            href="@Url.Action("Login", "Account", new { area = "Client" })">
                             Login
                         </a>
                     }
+
+                    @* MOBILE TOGGLER *@
+                    <button class="btn btn-sm btn-light d-inline-flex d-md-none mobile-nav-toggle"
+                            type="button"
+                            data-bs-toggle="offcanvas"
+                            data-bs-target="#mobileNav"
+                            aria-controls="mobileNav">
+                        <i class="bi bi-list"></i>
+                    </button>
                 </div>
             </div>
         </div>
     </header>
 
-    @* When hideCenterMain = true and route is Cinema/Index, layout skips Hero + Main *@
+    <!-- MOBILE OFFCANVAS NAV -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="mobileNav" aria-labelledby="mobileNavLabel">
+        <div class="offcanvas-header">
+            <h6 class="offcanvas-title offcanvas-mall-title" id="mobileNavLabel">
+                @ViewData["MallName"]
+            </h6>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <nav class="nav flex-column mb-3">
+                <a class="nav-link @(routeController == "Stores" ? "active" : "")"
+                   href="@Url.Action("Index", "Stores", new { area = "Client" })">
+                    Stores
+                </a>
+                <a class="nav-link @(routeController == "Cinema" ? "active" : "")"
+                   href="@Url.Action("Index", "Cinema", new { area = "Client" })">
+                    Cinema
+                </a>
+                <a class="nav-link @(routeController == "Map" ? "active" : "")"
+                   href="@Url.Action("Index", "Map", new { area = "Client" })">
+                    Map
+                </a>
+                <a class="nav-link @(routeController == "Event" ? "active" : "")"
+                   href="@Url.Action("Index", "Event", new { area = "Client" })">
+                    Events
+                </a>
+                <a class="nav-link @(routeController == "TenantPromotion" ? "active" : "")"
+                   href="@Url.Action("Index", "TenantPromotion", new { area = "Client" })">
+                    Promotions
+                </a>
+                <a class="nav-link @(routeController == "Home" && routeAction == "Contact" ? "active" : "")"
+                   href="@Url.Action("Contact", "Home", new { area = "Client" })">
+                    Contact
+                </a>
+            </nav>
+
+            <hr />
+
+            @if (User?.Identity?.IsAuthenticated == true)
+            {
+                var nameMobile = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
+                ?? User.Identity.Name ?? "User";
+
+                <div class="mb-3 small">
+                    <div class="fw-semibold">@nameMobile</div>
+                    <div class="text-muted">Signed in</div>
+                </div>
+
+                <a class="btn btn-outline-secondary w-100 mb-2"
+                   href="@Url.Action("Profile", "Profile", new { area = "Client" })">
+                    <i class="bi bi-person-lines-fill me-1"></i> Profile
+                </a>
+                <a class="btn btn-outline-secondary w-100 mb-2"
+                   href="@Url.Action("MyTickets", "Ticket", new { area = "Client" })">
+                    <i class="bi bi-ticket-perforated me-1"></i> My Tickets
+                </a>
+                <a class="btn btn-outline-secondary w-100 mb-3"
+                   href="@Url.Action("MyComplaints", "Complaint", new { area = "Client" })">
+                    <i class="bi bi-chat-dots me-1"></i> Complaints
+                </a>
+
+                <form method="post" action="/Client/Account/Logout" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <button class="btn btn-danger w-100" type="submit">
+                        <i class="bi bi-box-arrow-right me-1"></i> Logout
+                    </button>
+                </form>
+            }
+            else
+            {
+                <a class="btn btn-primary w-100"
+                   href="@Url.Action("Login", "Account", new { area = "Client" })">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                </a>
+            }
+        </div>
+    </div>
+
+    @* MAIN LAYOUT *@
     @if (!hideCenterMain)
     {
         <main class="container-fluid py-3">
             <div class="content-maxwide">
 
-                @* Only show hero on Home/Index *@
+                @* Hero chỉ xuất hiện ở Home/Index *@
                 @if (isHomeIndexRoute)
                 {
                     <section class="mb-3">
@@ -694,17 +821,17 @@
                     </section>
                 }
 
-                <!-- Main layout -->
                 <div class="main-shell layout-grid">
+                    <!-- Main content -->
                     <div class="main-col">
                         <div class="card-shell">
                             @RenderBody()
                         </div>
                     </div>
 
-                    <!-- SIDEBAR -->
+                    <!-- Sidebar -->
                     <aside class="sidebar-col">
-                        @* ==== CINEMA COUPON: only when model is CinemaHomeVm ==== *@
+                        @* Cinema coupon – chỉ hiển thị khi model là CinemaHomeVm *@
                         @if (ViewData.Model is CinemaHomeVm cinemaModel)
                         {
                             <div class="mb-3">
@@ -719,7 +846,7 @@
                             </div>
                         }
 
-                        @* ==== UPCOMING EVENTS ==== *@
+                        @* Upcoming events in sidebar *@
                         @{
                             var topEvents = await _event_repo.GetUpcomingEventsAsync(12);
 
@@ -728,17 +855,17 @@
                                 if (string.IsNullOrWhiteSpace(raw))
                                     return Url.Content("~/images/event-placeholder.png");
 
-                                if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                                if (raw.StartsWith("http", System.StringComparison.OrdinalIgnoreCase))
                                     return raw;
 
                                 var s = raw.Replace("wwwroot/", "").TrimStart('~', '/');
                                 s = s.Replace(" ", "%20");
 
-                                if (s.StartsWith("Content", StringComparison.OrdinalIgnoreCase))
+                                if (s.StartsWith("Content", System.StringComparison.OrdinalIgnoreCase))
                                     return Url.Content("~/" + s);
 
-                                if (s.StartsWith("images", StringComparison.OrdinalIgnoreCase) ||
-                                            s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
+                                if (s.StartsWith("images", System.StringComparison.OrdinalIgnoreCase) ||
+                                            s.StartsWith("Admin/img", System.StringComparison.OrdinalIgnoreCase))
                                     return Url.Content("~/" + s);
 
                                 if (raw.StartsWith("/"))
@@ -763,8 +890,8 @@
                                     {
                                         var imgUrl = Img(e.ImageUrl);
                                         var start = e.StartDate.HasValue
-                                            ? e.StartDate.Value.ToString("dd MMM HH:mm")
-                                            : "--";
+                                        ? e.StartDate.Value.ToString("dd MMM HH:mm")
+                                        : "--";
 
                                         <div class="slider-item">
                                             <div class="small-card">
@@ -795,14 +922,14 @@
         </main>
     }
 
-    <!-- Footer -->
+    <!-- FOOTER -->
     <footer>
         <div class="content-maxwide">
             @await Html.PartialAsync("_Footer")
         </div>
     </footer>
 
-    <!-- Bootstrap JS (CDN) -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     @RenderSection("Scripts", required: false)
