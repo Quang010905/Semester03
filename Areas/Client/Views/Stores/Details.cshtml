@@ -1,14 +1,173 @@
-﻿@model Semester03.Models.ViewModels.TenantDetailsViewModel
+﻿@using System
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
+@model Semester03.Models.ViewModels.TenantDetailsViewModel
 
 @{
     Layout = "_LayoutClient";
 
+    // Ảnh chính của Tenant
     Func<string, string> Img = raw =>
     {
-        if (string.IsNullOrWhiteSpace(raw))
-            return Url.Content("~/Content/Uploads/noimage.png");
-        return Url.Content("~/Content/Uploads/Tenant/" + raw);
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            var file = raw.Replace("\\", "/").Trim();
+
+            var keyword = "Content/Uploads/Tenant";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
+
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                return Url.Content("~/Content/Uploads/Tenant/" + Uri.EscapeDataString(file));
+            }
+
+            var physical = System.IO.Path.Combine(
+                env.WebRootPath ?? "wwwroot",
+                "Content", "Uploads", "Tenant", file
+            );
+
+            return System.IO.File.Exists(physical)
+                ? Url.Content("~/Content/Uploads/Tenant/" + Uri.EscapeDataString(file))
+                : noImageUrl;
+        }
+        catch
+        {
+            return noImageUrl;
+        }
     };
+
+    // Ảnh promotion
+    Func<string, string> ImgPromo = raw =>
+    {
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            var file = raw.Replace("\\", "/").Trim();
+
+            var keyword = "Content/Uploads/TenantPromotion";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
+
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                return Url.Content("~/Content/Uploads/TenantPromotion/" + Uri.EscapeDataString(file));
+            }
+
+            var physical = System.IO.Path.Combine(
+                env.WebRootPath ?? "wwwroot",
+                "Content", "Uploads", "TenantPromotion", file
+            );
+
+            return System.IO.File.Exists(physical)
+                ? Url.Content("~/Content/Uploads/TenantPromotion/" + Uri.EscapeDataString(file))
+                : noImageUrl;
+        }
+        catch
+        {
+            return noImageUrl;
+        }
+    };
+
+    // Ảnh category sản phẩm
+    Func<string, string> ImgCategory = raw =>
+    {
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            var file = raw.Replace("\\", "/").Trim();
+
+            var keyword = "Content/Uploads/ProductCategory";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
+
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                return Url.Content("~/Content/Uploads/ProductCategory/" + Uri.EscapeDataString(file));
+            }
+
+            var physical = System.IO.Path.Combine(
+                env.WebRootPath ?? "wwwroot",
+                "Content", "Uploads", "ProductCategory", file
+            );
+
+            return System.IO.File.Exists(physical)
+                ? Url.Content("~/Content/Uploads/ProductCategory/" + Uri.EscapeDataString(file))
+                : noImageUrl;
+        }
+        catch
+        {
+            return noImageUrl;
+        }
+    };
+
     var poster = Img(Model.TenantImg);
     ViewData["Title"] = Model.TenantName;
 }
@@ -487,16 +646,10 @@
         }
 
         @@media (max-width: 768px) {
-            .promotion-item
-
-        {
-            grid-template-columns: 1fr;
+            .promotion-item {
+                grid-template-columns: 1fr;
+            }
         }
-
-        }
-
-
-
 
         @@media (max-width: 991px) {
             .store-hero {
@@ -538,7 +691,7 @@
 }
 
 <div class="container page-wrapper">
-    <a class="back-link mb-3" href="@Url.Action("Index","Stores", new { area = "Client" })">
+    <a class="back-link mb-3" href="@Url.Action("Index", "Stores", new { area = "Client" })">
         <i class="bi bi-arrow-left"></i> Back to stores
     </a>
 
@@ -611,10 +764,7 @@
                         <div class="promotion-list">
                             @foreach (var p in Model.Promotions)
                             {
-                                var promoImg = string.IsNullOrWhiteSpace(p.Img)
-                                ? Url.Content("~/Content/Uploads/noimage.png")
-                                : Url.Content("~/Content/Uploads/TenantPromotion/" + p.Img);
-
+                                var promoImg = ImgPromo(p.Img);
 
                                 <div class="promotion-item">
                                     <div class="promotion-banner">
@@ -662,11 +812,6 @@
                     </div>
                 }
 
-
-
-
-
-
                 <!-- Product Categories -->
                 <div class="category-wrapper">
                     <div class="section-title">
@@ -678,7 +823,7 @@
                         @foreach (var cat in Model.ProductCategories)
                         {
                             <div class="category-item text-center" data-category-id="@cat.Id">
-                                <img src="@Url.Content("~/Content/Uploads/ProductCategory/" + cat.Img)" alt="@cat.Name" />
+                                <img src="@ImgCategory(cat.Img)" alt="@cat.Name" />
                                 <span>@cat.Name</span>
                                 <small>Tap to view products</small>
                             </div>
@@ -729,9 +874,9 @@
                                 </div>
                             </div>
                             <textarea id="commentText"
-                                      class="form-control mb-2"
-                                      rows="3"
-                                      placeholder="Write your comment here..."></textarea>
+                                  class="form-control mb-2"
+                                  rows="3"
+                                  placeholder="Write your comment here..."></textarea>
                             <div class="d-flex gap-2 align-items-center flex-wrap">
                                 <button id="submitComment" class="btn btn-primary btn-primary-rounded">
                                     <i class="bi bi-send me-1"></i>Submit
@@ -742,7 +887,7 @@
                         else
                         {
                             <div class="alert alert-info py-2 mb-2">
-                                You need to <a href="@Url.Action("Login","Account", new { area = "Client" })">log in</a> to rate and comment.
+                                You need to <a href="@Url.Action("Login", "Account", new { area = "Client" })">log in</a> to rate and comment.
                             </div>
                         }
                     </div>

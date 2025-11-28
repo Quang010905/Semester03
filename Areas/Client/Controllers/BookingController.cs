@@ -28,7 +28,7 @@ namespace Semester03.Areas.Client.Controllers
         private readonly TicketEmailService _ticketEmailService;
 
         public BookingController(
-            TenantTypeRepository tenantTypeRepo,   // <- THÊM DÒNG NÀY
+            TenantTypeRepository tenantTypeRepo,
             ShowtimeRepository showRepo,
             MovieRepository movieRepo,
             SeatRepository seatRepo,
@@ -36,7 +36,7 @@ namespace Semester03.Areas.Client.Controllers
             AbcdmallContext context,
             ILogger<BookingController> logger,
             TicketEmailService ticketEmailService
-        ) : base(tenantTypeRepo)  // <- GỌI BASE
+        ) : base(tenantTypeRepo)
         {
             _showRepo = showRepo;
             _movieRepo = movieRepo;
@@ -46,7 +46,6 @@ namespace Semester03.Areas.Client.Controllers
             _logger = logger;
             _ticketEmailService = ticketEmailService;
         }
-
 
         [HttpGet]
         public IActionResult BookTicket(int movieId)
@@ -78,6 +77,16 @@ namespace Semester03.Areas.Client.Controllers
                 return BadRequest("Invalid date");
 
             var list = _showRepo.GetShowtimesForMovieOnDate(movieId, dt);
+
+            // 🔥 CHẶN SUẤT CHIẾU ĐÃ QUA GIỜ (CHỈ ÁP DỤNG CHO NGÀY HÔM NAY)
+            if (dt.Date == DateTime.Now.Date)
+            {
+                var now = DateTime.Now;
+                list = list
+                    .Where(s => s.StartTime > now)
+                    .ToList();
+            }
+
             return PartialView("_ShowtimeGrid", list);
         }
 
@@ -196,7 +205,7 @@ namespace Semester03.Areas.Client.Controllers
             };
 
             // --- Load coupon đang active & trong thời gian ---
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
             var coupons = _context.TblCoupons
                 .Where(c => !((c.CouponIsActive ?? false) == false
                               || c.CouponValidFrom > now
@@ -239,7 +248,7 @@ namespace Semester03.Areas.Client.Controllers
         public async Task<IActionResult> CreatePaymentUrlVnpay(
             [FromForm] int showtimeId,
             [FromForm] string seatIds,
-            [FromForm] decimal amount,   // giữ tham số nhưng KHÔNG dùng làm chuẩn
+            [FromForm] decimal amount,
             [FromForm] int? couponId)
         {
             try
@@ -251,7 +260,6 @@ namespace Semester03.Areas.Client.Controllers
                     if (int.TryParse(claim, out var id)) buyerId = id;
                 }
 
-                // 1. Parse seatIds thành list int
                 var showtimeSeatIdList = (seatIds ?? "")
                     .Split(',', StringSplitOptions.RemoveEmptyEntries)
                     .Select(s => int.TryParse(s.Trim(), out var v) ? v : 0)
@@ -261,20 +269,17 @@ namespace Semester03.Areas.Client.Controllers
                 if (!showtimeSeatIdList.Any())
                     return Json(new { success = false, message = "Không có ghế hợp lệ để thanh toán." });
 
-                // 2. Lấy showtime để biết giá ghế
                 var showtime = await _context.TblShowtimes
                     .FirstOrDefaultAsync(s => s.ShowtimeId == showtimeId);
 
                 if (showtime == null)
                     return Json(new { success = false, message = "Suất chiếu không tồn tại." });
 
-                // 3. Tổng tiền gốc (chưa giảm)
                 decimal originalTotal = showtime.ShowtimePrice * showtimeSeatIdList.Count;
 
                 decimal discountAmount = 0m;
                 decimal finalAmount = originalTotal;
 
-                // 4. Nếu có coupon → validate + tính giảm giá
                 if (couponId.HasValue && couponId.Value > 0)
                 {
                     var coupon = await _context.TblCoupons
@@ -282,7 +287,7 @@ namespace Semester03.Areas.Client.Controllers
                     if (coupon == null)
                         return Json(new { success = false, message = "Mã giảm giá không hợp lệ." });
 
-                    var now = DateTime.UtcNow;
+                    var now = DateTime.Now;
                     if (coupon.CouponValidFrom > now || coupon.CouponValidTo < now)
                         return Json(new { success = false, message = "Mã đã hết hạn hoặc chưa hiệu lực." });
 
@@ -297,23 +302,19 @@ namespace Semester03.Areas.Client.Controllers
                         (user.UsersPoints ?? 0) < coupon.CouponMinimumPointsRequired.Value)
                         return Json(new { success = false, message = "Bạn không đủ điểm để sử dụng mã này." });
 
-                    // Chỉ cho dùng nếu CHƯA có trong Tbl_CouponUser
                     var used = await _context.TblCouponUsers
                         .AnyAsync(x => x.CouponId == couponId.Value && x.UsersId == buyerId.Value);
                     if (used)
                         return Json(new { success = false, message = "Bạn đã sử dụng mã này rồi." });
 
-                    // TÍNH GIẢM GIÁ TỪ originalTotal
                     discountAmount = Math.Floor(originalTotal * (coupon.CouponDiscountPercent / 100m));
                     finalAmount = Math.Max(0m, originalTotal - discountAmount);
                 }
 
-                // 5. Gửi sang VNPAY số tiền ĐÃ GIẢM
                 var model = new Semester03.Areas.Client.Models.Vnpay.PaymentInformationModel
                 {
                     OrderType = "movie-ticket",
                     Amount = (double)finalAmount,
-                    // Lưu đầy đủ thông tin để callback & PaymentSuccess dùng lại
                     OrderDescription =
                         $"Showtime:{showtimeId};" +
                         $"Seats:{string.Join(",", showtimeSeatIdList)};" +
@@ -516,7 +517,6 @@ namespace Semester03.Areas.Client.Controllers
 
                 var seatMappingsResult = new List<(int ShowtimeSeatId, string SeatLabel)>();
 
-                // biến tổng/giảm/sau giảm hiệu lực (ưu tiên giá trị từ callback)
                 decimal effectiveOriginalAmount = originalAmount;
                 decimal effectiveFinalAmount = finalAmount;
                 decimal effectiveDiscountAmount = discountAmount;
@@ -603,7 +603,6 @@ namespace Semester03.Areas.Client.Controllers
                             var seatCount = labels.Count;
                             var baseTotal = pricePerSeat * seatCount;
 
-                            // Nếu callback không gửi (0) thì fallback sang baseTotal
                             if (effectiveOriginalAmount <= 0) effectiveOriginalAmount = baseTotal;
                             if (effectiveFinalAmount <= 0) effectiveFinalAmount = baseTotal;
                             if (effectiveDiscountAmount <= 0) effectiveDiscountAmount = effectiveOriginalAmount - effectiveFinalAmount;
@@ -654,7 +653,7 @@ namespace Semester03.Areas.Client.Controllers
 
                                 var pNow = cmd.CreateParameter();
                                 pNow.ParameterName = "@now";
-                                pNow.Value = DateTime.UtcNow;
+                                pNow.Value = DateTime.Now;
                                 cmd.Parameters.Add(pNow);
 
                                 var pReservedBy = cmd.CreateParameter();
@@ -664,7 +663,7 @@ namespace Semester03.Areas.Client.Controllers
 
                                 var pReservedAt = cmd.CreateParameter();
                                 pReservedAt.ParameterName = "@reservedAt";
-                                pReservedAt.Value = (object?)DateTime.UtcNow ?? DBNull.Value;
+                                pReservedAt.Value = (object?)DateTime.Now ?? DBNull.Value;
                                 cmd.Parameters.Add(pReservedAt);
 
                                 await cmd.ExecuteNonQueryAsync();
@@ -676,17 +675,33 @@ namespace Semester03.Areas.Client.Controllers
 
                             if (toInsert.Any())
                             {
+                                var purchasedAt = DateTime.Now;
                                 var ticketsInserted = 0;
+
                                 foreach (var m in toInsert)
                                 {
+                                    // Tạo payload QR lưu vào cột Ticket_QR (DB)
+                                    var qrPayload =
+                                        $"TICKET|ST={showtimeId}|SS={m.ShowtimeSeatId}|SEAT={m.Label}|U={buyerId?.ToString() ?? "GUEST"}|TS={DateTime.UtcNow:yyyyMMddHHmmss}";
+
                                     using var cmd = conn.CreateCommand();
                                     cmd.Transaction = dbTx;
                                     cmd.CommandType = CommandType.Text;
                                     cmd.CommandText = @"
                                         INSERT INTO dbo.Tbl_Ticket
-                                            (Ticket_ShowtimeSeatID, Ticket_BuyerUserID, Ticket_Status, Ticket_Price, Ticket_CreatedAt)
+                                            (Ticket_ShowtimeSeatID,
+                                             Ticket_BuyerUserID,
+                                             Ticket_Status,
+                                             Ticket_Price,
+                                             Ticket_CreatedAt,
+                                             Ticket_QR)
                                         VALUES
-                                            (@showtimeSeatId, @buyerId, @status, @price, @purchasedAt)
+                                            (@showtimeSeatId,
+                                             @buyerId,
+                                             @status,
+                                             @price,
+                                             @purchasedAt,
+                                             @qrCode)
                                     ";
 
                                     var pShowtimeSeatId = cmd.CreateParameter();
@@ -711,8 +726,13 @@ namespace Semester03.Areas.Client.Controllers
 
                                     var pPurchasedAt = cmd.CreateParameter();
                                     pPurchasedAt.ParameterName = "@purchasedAt";
-                                    pPurchasedAt.Value = DateTime.UtcNow;
+                                    pPurchasedAt.Value = purchasedAt;
                                     cmd.Parameters.Add(pPurchasedAt);
+
+                                    var pQr = cmd.CreateParameter();
+                                    pQr.ParameterName = "@qrCode";
+                                    pQr.Value = (object)qrPayload ?? DBNull.Value;
+                                    cmd.Parameters.Add(pQr);
 
                                     var inserted = await cmd.ExecuteNonQueryAsync();
                                     ticketsInserted += inserted;
@@ -728,7 +748,6 @@ namespace Semester03.Areas.Client.Controllers
                                     showtimeId);
                             }
 
-                            // Điểm thưởng dựa trên số tiền thực trả (effectiveFinalAmount)
                             if (buyerId.HasValue)
                             {
                                 var points = (int)Math.Floor(effectiveFinalAmount / 100m);
@@ -752,7 +771,7 @@ namespace Semester03.Areas.Client.Controllers
 
                                     var pNow2 = cmd.CreateParameter();
                                     pNow2.ParameterName = "@now";
-                                    pNow2.Value = DateTime.UtcNow;
+                                    pNow2.Value = DateTime.Now;
                                     cmd.Parameters.Add(pNow2);
 
                                     var pUserId = cmd.CreateParameter();
@@ -776,7 +795,6 @@ namespace Semester03.Areas.Client.Controllers
 
                             await dbTx.CommitAsync();
 
-                            // Sau khi commit: ghi nhận coupon usage nếu có
                             if (couponId.HasValue && couponId.Value > 0 && buyerId.HasValue)
                             {
                                 try
@@ -800,7 +818,6 @@ namespace Semester03.Areas.Client.Controllers
                                 }
                             }
 
-                            // Sau commit: gởi mail
                             try
                             {
                                 if (buyerId.HasValue)
@@ -809,7 +826,6 @@ namespace Semester03.Areas.Client.Controllers
                                         "PaymentSuccess: Calling SendTicketsEmailAsync for user {UserId}",
                                         buyerId.Value);
 
-                                    // dùng overload mới: gửi kèm tổng gốc/giảm/cuối để email hiển thị đúng
                                     await _ticketEmailService.SendTicketsEmailAsync(
                                         buyerId.Value,
                                         showtimeSeatIds,
@@ -857,7 +873,6 @@ namespace Semester03.Areas.Client.Controllers
                     }
                 }
 
-                // Sau transaction: build ViewData cho view PaymentSuccess
                 var seatLabelList = seatMappingsResult.Select(x => x.SeatLabel).ToList();
 
                 ViewData["SeatLabels"] = seatLabelList;
@@ -910,7 +925,6 @@ namespace Semester03.Areas.Client.Controllers
 
             try
             {
-                // gửi lại email không cần thông tin giảm giá -> overload cũ
                 await _ticketEmailService.SendTicketsEmailAsync(userId, ids);
                 return Ok(new { success = true, message = "Email sent (or queued) to user." });
             }
@@ -943,7 +957,7 @@ namespace Semester03.Areas.Client.Controllers
                 if (coupon == null)
                     return BadRequest(new { success = false, message = "Mã không tồn tại hoặc không hoạt động." });
 
-                var now = DateTime.UtcNow;
+                var now = DateTime.Now;
                 if (coupon.CouponValidFrom > now || coupon.CouponValidTo < now)
                     return BadRequest(new { success = false, message = "Mã chưa có hiệu lực hoặc đã hết hạn." });
 
@@ -998,7 +1012,7 @@ namespace Semester03.Areas.Client.Controllers
                         seat.ShowtimeSeatStatus = "available";
                         seat.ShowtimeSeatReservedByUserId = default;
                         seat.ShowtimeSeatReservedAt = default(DateTime);
-                        seat.ShowtimeSeatUpdatedAt = DateTime.UtcNow;
+                        seat.ShowtimeSeatUpdatedAt = DateTime.Now;
                     }
 
                     await _context.SaveChangesAsync();

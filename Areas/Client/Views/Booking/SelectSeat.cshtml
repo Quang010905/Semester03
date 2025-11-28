@@ -93,7 +93,7 @@
             transition: transform .09s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
         }
 
-            .seat-btn:hover:not(.seat-taken):not(.seat-reserved):not(.seat-selected) {
+            .seat-btn:hover:not(.seat-taken):not(.seat-reserved):not(.seat-selected):not(.seat-maint) {
                 transform: translateY(-2px);
                 box-shadow: 0 10px 24px rgba(15,23,42,0.18);
                 border-color: #0d6efd;
@@ -118,6 +118,15 @@
             color: #7c2d12;
             cursor: not-allowed;
             border-color: #fb923c;
+        }
+
+        .seat-maint {
+            /* ghế đang sửa / hư — màu vàng */
+            background: linear-gradient(135deg,#fef3c7,#fde68a);
+            color: #7c2d12;
+            cursor: not-allowed;
+            border-color: #fbbf24;
+            box-shadow: 0 6px 18px rgba(245,158,11,0.18);
         }
 
         .seat-selected {
@@ -182,7 +191,7 @@
             <div class="screen-holder">
                 <div class="screen-bar">SCREEN</div>
                 <div class="screen-subtext">
-                    The screen is at the top. Choose your seats (grey = available, red = booked, green = your selection).
+                    The screen is at the top. Choose your seats (grey = available, red = booked, green = your selection, yellow = under maintenance).
                 </div>
             </div>
 
@@ -199,6 +208,10 @@
                     <div>
                         <span class="box" style="background:linear-gradient(135deg,#22c55e,#16a34a);border-color:#15803d"></span>
                         Your selection
+                    </div>
+                    <div>
+                        <span class="box" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-color:#fbbf24"></span>
+                        Under maintenance
                     </div>
                 </div>
 
@@ -259,9 +272,9 @@
     <script>
         (function () {
             const vm = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-          Model,
-          new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }
-        ));
+      Model,
+      new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }
+    ));
 
             const seatGrid = document.getElementById('seatGrid');
             const selectionInfo = document.getElementById('selectionInfo');
@@ -306,10 +319,18 @@
                         btn.dataset.status = (s.status || 'available').toString();
                         btn.dataset.row = s.row || '';
                         btn.dataset.col = s.col || '';
+                        // isActive from server (boolean). If undefined, assume true.
+                        btn.dataset.isactive = (typeof s.isActive === 'undefined') ? 'true' : (s.isActive ? 'true' : 'false');
                         btn.innerText = s.label;
 
                         const status = (btn.dataset.status || '').toString().trim().toLowerCase();
-                        if (status === 'available' || status === '' || status === 'free') {
+                        const isActive = btn.dataset.isactive === 'true';
+
+                        if (!isActive) {
+                            // Seat under maintenance / hư -> yellow, disabled
+                            btn.classList.add('seat-maint');
+                            btn.disabled = true;
+                        } else if (status === 'available' || status === '' || status === 'free') {
                             btn.classList.add('seat-available');
                             btn.addEventListener('click', onSeatClick);
                         } else if (status === 'reserved') {
@@ -339,6 +360,9 @@
                 if (!id) return;
 
                 const status = (b.dataset.status || '').trim().toLowerCase();
+                // Double-check not selecting unavailable statuses or maintenance just in case
+                const isActive = b.dataset.isactive === 'true';
+                if (!isActive) return;
                 if (status !== 'available' && status !== '') return;
 
                 if (selected.has(id)) {

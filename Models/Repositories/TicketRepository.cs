@@ -13,7 +13,7 @@ namespace Semester03.Models.Repositories
         private readonly AbcdmallContext _db;
         public TicketRepository(AbcdmallContext db) => _db = db;
 
-        // Helper to build the complex query
+        // ===== Helper Include Query =====
         private IQueryable<TblTicket> GetFullTicketQuery()
         {
             return _db.TblTickets
@@ -28,6 +28,20 @@ namespace Semester03.Models.Repositories
                         .ThenInclude(st => st.ShowtimeScreen);
         }
 
+        // =======================================================
+        //  ⭐ NEW — Get tickets by UserID
+        // =======================================================
+        public async Task<List<TblTicket>> GetTicketsByUserAsync(int userId)
+        {
+            return await GetFullTicketQuery()
+                .Where(t => t.TicketBuyerUserId == userId)
+                .OrderByDescending(t => t.TicketCreatedAt)
+                .ToListAsync();
+        }
+
+        // =======================================================
+        //  Existing — Used for Email
+        // =======================================================
         public async Task<List<TicketEmailItem>> GetTicketDetailsByShowtimeSeatIdsAsync(List<int> showtimeSeatIds)
         {
             var result = await (from t in _db.TblTickets
@@ -50,8 +64,9 @@ namespace Semester03.Models.Repositories
             return result;
         }
 
-        // --- ADMIN METHODS ---
-
+        // =======================================================
+        //  ADMIN METHODS (giữ nguyên)
+        // =======================================================
         public async Task<IEnumerable<TblTicket>> GetAllAsync()
         {
             return await GetFullTicketQuery()
@@ -92,13 +107,16 @@ namespace Semester03.Models.Repositories
                     foreach (var ticket in ticketsToCancel)
                     {
                         ticket.TicketStatus = "cancelled";
+                        ticket.TicketUpdatedAt = DateTime.Now;
                         _db.TblTickets.Update(ticket);
                     }
 
                     foreach (var seat in seatsToCancel)
                     {
                         seat.ShowtimeSeatStatus = "available";
-                        seat.ShowtimeSeatReservedByUserId = 0;
+                        seat.ShowtimeSeatReservedByUserId = null;
+                        seat.ShowtimeSeatReservedAt = null;
+                        seat.ShowtimeSeatUpdatedAt = DateTime.Now;
                         _db.TblShowtimeSeats.Update(seat);
                     }
 
@@ -145,11 +163,13 @@ namespace Semester03.Models.Repositories
                     }
 
                     ticket.TicketStatus = "cancelled";
+                    ticket.TicketUpdatedAt = DateTime.Now;
                     _db.TblTickets.Update(ticket);
 
                     showtimeSeat.ShowtimeSeatStatus = "available";
                     showtimeSeat.ShowtimeSeatReservedByUserId = null;
                     showtimeSeat.ShowtimeSeatReservedAt = null;
+                    showtimeSeat.ShowtimeSeatUpdatedAt = DateTime.Now;
                     _db.TblShowtimeSeats.Update(showtimeSeat);
 
                     await _db.SaveChangesAsync();
@@ -163,6 +183,42 @@ namespace Semester03.Models.Repositories
                     return false;
                 }
             }
+        }
+
+        // ==========================================================
+        // === ADMIN: ADVANCED SEARCH ===
+        // ==========================================================
+        public async Task<IEnumerable<TblTicket>> SearchTicketsAsync(string keyword, int? showtimeId, DateTime? date)
+        {
+            var query = GetFullTicketQuery();
+
+            // 1. Filter by Showtime ID
+            if (showtimeId.HasValue)
+            {
+                query = query.Where(t => t.TicketShowtimeSeat.ShowtimeSeatShowtimeId == showtimeId);
+            }
+
+            // 2. Filter by Date (Purchase Date)
+            if (date.HasValue)
+            {
+                // Compare only the DATE part
+                query = query.Where(t => t.TicketCreatedAt.HasValue && t.TicketCreatedAt.Value.Date == date.Value.Date);
+            }
+
+            // 3. Search by Keyword (TicketID, Customer Name, Phone)
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                string k = keyword.ToLower();
+                query = query.Where(t =>
+                    t.TicketId.ToString() == k || // Exact Ticket ID
+                    (t.TicketBuyerUser != null && (
+                        t.TicketBuyerUser.UsersFullName.ToLower().Contains(k) ||
+                        t.TicketBuyerUser.UsersPhone.Contains(k)
+                    ))
+                );
+            }
+
+            return await query.OrderByDescending(t => t.TicketCreatedAt).ToListAsync();
         }
     }
 }

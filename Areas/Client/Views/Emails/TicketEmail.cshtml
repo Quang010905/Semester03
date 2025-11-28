@@ -1,11 +1,11 @@
-﻿@model Semester03.Areas.Client.Models.ViewModels.TicketEmailViewModel
+﻿@using System
+@model Semester03.Areas.Client.Models.ViewModels.TicketEmailViewModel
 <!doctype html>
 <html>
 <head>
     <meta charset="utf-8" />
     <title>Movie Tickets - ABCD Mall</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <!-- Bootstrap link (mostly ignored by email clients, but harmless if you also preview in browser) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
 
     <style>
@@ -133,26 +133,23 @@
         }
 
         @@media (max-width: 600px) {
-            .hero
+            .hero {
+                padding: 20px 18px;
+            }
 
-        {
-            padding: 20px 18px;
-        }
+            .content {
+                padding: 16px;
+            }
 
-        .content {
-            padding: 16px;
-        }
+            .ticket-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
 
-        .ticket-row {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .summary {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
+            .summary {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
@@ -188,6 +185,22 @@
                                 Price:
                                 <strong>@t.Price.ToString("N0") VND</strong>
                             </div>
+
+                            @* QR code *@
+                            @if (!string.IsNullOrWhiteSpace(t.QrCode))
+                            {
+                                var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data="
+                                + Uri.EscapeDataString(t.QrCode);
+
+                                <div style="margin-top:10px;">
+                                    <img src="@qrUrl"
+                                         alt="Ticket QR"
+                                         style="width:110px;height:110px;border-radius:8px;display:block;margin-left:auto;" />
+                                    <div class="meta" style="margin-top:4px;">
+                                        Scan this QR at the cinema.
+                                    </div>
+                                </div>
+                            }
                         </div>
                     </div>
                 }
@@ -225,13 +238,12 @@
             </div>
 
             <div style="margin-top:18px; display:flex; gap:12px; align-items:center;">
-                <!-- You can replace '#' with a real order URL if available -->
                 <a href="#" class="btn-primary-link">View booking</a>
                 <a href="#" class="link-plain">Contact support</a>
             </div>
 
             <p style="margin-top:14px; color:#6b7280; font-size:13px;">
-                Note: Please present this email or your ticket code at the counter before showtime.
+                Note: Please present this email or your ticket QR code at the counter before showtime.
             </p>
         </div>
 

@@ -1,9 +1,78 @@
-﻿@using Semester03.Models.ViewModels
+﻿@using System
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
+@using Semester03.Models.ViewModels
 @model TenantPromotionVm
 
 @{
     Layout = "_LayoutClient";
     ViewData["Title"] = Model.Title;
+
+    // === HÀM LẤY ẢNH PROMOTION CÓ FALLBACK ===
+    Func<string, string> ImgPromotion = (raw) =>
+    {
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            // Nếu là link tuyệt đối (http/https) thì trả về luôn
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            // Chuẩn hóa path
+            var file = raw.Replace("\\", "/").Trim();
+
+            // Nếu trong chuỗi đã chứa "Content/Uploads/TenantPromotion/xxx"
+            var keyword = "Content/Uploads/TenantPromotion";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                // chỉ lấy tên file phía sau dấu /
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file[(lastSlash + 1)..];
+            }
+
+            // Loại bỏ prefix thừa
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file["wwwroot/".Length..];
+            if (file.StartsWith("~/"))
+                file = file[2..];
+            if (file.StartsWith("/"))
+                file = file[1..];
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            // Lấy IWebHostEnvironment để build physical path
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                // fallback: cứ trả về đường dẫn tương đối
+                return Url.Content("~/Content/Uploads/TenantPromotion/" + Uri.EscapeDataString(file));
+            }
+
+            var physical = System.IO.Path.Combine(
+                env.WebRootPath ?? "wwwroot",
+                "Content", "Uploads", "TenantPromotion",
+                file
+            );
+
+            if (System.IO.File.Exists(physical))
+            {
+                return Url.Content("~/Content/Uploads/TenantPromotion/" + Uri.EscapeDataString(file));
+            }
+
+            // nếu file không tồn tại -> fallback
+            return noImageUrl;
+        }
+        catch
+        {
+            return noImageUrl;
+        }
+    };
 }
 
 @section Styles {
@@ -37,18 +106,15 @@
         }
 
         @@keyframes fadeIn {
-            from
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
 
-        {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Title */
@@ -114,7 +180,7 @@
 
 <div class="container promo-detail-wrapper">
 
-    <a href="@Url.Action("Index","TenantPromotion", new { area="Client" })"
+    <a href="@Url.Action("Index", "TenantPromotion", new { area = "Client" })"
        class="btn btn-light back-btn mb-3">
         <i class="bi bi-arrow-left"></i> Back
     </a>
@@ -124,12 +190,14 @@
         <h2 class="promo-title mb-3">@Model.Title</h2>
 
         <div class="promo-banner mb-3">
-            <img src="@Url.Content("~/Content/Uploads/TenantPromotion/" + Model.Img)" />
+            <img src="@ImgPromotion(Model.Img)" alt="@Model.Title" />
         </div>
 
         <p class="promo-time">
             <i class="bi bi-calendar3 text-danger"></i>
-            <strong> @Model.PromotionStart?.ToString("dd/MM/yyyy") – @Model.PromotionEnd?.ToString("dd/MM/yyyy") </strong>
+            <strong>
+                @Model.PromotionStart?.ToString("dd/MM/yyyy") – @Model.PromotionEnd?.ToString("dd/MM/yyyy")
+            </strong>
         </p>
 
         @if (Model.DiscountPercent.HasValue)
@@ -159,4 +227,3 @@
         }
     </div>
 </div>
-

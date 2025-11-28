@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ClosedXML.Excel;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Semester03.Models.Entities;
 using Semester03.Models.Repositories;
+using System.Text;
 
 namespace Semester03.Areas.Admin.Controllers
 {
@@ -17,23 +19,13 @@ namespace Semester03.Areas.Admin.Controllers
         }
 
         // GET: Admin/Tickets
-        public async Task<IActionResult> Index(int? showtimeId)
+        public async Task<IActionResult> Index(string search, DateTime? date, int? showtimeId)
         {
-            IEnumerable<TblTicket> tickets;
+            var tickets = await _ticketRepo.SearchTicketsAsync(search, showtimeId, date);
 
-            if (showtimeId.HasValue)
-            {
-                // If ID is provided, get filtered tickets
-                tickets = await _ticketRepo.GetTicketsForShowtimeAsync(showtimeId.Value);
-                ViewData["Title"] = $"Tickets for Showtime #{showtimeId.Value}";
-                ViewData["ShowtimeFilter"] = showtimeId.Value;
-            }
-            else
-            {
-                // If no ID, get all tickets
-                tickets = await _ticketRepo.GetAllAsync();
-                ViewData["Title"] = "Sold Ticket Management";
-            }
+            ViewData["CurrentSearch"] = search;
+            ViewData["CurrentDate"] = date?.ToString("yyyy-MM-dd");
+            ViewData["CurrentShowtime"] = showtimeId;
 
             return View(tickets);
         }
@@ -87,7 +79,121 @@ namespace Semester03.Areas.Admin.Controllers
             }
 
             // Redirect back to the Details page for this showtime
-            return RedirectToAction(nameof(Details), new { id = id });
+            return RedirectToAction("Details", "Showtimes", new { id = id });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ExportSummary(string search, DateTime? date, int? showtimeId)
+        {
+            // 1. Get Raw Data
+            var tickets = await _ticketRepo.SearchTicketsAsync(search, showtimeId, date);
+            var soldTickets = tickets.Where(t => t.TicketStatus.ToLower() == "sold").ToList();
+
+            // 2. Prepare reporting data
+            // A. Movie Report (Top Revenue)
+            var revenueByMovie = soldTickets
+                .GroupBy(t => t.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeMovie?.MovieTitle ?? "Unknown")
+                .Select(g => new
+                {
+                    Movie = g.Key,
+                    Tickets = g.Count(),
+                    Revenue = g.Sum(t => t.TicketPrice)
+                })
+                .OrderByDescending(x => x.Revenue)
+                .ToList();
+
+            // B. Details Report 
+            var detailedList = soldTickets
+                .Select(t => new
+                {
+                    Date = t.TicketCreatedAt?.ToString("yyyy-MM-dd"),
+                    Time = t.TicketCreatedAt?.ToString("HH:mm"),
+                    Movie = t.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeMovie?.MovieTitle,
+                    Screen = t.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeScreen?.ScreenName,
+                    Seat = t.TicketShowtimeSeat?.ShowtimeSeatSeat?.SeatLabel,
+                    Price = t.TicketPrice
+                })
+                .OrderByDescending(x => x.Date).ThenBy(x => x.Time)
+                .ToList();
+
+            // 3. CREATE EXCEL FILE
+            using (var workbook = new XLWorkbook())
+            {
+                // === SHEET 1:(SUMMARY) ===
+                var wsSummary = workbook.Worksheets.Add("Aggregate Revenue");
+
+                // Header Title
+                wsSummary.Cell(1, 1).Value = "REVENUE REPORT BY FILM";
+                wsSummary.Range(1, 1, 1, 3).Merge().Style.Font.Bold = true;
+                wsSummary.Range(1, 1, 1, 3).Style.Font.FontSize = 14;
+                wsSummary.Range(1, 1, 1, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                // Header Table
+                wsSummary.Cell(3, 1).Value = "Movie Name";
+                wsSummary.Cell(3, 2).Value = "Sold Ticket";
+                wsSummary.Cell(3, 3).Value = "Revenue (VND)";
+                wsSummary.Range(3, 1, 3, 3).Style.Fill.BackgroundColor = XLColor.CornflowerBlue; 
+                wsSummary.Range(3, 1, 3, 3).Style.Font.FontColor = XLColor.White;
+                wsSummary.Range(3, 1, 3, 3).Style.Font.Bold = true;
+
+                // Render Data
+                int row = 4;
+                foreach (var item in revenueByMovie)
+                {
+                    wsSummary.Cell(row, 1).Value = item.Movie;
+                    wsSummary.Cell(row, 2).Value = item.Tickets;
+                    wsSummary.Cell(row, 3).Value = item.Revenue;
+                    wsSummary.Cell(row, 3).Style.NumberFormat.Format = "#,##0"; // Format currency
+                    row++;
+                }
+
+                // Total Row
+                wsSummary.Cell(row, 1).Value = "TOTAL";
+                wsSummary.Cell(row, 2).FormulaA1 = $"SUM(B4:B{row - 1})";
+                wsSummary.Cell(row, 3).FormulaA1 = $"SUM(C4:C{row - 1})";
+                wsSummary.Range(row, 1, row, 3).Style.Font.Bold = true;
+                wsSummary.Range(row, 1, row, 3).Style.Fill.BackgroundColor = XLColor.LightGray;
+                wsSummary.Cell(row, 3).Style.NumberFormat.Format = "#,##0";
+
+                wsSummary.Columns().AdjustToContents(); // Auto-fit columns
+
+                // === SHEET 2: (DETAILS) ===
+                var wsDetail = workbook.Worksheets.Add("Transaction Details");
+
+                // Header
+                var headers = new[] { "Day", "Time", "Movie", "Screen", "Seat", "Price (VND)" };
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    wsDetail.Cell(1, i + 1).Value = headers[i];
+                }
+                wsDetail.Range(1, 1, 1, 6).Style.Font.Bold = true;
+                wsDetail.Range(1, 1, 1, 6).Style.Fill.BackgroundColor = XLColor.DarkGreen;
+                wsDetail.Range(1, 1, 1, 6).Style.Font.FontColor = XLColor.White;
+
+                // Data
+                int dRow = 2;
+                foreach (var item in detailedList)
+                {
+                    wsDetail.Cell(dRow, 1).Value = item.Date;
+                    wsDetail.Cell(dRow, 2).Value = item.Time;
+                    wsDetail.Cell(dRow, 3).Value = item.Movie;
+                    wsDetail.Cell(dRow, 4).Value = item.Screen;
+                    wsDetail.Cell(dRow, 5).Value = item.Seat;
+                    wsDetail.Cell(dRow, 6).Value = item.Price;
+                    wsDetail.Cell(dRow, 6).Style.NumberFormat.Format = "#,##0";
+                    dRow++;
+                }
+                wsDetail.Columns().AdjustToContents();
+
+                // 4. Export file to MemoryStream
+                using (var stream = new MemoryStream())
+                {
+                    workbook.SaveAs(stream);
+                    var content = stream.ToArray();
+                    string fileName = $"RevenueReport_{DateTime.Now:yyyyMMdd_HHmm}.xlsx";
+                    return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+                }
+            }
         }
     }
 }

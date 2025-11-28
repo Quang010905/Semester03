@@ -15,6 +15,8 @@ public partial class TblTicket
 
     public decimal TicketPrice { get; set; }
 
+    public string? TicketQr { get; set; }
+
     public DateTime? TicketCreatedAt { get; set; }
 
     public DateTime? TicketUpdatedAt { get; set; }

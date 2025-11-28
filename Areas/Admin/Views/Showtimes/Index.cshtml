@@ -1,12 +1,199 @@
-﻿@model IEnumerable<Semester03.Models.Entities.TblShowtime>
+﻿@model Semester03.Areas.Admin.Models.ShowtimeTimelineViewModel
 
 @{
-    ViewData["Title"] = "Showtime Management";
+    ViewData["Title"] = "Showtime Scheduler";
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+
+    int startHour = 8;
+    int endHour = 28;
+    int pixelsPerMinute = 2;
+    int totalMinutes = (endHour - startHour) * 60;
+    int timelineWidth = totalMinutes * pixelsPerMinute;
+
+    // --- HELPER: STABLE COLOR GENERATOR ---
+    // This function generates a consistent color from a string,
+    // ensuring it stays the same across server restarts.
+    string GetStableColor(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return "#4e73df";
+
+        // Simple DJB2 hash algorithm for stability
+        int hash = 5381;
+        foreach (char c in input)
+        {
+            hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+        }
+
+        // HSL Color Generation
+        // Hue: 0-360 based on hash
+        int hue = Math.Abs(hash % 360);
+        // Saturation: 65-85% for vibrancy
+        int sat = 70 + (Math.Abs(hash % 20));
+        // Lightness: 30-40% for readability with white text
+        int light = 30 + (hash % 10);
+
+        return $"hsl({hue}, {sat}%, {light}%)";
+    }
+    var prevDate = Model.SelectedDate.AddDays(-1).ToString("yyyy-MM-dd");
+    var nextDate = Model.SelectedDate.AddDays(1).ToString("yyyy-MM-dd");
+    var currentDate = Model.SelectedDate.ToString("yyyy-MM-dd");
 }
 
-<h1 class="h3 mb-2 text-gray-800">Showtime Management</h1>
-<p class="mb-4">Schedule movies to play in specific screens.</p>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+<style>
+    .timeline-wrapper {
+        overflow-x: auto;
+        border: 1px solid #e3e6f0;
+        background: #fff;
+        position: relative;
+        user-select: none;
+    }
+
+    .time-scale {
+        display: flex;
+        height: 40px;
+        border-bottom: 2px solid #e3e6f0;
+        background: #f8f9fc;
+    }
+
+    .time-hour {
+        border-right: 1px dashed #d1d3e2;
+        padding-left: 5px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        color: #858796;
+        flex-shrink: 0;
+    }
+
+    .screen-row {
+        position: relative;
+        height: 90px;
+        border-bottom: 1px solid #e3e6f0;
+        background-image: linear-gradient(to right, transparent 119px, #f1f1f1 1px);
+        background-size: 120px 100%;
+    }
+
+    .screen-label-col {
+        width: 150px;
+        flex-shrink: 0;
+        background: #fff;
+        border-right: 2px solid #e3e6f0;
+        z-index: 30;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+    }
+
+    .screen-label-item {
+        height: 90px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding-left: 15px;
+        border-bottom: 1px solid #e3e6f0;
+        font-weight: bold;
+        color: #5a5c69;
+    }
+
+    .showtime-block {
+        position: absolute;
+        top: 10px;
+        height: 70px;
+        color: white;
+        border-radius: 5px;
+        padding: 5px;
+        font-size: 0.75rem;
+        overflow: hidden;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        z-index: 10;
+        text-decoration: none !important;
+        border-left: 4px solid rgba(0,0,0,0.2);
+        cursor: pointer;
+        display: flex;
+        align-items: flex-start;
+    }
+
+        .showtime-block:hover {
+            transform: scale(1.02);
+            z-index: 20;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+            color: white;
+        }
+
+    .block-poster {
+        width: 40px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 3px;
+        margin-right: 5px;
+        border: 1px solid rgba(255,255,255,0.5);
+    }
+
+    .block-info {
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .occupancy-bar-bg {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: rgba(0,0,0,0.3);
+    }
+
+    .occupancy-bar-fill {
+        height: 100%;
+        background-color: #fff;
+        opacity: 0.9;
+    }
+
+    /* UPDATED DRAGGABLE STYLE */
+    .draggable-movie {
+        padding: 8px 10px;
+        margin-bottom: 8px;
+        /* Remove hardcoded background */
+        color: white;
+        border-radius: 4px;
+        cursor: grab;
+        font-size: 0.85rem;
+        font-weight: bold;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        border: 1px solid rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        transition: transform 0.1s;
+    }
+
+        .draggable-movie:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+</style>
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Showtime Scheduler</h1>
+
+    <div class="form-inline">
+        <div class="btn-group mr-2">
+            <a href="@Url.Action("Index", new { date = prevDate })" class="btn btn-secondary">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+
+            <form method="get" id="dateForm" style="display:inline-block;">
+                <input type="date" name="date" class="form-control"
+                       style="border-radius: 0; width: 160px; text-align: center;"
+                       value="@currentDate"
+                       onchange="document.getElementById('dateForm').submit()" />
+            </form>
+
+            <a href="@Url.Action("Index", new { date = nextDate })" class="btn btn-secondary">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
 
 @if (TempData["Success"] != null)
 {
@@ -17,62 +204,377 @@
     <div class="alert alert-danger">@TempData["Error"]</div>
 }
 
-<p>
-    <a asp-action="Create" class="btn btn-primary">Create New Showtime</a>
-</p>
-
-<div class="card shadow mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Showtime List</h6>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                <thead>
-                    <tr>
-                        <th>Movie</th>
-                        <th>Screen</th>
-                        <th>Start Time</th>
-                        <th>Price</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model)
+<div class="row">
+    <div class="col-md-2">
+        <div class="card shadow mb-4" style="height: 600px;">
+            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Movies</h6></div>
+            <div class="card-body p-2" style="overflow-y: auto;">
+                @if (Model.AvailableMovies != null)
+                {
+                    foreach (var m in Model.AvailableMovies)
                     {
-                        <tr>
-                            <td>
-                                @Html.DisplayFor(modelItem => item.ShowtimeMovie.MovieTitle)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(modelItem => item.ShowtimeScreen.ScreenName)
-                            </td>
-                            <td>
-                                @item.ShowtimeStart.ToString("g")
-                            </td>
-                            <td>
-                                @item.ShowtimePrice.ToString("N0")
-                            </td>
-                            <td>
-                                <a asp-action="Edit" asp-route-id="@item.ShowtimeId" class="btn btn-warning btn-sm">Edit</a>
-                                <a asp-action="Details" asp-route-id="@item.ShowtimeId" class="btn btn-info btn-sm">Details</a>
-                                <a asp-action="Delete" asp-route-id="@item.ShowtimeId" class="btn btn-danger btn-sm">Delete</a>
-                            </td>
-                        </tr>
+                        // Calculate color for this movie
+                        string movieColor = GetStableColor(m.MovieTitle);
+
+                        <div class="draggable-movie"
+                             style="background-color: @movieColor;"
+                             data-movie-id="@m.MovieId"
+                             data-movie-title="@m.MovieTitle"
+                             data-duration="@m.MovieDurationMin">
+
+                            <img src="@Url.Content(string.IsNullOrEmpty(m.MovieImg) ? "~/Content/Uploads/noimage.png" : "~/Content/Uploads/Movies/" + m.MovieImg)"
+                                 style="width: 25px; height: 35px; object-fit: cover; float:left; margin-right:5px; border: 1px solid rgba(255,255,255,0.5);"
+                                 onerror="this.onerror=null; this.src='/Content/Uploads/noimage.png';" />
+
+                            <div style="line-height: 1.1; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
+                                <div class="text-truncate" style="max-width: 110px;">@m.MovieTitle</div>
+                                <small style="opacity: 0.8;">@m.MovieDurationMin mins</small>
+                            </div>
+                            <div style="clear:both;"></div>
+                        </div>
                     }
-                </tbody>
-            </table>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-10">
+        <div class="card shadow mb-4">
+            <div class="card-body p-0">
+                <div class="d-flex">
+                    <div class="screen-label-col">
+                        <div style="height: 40px; background: #f8f9fc; border-bottom: 2px solid #e3e6f0;"></div>
+                        @foreach (var group in Model.ScreenGroups)
+                        {
+                            <div class="screen-label-item">
+                                <div class="text-primary">@group.ScreenName</div>
+                                <small class="text-muted">@group.TotalSeats seats</small>
+                            </div>
+                        }
+                    </div>
+                    <div class="timeline-wrapper flex-grow-1">
+                        <div class="time-scale" style="min-width: @(timelineWidth)px;">
+                            @for (int h = startHour; h < endHour; h++)
+                            {
+                                int dh = (h >= 24) ? (h - 24) : h;
+                                string plus = (h >= 24) ? "Next Day" : "";
+                                <div class="time-hour" style="width: @(60 * pixelsPerMinute)px;">@dh:00 <small>@plus</small></div>
+                            }
+                        </div>
+                        @foreach (var group in Model.ScreenGroups)
+                        {
+                            <div class="screen-row droppable-row"
+                                 data-screen-id="@group.ScreenId"
+                                 data-screen-name="@group.ScreenName"
+                                 style="min-width: @(timelineWidth)px;">
+
+                                @foreach (var item in group.Showtimes)
+                                {
+                                    double startMinutes = (item.ShowtimeStart.TimeOfDay.TotalMinutes) - (startHour * 60);
+                                    if (startMinutes < 0) startMinutes = 0;
+                                    double widthPx = item.ShowtimeMovie.MovieDurationMin * pixelsPerMinute;
+                                    double leftPx = startMinutes * pixelsPerMinute;
+
+                                    int sold = item.TblShowtimeSeats.Count(s => s.ShowtimeSeatStatus.ToLower() == "sold");
+                                    int total = group.TotalSeats > 0 ? group.TotalSeats : 1;
+                                    int percent = (int)((double)sold / total * 100);
+
+                                    // Use SAME color function
+                                    string bgColor = GetStableColor(item.ShowtimeMovie.MovieTitle);
+
+                                    <div class="showtime-block"
+                                         style="left: @(leftPx)px; width: @(widthPx)px; background-color: @bgColor;"
+                                         title="@item.ShowtimeMovie.MovieTitle (@percent% Sold)"
+                                         data-id="@item.ShowtimeId"
+                                         data-movie-id="@item.ShowtimeMovieId"
+                                         data-movie-title="@item.ShowtimeMovie.MovieTitle"
+                                         data-screen-id="@item.ShowtimeScreenId"
+                                         data-start="@item.ShowtimeStart.ToString("yyyy-MM-ddTHH:mm")"
+                                         data-price="@item.ShowtimePrice"
+                                         data-sold="@sold"
+                                         data-total="@total">
+
+                                        <img src="@Url.Content(string.IsNullOrEmpty(item.ShowtimeMovie.MovieImg) ? "~/Content/Uploads/noimage.png" : "~/Content/Uploads/Movies/" + item.ShowtimeMovie.MovieImg)"
+                                             class="block-poster"
+                                             onerror="this.onerror=null; this.src='/Content/Uploads/noimage.png';" />
+
+                                        <div class="block-info">
+                                            <div class="font-weight-bold text-truncate">@item.ShowtimeMovie.MovieTitle</div>
+                                            <div class="small" style="opacity: 0.9;">
+                                                @item.ShowtimeStart.ToString("HH:mm") - @item.ShowtimeStart.AddMinutes(item.ShowtimeMovie.MovieDurationMin).ToString("HH:mm")
+                                            </div>
+                                            <div style="font-size: 0.65rem; margin-top: 2px;">@sold / @total Sold</div>
+                                        </div>
+
+                                        <div class="occupancy-bar-bg">
+                                            <div class="occupancy-bar-fill" style="width: @percent%;"></div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="showtimeModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Schedule Showtime</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form asp-action="SaveShowtime" method="post">
+                <div class="modal-body">
+                    <div id="quickStatsSection" style="display:none;" class="mb-4 p-3 bg-gray-100 rounded border-left-info">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="m-0 font-weight-bold text-gray-700">Occupancy Status</h6>
+
+                            <a href="#" id="btnManageSeats" class="btn btn-sm btn-info shadow-sm">
+                                <i class="fas fa-th-large fa-sm text-white-50 mr-1"></i> Manage Seats
+                            </a>
+                        </div>
+
+                        <div class="d-flex align-items-center">
+                            <div class="progress flex-grow-1 mr-3" style="height: 12px;">
+                                <div class="progress-bar bg-info" role="progressbar" id="progressBarOccupancy" style="width: 0%"></div>
+                            </div>
+                            <span class="small font-weight-bold text-gray-600" id="lblOccupancyText">0/0 Sold</span>
+                        </div>
+                    </div>
+                    <input type="hidden" id="Input_ShowtimeId" name="ShowtimeId" value="0" />
+                    <input type="hidden" id="Input_MovieId" name="ShowtimeMovieId" />
+                    <input type="hidden" id="Input_ScreenId" name="ShowtimeScreenId" />
+
+                    <div class="form-group">
+                        <label class="font-weight-bold">Movie:</label>
+                        <input type="text" id="Display_MovieTitle" class="form-control bg-light" readonly />
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Screen:</label>
+                        <input type="text" id="Display_ScreenName" class="form-control bg-light" readonly />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold">Start Time:</label>
+                        <input type="datetime-local" id="Input_StartTime" name="ShowtimeStart" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Price (VND):</label>
+                        <input type="number" id="Input_Price" name="ShowtimePrice" class="form-control" value="100000" step="1000" required />
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" id="btnDelete" class="btn btn-danger" style="display:none;" onclick="deleteShowtime()">Delete</button>
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </div>
+            </form>
+            <form id="deleteForm" asp-action="DeleteFromCalendar" method="post">
+                <input type="hidden" id="Delete_Id" name="id" />
+                <input type="hidden" name="returnDate" value="@Model.SelectedDate.ToString("yyyy-MM-dd")" />
+            </form>
         </div>
     </div>
 </div>
 
 @section Scripts {
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
     <script>
-        // Call the dataTables jQuery plugin
         $(document).ready(function() {
-          $('#dataTable').DataTable({
-              "order": [[ 2, "desc" ]] // Order by Start Time descending
-          });
+            var pixelsPerMinute = @pixelsPerMinute;
+            var startHour = @startHour; // 8
+            var baseDateStr = "@Model.SelectedDate.ToString("yyyy-MM-dd")";
+            var now = new Date(); // Current client time
+
+            // 1. Draggable Movies
+            $(".draggable-movie").draggable({
+                helper: "clone", revert: "invalid", cursor: "move", zIndex: 100,
+                scope: "scheduler"
+            });
+
+            // 2. Draggable Showtimes
+            $(".showtime-block").draggable({
+                revert: "invalid", cursor: "move", zIndex: 100,
+                containment: ".timeline-wrapper",
+                scope: "scheduler",
+                stop: function(event, ui) {
+                    $(this).css({top: "10px", left: $(this).data("original-left")});
+                    setTimeout(() => $(this).removeClass('is-dragging'), 100);
+                },
+                start: function() {
+                    $(this).addClass('is-dragging');
+                }
+            });
+
+            // 3. Droppable Rows
+            $(".droppable-row").droppable({
+                accept: ".draggable-movie, .showtime-block",
+                scope: "scheduler",
+                drop: function(event, ui) {
+                    var $row = $(this);
+                    var newScreenId = $row.data("screen-id");
+                    var newScreenName = $row.data("screen-name");
+
+                    // Calculate Time
+                    var leftPos = ui.helper.position().left;
+                    var container = $('.timeline-wrapper');
+                    var containerOffset = container.offset().left;
+                    var scrollLeft = container.scrollLeft();
+                    var realLeft = (ui.offset.left - containerOffset) + scrollLeft;
+                    if (realLeft < 0) realLeft = 0;
+                    var pixelsPerMinute = @pixelsPerMinute;
+                    var startHour = @startHour;
+                    var totalMinutes = (startHour * 60) + (realLeft / pixelsPerMinute);
+
+
+                    totalMinutes = Math.round(totalMinutes / 5) * 5;
+                    var hours = Math.floor(totalMinutes / 60);
+                    var minutes = Math.floor(totalMinutes % 60);
+
+                    // === DATE STRING CONSTRUCTION ===
+                    var dayOffset = 0;
+                    if (hours >= 24) {
+                        dayOffset = 1;
+                        hours = hours - 24;
+                    }
+
+                    
+                    var checkDate = new Date(baseDateStr);
+                    checkDate.setDate(checkDate.getDate() + dayOffset);
+                    checkDate.setHours(hours, minutes, 0, 0);
+
+                    // === BLOCK PAST TIME  ===
+                    if (checkDate < now) {
+                        alert("Cannot schedule in the past!");
+                        // Revert visual
+                        if (ui.draggable.hasClass("showtime-block")) {
+                             ui.draggable.animate({top: "10px", left: ui.draggable.data("original-left")}, "fast");
+                        }
+                        return;
+                    }
+                    // ============================================
+
+                    var hh = hours.toString().padStart(2, '0');
+                    var mm = minutes.toString().padStart(2, '0');
+
+                    // Nếu qua ngày, cần chuỗi ngày mới. Nhưng để đơn giản cho Controller (chỉ nhận giờ),
+                    // ta có thể gửi chuỗi ISO đầy đủ.
+
+                    // Format lại chuỗi ngày cho đúng ngày thả (hôm nay hoặc mai)
+                    var y = checkDate.getFullYear();
+                    var m = String(checkDate.getMonth() + 1).padStart(2, '0');
+                    var d = String(checkDate.getDate()).padStart(2, '0');
+
+                    var fullDateStr = `${y}-${m}-${d}T${hh}:${mm}`;
+                    var fullDateISO = fullDateStr + ":00";
+
+                    if (ui.draggable.hasClass("draggable-movie")) {
+                        // CREATE
+                        var movieId = ui.draggable.data("movie-id");
+                        var movieTitle = ui.draggable.data("movie-title");
+                        openCreateModal(newScreenId, newScreenName, movieId, movieTitle, fullDateStr);
+                    }
+                    else if (ui.draggable.hasClass("showtime-block")) {
+                        // RESCHEDULE
+                        var id = ui.draggable.data('id');
+                        rescheduleShowtime(id, newScreenId, fullDateISO, ui.draggable);
+                    }
+                }
+            });
+
+            // Double Click to Edit
+            $(document).on('dblclick', '.showtime-block', function() {
+                if ($(this).hasClass('is-dragging')) return;
+                var id = $(this).data('id');
+                var title = $(this).data('movie-title');
+                var start = $(this).data('start');
+                var price = $(this).data('price');
+                var screenId = $(this).data('screen-id');
+                var movieId = $(this).data('movie-id');
+                var sold = $(this).data('sold');
+                var total = $(this).data('total');
+                openEditModal(id, title, start, price, screenId, movieId, sold, total);
+            });
+
+            $(".showtime-block").each(function() {
+                $(this).data("original-left", $(this).css("left"));
+            });
         });
+
+        // --- AJAX RESCHEDULE ---
+        function rescheduleShowtime(id, screenId, startTime, $element) {
+            var token = $('input[name="__RequestVerificationToken"]').val();
+            $('body').css('cursor', 'wait');
+            $.post('@Url.Action("Reschedule", "Showtimes")', {
+                id: id, newScreenId: screenId, newStartTime: startTime, __RequestVerificationToken: token
+            }).done(function(response) {
+                $('body').css('cursor', 'default');
+                if (response.success) location.reload();
+                else { alert("Error: " + response.message); $element.animate({top: "10px", left: $element.data("original-left")}, "fast"); }
+            }).fail(function() {
+                $('body').css('cursor', 'default'); alert("Server Error."); $element.animate({top: "10px", left: $element.data("original-left")}, "fast");
+            });
+        }
+
+        // --- MODAL FUNCTIONS ---
+        function openCreateModal(screenId, screenName, movieId, movieTitle, startTime) {
+            $('#modalTitle').text('New Showtime');
+            $('#Input_ShowtimeId').val(0);
+            $('#btnDelete').hide();
+            $('#quickStatsSection').hide();
+
+            $('#Input_ScreenId').val(screenId);
+            $('#Display_ScreenName').val(screenName);
+            $('#Input_MovieId').val(movieId);
+            $('#Display_MovieTitle').val(movieTitle);
+
+            $('#Input_StartTime').val(startTime);
+            $('#Input_Price').val(100000);
+
+            $('#showtimeModal').modal('show');
+        }
+
+        function openEditModal(id, movieTitle, startTime, price, screenId, movieId, sold, total) {
+            $('#modalTitle').text('Edit Showtime');
+            $('#Input_ShowtimeId').val(id);
+            $('#btnDelete').show();
+            $('#quickStatsSection').show();
+            var percent = 0;
+            if(total > 0) percent = Math.round((sold / total) * 100);
+            $('#progressBarOccupancy').css('width', percent + '%');
+            $('#lblOccupancyText').text(sold + ' / ' + total + ' Sold (' + percent + '%)');
+            var baseUrl = '@Url.Action("Details", "Showtimes")';
+            $('#btnManageSeats').attr('href', baseUrl + '/' + id);
+
+            $('#Display_MovieTitle').val(movieTitle);
+            $('#Display_ScreenName').val("Screen #" + screenId);
+            $('#Input_ScreenId').val(screenId);
+            $('#Input_MovieId').val(movieId);
+            $('#Input_StartTime').val(startTime);
+            $('#Input_Price').val(price);
+
+            $('#showtimeModal').modal('show');
+        }
+
+        function deleteShowtime() {
+            if(confirm("Delete this showtime?")) {
+                $('#Delete_Id').val($('#Input_ShowtimeId').val());
+                $('#deleteForm').submit();
+            }
+        }
+
+        function openCreateDefault() {
+            var dateStr = "@Model.SelectedDate.ToString("yyyy-MM-dd")";
+            var defaultTime = dateStr + "T08:00";
+            openCreateModal("", "", "", "", defaultTime);
+        }
     </script>
 }

@@ -1,11 +1,47 @@
 ﻿@model Semester03.Models.Entities.TblEventBooking
+@using System.Globalization
 
 @{
     ViewData["Title"] = "Booking Details";
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+
+    var vnCulture = new CultureInfo("vi-VN");
 }
 
-<h1 class="h3 mb-2 text-gray-800">Booking Details: #@Model.EventBookingId</h1>
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Booking #@Model.EventBookingId</h1>
+
+    <div>
+        @if (Model.EventBookingPaymentStatus == 1)
+        {
+            <span class="btn btn-success btn-icon-split">
+                <span class="icon text-white-50"><i class="fas fa-check"></i></span>
+                <span class="text">Paid / Confirmed</span>
+            </span>
+        }
+        else if (Model.EventBookingPaymentStatus == 2)
+        {
+            <span class="btn btn-info btn-icon-split">
+                <span class="icon text-white-50"><i class="fas fa-gift"></i></span>
+                <span class="text">Complimentary (Free)</span>
+            </span>
+        }
+        else if (Model.EventBookingPaymentStatus == 3)
+        {
+            <span class="btn btn-danger btn-icon-split">
+                <span class="icon text-white-50"><i class="fas fa-times"></i></span>
+                <span class="text">Cancelled</span>
+            </span>
+        }
+        else
+        {
+            <span class="btn btn-warning btn-icon-split">
+                <span class="icon text-white-50"><i class="fas fa-clock"></i></span>
+                <span class="text">Pending Payment</span>
+            </span>
+        }
+    </div>
+</div>
 
 @if (TempData["Success"] != null)
 {
@@ -17,147 +53,169 @@
 }
 
 <div class="row">
-    <div class="col-lg-7">
+    <div class="col-lg-8">
         <div class="card shadow mb-4">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Booking Information</h6>
+                <h6 class="m-0 font-weight-bold text-primary">Ticket Information</h6>
             </div>
             <div class="card-body">
-                <dl class="row">
-                    <dt class="col-sm-4">Event Name</dt>
-                    <dd class="col-sm-8 font-weight-bold text-primary">
-                        @Model.EventBookingEvent?.EventName
-                    </dd>
+                <div class="row mb-3">
+                    <div class="col-md-4 font-weight-bold text-gray-700">Event:</div>
+                    <div class="col-md-8">
+                        <a asp-controller="Events" asp-action="Details" asp-route-id="@Model.EventBookingEventId" class="font-weight-bold">
+                            @Model.EventBookingEvent?.EventName
+                        </a>
+                    </div>
+                </div>
 
-                    <dt class="col-sm-4">Event Date (Attending)</dt>
-                    <dd class="col-sm-8">
-                        @Model.EventBookingDate?.ToString("dd/MM/yyyy")
-                    </dd>
+                <div class="row mb-3">
+                    <div class="col-md-4 font-weight-bold text-gray-700">Date Attending:</div>
+                    <div class="col-md-8">
+                        <i class="far fa-calendar-alt mr-1"></i>
+                        @(Model.EventBookingDate.HasValue? Model.EventBookingDate.Value.ToString("dd/MM/yyyy") : "N/A")
+                    </div>
+                </div>
 
-                    <dt class="col-sm-4">Ticket Quantity</dt>
-                    <dd class="col-sm-8">
-                        @Model.EventBookingQuantity tickets
-                    </dd>
+                <hr>
 
-                    <dt class="col-sm-4">Unit Price</dt>
-                    <dd class="col-sm-8">
-                        @Model.EventBookingUnitPrice?.ToString("C", new System.Globalization.CultureInfo("en-US"))
-                    </dd>
+                <div class="row mb-2">
+                    <div class="col-md-4 font-weight-bold">Quantity:</div>
+                    <div class="col-md-8">@Model.EventBookingQuantity tickets</div>
+                </div>
 
-                    <hr class="w-100" />
+                <div class="row mb-2">
+                    <div class="col-md-4 font-weight-bold">Unit Price:</div>
+                    <div class="col-md-8">
+                        @(Model.EventBookingUnitPrice.HasValue? Model.EventBookingUnitPrice.Value.ToString("N0") : "0") VND
+                    </div>
+                </div>
 
-                    <dt class="col-sm-4">Total Cost</dt>
-                    <dd class="col-sm-8 font-weight-bold text-success">
-                        @if (Model.EventBookingTotalCost.HasValue)
-                        {
-                            @Model.EventBookingTotalCost.Value.ToString("C", new System.Globalization.CultureInfo("en-US"))
-                        }
-                    </dd>
+                <div class="row mb-3">
+                    <div class="col-md-4 font-weight-bold" style="font-size: 1.1rem;">Total Amount:</div>
+                    <div class="col-md-8 text-success font-weight-bold" style="font-size: 1.2rem;">
+                        @((Model.EventBookingTotalCost ?? 0).ToString("N0")) VND
+                    </div>
+                </div>
 
-                    <dt class="col-sm-4">Booking Created At</dt>
-                    <dd class="col-sm-8">
-                        @if (Model.EventBookingCreatedDate.HasValue)
-                        {
-                            @Model.EventBookingCreatedDate.Value.ToString("yyyy-MM-dd HH:mm")
-                        }
-                    </dd>
-
-                    <dt class="col-sm-4">Notes</dt>
-                    <dd class="col-sm-8">@Html.DisplayFor(model => model.EventBookingNotes)</dd>
-                </dl>
+                <div class="bg-light p-3 rounded border">
+                    <small class="font-weight-bold text-uppercase text-gray-500">Notes / Special Requests:</small>
+                    <p class="mb-0">@(!string.IsNullOrEmpty(Model.EventBookingNotes) ? Model.EventBookingNotes : "None")</p>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-lg-5">
+
         <div class="card shadow mb-4">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Customer Details</h6>
+                <h6 class="m-0 font-weight-bold text-secondary">
+                    <i class="fas fa-history mr-1"></i> Transaction History
+                </h6>
             </div>
             <div class="card-body">
-                <dl class="row">
-                    <dt class="col-sm-4">Full Name</dt>
-                    <dd class="col-sm-8">@Model.EventBookingUser?.UsersFullName</dd>
-
-                    <dt class="col-sm-4">Email</dt>
-                    <dd class="col-sm-8">@Model.EventBookingUser?.UsersEmail</dd>
-
-                    <dt class="col-sm-4">Phone</dt>
-                    <dd class="col-sm-8">@Model.EventBookingUser?.UsersPhone</dd>
-                </dl>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card shadow mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Manage Payment Status</h6>
-    </div>
-    <div class="card-body">
-        <form asp-action="UpdateStatus" asp-route-id="@Model.EventBookingId" method="post">
-            <div class="form-group">
-                <label for="paymentStatus">Set Payment Status:</label>
-                <select name="paymentStatus" id="paymentStatus" class="form-control" style="max-width: 300px;">
-                    <option value="0" selected="@(Model.EventBookingPaymentStatus == 0)">Unpaid</option>
-                    <option value="1" selected="@(Model.EventBookingPaymentStatus == 1)">Paid</option>
-                    <option value="2" selected="@(Model.EventBookingPaymentStatus == 2)">Free</option>
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary">Update Status</button>
-            <a asp-action="Index" class="btn btn-secondary">Back to List</a>
-        </form>
-    </div>
-</div>
-<div class="card shadow mb-4 mt-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-secondary">
-            <i class="fas fa-history mr-1"></i> History / Audit Log
-        </h6>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-bordered table-sm" width="100%" cellspacing="0">
-                <thead class="thead-light">
-                    <tr>
-                        <th style="width: 20%">Time</th>
-                        <th style="width: 20%">Action</th>
-                        <th>Details</th>
-                        <th style="width: 15%">User</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.TblEventBookingHistories != null && Model.TblEventBookingHistories.Any())
-                    {
-                        foreach (var log in Model.TblEventBookingHistories)
-                        {
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm" width="100%">
+                        <thead class="thead-light">
                             <tr>
-                                <td>@log.EventBookingHistoryCreatedAt?.ToString("yyyy-MM-dd HH:mm")</td>
-                                <td><span class="badge badge-light border">@log.EventBookingHistoryAction</span></td>
-                                <td>@log.EventBookingHistoryDetails</td>
-                                <td>
-                                    @if (log.EventBookingHistoryUserId == 1)
-                                    {
-                                        <span>Admin (System)</span>
-                                    }
-                                    else
-                                    {
-
-                                        <span>User #@log.EventBookingHistoryUserId</span>
-                                    }
-                                </td>
+                                <th>Time</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                                <th>User</th>
                             </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="4" class="text-center text-muted font-italic py-3">
-                                No history recorded for this booking.
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                        </thead>
+                        <tbody>
+                            @if (Model.TblEventBookingHistories != null && Model.TblEventBookingHistories.Any())
+                            {
+                                foreach (var log in Model.TblEventBookingHistories)
+                                {
+                                    <tr>
+                                        <td style="font-size:0.85rem; white-space:nowrap;">
+                                            @log.EventBookingHistoryCreatedAt?.ToString("dd/MM/yy HH:mm")
+                                        </td>
+                                        <td><span class="badge badge-secondary">@log.EventBookingHistoryAction</span></td>
+                                        <td style="font-size:0.85rem;">@log.EventBookingHistoryDetails</td>
+                                        <td style="font-size:0.85rem;">
+                                            @if (log.EventBookingHistoryUserId == 1)
+                                            {
+                                                <i>Admin</i>
+                                            }
+                                            else
+                                            {
+
+                                                <span>User #@log.EventBookingHistoryUserId</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No history recorded.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+    </div>
+
+    <div class="col-lg-4">
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Customer</h6>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                        @(Model.EventBookingUser?.UsersFullName?.Substring(0, 1).ToUpper() ?? "U")
+                    </div>
+                </div>
+                <h5 class="font-weight-bold">@Model.EventBookingUser?.UsersFullName</h5>
+                <p class="text-muted mb-1">@Model.EventBookingUser?.UsersEmail</p>
+                <p class="text-muted"><i class="fas fa-phone fa-sm"></i> @Model.EventBookingUser?.UsersPhone</p>
+
+                <a href="mailto:@Model.EventBookingUser?.UsersEmail" class="btn btn-sm btn-outline-primary btn-block">
+                    <i class="fas fa-envelope"></i> Send Email
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4 border-bottom-warning">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-warning">Admin Actions</h6>
+            </div>
+            <div class="card-body">
+                <form asp-action="UpdateStatus" asp-route-id="@Model.EventBookingId" method="post">
+                    <div class="form-group">
+                        <label class="small font-weight-bold">Manual Status Override:</label>
+                        <select name="paymentStatus" class="form-control mb-3">
+                            <option value="0" selected="@(Model.EventBookingPaymentStatus == 0)">Unpaid</option>
+                            <option value="1" selected="@(Model.EventBookingPaymentStatus == 1)">Paid (Confirmed)</option>
+                            <option value="2" selected="@(Model.EventBookingPaymentStatus == 2)">Free</option>
+                            <option value="3" selected="@(Model.EventBookingPaymentStatus == 3)">Cancelled (Refund)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-warning btn-block">
+                        <i class="fas fa-sync-alt"></i> Update Status
+                    </button>
+                </form>
+
+                <hr />
+
+                <div class="text-center small text-muted">
+                    Use this only for corrections or refunds. <br>
+                    Normal payments are automated via VNPay.
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <a asp-action="Index" class="btn btn-secondary btn-icon-split">
+                <span class="icon text-white-50"><i class="fas fa-arrow-left"></i></span>
+                <span class="text">Back to List</span>
+            </a>
+        </div>
+
     </div>
 </div>

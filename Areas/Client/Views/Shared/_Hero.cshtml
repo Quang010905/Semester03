@@ -1,66 +1,170 @@
 ﻿@{
-    var mallName = ViewData["MallName"] ?? "ABCDMall";
-    var heroImage = ViewData["HeroImage"] ?? "/images/hero-default.jpg";
+    var mallName = ViewData["MallName"] ?? "ABCD Mall";
+
+    // Nếu controller có set các số liệu thì dùng, không có thì để null -> fallback text
+    int? totalEvents = ViewBag.TotalEvents as int?;
+    int? totalStores = ViewBag.TotalStores as int?;
+    int? totalMovies = ViewBag.TotalMovies as int?;
+    int? totalPromotions = ViewBag.TotalPromotions as int?;
 }
 
 <section class="hero-outer">
     <div class="container text-white py-4 hero-top">
         <h1 class="display-5 mb-1 hero-title">@mallName</h1>
-        <p class="lead mb-0 hero-subtitle">
+        <p class="lead mb-3 hero-subtitle">
             Your vibrant lifestyle destination – discover fashion, food, entertainment and exclusive deals.
         </p>
+
+        <!-- Hàng chip thông tin tổng quan -->
+        <div class="hero-chip-row">
+            <a class="hero-chip" href="@Url.Action("Index", "Event", new { area = "Client" })">
+                <span class="hero-chip-icon"><i class="bi bi-calendar-event"></i></span>
+                <span class="hero-chip-text">
+                    <strong>@(totalEvents?.ToString() ?? "Many")</strong> events
+                </span>
+            </a>
+            <a class="hero-chip" href="@Url.Action("Index", "Cinema", new { area = "Client" })">
+                <span class="hero-chip-icon"><i class="bi bi-film"></i></span>
+                <span class="hero-chip-text">
+                    <strong>@(totalMovies?.ToString() ?? "New")</strong> movies showing
+                </span>
+            </a>
+            <a class="hero-chip" href="@Url.Action("Index", "Stores", new { area = "Client" })">
+                <span class="hero-chip-icon"><i class="bi bi-shop"></i></span>
+                <span class="hero-chip-text">
+                    <strong>@(totalStores?.ToString() ?? "100+")</strong> stores
+                </span>
+            </a>
+            <a class="hero-chip" href="@Url.Action("Index", "TenantPromotion", new { area = "Client" })">
+                <span class="hero-chip-icon"><i class="bi bi-gift"></i></span>
+                <span class="hero-chip-text">
+                    <strong>@(totalPromotions?.ToString() ?? "Hot")</strong> promotions
+                </span>
+            </a>
+        </div>
     </div>
 
-    <!-- HERO: centered carousel with inset sides -->
+    <!-- HERO CAROUSEL -->
     <div class="hero-carousel">
         <div class="hero-inner">
-            <!-- This centers the carousel and creates left/right inset -->
             <div id="heroCarousel"
                  class="carousel slide"
                  data-bs-ride="carousel"
-                 data-bs-interval="3500">
+                 data-bs-interval="4000">
 
                 <div class="carousel-indicators custom-indicators">
                     <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0"
                             class="active" aria-current="true"></button>
                     <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
                     <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
+                    <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="3"></button>
                 </div>
 
                 <div class="carousel-inner hero-carousel-inner">
+                    <!-- Slide 1: Events -->
                     <div class="carousel-item active">
                         <div class="hero-img-wrapper">
-                            <img src="/Admin/img/download (2).jpg"
+                            <img src="/Admin/img/anh1.png"
                                  class="d-block w-100 hero-img"
-                                 alt="Shopping highlights" />
-                            <div class="hero-overlay-gradient"></div>
+                                 alt="Mall events" />
+                            <div class="hero-overlay-gradient hero-overlay-events"></div>
                             <div class="hero-caption">
-                                <h2>Shop the latest collections</h2>
-                                <p>Discover trending brands and curated fashion at your favorite mall.</p>
+                                <span class="hero-pill"><i class="bi bi-calendar-heart"></i> Signature Events</span>
+                                <h2>Weekend festivals & live shows</h2>
+                                <p>
+                                    Join themed festivals, kids activities and music nights happening all year round.
+                                </p>
+                                <div class="hero-cta-row">
+                                    <a class="btn btn-light btn-sm rounded-pill px-4 me-2"
+                                       href="@Url.Action("Index", "Event", new { area = "Client" })">
+                                        Browse events
+                                    </a>
+                                    <a class="hero-link"
+                                       href="@Url.Action("Index", "Event", new { area = "Client" })">
+                                        View calendar <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Slide 2: Cinema -->
                     <div class="carousel-item">
                         <div class="hero-img-wrapper">
-                            <img src="/Admin/img/download (5).jpg"
+                            <img src="/Admin/img/anh2.png"
                                  class="d-block w-100 hero-img"
-                                 alt="Dining and cuisine" />
-                            <div class="hero-overlay-gradient"></div>
+                                 alt="Cinema" />
+                            <div class="hero-overlay-gradient hero-overlay-cinema"></div>
                             <div class="hero-caption">
-                                <h2>Taste the world</h2>
-                                <p>Colorful food court, cozy cafés and signature restaurants.</p>
+                                <span class="hero-pill"><i class="bi bi-film"></i> Cinema</span>
+                                <h2>Blockbusters on the big screen</h2>
+                                <p>
+                                    Book tickets easily, enjoy premium seats and exclusive combos at our modern cinema.
+                                </p>
+                                <div class="hero-cta-row">
+                                    <a class="btn btn-light btn-sm rounded-pill px-4 me-2"
+                                       href="@Url.Action("Index", "Cinema", new { area = "Client" })">
+                                        Explore movies
+                                    </a>
+                                    <a class="hero-link"
+                                       href="@Url.Action("Index", "Cinema", new { area = "Client" })">
+                                        Today’s showtimes <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Slide 3: Stores / Shopping -->
                     <div class="carousel-item">
                         <div class="hero-img-wrapper">
-                            <img src="/Admin/img/images (2).jpg"
+                            <img src="/Admin/img/anh3.png"
                                  class="d-block w-100 hero-img"
-                                 alt="Entertainment and events" />
-                            <div class="hero-overlay-gradient"></div>
+                                 alt="Stores & shopping" />
+                            <div class="hero-overlay-gradient hero-overlay-store"></div>
                             <div class="hero-caption">
-                                <h2>Events & experiences</h2>
-                                <p>Live shows, cinema, family activities and weekend fun.</p>
+                                <span class="hero-pill"><i class="bi bi-bag-heart"></i> Shopping</span>
+                                <h2>Explore top fashion & lifestyle brands</h2>
+                                <p>
+                                    From global labels to local favorites – find everything you need in one place.
+                                </p>
+                                <div class="hero-cta-row">
+                                    <a class="btn btn-light btn-sm rounded-pill px-4 me-2"
+                                       href="@Url.Action("Index", "Stores", new { area = "Client" })">
+                                        Discover stores
+                                    </a>
+                                    <a class="hero-link"
+                                       href="@Url.Action("Index", "Stores", new { area = "Client" })">
+                                        View mall directory <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 4: Promotions -->
+                    <div class="carousel-item">
+                        <div class="hero-img-wrapper">
+                            <img src="/Admin/img/anh4.png"
+                                 class="d-block w-100 hero-img"
+                                 alt="Promotions & deals" />
+                            <div class="hero-overlay-gradient hero-overlay-promo"></div>
+                            <div class="hero-caption">
+                                <span class="hero-pill"><i class="bi bi-gift"></i> Deals</span>
+                                <h2>Don’t miss the hottest promotions</h2>
+                                <p>
+                                    Flash sales, member rewards and combo offers from your favorite tenants.
+                                </p>
+                                <div class="hero-cta-row">
+                                    <a class="btn btn-light btn-sm rounded-pill px-4 me-2"
+                                       href="@Url.Action("Index", "TenantPromotion", new { area = "Client" })">
+                                        View promotions
+                                    </a>
+                                    <a class="hero-link"
+                                       href="@Url.Action("Index", "TenantPromotion", new { area = "Client" })">
+                                        See all offers <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -81,21 +185,46 @@
                         aria-label="Next slide">
                     <span class="carousel-control-next-icon" aria-hidden="true"></span>
                 </button>
-            </div> <!-- /#heroCarousel -->
-        </div> <!-- /.hero-inner -->
-    </div> <!-- /.hero-carousel -->
+            </div>
+        </div>
+    </div>
 </section>
 
 <style>
-    /* HERO - centered with side inset + autoplay */
-
+    /* HERO BACKGROUND */
     .hero-outer {
         background: radial-gradient(circle at top left, #ff7a18 0, #ff4b6e 35%, #201f3f 100%);
         color: #fff;
         padding-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
     }
 
-    /* top text spacing */
+        /* hiệu ứng gradient chuyển động nhẹ */
+        .hero-outer::before {
+            content: "";
+            position: absolute;
+            inset: -40%;
+            background: radial-gradient(circle at 20% 0, rgba(255, 255, 255, .18), transparent 55%), radial-gradient(circle at 80% 100%, rgba(252, 211, 77, 0.25), transparent 60%);
+            opacity: .9;
+            mix-blend-mode: screen;
+            animation: heroGlow 18s linear infinite alternate;
+            pointer-events: none;
+        }
+
+    @@keyframes heroGlow {
+        0%
+
+    {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    100% {
+        transform: translate3d(4%, -4%, 0) scale(1.06);
+    }
+
+    }
+
     .hero-top {
         max-width: 1200px;
         margin: 0 auto;
@@ -114,13 +243,61 @@
         text-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
     }
 
-    /* center the carousel content and create side gutters */
+    /* CHIPS ROW */
+    .hero-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .6rem;
+        margin-top: 1.1rem;
+    }
+
+    .hero-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .35rem .85rem;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        font-size: .8rem;
+        color: #e5e7eb;
+        backdrop-filter: blur(8px);
+        transition: all .18s ease;
+    }
+
+    .hero-chip-icon {
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(15, 23, 42, 0.8);
+        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.6);
+        font-size: .9rem;
+    }
+
+    .hero-chip strong {
+        color: #f9fafb;
+    }
+
+    .hero-chip:hover {
+        background: rgba(15, 23, 42, 0.65);
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.6);
+        text-decoration: none;
+        color: #fff;
+    }
+
+    /* CAROUSEL SHELL */
     .hero-carousel {
         width: 100%;
         display: block;
         background: transparent;
         padding: 0;
         box-sizing: border-box;
+        position: relative;
+        z-index: 4;
     }
 
     .hero-inner {
@@ -132,7 +309,7 @@
     .hero-carousel-inner {
         border-radius: 1.5rem;
         overflow: hidden;
-        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.45);
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.55);
     }
 
     .hero-img-wrapper {
@@ -146,19 +323,40 @@
         object-position: center;
         display: block;
         filter: saturate(1.1) contrast(1.02);
-        transform: scale(1.02);
+        transform: scale(1.03);
         transition: transform 1.2s ease-out;
     }
 
     .carousel-item.active .hero-img {
-        transform: scale(1.06);
+        transform: scale(1.07);
     }
 
     .hero-overlay-gradient {
         position: absolute;
         inset: 0;
-        background: linear-gradient( 120deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.18) 35%, rgba(0, 0, 0, 0.1) 65%, rgba(0, 0, 0, 0.55) 100% );
+        background: linear-gradient( 120deg, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.35) 35%, rgba(0, 0, 0, 0.2) 65%, rgba(0, 0, 0, 0.65) 100%);
         pointer-events: none;
+        mix-blend-mode: multiply;
+    }
+
+    .hero-overlay-events {
+        background: linear-gradient(120deg, rgba(37, 99, 235, .85), rgba(236, 72, 153, .8));
+        mix-blend-mode: soft-light;
+    }
+
+    .hero-overlay-cinema {
+        background: radial-gradient(circle at 10% 0, rgba(248, 250, 252, .25), transparent 55%), linear-gradient(120deg, rgba(15, 23, 42, .8), rgba(56, 189, 248, .8));
+        mix-blend-mode: soft-light;
+    }
+
+    .hero-overlay-store {
+        background: linear-gradient(120deg, rgba(22, 163, 74, .8), rgba(56, 189, 248, .8));
+        mix-blend-mode: soft-light;
+    }
+
+    .hero-overlay-promo {
+        background: linear-gradient(120deg, rgba(245, 158, 11, .85), rgba(239, 68, 68, .9));
+        mix-blend-mode: soft-light;
     }
 
     .hero-caption {
@@ -172,18 +370,51 @@
         text-shadow: 0 6px 18px rgba(0, 0, 0, 0.7);
     }
 
-        .hero-caption h2 {
-            font-size: 1.9rem;
-            font-weight: 800;
-            margin-bottom: .4rem;
+    .hero-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .2rem .7rem;
+        border-radius: 999px;
+        font-size: .75rem;
+        background: rgba(15, 23, 42, 0.75);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        margin-bottom: .35rem;
+    }
+
+    .hero-caption h2 {
+        font-size: 1.9rem;
+        font-weight: 800;
+        margin-bottom: .4rem;
+    }
+
+    .hero-caption p {
+        font-size: 1rem;
+        margin-bottom: .7rem;
+    }
+
+    .hero-cta-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: .5rem .75rem;
+    }
+
+    .hero-link {
+        font-size: .9rem;
+        color: #e5e7eb;
+    }
+
+        .hero-link i {
+            vertical-align: -1px;
         }
 
-        .hero-caption p {
-            font-size: 1rem;
-            margin-bottom: 0;
+        .hero-link:hover {
+            color: #fff;
+            text-decoration: underline;
         }
 
-    /* controls & indicators inside hero-inner */
+    /* controls & indicators */
     .hero-inner .carousel-control-prev,
     .hero-inner .carousel-control-next {
         width: 52px;
@@ -203,7 +434,7 @@
 
         .hero-inner .carousel-control-prev:hover,
         .hero-inner .carousel-control-next:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
             transform: translateY(-50%) scale(1.03);
         }
 
@@ -248,81 +479,79 @@
 
     /* responsive */
     @@media (max-width: 992px) {
-        .hero-img {
-            height: 420px;
+        .hero-img
+
+    {
+        height: 420px;
+    }
+
+    .hero-inner {
+        max-width: 940px;
+    }
+
+    .hero-caption {
+        left: 24px;
+        right: 24px;
+        bottom: 24px;
+    }
+
+        .hero-caption h2 {
+            font-size: 1.5rem;
         }
 
-        .hero-inner {
-            max-width: 940px;
-        }
-
-        .hero-caption {
-            left: 24px;
-            right: 24px;
-            bottom: 24px;
-        }
-
-            .hero-caption h2 {
-                font-size: 1.5rem;
-            }
-
-        .hero-inner .carousel-control-prev,
-        .hero-inner .carousel-control-next {
-            width: 46px;
-            height: 46px;
-            left: 10px;
-            right: 10px;
-        }
     }
 
     @@media (max-width: 576px) {
-        .hero-img {
-            height: 260px;
+        .hero-img-wrapper
+
+    {
+        height: 260px;
+    }
+
+    .hero-inner {
+        padding: 0 12px;
+        max-width: calc(100% - 24px);
+    }
+
+    .hero-caption {
+        left: 18px;
+        right: 18px;
+        bottom: 18px;
+    }
+
+        .hero-caption h2 {
+            font-size: 1.25rem;
         }
 
-        .hero-inner {
-            padding: 0 12px;
-            max-width: calc(100% - 24px);
+        .hero-caption p {
+            font-size: .85rem;
         }
 
-        .hero-caption {
-            left: 18px;
-            right: 18px;
-            bottom: 18px;
+    .hero-inner .carousel-control-prev,
+    .hero-inner .carousel-control-next {
+        width: 40px;
+        height: 40px;
+    }
+
+    .hero-inner .carousel-control-prev {
+        left: 6px;
+    }
+
+    .hero-inner .carousel-control-next {
+        right: 6px;
+    }
+
+    .hero-inner .custom-indicators {
+        bottom: 10px;
+        right: 18px;
+        gap: 6px;
+    }
+
+        .hero-inner .custom-indicators button {
+            width: 8px;
+            height: 8px;
         }
 
-            .hero-caption h2 {
-                font-size: 1.25rem;
-            }
-
-            .hero-caption p {
-                font-size: .85rem;
-            }
-
-        .hero-inner .carousel-control-prev,
-        .hero-inner .carousel-control-next {
-            width: 40px;
-            height: 40px;
-        }
-
-        .hero-inner .carousel-control-prev {
-            left: 6px;
-        }
-
-        .hero-inner .carousel-control-next {
-            right: 6px;
-        }
-
-        .hero-inner .custom-indicators {
-            bottom: 10px;
-            right: 18px;
-            gap: 6px;
-        }
-
-            .hero-inner .custom-indicators button {
-                width: 8px;
-                height: 8px;
-            }
     }
 
     html, body {
@@ -330,14 +559,13 @@
     }
 </style>
 
-<!-- JS: ensure autoplay + pause on hover -->
 <script>
     (function () {
         try {
             var el = document.getElementById('heroCarousel');
             if (el && window.bootstrap && bootstrap.Carousel) {
                 var carousel = bootstrap.Carousel.getInstance(el) || new bootstrap.Carousel(el, {
-                    interval: 3500,
+                    interval: 4000,
                     ride: 'carousel',
                     pause: 'hover',
                     touch: true,

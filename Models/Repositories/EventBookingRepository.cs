@@ -15,13 +15,12 @@ namespace Semester03.Models.Repositories
         {
             _db = db ?? throw new ArgumentNullException(nameof(db));
         }
-
         private IQueryable<TblEventBooking> GetFullBookingQuery()
         {
             return _db.TblEventBookings
                 .Include(b => b.EventBookingEvent)
-                .Include(b => b.EventBookingUser)
-                .Include(b => b.EventBookingTenant);
+                .Include(b => b.EventBookingUser);
+            // .Include(b => b.EventBookingTenant); // <-- enable after fixing Tenant <-> TenantPosition mapping in DbContext
         }
 
         public async Task<IEnumerable<TblEventBooking>> GetAllAsync()
@@ -64,6 +63,54 @@ namespace Semester03.Models.Repositories
         {
             if (booking == null) throw new ArgumentNullException(nameof(booking));
 
+            // ====== ĐẢM BẢO Quantity ======
+            int qty = 1;
+            try
+            {
+                // nếu entity đã có EventBookingQuantity (scaffold từ DB)
+                if (booking.EventBookingQuantity > 0)
+                {
+                    qty = (int)booking.EventBookingQuantity;
+                }
+                else
+                {
+                    qty = ParseQtyFromNotes(booking.EventBookingNotes);
+                    if (qty <= 0) qty = 1;
+                    booking.EventBookingQuantity = qty;
+                }
+            }
+            catch
+            {
+                qty = ParseQtyFromNotes(booking.EventBookingNotes);
+                if (qty <= 0) qty = 1;
+            }
+
+            // ====== ĐẢM BẢO UnitPrice ======
+            try
+            {
+                if ((booking.EventBookingUnitPrice == null || booking.EventBookingUnitPrice <= 0) &&
+                    booking.EventBookingTotalCost.HasValue)
+                {
+                    var total = booking.EventBookingTotalCost.Value;
+                    var unitPrice = qty > 0 ? total / qty : total;
+                    booking.EventBookingUnitPrice = unitPrice;
+                }
+            }
+            catch { }
+
+            // ====== ĐẢM BẢO Date ======
+            try
+            {
+                if (booking.EventBookingDate == null ||
+                    booking.EventBookingDate == default)
+                {
+                    booking.EventBookingDate = DateOnly.FromDateTime(DateTime.Now);
+                }
+            }
+            catch { }
+
+            // Không còn xử lý OrderGroup vì đã bỏ cột EventBooking_OrderGroup
+
             _db.TblEventBookings.Add(booking);
             await _db.SaveChangesAsync();
 
@@ -74,7 +121,9 @@ namespace Semester03.Models.Repositories
                 booking.EventBookingUserId,
                 "CreatedBookingDay",
                 booking.EventBookingNotes,
-                booking.EventBookingDate.HasValue ? booking.EventBookingDate.Value.ToDateTime(TimeOnly.MinValue) : (DateTime?)null,
+                booking.EventBookingDate.HasValue
+                    ? booking.EventBookingDate.Value.ToDateTime(TimeOnly.MinValue)
+                    : (DateTime?)null,
                 TryGetQuantityFromBooking(booking)
             );
 
@@ -107,33 +156,41 @@ namespace Semester03.Models.Repositories
                 EventBookingTotalCost = totalCost,
                 EventBookingPaymentStatus = totalCost > 0m ? 0 : 2, // 0: pending, 2: free-confirmed
                 EventBookingNotes = combinedNotes,
-                EventBookingCreatedDate = DateTime.UtcNow
+                EventBookingCreatedDate = DateTime.Now
             };
 
-            // Thử set thêm Quantity, UnitPrice, Date nếu entity có cột tương ứng
+            // ====== Quantity ======
             try
             {
-                var type = entity.GetType();
-
-                var qtyProp = type.GetProperty("EventBookingQuantity") ?? type.GetProperty("Quantity");
-                if (qtyProp != null && qtyProp.CanWrite)
-                    qtyProp.SetValue(entity, quantity);
-
-                var unitPriceProp = type.GetProperty("EventBookingUnitPrice") ?? type.GetProperty("UnitPrice");
-                if (unitPriceProp != null && unitPriceProp.CanWrite)
-                {
-                    var unitPrice = quantity > 0 ? totalCost / quantity : totalCost;
-                    unitPriceProp.SetValue(entity, unitPrice);
-                }
-
-                var dateProp = type.GetProperty("EventBookingDate") ?? type.GetProperty("Date");
-                if (dateProp != null && dateProp.CanWrite)
-                    dateProp.SetValue(entity, DateTime.UtcNow.Date);
+                entity.EventBookingQuantity = quantity;
             }
             catch
             {
-                // ignore, giữ backward-compatible
+                // nếu entity không có property này thì bỏ qua
             }
+
+            // ====== UnitPrice ======
+            try
+            {
+                var unitPrice = quantity > 0 ? totalCost / quantity : totalCost;
+                entity.EventBookingUnitPrice = unitPrice;
+            }
+            catch
+            {
+                // nếu không có cột thì thôi
+            }
+
+            // ====== Date ======
+            try
+            {
+                entity.EventBookingDate = DateOnly.FromDateTime(DateTime.Now);
+            }
+            catch
+            {
+                // nếu cột kiểu DateTime, bạn có thể đổi sang DateTime.Now.Date
+            }
+
+            // Không còn OrderGroup (GUID) vì đã bỏ cột EventBooking_OrderGroup
 
             _db.TblEventBookings.Add(entity);
             await _db.SaveChangesAsync();
@@ -145,7 +202,7 @@ namespace Semester03.Models.Repositories
                 entity.EventBookingUserId,
                 "CreatedBookingDay",
                 entity.EventBookingNotes,
-                DateTime.UtcNow.Date,
+                DateTime.Now.Date,
                 quantity
             );
 
@@ -163,7 +220,7 @@ namespace Semester03.Models.Repositories
             {
                 var prop = booking.GetType().GetProperty("EventBookingUpdatedDate");
                 if (prop != null && prop.CanWrite)
-                    prop.SetValue(booking, DateTime.UtcNow);
+                    prop.SetValue(booking, DateTime.Now);
             }
             catch { }
 
@@ -184,11 +241,11 @@ namespace Semester03.Models.Repositories
                 var type = booking.GetType();
                 var paidAtProp = type.GetProperty("EventBookingPaidAt") ?? type.GetProperty("PaidAt");
                 if (paidAtProp != null && paidAtProp.CanWrite)
-                    paidAtProp.SetValue(booking, DateTime.UtcNow);
+                    paidAtProp.SetValue(booking, DateTime.Now);
 
                 var updatedProp = type.GetProperty("EventBookingUpdatedDate") ?? type.GetProperty("UpdatedAt");
                 if (updatedProp != null && updatedProp.CanWrite)
-                    updatedProp.SetValue(booking, DateTime.UtcNow);
+                    updatedProp.SetValue(booking, DateTime.Now);
             }
             catch { }
 
@@ -202,7 +259,7 @@ namespace Semester03.Models.Repositories
                 booking.EventBookingUserId,
                 "PaymentSuccess",
                 "Thanh toán thành công qua VNPAY",
-                DateTime.UtcNow.Date,
+                DateTime.Now.Date,
                 TryGetQuantityFromBooking(booking)
             );
 
@@ -219,7 +276,7 @@ namespace Semester03.Models.Repositories
             {
                 var updatedProp = booking.GetType().GetProperty("EventBookingUpdatedDate") ?? booking.GetType().GetProperty("UpdatedAt");
                 if (updatedProp != null && updatedProp.CanWrite)
-                    updatedProp.SetValue(booking, DateTime.UtcNow);
+                    updatedProp.SetValue(booking, DateTime.Now);
             }
             catch { }
 
@@ -233,7 +290,7 @@ namespace Semester03.Models.Repositories
                 booking.EventBookingUserId,
                 "AdminCancelled",
                 "Đơn đặt vé bị hủy",
-                DateTime.UtcNow.Date,
+                DateTime.Now.Date,
                 TryGetQuantityFromBooking(booking)
             );
 
@@ -299,9 +356,18 @@ namespace Semester03.Models.Repositories
 
         public async Task<TblEventBooking> GetByIdWithHistoryAsync(int id)
         {
-            return await GetFullBookingQuery()
-                .Include(b => b.TblEventBookingHistories.OrderByDescending(h => h.EventBookingHistoryCreatedAt))
+            var booking = await GetFullBookingQuery()
+                .Include(b => b.TblEventBookingHistories)
                 .FirstOrDefaultAsync(b => b.EventBookingId == id);
+
+            if (booking != null && booking.TblEventBookingHistories != null)
+            {
+                booking.TblEventBookingHistories = booking.TblEventBookingHistories
+                    .OrderByDescending(h => h.EventBookingHistoryCreatedAt)
+                    .ToList();
+            }
+
+            return booking;
         }
 
         public async Task<bool> UpdateStatusByAdminAsync(int bookingId, int newStatus, int adminId)
@@ -319,10 +385,10 @@ namespace Semester03.Models.Repositories
             {
                 EventBookingHistoryBookingId = booking.EventBookingId,
                 EventBookingHistoryEventId = booking.EventBookingEventId,
-                EventBookingHistoryUserId = adminId, // always = 1 
+                EventBookingHistoryUserId = adminId,
                 EventBookingHistoryAction = "UpdateStatus",
                 EventBookingHistoryDetails = $"Status changed from '{oldStatusLabel}' to '{newStatusLabel}'",
-                EventBookingHistoryCreatedAt = DateTime.UtcNow
+                EventBookingHistoryCreatedAt = DateTime.Now
             };
             _db.TblEventBookingHistories.Add(history);
 
@@ -341,17 +407,13 @@ namespace Semester03.Models.Repositories
                 _ => "Unknown"
             };
         }
+
         private int TryGetQuantityFromBooking(TblEventBooking booking)
         {
             try
             {
-                var type = booking.GetType();
-                var qtyProp = type.GetProperty("EventBookingQuantity") ?? type.GetProperty("Quantity");
-                if (qtyProp != null)
-                {
-                    var val = qtyProp.GetValue(booking);
-                    if (val != null && int.TryParse(val.ToString(), out var q) && q > 0) return q;
-                }
+                if (booking.EventBookingQuantity > 0)
+                    return (int)booking.EventBookingQuantity;
             }
             catch { }
 
@@ -392,7 +454,7 @@ namespace Semester03.Models.Repositories
                 EventBookingHistoryDetails = details,
                 EventBookingHistoryRelatedDate = relatedDate.HasValue ? DateOnly.FromDateTime(relatedDate.Value) : (DateOnly?)null,
                 EventBookingHistoryQuantity = quantity,
-                EventBookingHistoryCreatedAt = DateTime.UtcNow
+                EventBookingHistoryCreatedAt = DateTime.Now
             };
 
             _db.TblEventBookingHistories.Add(history);

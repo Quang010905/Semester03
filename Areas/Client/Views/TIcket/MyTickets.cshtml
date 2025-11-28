@@ -1,0 +1,720 @@
+﻿@using System
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
+@model Semester03.Areas.Client.Models.ViewModels.MyTicketsPageVm
+
+@{
+    ViewData["Title"] = "My Tickets";
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+
+    var now = DateTime.Now;
+
+    var futureMovies = Model.MovieTickets.Where(t => t.Status == "UPCOMING").ToList();
+    var pastMovies = Model.MovieTickets.Where(t => t.Status == "WATCHED").ToList();
+    var cancelledMovies = Model.MovieTickets.Where(t => t.Status == "CANCELLED").ToList();
+        // ===== GROUP VÉ SỰ KIỆN THEO TRẠNG THÁI =====
+    var upcomingEvents = Model.EventTickets.Where(e => e.Status == "Upcoming").ToList();
+    var pastEvents = Model.EventTickets.Where(e => e.Status == "Past").ToList();
+    var cancelledEvents = Model.EventTickets.Where(e => e.Status == "Cancelled").ToList();
+
+
+    // ===== HÌNH PHIM (dựa theo Cinema) =====
+    Func<string, string> ImgMovie = (raw) =>
+    {
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            var file = raw.Replace("\\", "/").Trim();
+
+            var keyword = "Content/Uploads/Movies";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
+
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                return Url.Content("~/Content/Uploads/Movies/" + Uri.EscapeDataString(file));
+            }
+
+            var physical = System.IO.Path.Combine(
+                env.WebRootPath ?? "wwwroot",
+                "Content", "Uploads", "Movies", file
+            );
+
+            if (System.IO.File.Exists(physical))
+            {
+                return Url.Content("~/Content/Uploads/Movies/" + Uri.EscapeDataString(file));
+            }
+            else
+            {
+                return noImageUrl;
+            }
+        }
+        catch
+        {
+            return Url.Content("~/Content/Uploads/noimage.png");
+        }
+    };
+
+    // ===== HÌNH SỰ KIỆN (tương tự nhưng folder Events) =====
+    Func<string, string> ImgEvent = (raw) =>
+    {
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            var file = raw.Replace("\\", "/").Trim();
+
+            var keyword = "Content/Uploads/Events";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
+
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
+            }
+
+            var physical = System.IO.Path.Combine(
+                env.WebRootPath ?? "wwwroot",
+                "Content", "Uploads", "Events", file
+            );
+
+            if (System.IO.File.Exists(physical))
+            {
+                return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
+            }
+            else
+            {
+                return noImageUrl;
+            }
+        }
+        catch
+        {
+            return Url.Content("~/Content/Uploads/noimage.png");
+        }
+    };
+}
+
+<style>
+    /* TAB LỚN / NHỎ ----------------------------------------- */
+    .big-tab-bar {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 22px;
+    }
+
+    .big-tab-btn {
+        padding: 12px 26px;
+        border-radius: 14px;
+        background: #e2e8f0;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background .18s ease, color .18s ease, transform .16s ease, box-shadow .16s ease;
+    }
+
+        .big-tab-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.18);
+        }
+
+        .big-tab-btn.active {
+            background: #2563eb;
+            color: #ffffff;
+            box-shadow: 0 14px 32px rgba(37, 99, 235, 0.4);
+        }
+
+    .subtab-bar {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .subtab-btn {
+        padding: 8px 20px;
+        border-radius: 999px;
+        background: #e5e7eb;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: .9rem;
+        transition: background .18s ease, color .18s ease, transform .16s ease, box-shadow .16s ease;
+    }
+
+        .subtab-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 22px rgba(148, 163, 184, 0.4);
+        }
+
+        .subtab-btn.active {
+            background: #2563eb;
+            color: #ffffff;
+        }
+
+    /* CARD VÉ ------------------------------------------------ */
+    .ticket-card {
+        background: #0f172a; /* xanh đậm */
+        color: #ffffff;
+        border-radius: 18px;
+        overflow: hidden;
+        border: 1px solid #020617;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.45);
+        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, filter .18s ease;
+    }
+
+        .ticket-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 26px 70px rgba(15, 23, 42, 0.60);
+            border-color: #2563eb;
+        }
+
+    /* Phần poster: nền trắng, ảnh “float” giống demo */
+    .ticket-img {
+        width: 100%;
+        height: 200px;
+        object-fit: contain;
+        background: radial-gradient(circle at top, #ffffff 0, #f3f4f6 55%, #e5e7eb 100%);
+        padding: 10px 10px 0 10px;
+        display: block;
+    }
+
+    .ticket-body,
+    .event-body {
+        padding: 14px 14px 16px;
+        background: #111827;
+    }
+
+    .ticket-title {
+        font-size: 1rem;
+        font-weight: 800;
+        margin-top: 6px;
+        margin-bottom: 6px;
+    }
+
+    .ticket-time {
+        font-size: .86rem;
+        color: #dbeafe;
+        line-height: 1.2;
+    }
+
+    /* BADGE TRẠNG THÁI -------------------------------------- */
+    .badge-status {
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: .7rem;
+        font-weight: 800;
+        display: inline-block;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+        color: #f9fafb;
+    }
+
+    .badge-upcoming {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    }
+
+    .badge-watched {
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+    }
+
+    .badge-cancelled {
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+    }
+
+    /* Nút trong card (xem chi tiết / hủy vé) ---------------- */
+    .ticket-card .btn {
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: .9rem;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.35);
+        border: none;
+        transition: transform .14s ease, box-shadow .14s ease, filter .14s ease;
+    }
+
+        .ticket-card .btn + .btn {
+            margin-top: .35rem;
+        }
+
+    .ticket-card .btn-primary {
+        background: #2563eb;
+    }
+
+        .ticket-card .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 16px 38px rgba(37, 99, 235, 0.65);
+            filter: brightness(1.03);
+        }
+
+    .ticket-card .btn-danger {
+        background: #ef4444;
+    }
+
+        .ticket-card .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 16px 38px rgba(220, 38, 38, 0.65);
+            filter: brightness(1.03);
+        }
+
+    .ticket-card .btn-outline-light {
+        border: 1px solid rgba(209, 213, 219, 0.9);
+        background: transparent;
+        color: #e5e7eb;
+    }
+
+        .ticket-card .btn-outline-light:hover {
+            background: #f9fafb;
+            color: #0f172a;
+            transform: translateY(-2px);
+        }
+
+    .ticket-card .btn-outline-danger {
+        border: 1px solid rgba(248, 113, 113, 0.9);
+        color: #fecaca;
+        background: transparent;
+    }
+
+        .ticket-card .btn-outline-danger:hover {
+            background: #fee2e2;
+            color: #7f1d1d;
+            transform: translateY(-2px);
+        }
+
+    /* Hộp trống --------------------------------------------- */
+    .empty-box {
+        background: #cffafe;
+        padding: 14px;
+        border-radius: 10px;
+        color: #075985;
+        border: 1px solid #0ea5e9;
+    }
+
+    /* Responsive nhẹ cho mobile ----------------------------- */
+    @@media (max-width: 575.98px) {
+        .big-tab-bar
+
+    {
+        flex-direction: column;
+    }
+
+    .subtab-bar {
+        flex-wrap: wrap;
+    }
+
+    .ticket-img {
+        height: 190px;
+    }
+
+    }
+</style>
+
+
+<script>
+    function showBigTab(tab) {
+        movieTab.style.display = tab === 'movie' ? 'block' : 'none';
+        eventTab.style.display = tab === 'event' ? 'block' : 'none';
+        btnBigMovie.classList.toggle("active", tab === 'movie');
+        btnBigEvent.classList.toggle("active", tab === 'event');
+    }
+
+    function showMovieSubTab(sub) {
+        movieFuture.style.display    = sub === 'future'    ? 'block' : 'none';
+        moviePast.style.display      = sub === 'past'      ? 'block' : 'none';
+        movieCancelled.style.display = sub === 'cancelled' ? 'block' : 'none';
+
+        btnMovieFuture.classList.toggle("active", sub === 'future');
+        btnMoviePast.classList.toggle("active", sub === 'past');
+        btnMovieCancelled.classList.toggle("active", sub === 'cancelled');
+    }
+</script>
+<script>
+    function showBigTab(tab) {
+        movieTab.style.display = tab === 'movie' ? 'block' : 'none';
+        eventTab.style.display = tab === 'event' ? 'block' : 'none';
+        btnBigMovie.classList.toggle("active", tab === 'movie');
+        btnBigEvent.classList.toggle("active", tab === 'event');
+    }
+
+    function showMovieSubTab(sub) {
+        movieFuture.style.display    = sub === 'future'    ? 'block' : 'none';
+        moviePast.style.display      = sub === 'past'      ? 'block' : 'none';
+        movieCancelled.style.display = sub === 'cancelled' ? 'block' : 'none';
+
+        btnMovieFuture.classList.toggle("active", sub === 'future');
+        btnMoviePast.classList.toggle("active", sub === 'past');
+        btnMovieCancelled.classList.toggle("active", sub === 'cancelled');
+    }
+
+    // 🔹 TAB CON CHO VÉ SỰ KIỆN
+    function showEventSubTab(sub) {
+        eventUpcoming.style.display   = sub === 'upcoming'  ? 'block' : 'none';
+        eventPast.style.display       = sub === 'past'      ? 'block' : 'none';
+        eventCancelled.style.display  = sub === 'cancelled' ? 'block' : 'none';
+
+        btnEventUpcoming.classList.toggle("active", sub === 'upcoming');
+        btnEventPast.classList.toggle("active", sub === 'past');
+        btnEventCancelled.classList.toggle("active", sub === 'cancelled');
+    }
+</script>
+
+
+<div class="container my-4">
+
+    <h2 class="fw-bold mb-4">🎟 Vé của tôi</h2>
+
+    <!-- TAB LỚN -->
+    <div class="big-tab-bar">
+        <button id="btnBigMovie" class="big-tab-btn active" onclick="showBigTab('movie')">🎬 Movie tickets</button>
+        <button id="btnBigEvent" class="big-tab-btn" onclick="showBigTab('event')">🎉 Event tickets</button>
+    </div>
+
+    <!-- ================================================= -->
+    <!--              TAB 1 — PHIM -->
+    <!-- ================================================= -->
+    <div id="movieTab">
+
+        <div class="subtab-bar">
+            <button id="btnMovieFuture" class="subtab-btn active" onclick="showMovieSubTab('future')">Upcoming</button>
+            <button id="btnMoviePast" class="subtab-btn" onclick="showMovieSubTab('past')">Watched</button>
+            <button id="btnMovieCancelled" class="subtab-btn" onclick="showMovieSubTab('cancelled')">Cancelled</button>
+        </div>
+
+        <!-- ========================= -->
+        <!-- ⭐ SẮP XEM -->
+        <!-- ========================= -->
+        <div id="movieFuture">
+            @if (!futureMovies.Any())
+            {
+                <div class="empty-box">No upcoming tickets.</div>
+            }
+            else
+            {
+                <div class="row g-4">
+                    @foreach (var t in futureMovies)
+                    {
+                        var poster = ImgMovie(t.PosterUrl);
+
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <div class="ticket-card">
+
+                                <img src="@poster" class="ticket-img" />
+
+                                <div class="ticket-body">
+
+                                    <span class="badge-status badge-upcoming">UPCOMING</span>
+
+                                    <div class="ticket-title">@t.MovieTitle</div>
+
+                                    <div class="ticket-time">@t.Showtime.ToString("dd/MM/yyyy")</div>
+                                    <div class="ticket-time">@t.Showtime.ToString("HH:mm")</div>
+                                    <!-- 👉 THÊM LẠI SỐ LƯỢNG VÉ -->
+                                    <div class="ticket-time">Number of tickets: @t.Quantity</div>
+
+                                    <!-- Xem chi tiết -->
+                                    <a href="@Url.Action("Index", "TicketDetail", new { area = "Client", id = t.TicketId })"
+                                       class="btn btn-primary btn-sm w-100 mt-2">
+                                        View details
+                                    </a>
+
+                                    <!-- Hủy vé: chỉ dẫn tới trang chi tiết -->
+                                    <a href="@Url.Action("Index", "TicketDetail", new { area = "Client", id = t.TicketId })"
+                                       class="btn btn-danger btn-sm w-100 mt-2">
+                                        Cancel ticket
+                                    </a>
+
+                                </div>
+
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- ========================= -->
+        <!-- ⭐ ĐÃ XEM -->
+        <!-- ========================= -->
+        <div id="moviePast" style="display:none;">
+            @if (!pastMovies.Any())
+            {
+                <div class="empty-box">You have not seen any movies yet.</div>
+            }
+            else
+            {
+                <div class="row g-4">
+                    @foreach (var t in pastMovies)
+                    {
+                        var poster = ImgMovie(t.PosterUrl);
+
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <div class="ticket-card">
+
+                                <img src="@poster" class="ticket-img" />
+
+                                <div class="ticket-body">
+
+                                    <span class="badge-status badge-watched">WATCHED</span>
+
+                                    <div class="ticket-title">@t.MovieTitle</div>
+
+                                    <div class="ticket-time">@t.Showtime.ToString("dd/MM/yyyy")</div>
+                                    <div class="ticket-time">@t.Showtime.ToString("HH:mm")</div>
+                                    <!-- 👉 THÊM LẠI SỐ LƯỢNG VÉ -->
+                                    <div class="ticket-time">Number of tickets: @t.Quantity</div>
+
+                                    <a href="@Url.Action("Index", "TicketDetail", new { area = "Client", id = t.TicketId })"
+                                       class="btn btn-outline-light btn-sm w-100 mt-2">
+                                        Review tickets
+                                    </a>
+
+                                </div>
+
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- ========================= -->
+        <!-- ⭐ ĐÃ HỦY -->
+        <!-- ========================= -->
+        <div id="movieCancelled" style="display:none;">
+            @if (!cancelledMovies.Any())
+            {
+                <div class="empty-box">You have not canceled any tickets yet..</div>
+            }
+            else
+            {
+                <div class="row g-4">
+                    @foreach (var t in cancelledMovies)
+                    {
+                        var poster = ImgMovie(t.PosterUrl);
+
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <div class="ticket-card" style="opacity:.55;">
+
+                                <img src="@poster" class="ticket-img" />
+
+                                <div class="ticket-body">
+
+                                    <span class="badge-status badge-cancelled">CANCELLED</span>
+
+                                    <div class="ticket-title">@t.MovieTitle</div>
+
+                                    <div class="ticket-time">@t.Showtime.ToString("dd/MM/yyyy")</div>
+                                    <div class="ticket-time">@t.Showtime.ToString("HH:mm")</div>
+                                    <!-- 👉 THÊM LẠI SỐ LƯỢNG VÉ -->
+                                    <div class="ticket-time">Number of tickets: @t.Quantity</div>
+
+                                    <a href="@Url.Action("Index", "TicketDetail", new { area = "Client", id = t.TicketId })"
+                                       class="btn btn-outline-danger btn-sm w-100 mt-2">
+                                        Review tickets
+                                    </a>
+
+                                </div>
+
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+    </div>
+
+    <!-- ================================================= -->
+    <!--              TAB 2 — SỰ KIỆN -->
+    <!-- ================================================= -->
+    <!-- ================================================= -->
+    <!--              TAB 2 — SỰ KIỆN -->
+    <!-- ================================================= -->
+    <div id="eventTab" style="display:none;">
+
+        @if (!Model.EventTickets.Any())
+        {
+            <div class="empty-box">You have not booked any event tickets yet..</div>
+        }
+        else
+        {
+            <!-- SUBTAB cho sự kiện -->
+            <div class="subtab-bar mb-3">
+                <button id="btnEventUpcoming"
+                        class="subtab-btn active"
+                        onclick="showEventSubTab('upcoming')">
+                    Coming soon
+                </button>
+
+                <button id="btnEventPast"
+                        class="subtab-btn"
+                        onclick="showEventSubTab('past')">
+                    took place
+                </button>
+
+                <button id="btnEventCancelled"
+                        class="subtab-btn"
+                        onclick="showEventSubTab('cancelled')">
+                    Canceled
+                </button>
+            </div>
+
+            <!-- 🔹 SẮP DIỄN RA -->
+            <div id="eventUpcoming">
+                @if (!upcomingEvents.Any())
+                {
+                    <div class="empty-box">No tickets for upcoming events.</div>
+                }
+                else
+                {
+                    <div class="row g-4">
+                        @foreach (var e in upcomingEvents)
+                        {
+                            var poster = ImgEvent(e.EventImage);
+
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="ticket-card">
+                                    <img src="@poster" class="ticket-img" />
+                                    <div class="event-body">
+                                        <span class="badge-status badge-upcoming">
+                                            @e.Status.ToUpper()
+                                        </span>
+                                        <div class="ticket-title">@e.EventName</div>
+                                        <div class="ticket-time">@e.EventStart.ToString("dd/MM/yyyy HH:mm")</div>
+                                        <div class="ticket-time">Quantity: @e.Quantity</div>
+                                        <div class="ticket-time">Total amount: @e.TotalCost.ToString("N0") đ</div>
+
+                                        <a href="@Url.Action("Details", "EventBooking", new { area = "Client", id = e.BookingId })"
+                                           class="btn btn-primary btn-sm w-100 mt-2">
+                                            See details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- 🔹 ĐÃ DIỄN RA -->
+            <div id="eventPast" style="display:none;">
+                @if (!pastEvents.Any())
+                {
+                    <div class="empty-box">There are no events you have attended yet..</div>
+                }
+                else
+                {
+                    <div class="row g-4">
+                        @foreach (var e in pastEvents)
+                        {
+                            var poster = ImgEvent(e.EventImage);
+
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="ticket-card">
+                                    <img src="@poster" class="ticket-img" />
+                                    <div class="event-body">
+                                        <span class="badge-status badge-watched">
+                                            @e.Status.ToUpper()
+                                        </span>
+                                        <div class="ticket-title">@e.EventName</div>
+                                        <div class="ticket-time">@e.EventStart.ToString("dd/MM/yyyy HH:mm")</div>
+                                        <div class="ticket-time">Quantity: @e.Quantity</div>
+                                        <div class="ticket-time">Total amount: @e.TotalCost.ToString("N0") đ</div>
+
+                                        <a href="@Url.Action("Details", "EventBooking", new { area = "Client", id = e.BookingId })"
+                                           class="btn btn-outline-light btn-sm w-100 mt-2">
+                                            Review tickets
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- 🔹 ĐÃ HỦY -->
+            <div id="eventCancelled" style="display:none;">
+                @if (!cancelledEvents.Any())
+                {
+                    <div class="empty-box">You have not canceled any event tickets yet..</div>
+                }
+                else
+                {
+                    <div class="row g-4">
+                        @foreach (var e in cancelledEvents)
+                        {
+                            var poster = ImgEvent(e.EventImage);
+
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="ticket-card" style="opacity:.6;">
+                                    <img src="@poster" class="ticket-img" />
+                                    <div class="event-body">
+                                        <span class="badge-status badge-cancelled">
+                                            @e.Status.ToUpper()
+                                        </span>
+                                        <div class="ticket-title">@e.EventName</div>
+                                        <div class="ticket-time">@e.EventStart.ToString("dd/MM/yyyy HH:mm")</div>
+                                        <div class="ticket-time">Quantity: @e.Quantity</div>
+                                        <div class="ticket-time">Total amount: @e.TotalCost.ToString("N0") đ</div>
+
+                                        <a href="@Url.Action("Details", "EventBooking", new { area = "Client", id = e.BookingId })"
+                                           class="btn btn-outline-danger btn-sm w-100 mt-2">
+                                            Review tickets
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+
+</div>
+    

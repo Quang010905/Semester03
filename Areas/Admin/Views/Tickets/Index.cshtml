@@ -1,71 +1,140 @@
 ﻿@model IEnumerable<Semester03.Models.Entities.TblTicket>
 
 @{
-    ViewData["Title"] = "Sold Ticket Management";
+    ViewData["Title"] = "Ticket Management";
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+
+    // Calculate Summary
+    var totalSales = Model.Where(t => t.TicketStatus == "sold").Sum(t => t.TicketPrice);
+    var countSold = Model.Count(t => t.TicketStatus == "sold");
 }
 
-<h1 class="h3 mb-2 text-gray-800">Sold Ticket Management</h1>
-<p class="mb-4">Lookup and manage all tickets sold through the system.</p>
-@if (ViewData["ShowtimeFilter"] != null)
-{
-    <p>
-        <a asp-action="Index" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back to All Tickets
-        </a>
-    </p>
-}
+<h1 class="h3 mb-2 text-gray-800">Ticket Management</h1>
+<p class="mb-4">Search, filter, and manage ticket sales.</p>
+
+<div class="card mb-4 border-bottom-primary">
+    <div class="card-body">
+        <form method="get" asp-action="Index" class="form-inline justify-content-between">
+
+            <div class="d-flex">
+                <div class="input-group mr-2">
+                    <input type="text" name="search" value="@ViewData["CurrentSearch"]"
+                           class="form-control bg-light border-0 small" placeholder="Ticket ID, Name, Phone..." />
+                    
+                </div>
+
+                <div class="input-group mr-2">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                    </div>
+                    <input type="date" name="date" value="@ViewData["CurrentDate"]" class="form-control" />
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-icon-split btn-sm">
+                    <span class="icon text-white-50"><i class="fas fa-filter"></i></span>
+                    <span class="text">Filter</span>
+                </button>
+
+                <a asp-action="Index" class="btn btn-secondary btn-sm ml-2">Reset</a>
+            </div>
+
+            <button type="submit" formaction="@Url.Action("ExportSummary")" formmethod="post" class="btn btn-info btn-sm">
+                <i class="fas fa-chart-bar fa-sm text-white-50"></i> Export Revenue Report
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Revenue (Current View)</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@totalSales.ToString("N0") VND</div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-dollar-sign fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Tickets Sold</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@countSold</div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-ticket-alt fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card shadow mb-4">
     <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Sold Ticket List</h6>
+        <h6 class="m-0 font-weight-bold text-primary">Ticket List</h6>
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                <thead>
+            <table class="table table-bordered table-hover" id="dataTable" width="100%" cellspacing="0">
+                <thead class="thead-light">
                     <tr>
-                        <th>Ticket ID</th>
-                        <th>Movie</th>
-                        <th>Screen</th>
+                        <th>ID</th>
+                        <th>Movie / Showtime</th>
                         <th>Seat</th>
-                        <th>Buyer</th>
-                        <th>Price</th>
+                        <th>Customer</th>
+                        <th>Price(VND)</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        <th>Date</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var item in Model)
                     {
-                        <tr>
-                            <td>@item.TicketId</td>
+                        bool isSold = item.TicketStatus.ToLower() == "sold";
+
+                        <tr class="@(isSold ? "" : "table-secondary text-muted")">
+                            <td class="font-weight-bold">#@item.TicketId</td>
                             <td>
-                                @item.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeMovie?.MovieTitle
+                                <div class="font-weight-bold text-primary">@item.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeMovie?.MovieTitle</div>
+                                <small>
+                                    @item.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeStart.ToString("dd/MM HH:mm")
+                                    (@item.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeScreen?.ScreenName)
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-info" style="font-size: 0.9rem;">
+                                    @item.TicketShowtimeSeat?.ShowtimeSeatSeat?.SeatLabel
+                                </span>
                             </td>
                             <td>
-                                @item.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeScreen?.ScreenName
+                                <div>@item.TicketBuyerUser?.UsersFullName</div>
+                                <small>@item.TicketBuyerUser?.UsersPhone</small>
                             </td>
+                            <td>@item.TicketPrice.ToString("N0")</td>
                             <td>
-                                @item.TicketShowtimeSeat?.ShowtimeSeatSeat?.SeatLabel
-                            </td>
-                            <td>
-                                @item.TicketBuyerUser?.UsersFullName
-                            </td>
-                            <td>
-                                @item.TicketPrice.ToString("N0")
-                            </td>
-                            <td>
-                                @if (item.TicketStatus.ToLower() == "sold")
+                                @if (isSold)
                                 {
-                                    <span class="badge badge-success">@item.TicketStatus</span>
+                                    <span class="badge badge-success">Sold</span>
                                 }
                                 else
                                 {
-                                    <span class="badge badge-secondary">@item.TicketStatus</span>
+
+                                    <span class="badge badge-secondary">Cancelled</span>
                                 }
                             </td>
                             <td>
-                                <a asp-action="Details" asp-route-id="@item.TicketId" class="btn btn-info btn-sm">Details</a>
+                                @item.TicketCreatedAt?.ToString("dd/MM/yy HH:mm")
+                            </td>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@item.TicketId" class="btn btn-info btn-sm">
+                                    <i class="fas fa-eye"></i>
+                                </a>
                             </td>
                         </tr>
                     }
@@ -74,14 +143,12 @@
         </div>
     </div>
 </div>
-
 @section Scripts {
     <script>
-        // Call the dataTables jQuery plugin
         $(document).ready(function() {
-          $('#dataTable').DataTable({
-              "order": [[ 0, "desc" ]] // Order by Ticket ID descending
-          });
+            $('#dataTable').DataTable({
+                "order": [[ 0, "desc" ]] 
+            });
         });
     </script>
 }

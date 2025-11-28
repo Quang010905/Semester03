@@ -80,8 +80,8 @@ namespace Semester03.Models.Repositories
                 q.ProductCategoryName = entity.Name;
                 q.ProductCategoryImg = entity.Image;
                 q.ProductCategoryStatus = entity.Status;
-                q.ProductCategoryTenantId = entity.TenantId;
-                return await _context.SaveChangesAsync() > 0;
+                await _context.SaveChangesAsync();
+                return true; 
             }
             return false;
         }
@@ -101,17 +101,21 @@ namespace Semester03.Models.Repositories
                 .FirstOrDefaultAsync();
         }
         //kiem tra trung ten
-        public async Task<bool> CheckCategoryNameAsync(string name, int? excludeId = null)
+        public async Task<bool> CheckCategoryNameAsync(string name, int tenantId, int? excludeId = null)
         {
             string normalizedInput = NormalizeName(name);
 
             var allCategoryNames = await _context.TblProductCategories
-                .Where(t => !excludeId.HasValue || t.ProductCategoryId != excludeId.Value)
+                .Where(t =>
+                    t.ProductCategoryTenantId == tenantId &&                     
+                    (!excludeId.HasValue || t.ProductCategoryId != excludeId.Value) 
+                )
                 .Select(t => t.ProductCategoryName)
                 .ToListAsync();
 
             return allCategoryNames.Any(dbName => NormalizeName(dbName) == normalizedInput);
         }
+
 
         private string NormalizeName(string input)
         {
