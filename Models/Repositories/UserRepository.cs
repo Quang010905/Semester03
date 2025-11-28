@@ -140,7 +140,7 @@ namespace Semester03.Models.Repositories
                     Point = x.UsersPoints ?? 0,
                     CreatedAt = (DateTime)x.UsersCreatedAt,
                     UpdatedAt = (DateTime)x.UsersUpdatedAt,
-                }).Where(x => x.Role == 3).OrderByDescending(x => x.CreatedAt)
+                }).Where(x => x.Role == 2).OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
         }
         public async Task<User?> CreateTenantByUserId(int id)

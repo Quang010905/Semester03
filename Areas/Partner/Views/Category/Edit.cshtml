@@ -40,10 +40,10 @@
                 <input type="text" class="form-control" name="CategoryName" value="@cate.Name" style="width: 300px;" required />
             </div>
             <input type="hidden" value="@cate.TenantId" name="TenantId" />
-            <input type="hidden" value="@cate.Id" name="CategoryId"/>
+            <input type="hidden" value="@cate.Id" name="CategoryId" />
             <div class="form-group mb-3">
                 <label for="upFile">Image</label>
-                <img src="@Url.Content("~/uploads/" + cate.Image)" style="max-width: 200px; max-height: 200px; display: block; margin-bottom: 10px;" />
+                <img src="@Url.Content("~/Content/Uploads/ProductCategory/" + cate.Image)" style="max-width: 200px; max-height: 200px; display: block; margin-bottom: 10px;" />
                 <input type="file" class="form-control-file" id="upFile" name="upFile" />
                 <input type="hidden" name="OldImage" value="@cate.Image" />
             </div>

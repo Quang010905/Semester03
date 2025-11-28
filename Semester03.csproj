@@ -38,9 +38,6 @@
 		<Folder Include="wwwroot\Client\img\" />
 		<Folder Include="wwwroot\Content\Uploads\Events\" />
 		<Folder Include="wwwroot\Content\Uploads\TenantPromotion\" />
-		<Folder Include="wwwroot\Content\Uploads\Tenant\" />
-		<Folder Include="wwwroot\Content\Uploads\ProductCategory\" />
-		<Folder Include="wwwroot\Content\Uploads\Product\" />
 	</ItemGroup>
 
 </Project>

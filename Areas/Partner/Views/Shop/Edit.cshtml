@@ -2,7 +2,8 @@
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
 @{
-    Layout = "/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+    Layout = "/Areas/Partner/Views/Shared/_LayoutPartner.cshtml";
+    ViewData["Title"] = "Partner Dashboard";
 }
 @section headerContent
 {
@@ -39,13 +40,13 @@
         Semester03.Areas.Admin.Models.Tenant tenant =
         (Semester03.Areas.Admin.Models.Tenant)ViewBag.itemTenant;
 
-        <form action="@Url.Action("UpdateTenant", "Tenant")" method="post" enctype="multipart/form-data">
+        <form action="@Url.Action("UpdateTenant", "Shop")" method="post" enctype="multipart/form-data">
             <div class="form-group mb-3">
                 <label>Tenant Name</label>
                 <input type="text" class="form-control" name="TenantName" value="@tenant.Name" style="width: 300px;" required />
             </div>
-            <input type="hidden" value="@tenant.UserId" name="UserId"/>
-            <input type="text" value="@tenant.Id" name="TenantId" />
+            <input type="hidden" value="@tenant.UserId" name="UserId" />
+            <input type="hidden" value="@tenant.Id" name="TenantId" />
             <div class="form-group mb-3">
                 <label for="upFile">Image</label>
                 <img src="@Url.Content("~/Content/Uploads/Tenant/" + tenant.Image)" style="max-width: 200px; max-height: 200px; display: block; margin-bottom: 10px;" />
@@ -93,12 +94,12 @@
 
             <div class="form-group">
                 <button type="submit" class="btn btn-primary">Save</button>
-                <a href="@Url.Action("CreateTenant", "Tenant", new{id = tenant.UserId})" class="btn btn-secondary">Back</a>
+                <a href="@Url.Action("Index", "Shop")" class="btn btn-secondary">Back</a>
             </div>
         </form>
     }
 </div>
-    
+
 
 @section scripts
 {
