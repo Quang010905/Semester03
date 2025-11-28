@@ -27,8 +27,7 @@ namespace Semester03.Areas.Client.Controllers
         }
 
         // GET /Client/Map?floor=1
-        // inside MapController
-        public async Task<IActionResult> Index(int floor = 0) // default ground 0
+        public async Task<IActionResult> Index(int floor = 1) // default Floor 1 (no more ground 0 retail)
         {
             var vm = new MapViewModel
             {
@@ -36,29 +35,31 @@ namespace Semester03.Areas.Client.Controllers
                 Columns = 8
             };
 
-            // floor image check
+            // floor image (optional)
             var rel = $"/Content/Uploads/FloorImg/floor{floor}.png";
             var physical = Path.Combine(_env.WebRootPath ?? "wwwroot", "Content", "Uploads", "FloorImg", $"floor{floor}.png");
             vm.FloorImagePath = System.IO.File.Exists(physical) ? rel : null;
 
-            // --- COMPUTE AVAILABLE FLOORS (scan a reasonable range) ---
+            // ----- RETAIL FLOORS (4-storeyed mall) -----
             var floors = new List<int>();
             var allPositions = new List<TenantPositionDto>();
-            int maxFloorToScan = 5; // điều chỉnh nếu tòa nhà có nhiều tầng hơn
-            for (int f = 0; f <= maxFloorToScan; f++)
+
+            int minRetailFloor = 1;
+            int maxRetailFloor = 4; // theo đề bài: 4 tầng thương mại
+
+            for (int f = minRetailFloor; f <= maxRetailFloor; f++)
             {
                 var count = await _posRepo.GetCountByFloorAsync(f);
                 if (count > 0)
                 {
                     floors.Add(f);
-                    // load positions for that floor (with tenant if available)
                     var list = await _posRepo.GetPositionsByFloorWithTenantAsync(f);
                     if (list != null && list.Any())
                         allPositions.AddRange(list);
                 }
             }
 
-            // if none found, fall back to requested floor (attempt to load that one)
+            // nếu vì lý do nào đó vẫn chưa có dữ liệu, cố gắng load floor user yêu cầu
             if (!floors.Any())
             {
                 var single = await _posRepo.GetPositionsByFloorWithTenantAsync(floor);
@@ -69,12 +70,17 @@ namespace Semester03.Areas.Client.Controllers
                 }
             }
 
-            vm.AvailableFloors = floors.Any() ? floors.OrderBy(x => x).ToList() : new List<int> { 0 };
+            vm.AvailableFloors = floors.Any()
+                ? floors.OrderBy(x => x).ToList()
+                : new List<int> { 1 };
 
-            // If user requested a floor that has no positions, ensure it's still present in AvailableFloors for selection
             if (!vm.AvailableFloors.Contains(floor))
             {
-                vm.AvailableFloors = vm.AvailableFloors.Concat(new[] { floor }).Distinct().OrderBy(x => x).ToList();
+                vm.AvailableFloors = vm.AvailableFloors
+                    .Concat(new[] { floor })
+                    .Distinct()
+                    .OrderBy(x => x)
+                    .ToList();
             }
 
             vm.Positions = allPositions;
@@ -88,12 +94,15 @@ namespace Semester03.Areas.Client.Controllers
 
             ViewData["PositionsCount"] = vm.Positions.Count;
 
+            // ----- PARKING (7-level car park) -----
+            var parkingLevels = await _posRepo.GetParkingLevelsWithSpotsAsync();
+            vm.ParkingLevels = parkingLevels ?? new List<ParkingLevelDto>();
+            vm.CurrentParkingLevelId = vm.ParkingLevels.FirstOrDefault()?.LevelId;
+
             return View("~/Areas/Client/Views/Map/Index.cshtml", vm);
         }
 
-
-
-        // GET /Client/Map/Index3D?floor=1
+        // 3D view vẫn giữ nguyên (nếu bạn đang dùng)
         [HttpGet]
         public async Task<IActionResult> Index3D(int floor = 1)
         {
@@ -108,7 +117,7 @@ namespace Semester03.Areas.Client.Controllers
             vm.FloorImagePath = System.IO.File.Exists(physical) ? rel : null;
 
             var allPositions = new List<TenantPositionDto>();
-            var floorsToLoad = new[] { 0, 1, 2, 3 };
+            var floorsToLoad = new[] { 1, 2, 3, 4 };
             foreach (var f in floorsToLoad)
             {
                 var list = await _posRepo.GetPositionsByFloorAsync(f) ?? new List<TenantPositionDto>();
@@ -123,11 +132,10 @@ namespace Semester03.Areas.Client.Controllers
             vm.ReservedAreaM2 = 1500;
             vm.PositionAreaM2 = vm.Positions.FirstOrDefault()?.TenantPosition_Area_M2 ?? 150;
 
-            // explicit view to avoid mismatch
             return View("~/Areas/Client/Views/Map/Index3D.cshtml", vm);
         }
 
-        // GET: /Client/Map/GetPositionJson?id=123
+        // giữ nguyên các action dưới
         public async Task<IActionResult> GetPositionJson(int id)
         {
             var dto = await _posRepo.GetByIdAsync(id);
@@ -135,7 +143,6 @@ namespace Semester03.Areas.Client.Controllers
             return Json(dto);
         }
 
-        // POST delete
         [HttpPost]
         public async Task<IActionResult> DeletePosition(int id)
         {

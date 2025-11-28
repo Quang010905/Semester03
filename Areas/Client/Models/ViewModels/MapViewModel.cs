@@ -11,8 +11,10 @@ namespace Semester03.Areas.Client.Models.ViewModels
     {
         public MapViewModel()
         {
-            AvailableFloors = new List<int>() { 0, 1, 2, 3 };
+            // 4 tầng thương mại, controller sẽ override AvailableFloors thực tế
+            AvailableFloors = new List<int>() { 1, 2, 3, 4 };
             Positions = new List<TenantPositionDto>();
+            ParkingLevels = new List<ParkingLevelDto>();
         }
 
         // Current selected floor
@@ -45,6 +47,18 @@ namespace Semester03.Areas.Client.Models.ViewModels
 
         // Paging / meta (optional)
         public int TotalPositions => Positions?.Count ?? 0;
+
+        // ====================== PARKING (7-level car park) ======================
+
+        /// <summary>
+        /// Danh sách tất cả level bãi đậu xe (B1..B3, P1..P4).
+        /// </summary>
+        public List<ParkingLevelDto> ParkingLevels { get; set; }
+
+        /// <summary>
+        /// Level đang được chọn hiển thị trong view.
+        /// </summary>
+        public int? CurrentParkingLevelId { get; set; }
     }
 
     /// <summary>
@@ -104,5 +118,32 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public int? OrderIndex { get; set; }
         public string DisplayLabel => string.IsNullOrWhiteSpace(TenantPosition_Location) ? $"#{TenantPosition_ID}" : TenantPosition_Location;
         public string ShortName => Tenant?.Tenant_Name ?? (TenantPosition_AssignedTenantID.HasValue ? $"T-{TenantPosition_AssignedTenantID}" : "VACANT");
+    }
+
+    // ====================== DTO cho bãi đậu xe ======================
+
+    public class ParkingLevelDto
+    {
+        public int LevelId { get; set; }
+        public string LevelName { get; set; }
+        public int LevelCapacity { get; set; }
+
+        public List<ParkingSpotDto> Spots { get; set; } = new List<ParkingSpotDto>();
+    }
+
+    public class ParkingSpotDto
+    {
+        public int ParkingSpotId { get; set; }
+
+        public int SpotLevelId { get; set; }
+        public string SpotCode { get; set; }
+
+        public string SpotRow { get; set; }   // A..E
+        public int SpotCol { get; set; }      // 1..20
+
+        /// <summary>
+        /// 0 = Available, 1 = Occupied, 2 = Maintenance
+        /// </summary>
+        public int SpotStatus { get; set; }
     }
 }

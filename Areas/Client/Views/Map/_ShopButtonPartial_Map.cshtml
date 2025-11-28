@@ -1,15 +1,46 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.TenantPositionDto
 
 @{
-    var css = (Model?.TenantPosition_Status == 1)
-        ? "shop-unit unit-occupied"
-        : "shop-unit unit-vacant";
+    // 4 unit cinema cố định F1-A01..A04 theo script seed
+    bool isCinema = Model.TenantPosition_Floor == 1 &&
+                    (Model.TenantPosition_Location == "F1-A01"
+                     || Model.TenantPosition_Location == "F1-A02"
+                     || Model.TenantPosition_Location == "F1-A03"
+                     || Model.TenantPosition_Location == "F1-A04");
 
-    var label = string.IsNullOrWhiteSpace(Model?.TenantPosition_Location)
+    string css;
+    string mainLabel;
+    string tagLabel = "";
+    string areaText = (Model?.TenantPosition_Area_M2 ?? 0).ToString("0.#") + " m²";
+
+    if (isCinema)
+    {
+        css = "shop-unit unit-cinema";
+        mainLabel = "ABCD Mall Cinema";
+        tagLabel = "CINEMA";
+    }
+    else if (Model?.TenantPosition_Status == 1 && Model?.Tenant != null)
+    {
+        css = "shop-unit unit-occupied";
+        mainLabel = Model.Tenant.Tenant_Name;
+        tagLabel = "Occupied";
+    }
+    else if (Model?.TenantPosition_Status == 1)
+    {
+        css = "shop-unit unit-occupied";
+        mainLabel = "Occupied";
+    }
+    else
+    {
+        css = "shop-unit unit-vacant";
+        mainLabel = "VACANT";
+        tagLabel = "Available";
+    }
+
+    var code = string.IsNullOrWhiteSpace(Model?.TenantPosition_Location)
         ? "Unit"
         : Model.TenantPosition_Location;
 
-    var areaText = Model?.TenantPosition_Area_M2.ToString("0.#") + " m²";
     var idAttr = Model?.TenantPosition_ID.ToString() ?? "0";
 
     string tenantImg = null;
@@ -25,27 +56,28 @@
 
 <a href="@detailsUrl"
    class="@css"
-   title="@label"
+   title="@mainLabel"
    data-id="@idAttr"
    data-left="@(Model?.TenantPosition_LeftPct)"
    data-top="@(Model?.TenantPosition_TopPct)"
    data-status="@(Model?.TenantPosition_Status)">
-    <div style="display:flex;align-items:center;gap:8px;width:100%;justify-content:center;">
-        @if (!string.IsNullOrEmpty(tenantImg))
-        {
-            <div style="flex:0 0 36px;height:36px;overflow:hidden;border-radius:6px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;">
-                <img src="@tenantImg" alt="@label" style="max-width:100%;max-height:100%;display:block;" />
-            </div>
-        }
+    <div class="unit-code">@code</div>
 
-        <div style="flex:1;min-width:0;">
-            <div class="tenant-name"
-                 style="line-height:1.05;font-weight:700;color:#111827;font-size:.85rem;">
-                @label
-            </div>
-            <div class="tenant-meta" style="font-size:.75rem;color:#6b7280;">
-                @areaText
-            </div>
+    @if (!string.IsNullOrEmpty(tenantImg) && !isCinema)
+    {
+        <div style="flex:0 0 30px;height:30px;overflow:hidden;border-radius:6px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;margin-bottom:2px;">
+            <img src="@tenantImg" alt="@mainLabel" style="max-width:100%;max-height:100%;display:block;" />
         </div>
+    }
+
+    <div class="unit-name">@mainLabel</div>
+
+    <div class="unit-tag">
+        @if (!string.IsNullOrEmpty(tagLabel))
+        {
+            @tagLabel
+            @: ·
+        }
+        @areaText
     </div>
 </a>
