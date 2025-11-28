@@ -29,7 +29,8 @@ namespace Semester03.Areas.Admin.Controllers
             var admin = await _userRepo.GetAllAdminAsync();
             ViewBag.Admin = admin;
 
-
+            var inactive = await _userRepo.GetInactiveAccountAsync();
+            ViewBag.Inactive = inactive; 
 
             return View();
         }
@@ -181,5 +182,48 @@ namespace Semester03.Areas.Admin.Controllers
                 return RedirectToAction("Index");
             }
         }
+
+
+
+        public ActionResult RestoreUser(int id)
+        {
+            _userRepo.RestoreUserStatus(id);
+            return RedirectToAction("Index");
+        }
+
+
+
+
+
+
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult CreatePartner(TblUser model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "Please check your input!";
+                return RedirectToAction("Index"); // Hoặc trả về tab create
+            }
+
+            // Mã hóa password (nếu cần)
+            // model.UsersPassword = HashPassword(model.UsersPassword);
+
+            bool result = _userRepo.AddPartner(model);
+
+            if (result)
+                TempData["Success"] = "Partner created successfully!";
+            else
+                TempData["Error"] = "Failed to create partner!";
+
+            return RedirectToAction("Index"); // Quay về trang danh sách
+        }
+
+
+
+
+
     }
 }

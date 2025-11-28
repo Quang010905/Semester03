@@ -246,6 +246,47 @@ namespace Semester03.Models.Repositories
 
 
 
+        // status = 0, user inactive
+
+
+        public async Task<List<User>> GetInactiveAccountAsync()
+        {
+            return await _context.TblUsers
+                .Where(x =>  x.UsersStatus == 0)  // partner và status = 0
+                .Select(x => new User
+                {
+                    Id = x.UsersId,
+                    Username = x.UsersUsername,
+                    Password = x.UsersPassword,
+                    FullName = x.UsersFullName,
+                    Email = x.UsersEmail,
+                    Phone = x.UsersPhone,
+                    Role = x.UsersRoleId,
+                    Point = x.UsersPoints ?? 0,
+                    Status = x.UsersStatus ?? 1,
+                    CreatedAt = (DateTime)x.UsersCreatedAt,
+                    UpdatedAt = (DateTime)x.UsersUpdatedAt,
+                })
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
+        }
+
+
+
+
+        public void RestoreUserStatus(int id)
+        {
+            var user = _context.TblUsers.FirstOrDefault(x => x.UsersId == id);
+
+            if (user != null)
+            {
+                user.UsersStatus = 1;          // 1 = Active
+                user.UsersUpdatedAt = DateTime.Now;
+
+                _context.SaveChanges();
+            }
+        }
+
 
 
 
@@ -319,6 +360,40 @@ namespace Semester03.Models.Repositories
             _context.TblUsers.Update(user);
             await _context.SaveChangesAsync();
         }
+
+
+
+
+
+        public bool AddPartner(TblUser partner)
+        {
+            try
+            {
+                // Mặc định role = 2 (Partner)
+                partner.UsersRoleId = 2;
+                partner.UsersRoleChangeReason = null;
+                partner.UsersCreatedAt = DateTime.Now;
+                partner.UsersUpdatedAt = null;
+
+                _context.TblUsers.Add(partner);
+                _context.SaveChanges();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // TODO: log exception nếu cần
+                return false;
+            }
+        }
+
+
+
+
+
+
+
+
+
 
 
     }
