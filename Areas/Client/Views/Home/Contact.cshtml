@@ -1,108 +1,465 @@
 ﻿@{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+    ViewData["Title"] = "About & Contact";
 }
 
-<div class="container mt-4 mb-5">
-    <h1 class="text-center mb-4 fw-bold">ABCD Mall – Contact & Introduction</h1>
+@section Styles {
+    <style>
+        .contact-page-wrapper {
+            padding: 2.5rem 0 3rem;
+        }
 
-    <!-- Mall Introduction -->
-    <div class="card shadow mb-4">
-        <div class="card-body">
-            <h2 class="fw-bold">About ABCD Mall</h2>
-            <p class="mt-3">
-                ABCD Mall, located in suburban Mumbai, is one of the region’s most iconic shopping
-                and entertainment destinations. Developed by <strong>ABCD Developers Pvt Ltd</strong>,
-                the mall spans over <strong>250,000 sq ft</strong> with a remarkable <strong>700 ft frontage</strong>.
-                Designed by Cooper and partners, the architecture blends modern aesthetics with
-                customer-centric convenience.
-            </p>
+        /* HERO TOP -------------------------------------------------- */
+        .contact-hero {
+            background: radial-gradient(circle at top left, #4f46e5, #ec4899);
+            color: #ffffff;
+            border-radius: 1.5rem;
+            padding: 2.2rem 2rem;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.25);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 2.5rem;
+        }
 
-            <p>
-                The mall consists of four spacious and fully air-conditioned floors, each
-                measuring approximately <strong>80,000 sq ft</strong>. A massive <strong>7-level parking facility</strong>
-                ensures seamless accessibility for thousands of visitors daily.
-            </p>
+            .contact-hero::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: radial-gradient(circle at 10% 0, rgba(248, 250, 252, 0.35), transparent 55%), radial-gradient(circle at 90% 100%, rgba(254, 202, 202, 0.35), transparent 55%);
+                opacity: .7;
+                pointer-events: none;
+            }
 
-            <p>
-                With a mission to enhance customer experience, the ABCD Mall website allows
-                visitors to browse shop listings, explore food court menus, book movie tickets,
-                view gallery images, and send valuable feedback. ABCD Mall continues to be a
-                trusted place where families, shoppers, and cinema lovers gather every day.
-            </p>
+        .contact-hero-inner {
+            position: relative;
+            z-index: 1;
+        }
 
-            <div class="text-center mt-4">
-                <img src="~/Content/Uploads/Contact/mallspace.jpg"
-                     class="img-fluid rounded shadow"
-                     style="max-height:350px; object-fit:cover;" />
+        .contact-hero-title {
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            font-size: 2.1rem;
+            margin-bottom: .35rem;
+        }
 
+        .contact-hero-sub {
+            font-size: .95rem;
+            max-width: 520px;
+            opacity: 0.9;
+        }
 
-                <p class="mt-2 text-muted">A glimpse of the spacious and modern interior at ABCD Mall.</p>
+        .contact-hero-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            padding: .25rem .7rem;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.24);
+            font-size: .75rem;
+            margin-bottom: .6rem;
+        }
+
+        /* SECTION CARDS --------------------------------------------- */
+        .info-card {
+            border-radius: 1.3rem;
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+            margin-bottom: 1.8rem;
+            overflow: hidden;
+        }
+
+        .info-card-header {
+            padding: 1rem 1.4rem .4rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .info-card-title {
+            font-weight: 700;
+            font-size: 1.15rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+            .info-card-title i {
+                font-size: 1.35rem;
+                color: #4f46e5;
+            }
+
+        .info-card-sub {
+            font-size: .83rem;
+            color: #6b7280;
+        }
+
+        .info-card-body {
+            padding: 1.1rem 1.4rem 1.3rem;
+        }
+
+        .info-section-line {
+            border-left: 3px solid #e5e7eb;
+            padding-left: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .info-section-label {
+            font-size: .8rem;
+            text-transform: uppercase;
+            letter-spacing: .09em;
+            color: #9ca3af;
+            font-weight: 700;
+            margin-bottom: .15rem;
+        }
+
+        .info-section-text {
+            font-size: .92rem;
+            color: #374151;
+        }
+
+        .mall-image-wrapper {
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.28);
+        }
+
+            .mall-image-wrapper img {
+                width: 100%;
+                height: 260px;
+                object-fit: cover;
+            }
+
+        .mall-image-caption {
+            font-size: .8rem;
+            color: #9ca3af;
+            margin-top: .4rem;
+        }
+
+        /* CONTACT DETAILS ------------------------------------------- */
+        .contact-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+            gap: 1.6rem;
+        }
+
+        .contact-detail-item {
+            display: flex;
+            align-items: flex-start;
+            gap: .65rem;
+            margin-bottom: .55rem;
+        }
+
+        .contact-detail-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #eff6ff;
+            color: #1d4ed8;
+            flex-shrink: 0;
+            font-size: 1.05rem;
+        }
+
+        .contact-detail-label {
+            font-size: .8rem;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: #9ca3af;
+            margin-bottom: .05rem;
+        }
+
+        .contact-detail-value {
+            font-size: .92rem;
+            color: #111827;
+        }
+
+        .contact-highlight-box {
+            padding: .9rem 1rem;
+            border-radius: 1rem;
+            background: linear-gradient(135deg, #eff6ff, #fdf2ff);
+            border: 1px solid #e0e7ff;
+            font-size: .9rem;
+        }
+
+            .contact-highlight-box i {
+                color: #e11d48;
+            }
+
+        @@media (max-width: 768px) {
+            .contact-hero
+
+        {
+            padding: 1.7rem 1.3rem;
+        }
+
+        .contact-hero-title {
+            font-size: 1.7rem;
+        }
+
+        .contact-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .mall-image-wrapper img {
+            height: 220px;
+        }
+
+        }
+    </style>
+}
+
+<div class="container contact-page-wrapper">
+
+    <!-- HERO -->
+    <section class="contact-hero">
+        <div class="contact-hero-inner">
+            <div class="contact-hero-chip">
+                <i class="bi bi-geo-alt-fill"></i>
+                ABCD Mall – Mumbai, India
+            </div>
+            <div class="contact-hero-title">
+                ABCD Mall – About & Contact
+            </div>
+            <div class="contact-hero-sub">
+                A modern destination for shopping, dining and entertainment, designed to welcome
+                families, friends and movie lovers every day of the week.
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- Cinema Section -->
-    <div class="card shadow mb-4">
-        <div class="card-body">
-            <h2 class="fw-bold">Cinema & Entertainment</h2>
-            <p class="mt-3">
-                The ABCD Mall multiplex is one of the main attractions for movie lovers across Mumbai.
-                Equipped with modern digital screening technology, surround sound, and premium seating,
-                it offers a world-class entertainment experience.
-            </p>
-
-            <p>
-                Through the website, customers can check available movie lists, seat availability,
-                and book tickets online. When all seats are booked, the system automatically prevents
-                further reservations, ensuring fair and transparent ticketing.
-            </p>
-
-            <div class="text-center mt-4">
-                <img src="~/Content/Uploads/Contact/cinema2.jpg"
-                     class="img-fluid rounded shadow"
-                     style="max-height:350px; object-fit:cover;" />
-
-
-                <p class="mt-2 text-muted">State-of-the-art multiplex cinema inside ABCD Mall.</p>
+    <!-- ABOUT MALL -->
+    <section class="info-card">
+        <div class="info-card-header">
+            <div class="info-card-title">
+                <i class="bi bi-building"></i>
+                <span>About ABCD Mall</span>
+            </div>
+            <div class="info-card-sub">
+                Architecture, space and core vision of the mall.
             </div>
         </div>
-    </div>
+        <div class="info-card-body">
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-7">
+                    <div class="info-section-line">
+                        <div class="info-section-label">Overview</div>
+                        <p class="info-section-text mb-2">
+                            ABCD Mall, located in suburban Mumbai, is one of the region’s most iconic shopping
+                            and entertainment destinations. Developed by
+                            <strong>ABCD Developers Pvt Ltd</strong>, the mall spans over
+                            <strong>250,000 sq ft</strong> with a remarkable <strong>700 ft frontage</strong>.
+                            Designed by Cooper and partners, the architecture blends modern aesthetics with
+                            customer-centric convenience.
+                        </p>
+                    </div>
 
-    <!-- Customer Crowd Section -->
-    <div class="card shadow mb-4">
-        <div class="card-body">
-            <h2 class="fw-bold">Customer Trust & Popularity</h2>
-            <p class="mt-3">
-                Over the years, ABCD Mall has become a trusted and beloved shopping destination.
-                Weekends and holidays often see thousands of enthusiastic visitors exploring shops,
-                enjoying food, and spending quality time with family.
-            </p>
+                    <div class="info-section-line">
+                        <div class="info-section-label">Structure</div>
+                        <p class="info-section-text mb-2">
+                            The mall consists of four spacious, fully air-conditioned floors, each measuring
+                            approximately <strong>80,000 sq ft</strong>. A dedicated <strong>7-level parking facility</strong>
+                            ensures seamless accessibility for thousands of visitors every day.
+                        </p>
+                    </div>
 
-            <p>
-                The mall’s popularity is a reflection of its consistent service quality, strong brand
-                presence, and commitment to customer satisfaction. Families and tourists alike choose
-                ABCD Mall for memorable shopping and entertainment experiences.
-            </p>
+                    <div class="info-section-line mb-0">
+                        <div class="info-section-label">Digital Experience</div>
+                        <p class="info-section-text mb-0">
+                            Through the official website, visitors can browse shop listings, explore food court menus,
+                            book movie tickets, view gallery images, and send valuable feedback. ABCD Mall aims to offer
+                            a smooth and delightful journey both online and on-site.
+                        </p>
+                    </div>
+                </div>
 
-            <div class="text-center mt-4">
-                <img src="~/Content/Uploads/Contact/crowdedmallcustomers.jpg"
-                     class="img-fluid rounded shadow"
-                     style="max-height:350px; object-fit:cover;" />
-
-
-                <p class="mt-2 text-muted">Large crowds showing their trust and love for ABCD Mall.</p>
+                <div class="col-lg-5">
+                    <div class="mall-image-wrapper">
+                        <img src="~/Content/Uploads/Contact/mallspace.jpg" alt="ABCD Mall Interior" />
+                    </div>
+                    <p class="mall-image-caption text-center">
+                        A glimpse of the spacious and modern interior at ABCD Mall.
+                    </p>
+                </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- Contact Information -->
-    <div class="card shadow">
-        <div class="card-body">
-            <h2 class="fw-bold">Contact Information</h2>
-            <p class="mt-3"><strong>Address:</strong> XYZ Road, Sub-urban Mumbai, India</p>
-            <p><strong>Phone:</strong> +91 98765 43210</p>
-            <p><strong>Email:</strong> contact@abcdmall.com</p>
-            <p><strong>Opening Hours:</strong> 10:00 AM – 10:00 PM (Monday – Sunday)</p>
+    <!-- CINEMA & ENTERTAINMENT -->
+    <section class="info-card">
+        <div class="info-card-header">
+            <div class="info-card-title">
+                <i class="bi bi-film"></i>
+                <span>Cinema & Entertainment</span>
+            </div>
+            <div class="info-card-sub">
+                World-class multiplex and digital ticketing experience.
+            </div>
         </div>
-    </div>
+        <div class="info-card-body">
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-5 order-lg-1 order-2">
+                    <div class="mall-image-wrapper">
+                        <img src="~/Content/Uploads/Contact/cinema2.jpg" alt="ABCD Mall Cinema" />
+                    </div>
+                    <p class="mall-image-caption text-center">
+                        State-of-the-art multiplex cinema inside ABCD Mall.
+                    </p>
+                </div>
+
+                <div class="col-lg-7 order-lg-2 order-1">
+                    <div class="info-section-line">
+                        <div class="info-section-label">Premium Experience</div>
+                        <p class="info-section-text mb-2">
+                            The ABCD Mall multiplex is a major attraction for movie lovers across Mumbai.
+                            Equipped with modern digital projection, immersive surround sound, and premium
+                            seating, it delivers a world-class cinema experience.
+                        </p>
+                    </div>
+
+                    <div class="info-section-line mb-0">
+                        <div class="info-section-label">Online Booking</div>
+                        <p class="info-section-text mb-3">
+                            Through the website, customers can check movie listings, seat availability,
+                            and book tickets online in just a few steps. When a showtime is fully booked,
+                            the system automatically prevents extra reservations, ensuring a fair and transparent
+                            ticketing process.
+                        </p>
+
+                        <div class="contact-highlight-box">
+                            <i class="bi bi-ticket-perforated me-1"></i>
+                            Use the <strong>Cinema</strong> section in the main menu to explore movies,
+                            showtimes and exclusive offers from partners.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CUSTOMER TRUST -->
+    <section class="info-card">
+        <div class="info-card-header">
+            <div class="info-card-title">
+                <i class="bi bi-people-fill"></i>
+                <span>Customer Trust & Popularity</span>
+            </div>
+            <div class="info-card-sub">
+                Why families and visitors choose ABCD Mall.
+            </div>
+        </div>
+        <div class="info-card-body">
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-7">
+                    <div class="info-section-line">
+                        <div class="info-section-label">Community Destination</div>
+                        <p class="info-section-text mb-2">
+                            Over the years, ABCD Mall has become a trusted and beloved shopping destination.
+                            Weekends and holidays often welcome thousands of enthusiastic visitors exploring stores,
+                            enjoying diverse food options, and spending quality time with family and friends.
+                        </p>
+                    </div>
+
+                    <div class="info-section-line mb-0">
+                        <div class="info-section-label">Brand Promise</div>
+                        <p class="info-section-text mb-0">
+                            The mall’s popularity reflects its consistent service quality, strong brand presence,
+                            and commitment to customer satisfaction. Whether it’s shopping, dining or entertainment,
+                            ABCD Mall focuses on creating memorable experiences for every visitor.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="mall-image-wrapper">
+                        <img src="~/Content/Uploads/Contact/crowdedmallcustomers.jpg"
+                             alt="Crowds at ABCD Mall" />
+                    </div>
+                    <p class="mall-image-caption text-center">
+                        Large crowds showing their trust and love for ABCD Mall.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONTACT INFO -->
+    <section class="info-card">
+        <div class="info-card-header">
+            <div class="info-card-title">
+                <i class="bi bi-envelope-paper"></i>
+                <span>Contact Information</span>
+            </div>
+            <div class="info-card-sub">
+                Reach out to us for support, partnership or general inquiries.
+            </div>
+        </div>
+        <div class="info-card-body">
+            <div class="contact-grid">
+                <div>
+                    <div class="contact-detail-item">
+                        <div class="contact-detail-icon">
+                            <i class="bi bi-geo-alt"></i>
+                        </div>
+                        <div>
+                            <div class="contact-detail-label">Address</div>
+                            <div class="contact-detail-value">
+                                XYZ Road, Suburban Mumbai, India
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="contact-detail-item">
+                        <div class="contact-detail-icon">
+                            <i class="bi bi-telephone"></i>
+                        </div>
+                        <div>
+                            <div class="contact-detail-label">Phone</div>
+                            <div class="contact-detail-value">
+                                +91 98765 43210
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="contact-detail-item">
+                        <div class="contact-detail-icon">
+                            <i class="bi bi-envelope"></i>
+                        </div>
+                        <div>
+                            <div class="contact-detail-label">Email</div>
+                            <div class="contact-detail-value">
+                                contact@abcdmall.com
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="contact-detail-item mb-0">
+                        <div class="contact-detail-icon">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                        <div>
+                            <div class="contact-detail-label">Opening hours</div>
+                            <div class="contact-detail-value">
+                                10:00 AM – 10:00 PM (Monday – Sunday)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="contact-highlight-box h-100 d-flex flex-column justify-content-center">
+                        <div class="mb-2 fw-semibold">
+                            <i class="bi bi-chat-dots me-1"></i>
+                            Feedback & Support
+                        </div>
+                        <div class="text-muted">
+                            Have a suggestion, complaint or business inquiry?
+                            Use the <strong>Feedback / Complaint</strong> section in your account area or
+                            send us an email – our team will respond as soon as possible.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
 </div>

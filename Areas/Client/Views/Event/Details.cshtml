@@ -7,6 +7,7 @@
 @{
     ViewData["Title"] = Model.Title;
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+
     Func<string, string> Img = (raw) =>
     {
         var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
@@ -68,10 +69,8 @@
     var isPast = Model.IsPast;
     var displayAvg = Model.CommentCount > 0 ? Model.AvgRate : 0.0;
 
-    // Mall name fallback
     var mallName = ViewData["MallName"] as string ?? "ABCD Mall";
 
-    // If OrganizerShopName exists => event of shop; otherwise => event of mall
     var organizerName = !string.IsNullOrWhiteSpace(Model.OrganizerShopName)
         ? Model.OrganizerShopName
         : mallName;
@@ -80,175 +79,210 @@
 @section Styles {
     <style>
         :root {
-            --primary: #0d6efd;
-            --primary-soft: rgba(13, 110, 253, 0.1);
-            --bg-soft: #f8fafc;
+            --mint-main: #10b981;
+            --mint-soft: #a7f3d0;
+            --mint-glow: rgba(34, 197, 94, 0.55);
+            --primary: #0ea5e9;
+            --bg-page: radial-gradient(circle at top, #ccfbf1 0, #e0f2fe 30%, #f9fafb 70%);
+            --text-main: #0f172a;
             --text-muted: #64748b;
-            --radius-lg: 1.25rem;
-            --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.08);
+            --glass-bg: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.04));
+            --glass-border: rgba(255,255,255,0.35);
+            --glass-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+            --radius-lg: 1.4rem;
         }
 
         body {
-            background-color: #f1f5f9;
+            background: var(--bg-page);
         }
 
-        .page-wrapper {
-            padding-block: 1.5rem 2.5rem;
+        .page-wrapper-glass {
+            padding-block: 1.7rem 2.8rem;
         }
 
         .back-link {
             display: inline-flex;
             align-items: center;
-            gap: .5rem;
-            font-size: 0.9rem;
-            color: #6b7280;
+            gap: .45rem;
+            font-size: 0.85rem;
+            color: #0f172a;
             text-decoration: none;
-            padding: .35rem .75rem;
+            padding: .33rem .85rem;
             border-radius: 999px;
-            background: rgba(148, 163, 184, 0.12);
-            transition: all .2s ease;
+            background: rgba(255,255,255,0.7);
+            border: 1px solid rgba(148,163,184,0.35);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all .18s ease;
+            box-shadow: 0 12px 30px rgba(15,23,42,0.12);
         }
 
+            .back-link i {
+                font-size: .95rem;
+            }
+
             .back-link:hover {
-                color: #111827;
-                background: rgba(148, 163, 184, 0.25);
-                text-decoration: none;
-                transform: translateX(-2px);
+                transform: translateX(-2px) translateY(-1px);
+                box-shadow: 0 18px 45px rgba(15,23,42,0.2);
+                background: rgba(255,255,255,0.9);
             }
 
         .event-main-card {
-            background: #ffffff;
+            background: var(--glass-bg);
             border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-soft);
-            padding: 1.5rem 1.6rem;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            padding: 1.7rem 1.9rem;
+            backdrop-filter: blur(24px) saturate(160%);
+            -webkit-backdrop-filter: blur(24px) saturate(160%);
+            position: relative;
+            overflow: hidden;
+        }
+
+            .event-main-card::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                background: radial-gradient(circle at 0% 0%, rgba(16,185,129,0.22), transparent 52%), radial-gradient(circle at 100% 0%, rgba(56,189,248,0.21), transparent 55%);
+                opacity: .75;
+            }
+
+        .event-main-inner {
+            position: relative;
+            z-index: 1;
         }
 
         .event-header {
             display: grid;
-            grid-template-columns: 260px 1fr auto;
-            gap: 1.5rem;
+            grid-template-columns: minmax(0, 260px) minmax(0, 1fr) minmax(0, 210px);
+            gap: 1.8rem;
             align-items: stretch;
         }
 
         .event-poster {
-            border-radius: 1.25rem;
+            border-radius: 1.3rem;
             overflow: hidden;
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22);
             position: relative;
-            background: #020617;
+            background: radial-gradient(circle at top, #0f172a, #022c22);
+            box-shadow: 0 26px 60px rgba(15,23,42,0.7);
         }
 
             .event-poster img {
                 width: 100%;
                 height: 100%;
-                min-height: 230px;
+                min-height: 260px;
                 object-fit: cover;
                 display: block;
-                transition: transform .6s ease;
+                transition: transform .7s ease;
+            }
+
+            .event-poster::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(to top, rgba(15,23,42,0.65), transparent 40%);
+                mix-blend-mode: soft-light;
             }
 
             .event-poster:hover img {
-                transform: scale(1.05);
+                transform: scale(1.06);
             }
 
         .event-pill {
             position: absolute;
-            left: 1rem;
-            top: 1rem;
-            background: rgba(15, 23, 42, .75);
-            backdrop-filter: blur(8px);
-            color: #e5e7eb;
-            padding: 0.3rem .7rem;
+            left: .85rem;
+            top: .85rem;
+            background: radial-gradient(circle at 0 0, rgba(45,212,191,0.9), rgba(14,165,233,0.7));
+            color: #0f172a;
+            padding: 0.3rem .75rem;
             border-radius: 999px;
             font-size: 0.75rem;
             display: inline-flex;
             align-items: center;
             gap: .35rem;
+            box-shadow: 0 16px 40px rgba(8,47,73,0.65);
         }
+
+            .event-pill i {
+                font-size: .9rem;
+            }
 
         .event-header-main {
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
         }
 
         .event-header-topline {
             display: flex;
             flex-wrap: wrap;
-            gap: .4rem;
+            gap: .45rem;
             align-items: center;
             font-size: 0.85rem;
             color: var(--text-muted);
-            margin-bottom: .2rem;
+            margin-bottom: .3rem;
         }
 
         .event-title-main {
-            font-size: 1.9rem;
+            font-size: 2.1rem;
             font-weight: 800;
             margin-bottom: .15rem;
             letter-spacing: -0.03em;
-            color: #0f172a;
+            color: var(--text-main);
         }
 
         .event-subline {
             color: var(--text-muted);
             font-size: .9rem;
-            margin-bottom: .4rem;
+            margin-bottom: .55rem;
+            max-width: 540px;
         }
 
         .event-tags {
             display: flex;
             flex-wrap: wrap;
-            gap: .35rem;
+            gap: .4rem;
             margin-bottom: .5rem;
         }
 
         .tag-pill {
             border-radius: 999px;
-            padding: 3px 9px;
+            padding: 3px 10px;
             font-size: 0.7rem;
             font-weight: 500;
             display: inline-flex;
             align-items: center;
             gap: 4px;
+            border: 1px solid rgba(148,163,184,0.45);
+            background: rgba(255,255,255,0.55);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
 
         .tag-open {
-            background: #dcfce7;
-            color: #16a34a;
+            border-color: rgba(34,197,94,.5);
+            color: #166534;
         }
 
         .tag-upcoming {
-            background: #e0f2fe;
-            color: #0369a1;
+            border-color: rgba(56,189,248,.6);
+            color: #075985;
         }
 
         .tag-ongoing {
-            background: #d1fae5;
-            color: #047857;
+            border-color: rgba(74,222,128,.6);
+            color: #065f46;
         }
 
         .tag-ended {
-            background: #fee2e2;
+            border-color: rgba(248,113,113,.6);
             color: #b91c1c;
+            background: rgba(254,226,226,.85);
         }
-
-        .tag-quality {
-            background: #fef9c3;
-            color: #a16207;
-        }
-
-        .event-header-meta {
-            font-size: .88rem;
-            color: var(--text-muted);
-        }
-
-            .event-header-meta strong {
-                color: #111827;
-            }
 
         .rating-panel {
-            text-align: right;
-            min-width: 180px;
+            min-width: 210px;
             display: flex;
             flex-direction: column;
             align-items: flex-end;
@@ -258,14 +292,14 @@
         .rating-pill {
             display: inline-flex;
             align-items: center;
-            gap: .3rem;
+            gap: .25rem;
             font-weight: 800;
-            background: linear-gradient(120deg, #ffb347, #ffcc33);
+            background: radial-gradient(circle at 0 0, #facc15, #f97316);
             color: #111827;
-            padding: .35rem .8rem;
-            border-radius: .9rem;
-            font-size: .95rem;
-            box-shadow: 0 10px 30px rgba(250, 204, 21, 0.4);
+            padding: .35rem .9rem;
+            border-radius: 999px;
+            font-size: 1rem;
+            box-shadow: 0 18px 40px rgba(245,158,11,0.65);
         }
 
             .rating-pill small {
@@ -275,7 +309,7 @@
 
         .rating-stars {
             display: inline-flex;
-            gap: .1rem;
+            gap: .05rem;
             margin-top: .25rem;
         }
 
@@ -285,40 +319,22 @@
             }
 
         .rating-count {
-            font-size: .8rem;
+            font-size: .78rem;
             color: var(--text-muted);
-            margin-top: .1rem;
+            margin-top: .15rem;
         }
-
-        .status-chip {
-            margin-top: .4rem;
-            font-size: .75rem;
-            padding: 2px 8px;
-            border-radius: 999px;
-            background: #e5e7eb;
-            color: #374151;
-        }
-
-            .status-chip.active {
-                background: #dcfce7;
-                color: #15803d;
-            }
-
-            .status-chip.ended {
-                background: #fee2e2;
-                color: #b91c1c;
-            }
 
         .event-content-row {
-            margin-top: 1.3rem;
+            margin-top: 1.5rem;
         }
 
-        .event-section {
-            background: #ffffff;
-            border-radius: 1rem;
-            padding: 1rem 1.1rem;
-            border: 1px solid #e5e7eb;
-            margin-bottom: 1rem;
+        .event-section-glass,
+        .event-side-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(255,255,255,0.78));
+            border-radius: 1.1rem;
+            border: 1px solid rgba(226,232,240,0.85);
+            padding: 1.1rem 1.25rem;
+            box-shadow: 0 18px 40px rgba(15,23,42,0.08);
         }
 
         .event-section-title {
@@ -332,7 +348,7 @@
 
             .event-section-title i {
                 font-size: 1.05rem;
-                color: var(--primary);
+                color: var(--mint-main);
             }
 
         .event-description {
@@ -358,7 +374,7 @@
         }
 
             .avg-rate-box .big-rate {
-                font-size: 1.1rem;
+                font-size: 1.15rem;
                 font-weight: 700;
                 color: #111827;
             }
@@ -418,29 +434,50 @@
             color: #facc15;
         }
 
-        .event-side-card {
-            background: #ffffff;
-            border-radius: 1rem;
-            padding: 1rem 1.1rem;
-            border: 1px solid #e5e7eb;
+        .event-side-card h6 {
+            font-weight: 700;
+            margin-bottom: .75rem;
+            display: flex;
+            align-items: center;
+            gap: .35rem;
         }
 
-            .event-side-card h6 {
-                font-weight: 700;
-                margin-bottom: .75rem;
+            .event-side-card h6 i {
+                color: var(--mint-main);
             }
 
-            .event-side-card p {
-                font-size: .9rem;
-                margin-bottom: .3rem;
-            }
+        .event-side-card p {
+            font-size: .9rem;
+            margin-bottom: .3rem;
+        }
 
         .btn-register {
             font-weight: 600;
+            border-radius: 999px;
+        }
+
+        .btn-success.btn-register {
+            background: linear-gradient(120deg, #22c55e, #14b8a6);
+            border: none;
+            box-shadow: 0 18px 40px rgba(34,197,94,0.5);
+        }
+
+            .btn-success.btn-register:hover {
+                filter: brightness(1.05);
+                transform: translateY(-1px);
+            }
+
+        .btn-outline-primary.btn-register {
+            border-radius: 999px;
+        }
+
+        .small-muted {
+            font-size: .8rem;
+            color: var(--text-muted);
         }
 
         .upcoming-wrapper {
-            margin-top: .3rem;
+            margin-top: 1rem;
         }
 
         .upcoming-scroll-outer {
@@ -467,10 +504,10 @@
         .upcoming-card {
             min-width: 250px;
             max-width: 280px;
-            background: #ffffff;
-            border-radius: .9rem;
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 10px 24px rgba(15,23,42,0.08);
+            background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(240,253,250,0.95));
+            border-radius: .95rem;
+            border: 1px solid rgba(148,163,184,0.4);
+            box-shadow: 0 15px 34px rgba(15,23,42,0.18);
             overflow: hidden;
             cursor: pointer;
             transition: transform .15s ease, box-shadow .15s ease;
@@ -478,7 +515,7 @@
 
             .upcoming-card:hover {
                 transform: translateY(-3px);
-                box-shadow: 0 16px 32px rgba(15,23,42,0.14);
+                box-shadow: 0 20px 45px rgba(15,23,42,0.26);
             }
 
         .upcoming-img {
@@ -503,7 +540,7 @@
         .upcoming-date {
             font-size: .8rem;
             color: var(--text-muted);
-            margin-bottom: .2rem;
+            margin-bottom: .15rem;
         }
 
         .upcoming-desc {
@@ -545,362 +582,374 @@
             justify-content: center;
             padding: 0;
             font-size: .9rem;
+            background: rgba(255,255,255,0.9);
         }
 
         @@media (max-width: 991.98px) {
             .event-header {
-                grid-template-columns: 1fr;
+                grid-template-columns: minmax(0, 1fr);
             }
 
             .rating-panel {
-                text-align: left;
                 align-items: flex-start;
+                margin-top: .5rem;
+            }
+        }
+
+        @@media (max-width: 767.98px) {
+            .event-main-card {
+                padding: 1.1rem 1.1rem 1.4rem;
+            }
+
+            .event-title-main {
+                font-size: 1.6rem;
             }
         }
     </style>
 }
 
-<div class="container page-wrapper">
+<div class="container page-wrapper-glass">
     <a class="back-link mb-3" href="@Url.Action("Index", "Event", new { area = "Client" })">
         <i class="bi bi-arrow-left"></i> Back to events
     </a>
 
     <div class="event-main-card">
-        <div class="event-header">
-            <div class="event-poster">
-                <img src="@Img(Model.ImageUrl)" alt="@Model.Title" />
-                <div class="event-pill">
-                    <i class="bi bi-calendar-event"></i>
-                    <span>Event</span>
-                </div>
-            </div>
-
-            <div class="event-header-main">
-
-                <div class="event-title-main">@Model.Title</div>
-
-                <div class="event-subline">
-                    An event at ABCD Mall with many interesting activities. Join to enjoy shopping
-                    and entertainment with your friends and family.
-                </div>
-
-                <div class="event-tags">
-                    @if (!isPast && Model.Status == 1)
-                    {
-                        <span class="tag-pill tag-open">
-                            <i class="bi bi-check-circle"></i> Registration open
-                        </span>
-                    }
-                    @if (Model.IsOngoing && Model.Status == 1)
-                    {
-                        <span class="tag-pill tag-ongoing">
-                            <i class="bi bi-broadcast"></i> Ongoing
-                        </span>
-                    }
-                    else if (Model.IsUpcoming && Model.Status == 1)
-                    {
-                        <span class="tag-pill tag-upcoming">
-                            <i class="bi bi-calendar2-event"></i> Upcoming
-                        </span>
-                    }
-                    else if (Model.IsPast)
-                    {
-                        <span class="tag-pill tag-ended">
-                            <i class="bi bi-flag-fill"></i> Ended
-                        </span>
-                    }
-                </div>
-
-            </div>
-
-            <div class="rating-panel">
-                <div>
-                    <div class="rating-pill">
-                        @displayAvg.ToString("0.0") <small>/5</small>
+        <div class="event-main-inner">
+            <div class="event-header">
+                <div class="event-poster">
+                    <img src="@Img(Model.ImageUrl)" alt="@Model.Title" />
+                    <div class="event-pill">
+                        <i class="bi bi-calendar-event"></i>
+                        <span>Event</span>
                     </div>
-                    <div class="rating-stars">
-                        @{
-                            var avgStar = displayAvg;
-                            for (int i = 1; i <= 5; i++)
+                </div>
+
+                <div class="event-header-main">
+                    <div>
+                        <div class="event-title-main">@Model.Title</div>
+
+                        <div class="event-subline">
+                            An event at ABCD Mall with many interesting activities. Join to enjoy
+                            shopping and entertainment with your friends and family.
+                        </div>
+
+                        <div class="event-tags">
+                            @if (!isPast && Model.Status == 1)
                             {
-                                if (avgStar >= i)
+                                <span class="tag-pill tag-open">
+                                    <i class="bi bi-check-circle"></i> Registration open
+                                </span>
+                            }
+                            @if (Model.IsOngoing && Model.Status == 1)
+                            {
+                                <span class="tag-pill tag-ongoing">
+                                    <i class="bi bi-broadcast"></i> Ongoing
+                                </span>
+                            }
+                            else if (Model.IsUpcoming && Model.Status == 1)
+                            {
+                                <span class="tag-pill tag-upcoming">
+                                    <i class="bi bi-calendar2-event"></i> Upcoming
+                                </span>
+                            }
+                            else if (Model.IsPast)
+                            {
+                                <span class="tag-pill tag-ended">
+                                    <i class="bi bi-flag-fill"></i> Ended
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rating-panel">
+                    <div>
+                        <div class="rating-pill">
+                            @displayAvg.ToString("0.0") <small>/5</small>
+                        </div>
+                        <div class="rating-stars">
+                            @{
+                                var avgStar = displayAvg;
+                                for (int i = 1; i <= 5; i++)
                                 {
-                                    <i class="bi bi-star-fill"></i>
-                                }
-                                else
-                                {
-                                    <i class="bi bi-star"></i>
+                                    if (avgStar >= i)
+                                    {
+                                        <i class="bi bi-star-fill"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-star"></i>
+                                    }
                                 }
                             }
-                        }
-                    </div>
-                    <div class="rating-count">
-                        @(Model.CommentCount > 0 ? $"{Model.CommentCount} review(s)" : "No reviews yet")
+                        </div>
+                        <div class="rating-count">
+                            @(Model.CommentCount > 0 ? $"{Model.CommentCount} review(s)" : "No reviews yet")
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <hr class="my-3" />
-        <div class="row event-content-row g-4">
-            <div class="col-lg-8">
-                <section class="event-section">
-                    <div class="event-section-title">
-                        <i class="bi bi-chat-right-text"></i>
-                        <span>Comments &amp; ratings</span>
-                    </div>
-
-                    <div class="comment-header-row mb-2">
-                        <div>
-                            <div class="user-rating-row">
-                                <span class="fw-semibold">Your rating:</span>
-                                @if (User?.Identity?.IsAuthenticated == true)
-                                {
-                                    <div id="userStars" class="stars-input">
-                                        @for (int i = 1; i <= 5; i++)
-                                        {
-                                            <i class="star bi bi-star" data-value="@i"></i>
-                                        }
-                                    </div>
-                                }
-                                else
-                                {
-                                    <span class="text-muted small">
-                                        You need to log in to rate.
-                                    </span>
-                                }
-                            </div>
+            <div class="row event-content-row g-4 mt-3">
+                <div class="col-lg-8">
+                    <section class="event-section-glass">
+                        <div class="event-section-title">
+                            <i class="bi bi-chat-right-text"></i>
+                            <span>Comments &amp; ratings</span>
                         </div>
 
-                        <div class="avg-rate-box">
-                            <span class="big-rate">@displayAvg.ToString("0.0") / 5</span>
-                            <span>(@Model.CommentCount review(s))</span>
-                        </div>
-                    </div>
-
-                    <div id="commentFormArea" class="mb-2">
-                        @if (User?.Identity?.IsAuthenticated == true)
-                        {
-                            @Html.AntiForgeryToken()
-                            <!-- hidden event id for JS -->
-                            <input type="hidden" id="eventId" value="@Model.Id" />
-
-                            <textarea id="commentText"
-                                  class="form-control mb-2"
-                                  rows="3"
-                                  placeholder="Share your experience about this event..."></textarea>
-                            <div class="d-flex gap-2 align-items-center flex-wrap">
-                                <button id="submitComment" class="btn btn-primary btn-sm">
-                                    <i class="bi bi-send me-1"></i>Submit comment
-                                </button>
-                                <small class="text-muted">
-                                    Comments may be moderated before being displayed.
-                                </small>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="alert alert-info py-2 mb-2">
-                                You need to
-                                <a href="@Url.Action("Login", "Account", new { area = "Client" })">log in</a>
-                                to comment and rate this event.
-                            </div>
-                        }
-                    </div>
-
-                    <hr class="my-3" />
-
-                    <div id="commentsList">
-                        @if (Model.Comments != null && Model.Comments.Any())
-                        {
-                            foreach (var c in Model.Comments)
-                            {
-                                <div class="comment-item">
-                                    <div class="d-flex justify-content-between flex-wrap gap-2">
-                                        <div>
-                                            <span class="comment-user">@c.UserName</span>
-                                            <span class="small text-muted">•</span>
-                                            <span class="comment-time">@c.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</span>
-                                        </div>
-                                        <div class="comment-stars-readonly">
+                        <div class="comment-header-row mb-2">
+                            <div>
+                                <div class="user-rating-row">
+                                    <span class="fw-semibold">Your rating:</span>
+                                    @if (User?.Identity?.IsAuthenticated == true)
+                                    {
+                                        <div id="userStars" class="stars-input">
                                             @for (int i = 1; i <= 5; i++)
                                             {
-                                                var cls = c.Rate >= i ? "bi-star-fill" : "bi-star";
-                                                <i class="star @cls"></i>
+                                                <i class="star bi bi-star" data-value="@i"></i>
                                             }
                                         </div>
-                                    </div>
-                                    <div class="comment-text">
-                                        @Html.Raw(System.Net.WebUtility.HtmlEncode(c.Text))
-                                    </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">
+                                            You need to log in to rate.
+                                        </span>
+                                    }
                                 </div>
-                            }
-                        }
-                        else
-                        {
-                            <div class="comment-empty">
-                                No comments yet — be the first!
-                            </div>
-                        }
-                    </div>
-                </section>
-                @if (Model.Related != null && Model.Related.Any())
-                {
-                    <section class="event-section upcoming-wrapper">
-                        <div class="event-section-title">
-                            <i class="bi bi-grid-3x3-gap"></i>
-                            <span>Upcoming events</span>
-                        </div>
-
-                        <div class="upcoming-scroll-outer">
-                            <div class="upcoming-scroll" id="upcomingEventsScroll">
-                                @foreach (var ev in Model.Related)
-                                {
-                                    var url = Url.Action("Details", "Event", new { area = "Client", id = ev.Id });
-                                    <div class="upcoming-card" onclick="location.href='@url'">
-                                        <img src="@Img(ev.ImageUrl)" class="upcoming-img" alt="@ev.Title" />
-                                        <div class="upcoming-body">
-                                            <div class="upcoming-title" title="@ev.Title">@ev.Title</div>
-                                            <div class="upcoming-date">
-                                                <i class="bi bi-calendar-event"></i>
-                                                @ev.StartDate?.ToString("dd/MM/yyyy HH:mm")
-                                            </div>
-                                            <div class="upcoming-desc">@ev.ShortDescription</div>
-                                        </div>
-                                    </div>
-                                }
                             </div>
 
-                            <div class="upcoming-nav mt-2">
-                                <button type="button"
-                                        class="btn btn-sm btn-light upcoming-arrow-btn"
-                                        id="upcomingPrevBtn">
-                                    <i class="bi bi-chevron-left"></i>
-                                </button>
-
-                                <div id="upcomingDots" class="d-flex gap-1"></div>
-
-                                <button type="button"
-                                        class="btn btn-sm btn-light upcoming-arrow-btn"
-                                        id="upcomingNextBtn">
-                                    <i class="bi bi-chevron-right"></i>
-                                </button>
+                            <div class="avg-rate-box">
+                                <span class="big-rate">@displayAvg.ToString("0.0") / 5</span>
+                                <span>(@Model.CommentCount review(s))</span>
                             </div>
                         </div>
-                    </section>
-                }
-            </div>
-            <aside class="col-lg-4">
-                <div class="event-side-card">
-                    <h6>Event information</h6>
 
-                    <p><strong>Start date:</strong> @Model.StartDate.ToString("dd/MM/yyyy HH:mm")</p>
-                    <p><strong>End date:</strong> @(Model.EndDate.HasValue? Model.EndDate.Value.ToString("dd/MM/yyyy HH:mm") : "-")</p>
-
-                    <p>
-                        <strong>Ticket price:</strong>
-                        @if (Model.Price.HasValue)
-                        {
-                            @Model.Price.Value.ToString("C0", new CultureInfo("vi-VN"))
-                        }
-                        else
-                        {
-                            <span>Free</span>
-                        }
-                    </p>
-
-                    <p>
-                        <strong>Remaining slots:</strong> @Model.AvailableSlots
-                        @if (Model.MaxSlot > 0)
-                        {
-                            <span>/ @Model.MaxSlot</span>
-                        }
-                    </p>
-
-                    <p>
-                        <strong>Status:</strong>
-                        @{
-                            string statusTextSide;
-                            if (Model.IsPast) statusTextSide = "Ended";
-                            else if (Model.IsOngoing && Model.Status == 1) statusTextSide = "Ongoing";
-                            else if (Model.IsUpcoming && Model.Status == 1) statusTextSide = "Upcoming";
-                            else if (Model.Status == 1) statusTextSide = "Open";
-                            else statusTextSide = "Inactive";
-                        }
-                        @statusTextSide
-                    </p>
-
-                    <hr />
-
-                    <h6>Organizer</h6>
-                    <div>
-                        <div class="fw-bold">@organizerName</div>
-                        @if (!string.IsNullOrWhiteSpace(Model.OrganizerDescription))
-                        {
-                            <div class="text-muted small">@Model.OrganizerDescription</div>
-                        }
-                    </div>
-
-                    <div class="mt-2 small-muted">
-                        <div><strong>Location:</strong></div>
-                        @if (!string.IsNullOrWhiteSpace(Model.PositionLocation))
-                        {
-                            <div>@Model.PositionLocation</div>
-                        }
-                        @if (Model.PositionFloor.HasValue)
-                        {
-                            <div>Floor: @Model.PositionFloor.Value</div>
-                        }
-                    </div>
-
-                    @if (!string.IsNullOrWhiteSpace(Model.OrganizerPhone) || !string.IsNullOrWhiteSpace(Model.OrganizerEmail))
-                    {
-                        <div class="mt-2">
-                            <small class="text-muted">Contact:</small>
-                            <div>
-                                @if (!string.IsNullOrWhiteSpace(Model.OrganizerPhone))
-                                {
-                                    <div><i class="bi bi-telephone"></i> @Model.OrganizerPhone</div>
-                                }
-                                @if (!string.IsNullOrWhiteSpace(Model.OrganizerEmail))
-                                {
-                                    <div><i class="bi bi-envelope"></i> @Model.OrganizerEmail</div>
-                                }
-                            </div>
-                        </div>
-                    }
-
-                    <div class="d-grid mt-3">
-                        @if (Model.IsPast || Model.Status != 1 || Model.AvailableSlots <= 0)
-                        {
-                            <button class="btn btn-secondary btn-register" disabled>
-                                @(Model.AvailableSlots <= 0 ? "Fully booked" : "Event has ended")
-                            </button>
-                        }
-                        else
-                        {
-                            if (User?.Identity?.IsAuthenticated == true)
+                        <div id="commentFormArea" class="mb-2">
+                            @if (User?.Identity?.IsAuthenticated == true)
                             {
-                                <a href="@Url.Action("Register", "EventBooking", new { area = "Client", id = Model.Id })"
-                                   class="btn btn-success btn-register">
-                                    Register now
-                                </a>
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" id="eventId" value="@Model.Id" />
+
+                                <textarea id="commentText"
+                                      class="form-control mb-2"
+                                      rows="3"
+                                      placeholder="Share your experience about this event..."></textarea>
+                                <div class="d-flex gap-2 align-items-center flex-wrap">
+                                    <button id="submitComment" class="btn btn-primary btn-sm rounded-pill px-3">
+                                        <i class="bi bi-send me-1"></i>Submit comment
+                                    </button>
+                                    <small class="text-muted">
+                                        Comments may be moderated before being displayed.
+                                    </small>
+                                </div>
                             }
                             else
                             {
-                                var registerUrl = Url.Action("Register", "EventBooking", new { area = "Client", id = Model.Id });
-                                var loginUrl = Url.Action("Login", "Account", new { area = "Client", returnUrl = registerUrl });
-
-                                <a href="@loginUrl" class="btn btn-outline-primary btn-register">
-                                    Log in to register
-                                </a>
+                                <div class="alert alert-info py-2 mb-2">
+                                    You need to
+                                    <a href="@Url.Action("Login", "Account", new { area = "Client" })">log in</a>
+                                    to comment and rate this event.
+                                </div>
                             }
-                        }
-                    </div>
+                        </div>
 
+                        <hr class="my-3" />
+
+                        <div id="commentsList">
+                            @if (Model.Comments != null && Model.Comments.Any())
+                            {
+                                foreach (var c in Model.Comments)
+                                {
+                                    <div class="comment-item">
+                                        <div class="d-flex justify-content-between flex-wrap gap-2">
+                                            <div>
+                                                <span class="comment-user">@c.UserName</span>
+                                                <span class="small text-muted">•</span>
+                                                <span class="comment-time">@c.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</span>
+                                            </div>
+                                            <div class="comment-stars-readonly">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    var cls = c.Rate >= i ? "bi-star-fill" : "bi-star";
+                                                    <i class="star @cls"></i>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="comment-text">
+                                            @Html.Raw(System.Net.WebUtility.HtmlEncode(c.Text))
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="comment-empty">
+                                    No comments yet — be the first!
+                                </div>
+                            }
+                        </div>
+                    </section>
+
+                    @if (Model.Related != null && Model.Related.Any())
+                    {
+                        <section class="event-section-glass upcoming-wrapper">
+                            <div class="event-section-title">
+                                <i class="bi bi-grid-3x3-gap"></i>
+                                <span>Upcoming events</span>
+                            </div>
+
+                            <div class="upcoming-scroll-outer">
+                                <div class="upcoming-scroll" id="upcomingEventsScroll">
+                                    @foreach (var ev in Model.Related)
+                                    {
+                                        var url = Url.Action("Details", "Event", new { area = "Client", id = ev.Id });
+                                        <div class="upcoming-card" onclick="location.href='@url'">
+                                            <img src="@Img(ev.ImageUrl)" class="upcoming-img" alt="@ev.Title" />
+                                            <div class="upcoming-body">
+                                                <div class="upcoming-title" title="@ev.Title">@ev.Title</div>
+                                                <div class="upcoming-date">
+                                                    <i class="bi bi-calendar-event"></i>
+                                                    @ev.StartDate?.ToString("dd/MM/yyyy HH:mm")
+                                                </div>
+                                                <div class="upcoming-desc">@ev.ShortDescription</div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+
+                                <div class="upcoming-nav mt-2">
+                                    <button type="button"
+                                            class="btn btn-sm btn-light upcoming-arrow-btn"
+                                            id="upcomingPrevBtn">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </button>
+
+                                    <div id="upcomingDots" class="d-flex gap-1"></div>
+
+                                    <button type="button"
+                                            class="btn btn-sm btn-light upcoming-arrow-btn"
+                                            id="upcomingNextBtn">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+                    }
                 </div>
-            </aside>
 
+                <aside class="col-lg-4">
+                    <div class="event-side-card">
+                        <h6><i class="bi bi-info-circle"></i> Event information</h6>
+
+                        <p><strong>Start date:</strong> @Model.StartDate.ToString("dd/MM/yyyy HH:mm")</p>
+                        <p><strong>End date:</strong> @(Model.EndDate.HasValue? Model.EndDate.Value.ToString("dd/MM/yyyy HH:mm") : "-")</p>
+
+                        <p>
+                            <strong>Ticket price:</strong>
+                            @if (Model.Price.HasValue)
+                            {
+                                @Model.Price.Value.ToString("C0", new CultureInfo("vi-VN"))
+                            }
+                            else
+                            {
+                                <span>Free</span>
+                            }
+                        </p>
+
+                        <p>
+                            <strong>Remaining slots:</strong> @Model.AvailableSlots
+                            @if (Model.MaxSlot > 0)
+                            {
+                                <span>/ @Model.MaxSlot</span>
+                            }
+                        </p>
+
+                        <p>
+                            <strong>Status:</strong>
+                            @{
+                                string statusTextSide;
+                                if (Model.IsPast) statusTextSide = "Ended";
+                                else if (Model.IsOngoing && Model.Status == 1) statusTextSide = "Ongoing";
+                                else if (Model.IsUpcoming && Model.Status == 1) statusTextSide = "Upcoming";
+                                else if (Model.Status == 1) statusTextSide = "Open";
+                                else statusTextSide = "Inactive";
+                            }
+                            @statusTextSide
+                        </p>
+
+                        <hr />
+
+                        <h6><i class="bi bi-building"></i> Organizer</h6>
+                        <div>
+                            <div class="fw-bold">@organizerName</div>
+                            @if (!string.IsNullOrWhiteSpace(Model.OrganizerDescription))
+                            {
+                                <div class="text-muted small">@Model.OrganizerDescription</div>
+                            }
+                        </div>
+
+                        <div class="mt-2 small-muted">
+                            <div><strong>Location:</strong></div>
+                            @if (!string.IsNullOrWhiteSpace(Model.PositionLocation))
+                            {
+                                <div>@Model.PositionLocation</div>
+                            }
+                            @if (Model.PositionFloor.HasValue)
+                            {
+                                <div>Floor: @Model.PositionFloor.Value</div>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.OrganizerPhone) || !string.IsNullOrWhiteSpace(Model.OrganizerEmail))
+                        {
+                            <div class="mt-2">
+                                <small class="text-muted">Contact:</small>
+                                <div>
+                                    @if (!string.IsNullOrWhiteSpace(Model.OrganizerPhone))
+                                    {
+                                        <div><i class="bi bi-telephone"></i> @Model.OrganizerPhone</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(Model.OrganizerEmail))
+                                    {
+                                        <div><i class="bi bi-envelope"></i> @Model.OrganizerEmail</div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <div class="d-grid mt-3">
+                            @if (Model.IsPast || Model.Status != 1 || Model.AvailableSlots <= 0)
+                            {
+                                <button class="btn btn-secondary btn-register" disabled>
+                                    @(Model.AvailableSlots <= 0 ? "Fully booked" : "Event has ended")
+                                </button>
+                            }
+                            else
+                            {
+                                if (User?.Identity?.IsAuthenticated == true)
+                                {
+                                    <a href="@Url.Action("Register", "EventBooking", new { area = "Client", id = Model.Id })"
+                                       class="btn btn-success btn-register">
+                                        Register now
+                                    </a>
+                                }
+                                else
+                                {
+                                    var registerUrl = Url.Action("Register", "EventBooking", new { area = "Client", id = Model.Id });
+                                    var loginUrl = Url.Action("Login", "Account", new { area = "Client", returnUrl = registerUrl });
+
+                                    <a href="@loginUrl" class="btn btn-outline-primary btn-register">
+                                        Log in to register
+                                    </a>
+                                }
+                            }
+                        </div>
+
+                    </div>
+                </aside>
+            </div>
         </div>
     </div>
 </div>
@@ -908,6 +957,7 @@
 @section Scripts {
     <script>
         (function () {
+            // ========== STAR RATING ==========
             const starEls = document.querySelectorAll('#userStars .star');
             let selected = 0;
 
@@ -978,6 +1028,46 @@
                     btn.innerHTML = originalHtml;
                 }
             });
+
+            // ========== UPCOMING SCROLL DOTS (optional – đơn giản) ==========
+            const scrollEl = document.getElementById('upcomingEventsScroll');
+            const dotsEl = document.getElementById('upcomingDots');
+            const prevBtn = document.getElementById('upcomingPrevBtn');
+            const nextBtn = document.getElementById('upcomingNextBtn');
+
+            if (scrollEl && dotsEl) {
+                const cards = scrollEl.querySelectorAll('.upcoming-card');
+                const pageSize = 2;
+                const pageCount = Math.max(1, Math.ceil(cards.length / pageSize));
+
+                for (let i = 0; i < pageCount; i++) {
+                    const d = document.createElement('div');
+                    d.className = 'upcoming-dot' + (i === 0 ? ' active' : '');
+                    dotsEl.appendChild(d);
+                }
+
+                const dots = dotsEl.querySelectorAll('.upcoming-dot');
+                let currentPage = 0;
+
+                function updateDots() {
+                    dots.forEach((d, idx) => {
+                        d.classList.toggle('active', idx === currentPage);
+                    });
+                }
+
+                function scrollToPage(p) {
+                    currentPage = Math.max(0, Math.min(pageCount - 1, p));
+                    const cardWidth = cards[0]?.offsetWidth || 260;
+                    scrollEl.scrollTo({
+                        left: currentPage * cardWidth * pageSize,
+                        behavior: 'smooth'
+                    });
+                    updateDots();
+                }
+
+                prevBtn?.addEventListener('click', () => scrollToPage(currentPage - 1));
+                nextBtn?.addEventListener('click', () => scrollToPage(currentPage + 1));
+            }
         })();
     </script>
 }
