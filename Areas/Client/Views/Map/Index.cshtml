@@ -1,13 +1,26 @@
 ﻿@model Semester03.Areas.Client.Models.ViewModels.MapViewModel
+@using Semester03.Areas.Client.Models.ViewModels
+@using System.Linq
 
 @{
-    ViewData["Title"] = "Mall Floor Plan — Tube Layout";
+    ViewData["Title"] = "Mall Floor Plan — Client";
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
 
     int defaultCapacity = 40;
     var floors = Model?.AvailableFloors ?? new List<int> { Model.FloorNumber };
     var selectedFloor = Model?.FloorNumber ?? floors.FirstOrDefault();
-    var positions = Model?.Positions ?? new List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto>();
+    var positions = Model?.Positions ?? new List<TenantPositionDto>();
+
+    var parkingLevels = Model?.ParkingLevels ?? new List<ParkingLevelDto>();
+    int? selectedParkingLevelId = null;
+    if (Model?.CurrentParkingLevelId != null)
+    {
+        selectedParkingLevelId = Model.CurrentParkingLevelId;
+    }
+    else if (parkingLevels.Any())
+    {
+        selectedParkingLevelId = parkingLevels.First().LevelId;
+    }
 }
 
 @section Styles {
@@ -61,163 +74,196 @@
                 color: #ffffff;
             }
 
-        /* ---------- FLOOR WRAPPER ---------- */
+        /* --- CONTAINER --- */
+        .floor-wrapper,
         .floor-card {
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 24px;
-            box-shadow: 0 10px 26px rgba(0,0,0,0.06);
+            background-color: #fff;
+            border: 1px solid #d1d3e2;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 30px;
+            overflow-x: auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        /* ---------- LAYOUT ---------- */
+        /* --- MALL STRUCTURE --- */
         .floor-layout {
             display: flex;
             flex-direction: column;
             min-width: 1400px;
-            background: #f3f4f6;
-            padding: 8px;
-            border: 2px solid #d1d5db;
+            background-color: #eaecf4;
+            border: 2px solid #5a5c69;
+            padding: 5px;
         }
 
+        /* --- ROWS --- */
         .shop-strip {
             display: flex;
-            min-height: 82px;
+            height: 80px;
             gap: 2px;
         }
 
-        /* ---------- SHOP CLUSTER (5 units) ---------- */
+        /* --- SHOP CLUSTERS (5 Units) --- */
         .shop-cluster {
             flex: 5;
             display: flex;
             gap: 1px;
+            background-color: white;
+            border: 1px solid #ccc;
         }
 
-        /* ---------- EXIT BLOCK ---------- */
-        .end-cap {
-            width: 42px;
-            background: #ef4444;
-            color: #ffffff;
-            border: 1px solid #b91c1c;
-            writing-mode: vertical-lr;
-            font-size: .7rem;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-transform: uppercase;
-        }
-
-        /* ---------- UTIL BLOCKS ---------- */
-        .util-block {
+        /* --- INTERNAL UTILITY BLOCKS --- */
+        .util-block-inner {
             flex: 1;
-            min-width: 70px;
-            background: #4b5563;
-            color: #ffffff;
-            border-left: 2px solid #ffffff;
-            border-right: 2px solid #ffffff;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: .65rem;
-            font-weight: 700;
+            background-color: #5a5c69;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: bold;
+            text-align: center;
+            border-left: 2px solid #fff;
+            border-right: 2px solid #fff;
+            z-index: 5;
+        }
+
+        .util-icon {
+            font-size: 1.3rem;
+            margin-bottom: 2px;
         }
 
         .util-wc {
-            background: #36b9cc !important;
+            background-color: #36b9cc;
         }
 
         .util-lift {
-            background: #f6c23e !important;
-            color: #333 !important;
+            background-color: #f6c23e;
+            color: #333;
         }
 
-        .util-info {
-            background: #4e73df !important;
-        }
-
-        /* ---------- GATE ---------- */
-        .gate-center {
-            flex: 1;
-            min-width: 60px;
-            background: #ffffff;
-            text-align: center;
-            font-size: .65rem;
-            font-weight: 800;
-            color: #e74a3b;
-            border-left: 2px dashed #e74a3b;
-            border-right: 2px dashed #e74a3b;
+        /* --- END CAPS (Exits) --- */
+        .end-cap {
+            width: 40px;
+            background-color: #e74a3b;
+            color: white;
             display: flex;
-            flex-direction: column;
+            align-items: center;
             justify-content: center;
+            writing-mode: vertical-lr;
+            font-size: 0.65rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border: 1px solid #c0392b;
         }
 
-        /* ---------- HALLWAY ---------- */
+        /* --- CENTRAL HALLWAY --- */
         .hallway {
             height: 60px;
-            background: #f8fafc;
-            border-top: 1px dashed #d1d3e2;
-            border-bottom: 1px dashed #d1d3e2;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 12px;
-            font-weight: 700;
-            font-size: .75rem;
+            background-color: #f8f9fc;
+            color: #b0b3b8;
+            font-size: 0.8rem;
+            font-weight: 900;
+            padding: 0 10px;
+            border-top: 1px dashed #d1d3e2;
+            border-bottom: 1px dashed #d1d3e2;
         }
 
+        /* --- ESCALATOR ZONES --- */
         .escalator-group {
             display: flex;
             align-items: center;
-            background: #e2e6ea;
+            background-color: #e2e6ea;
             padding: 5px 15px;
             border-radius: 30px;
             border: 1px solid #d1d3e2;
-            color: #374151;
-            font-weight: 600;
-            gap: 6px;
+            color: #5a5c69;
         }
 
-        /* ---------- SHOP UNITS ---------- */
-        .shop-unit {
-            flex: 1;
-            min-width: 45px;
-            background: #ffffff;
-            border: 1px solid #eee;
-            border-radius: 6px;
-            padding: 6px;
-            text-align: center;
-            font-size: .65rem;
-            text-decoration: none;
-            color: #333;
-            transition: .15s ease;
+        .escalator-icon {
+            font-size: 1.2rem;
+            margin: 0 5px;
+            color: #4e73df;
+        }
+
+        .stairs-icon {
+            font-size: 1rem;
+            margin-left: 8px;
+            color: #858796;
+        }
+
+        /* --- CENTER GATES --- */
+        .gate-center {
+            width: 60px;
             display: flex;
             flex-direction: column;
+            align-items: center;
             justify-content: center;
+            background-color: #fff;
+            color: #e74a3b;
+            font-size: 0.6rem;
+            font-weight: bold;
+            text-align: center;
+            border-left: 2px dashed #e74a3b;
+            border-right: 2px dashed #e74a3b;
+            margin: 0 2px;
+        }
+
+        /* --- SHOP UNIT STYLES --- */
+        .shop-unit {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            border-right: 1px solid #eee;
+            font-size: 0.65rem;
+            text-decoration: none !important;
+            transition: all 0.15s;
+            overflow: hidden;
+            color: #333;
+            background-color: white;
+            position: relative;
+            min-width: 40px;
+            height: 100%;
         }
 
             .shop-unit:hover {
                 transform: scale(1.1);
                 z-index: 10;
-                border-color: #0d6efd;
                 box-shadow: 0 0 10px rgba(0,0,0,0.2);
+                border: 1px solid #4e73df;
             }
 
         .unit-vacant {
-            background: #e8fce8;
-            color: #14532d;
+            background-color: #e8f5e9;
+            color: #1b5e20;
+            border-bottom: 3px solid #4caf50;
         }
 
         .unit-occupied {
-            background: #d9ecff;
-            color: #0c4a6e;
+            background-color: #e3f2fd;
+            color: #0d47a1;
+            border-bottom: 3px solid #2196f3;
+        }
+
+        .unit-cinema {
+            background-color: #111827;
+            color: #f9fafb;
+            border-bottom: 3px solid #000;
         }
 
         .unit-void {
-            border: 1px dashed #d1d3e2 !important;
-            background: transparent !important;
+            flex: 1;
+            background-color: #f8f9fa;
+            border-right: 1px dashed #dee2e6;
+            cursor: default;
         }
 
         .unit-title {
@@ -229,7 +275,7 @@
 
         .unit-tenant {
             font-size: .65rem;
-            color: #6b7280;
+            color: #e5e7eb;
         }
 
         /* ---------- OVERLAY PANEL ---------- */
@@ -310,29 +356,333 @@
             font-weight: 600;
             color: #6b7280;
         }
+
+        /* ---------- PARKING SECTION (VIP MAP STYLE) ---------- */
+        .parking-section {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 18px 18px 20px 18px;
+            margin-top: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+        }
+
+        .parking-header h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .parking-header p {
+            margin: 0;
+            font-size: .85rem;
+            color: #6b7280;
+        }
+
+        .parking-header-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+            font-size: .8rem;
+        }
+
+        .parking-pill {
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: #f3f4f6;
+            color: #4b5563;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .parking-pill-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #22c55e;
+        }
+
+        .parking-pill-dot-occupied {
+            background: #3b82f6;
+        }
+
+        .parking-pill-dot-maint {
+            background: #f59e0b;
+        }
+
+        /* Tabs tầng hầm */
+        .parking-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 16px 0 12px 0;
+        }
+
+        .parking-level-tab {
+            padding: 5px 12px;
+            border-radius: 999px;
+            border: 1px solid #d1d5db;
+            background: #f9fafb;
+            font-size: .8rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background .15s, border-color .15s, box-shadow .15s, transform .1s;
+        }
+
+            .parking-level-tab::before {
+                content: "";
+                width: 8px;
+                height: 8px;
+                border-radius: 999px;
+                background: #22c55e; /* available indicator */
+            }
+
+            .parking-level-tab.active {
+                background: #0ea5e9;
+                border-color: #0284c7;
+                color: #ffffff;
+                box-shadow: 0 8px 18px rgba(14, 165, 233, 0.35);
+                transform: translateY(-1px);
+            }
+
+        /* Card từng tầng */
+        .parking-card {
+            overflow-x: auto;
+        }
+
+        /* Bản đồ bãi xe */
+        .parking-map {
+            background: radial-gradient(circle at top, #eef2ff 0, #f9fafb 45%, #ffffff 100%);
+            border-radius: 14px;
+            padding: 14px 16px 10px 16px;
+            color: #111827;
+            min-width: 840px;
+            border: 1px solid #e5e7eb;
+            position: relative;
+        }
+
+            .parking-map::before {
+                content: "PARKING LEVEL MAP";
+                position: absolute;
+                top: 10px;
+                right: 16px;
+                font-size: .65rem;
+                letter-spacing: .16em;
+                text-transform: uppercase;
+                color: #9ca3af;
+                font-weight: 600;
+            }
+
+        /* Header / footer của map: entry / exit / ramp */
+        .parking-map-header-row,
+        .parking-map-footer-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: .75rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #4b5563;
+            font-weight: 600;
+        }
+
+        .parking-map-footer-row {
+            margin-top: 8px;
+        }
+
+        .parking-direction {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+        }
+
+            .parking-direction i {
+                font-size: .9rem;
+            }
+
+        /* Row label cho zone (Zone A-D) */
+        .parking-zone-label-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .parking-zone-label {
+            flex: 1;
+            font-size: .68rem;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: #6b7280;
+            padding-bottom: 2px;
+        }
+
+        .parking-drive-label {
+            flex: 0 0 80px;
+            font-size: .68rem;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: #9ca3af;
+        }
+
+        .parking-side-zones {
+            justify-content: space-between;
+        }
+
+        /* Hàng xe */
+        .parking-lane-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            padding: 2px 0;
+            border-radius: 8px;
+        }
+
+            .parking-lane-row:nth-of-type(odd) {
+                background: rgba(243, 244, 246, .8);
+            }
+
+        .parking-row-label {
+            width: 30px;
+            font-size: .72rem;
+            text-align: center;
+            opacity: .8;
+            font-weight: 600;
+            color: #6b7280;
+        }
+
+        /* Hai bên chỗ đậu */
+        .parking-side {
+            display: flex;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .parking-side-left {
+            justify-content: flex-end;
+        }
+
+        .parking-side-right {
+            justify-content: flex-start;
+        }
+
+        /* Ô xe */
+        .parking-spot {
+            width: 24px;
+            height: 46px;
+            border-radius: 4px;
+            margin: 0 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .55rem;
+            background: #e5e7eb;
+            border: 1px solid #d1d5db;
+            box-shadow: 0 1px 2px rgba(148, 163, 184, .4) inset;
+        }
+
+        /* chia zone bằng khoảng cách cột 5 */
+        .parking-side-left .parking-spot:nth-child(5),
+        .parking-side-right .parking-spot:nth-child(5) {
+            margin-right: 8px;
+        }
+
+        /* Trạng thái */
+        .spot-available {
+            background: #dcfce7;
+            border-color: #22c55e;
+        }
+
+        .spot-occupied {
+            background: #dbeafe;
+            border-color: #3b82f6;
+        }
+
+        .spot-maintenance {
+            background: #fef3c7;
+            border-color: #f59e0b;
+        }
+
+        /* Đường lưu thông ở giữa */
+        .drive-lane {
+            flex: 0 0 80px;
+            background: #e5e7eb;
+            height: 60px;
+            border-radius: 999px;
+            margin: 0 8px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            overflow: hidden;
+            box-shadow: inset 0 0 4px rgba(148, 163, 184, 0.6);
+        }
+
+        .lane-center-line {
+            position: absolute;
+            left: 50%;
+            top: 6px;
+            bottom: 6px;
+            width: 2px;
+            background-image: linear-gradient(to bottom, #9ca3af 30%, transparent 30%);
+            background-size: 2px 8px;
+            opacity: 0.7;
+        }
+
+        .lane-arrow {
+            z-index: 1;
+            font-size: .9rem;
+            opacity: .9;
+            color: #4b5563;
+        }
+
+        .lane-arrow-down {
+            transform: scaleX(-1);
+        }
+
+        /* Legend */
+        .parking-legend {
+            margin-top: 10px;
+            font-size: .75rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            color: #4b5563;
+        }
+
+            .parking-legend span {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+            }
+
+            .parking-legend .parking-spot {
+                width: 16px;
+                height: 16px;
+                margin: 0;
+                box-shadow: none;
+            }
+
     </style>
 }
 
 <!-- HEADER -->
 <div class="map-header mb-3">
     <h1>Mall Floor Plan</h1>
-    <small>Browse tenants + facilities by floor</small>
+    <small>Browse tenants and facilities by floor</small>
 </div>
 
 @if (!floors.Any())
 {
     <div class="alert alert-warning">No floors available.</div>
-}
-
-@functions {
-    List<List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto>> Chunk5(List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto> src)
-    {
-        var list = new List<List<Semester03.Areas.Client.Models.ViewModels.TenantPositionDto>>();
-        if (src == null) return list;
-        for (int i = 0; i < src.Count; i += 5)
-            list.Add(src.Skip(i).Take(5).ToList());
-        return list;
-    }
 }
 
 <!-- FLOOR TABS -->
@@ -344,167 +694,740 @@
     }
 </div>
 
-<!-- FLOOR LAYOUT -->
+<!-- FLOOR LAYOUTS -->
 @foreach (var floor in floors.OrderBy(x => x))
 {
     var list = positions.Where(p => p.TenantPosition_Floor == floor).ToList();
 
-    var top = list.Where(p => (p.TenantPosition_TopPct ?? 0) < 50)
-                  .OrderBy(p => p.TenantPosition_LeftPct).ToList();
+    var topRow = list
+        .Where(p => (p.TenantPosition_TopPct ?? 0) < 50)
+        .OrderBy(p => p.TenantPosition_LeftPct)
+        .ToList();
 
-    var bottom = list.Where(p => (p.TenantPosition_TopPct ?? 0) >= 50)
-                     .OrderBy(p => p.TenantPosition_LeftPct).ToList();
+    var bottomRow = list
+        .Where(p => (p.TenantPosition_TopPct ?? 0) >= 50)
+        .OrderBy(p => p.TenantPosition_LeftPct)
+        .ToList();
 
-    var topClusters = Chunk5(top);
-    var bottomClusters = Chunk5(bottom);
+    var topChunk1 = topRow.Take(5).ToList();
+    var topChunk2 = topRow.Skip(5).Take(5).ToList();
+    var topChunk3 = topRow.Skip(10).Take(5).ToList();
+    var topChunk4 = topRow.Skip(15).Take(5).ToList();
 
-    <div class="floor-card" data-floor="@floor" style="@(floor == selectedFloor ? "" : "display:none;")">
+    var botChunk1 = bottomRow.Take(5).ToList();
+    var botChunk2 = bottomRow.Skip(5).Take(5).ToList();
+    var botChunk3 = bottomRow.Skip(10).Take(5).ToList();
+    var botChunk4 = bottomRow.Skip(15).Take(5).ToList();
+
+    bool isGroundFloor = (floor == 0 || floor == 1);
+
+    <div class="floor-wrapper floor-card" data-floor="@floor" style="@(floor == selectedFloor ? "" : "display:none;")">
 
         <div class="d-flex justify-content-between align-items-end mb-2">
-            <div>
-                <h5 class="fw-bold mb-1">@((floor == 0) ? "Ground Floor" : $"Floor {floor}")</h5>
-                <small class="text-muted">
-                    Floor area: @Model.FloorAreaM2 m² ● Reserved: @Model.ReservedAreaM2 m² ● Unit area: @Model.PositionAreaM2 m²
-                </small>
-            </div>
-
-            <small class="text-muted">
-                Occupied: @list.Count(x => x.TenantPosition_Status == 1) / @defaultCapacity units
-            </small>
+            <h5 class="m-0 font-weight-bold text-primary text-uppercase">
+                @(floor == 0 ? "Ground Floor" : $"Floor {floor}") @(isGroundFloor ? "(Ground Level)" : "")
+            </h5>
+            <small>Occupancy: @list.Count(x => x.TenantPosition_Status == 1) / @defaultCapacity units</small>
         </div>
 
-        <!-- REAL-FLOOR STRUCTURE -->
         <div class="floor-layout">
-
             <!-- TOP STRIP -->
             <div class="shop-strip">
+                <div class="end-cap">Exit</div>
 
-                <div class="end-cap">EXIT</div>
+                <div class="shop-cluster">
+                    @foreach (var pos in topChunk1)
+                    {
+                        bool occ = pos.TenantPosition_Status == 1;
+                        var tenantName = pos.Tenant?.Tenant_Name ?? "";
+                        var tenantImg = pos.Tenant?.Tenant_Img ?? "";
+                        var desc = pos.Tenant?.Tenant_Description ?? "";
+                        var loc = pos.TenantPosition_Location ?? "";
+                        var area = pos.TenantPosition_Area_M2.ToString("0.#");
+                        int? tenantId = pos.Tenant?.Tenant_Id;
 
-                @foreach (var cluster in topClusters)
-                {
-                    <div class="shop-cluster">
-                        @foreach (var pos in cluster)
+                        bool isCinemaUnit =
+                        loc == "F1-A01" ||
+                        loc == "F1-A02" ||
+                        loc == "F1-A03" ||
+                        loc == "F1-A04";
+
+                        if (isCinemaUnit && string.IsNullOrWhiteSpace(tenantName))
                         {
-                            bool occ = pos.TenantPosition_Status == 1;
-                            var tenantName = pos.Tenant?.Tenant_Name ?? "";
-                            var tenantImg = pos.Tenant?.Tenant_Img ?? "";
-                            var desc = pos.Tenant?.Tenant_Description ?? "";
-                            var loc = pos.TenantPosition_Location ?? "";
-                            var area = pos.TenantPosition_Area_M2.ToString("0.#");
-                            int? tenantId = pos.Tenant?.Tenant_Id;
-
-                            <a href="#"
-                               class="shop-unit @(occ ? "unit-occupied" : "unit-vacant")"
-                               data-tenant-name="@tenantName"
-                               data-tenant-img="@tenantImg"
-                               data-tenant-desc="@desc"
-                               data-location="@loc"
-                               data-floor="@floor"
-                               data-area="@area"
-                               data-status="@pos.TenantPosition_Status"
-                               data-details-url="@(occ && tenantId.HasValue
-                              ? Url.Action("Details", "Stores", new { area = "Client", id = tenantId.Value })
-                              : "")">
-
-                                <div class="unit-title">@(!string.IsNullOrEmpty(loc) ? loc : $"Unit {pos.TenantPosition_ID}")</div>
-                                <div class="unit-tenant">@((occ ? tenantName : "Vacant"))</div>
-                            </a>
+                            tenantName = "ABCD Mall Cinema";
+                            desc = "Modern multiplex cinema with premium seats and exclusive combos.";
                         }
-                        @for (int i = cluster.Count; i < 5; i++)
-                        {
-                            <div class="shop-unit unit-void"></div>
-                        }
-                    </div>
-                }
 
-                <div class="util-block util-wc">
+                        var css = "shop-unit " + (isCinemaUnit ? "unit-cinema" : (occ ? "unit-occupied" : "unit-vacant"));
+                        var title = !string.IsNullOrEmpty(loc) ? loc : $"Unit {pos.TenantPosition_ID}";
+                        var label = isCinemaUnit ? "CINEMA" : (occ ? tenantName : "Vacant");
+                        var detailsUrl = (occ && tenantId.HasValue)
+                        ? Url.Action("Details", "Stores", new { area = "Client", id = tenantId.Value })
+                        : "";
+
+                        <a href="#"
+                           class="@css"
+                           data-tenant-name="@tenantName"
+                           data-tenant-img="@tenantImg"
+                           data-tenant-desc="@desc"
+                           data-location="@loc"
+                           data-floor="@floor"
+                           data-area="@area"
+                           data-status="@pos.TenantPosition_Status"
+                           data-details-url="@detailsUrl">
+                            <div class="unit-title">@title</div>
+                            <div class="unit-tenant">@label</div>
+                        </a>
+                    }
+                    @for (int i = topChunk1.Count; i < 5; i++)
+                    {
+                        <div class="shop-unit unit-void"></div>
+                    }
+                </div>
+
+                <div class="util-block-inner util-wc">
                     <i class="fas fa-restroom util-icon"></i>
                     <div>WC</div>
                 </div>
 
-                <div class="end-cap" style="transform:rotate(180deg);">EXIT</div>
+                <div class="shop-cluster">
+                    @foreach (var pos in topChunk2)
+                    {
+                        bool occ = pos.TenantPosition_Status == 1;
+                        var tenantName = pos.Tenant?.Tenant_Name ?? "";
+                        var tenantImg = pos.Tenant?.Tenant_Img ?? "";
+                        var desc = pos.Tenant?.Tenant_Description ?? "";
+                        var loc = pos.TenantPosition_Location ?? "";
+                        var area = pos.TenantPosition_Area_M2.ToString("0.#");
+                        int? tenantId = pos.Tenant?.Tenant_Id;
+
+                        bool isCinemaUnit =
+                        loc == "F1-A01" ||
+                        loc == "F1-A02" ||
+                        loc == "F1-A03" ||
+                        loc == "F1-A04";
+
+                        if (isCinemaUnit && string.IsNullOrWhiteSpace(tenantName))
+                        {
+                            tenantName = "ABCD Mall Cinema";
+                            desc = "Modern multiplex cinema with premium seats and exclusive combos.";
+                        }
+
+                        var css = "shop-unit " + (isCinemaUnit ? "unit-cinema" : (occ ? "unit-occupied" : "unit-vacant"));
+                        var title = !string.IsNullOrEmpty(loc) ? loc : $"Unit {pos.TenantPosition_ID}";
+                        var label = isCinemaUnit ? "CINEMA" : (occ ? tenantName : "Vacant");
+                        var detailsUrl = (occ && tenantId.HasValue)
+                        ? Url.Action("Details", "Stores", new { area = "Client", id = tenantId.Value })
+                        : "";
+
+                        <a href="#"
+                           class="@css"
+                           data-tenant-name="@tenantName"
+                           data-tenant-img="@tenantImg"
+                           data-tenant-desc="@desc"
+                           data-location="@loc"
+                           data-floor="@floor"
+                           data-area="@area"
+                           data-status="@pos.TenantPosition_Status"
+                           data-details-url="@detailsUrl">
+                            <div class="unit-title">@title</div>
+                            <div class="unit-tenant">@label</div>
+                        </a>
+                    }
+                    @for (int i = topChunk2.Count; i < 5; i++)
+                    {
+                        <div class="shop-unit unit-void"></div>
+                    }
+                </div>
+
+                @if (isGroundFloor)
+                {
+                    <div class="gate-center">
+                        <i class="fas fa-arrow-down fa-2x mb-1"></i>
+                        <div>NORTH</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="util-block-inner" style="background-color:#4e73df; color:white;" title="Digital Directory / Map">
+                        <i class="fas fa-map-marked-alt util-icon" style="color:white;"></i>
+                        <div style="font-size:0.55rem;">INFO MAP</div>
+                    </div>
+                }
+
+                <div class="shop-cluster">
+                    @foreach (var pos in topChunk3)
+                    {
+                        bool occ = pos.TenantPosition_Status == 1;
+                        var tenantName = pos.Tenant?.Tenant_Name ?? "";
+                        var tenantImg = pos.Tenant?.Tenant_Img ?? "";
+                        var desc = pos.Tenant?.Tenant_Description ?? "";
+                        var loc = pos.TenantPosition_Location ?? "";
+                        var area = pos.TenantPosition_Area_M2.ToString("0.#");
+                        int? tenantId = pos.Tenant?.Tenant_Id;
+
+                        bool isCinemaUnit =
+                        loc == "F1-A01" ||
+                        loc == "F1-A02" ||
+                        loc == "F1-A03" ||
+                        loc == "F1-A04";
+
+                        if (isCinemaUnit && string.IsNullOrWhiteSpace(tenantName))
+                        {
+                            tenantName = "ABCD Mall Cinema";
+                            desc = "Modern multiplex cinema with premium seats and exclusive combos.";
+                        }
+
+                        var css = "shop-unit " + (isCinemaUnit ? "unit-cinema" : (occ ? "unit-occupied" : "unit-vacant"));
+                        var title = !string.IsNullOrEmpty(loc) ? loc : $"Unit {pos.TenantPosition_ID}";
+                        var label = isCinemaUnit ? "CINEMA" : (occ ? tenantName : "Vacant");
+                        var detailsUrl = (occ && tenantId.HasValue)
+                        ? Url.Action("Details", "Stores", new { area = "Client", id = tenantId.Value })
+                        : "";
+
+                        <a href="#"
+                           class="@css"
+                           data-tenant-name="@tenantName"
+                           data-tenant-img="@tenantImg"
+                           data-tenant-desc="@desc"
+                           data-location="@loc"
+                           data-floor="@floor"
+                           data-area="@area"
+                           data-status="@pos.TenantPosition_Status"
+                           data-details-url="@detailsUrl">
+                            <div class="unit-title">@title</div>
+                            <div class="unit-tenant">@label</div>
+                        </a>
+                    }
+                    @for (int i = topChunk3.Count; i < 5; i++)
+                    {
+                        <div class="shop-unit unit-void"></div>
+                    }
+                </div>
+
+                <div class="util-block-inner util-wc">
+                    <i class="fas fa-restroom util-icon"></i>
+                    <div>WC</div>
+                </div>
+
+                <div class="shop-cluster">
+                    @foreach (var pos in topChunk4)
+                    {
+                        bool occ = pos.TenantPosition_Status == 1;
+                        var tenantName = pos.Tenant?.Tenant_Name ?? "";
+                        var tenantImg = pos.Tenant?.Tenant_Img ?? "";
+                        var desc = pos.Tenant?.Tenant_Description ?? "";
+                        var loc = pos.TenantPosition_Location ?? "";
+                        var area = pos.TenantPosition_Area_M2.ToString("0.#");
+                        int? tenantId = pos.Tenant?.Tenant_Id;
+
+                        bool isCinemaUnit =
+                        loc == "F1-A01" ||
+                        loc == "F1-A02" ||
+                        loc == "F1-A03" ||
+                        loc == "F1-A04";
+
+                        if (isCinemaUnit && string.IsNullOrWhiteSpace(tenantName))
+                        {
+                            tenantName = "ABCD Mall Cinema";
+                            desc = "Modern multiplex cinema with premium seats and exclusive combos.";
+                        }
+
+                        var css = "shop-unit " + (isCinemaUnit ? "unit-cinema" : (occ ? "unit-occupied" : "unit-vacant"));
+                        var title = !string.IsNullOrEmpty(loc) ? loc : $"Unit {pos.TenantPosition_ID}";
+                        var label = isCinemaUnit ? "CINEMA" : (occ ? tenantName : "Vacant");
+                        var detailsUrl = (occ && tenantId.HasValue)
+                        ? Url.Action("Details", "Stores", new { area = "Client", id = tenantId.Value })
+                        : "";
+
+                        <a href="#"
+                           class="@css"
+                           data-tenant-name="@tenantName"
+                           data-tenant-img="@tenantImg"
+                           data-tenant-desc="@desc"
+                           data-location="@loc"
+                           data-floor="@floor"
+                           data-area="@area"
+                           data-status="@pos.TenantPosition_Status"
+                           data-details-url="@detailsUrl">
+                            <div class="unit-title">@title</div>
+                            <div class="unit-tenant">@label</div>
+                        </a>
+                    }
+                    @for (int i = topChunk4.Count; i < 5; i++)
+                    {
+                        <div class="shop-unit unit-void"></div>
+                    }
+                </div>
+
+                <div class="end-cap" style="transform: rotate(180deg);">Exit</div>
             </div>
 
-            <!-- CENTRAL HALLWAY -->
+            <!-- HALLWAY -->
             <div class="hallway">
-                <span style="color:#dc2626;">WEST</span>
+                <div style="width:80px; text-align:center;">
+                    @if (isGroundFloor)
+                    {
+                        <span style="font-size:0.7rem; font-weight:bold; color:#e74a3b;">
+                            <i class="fas fa-chevron-right"></i> WEST
+                        </span>
+                    }
+                </div>
 
-                <div class="escalator-group">
+                <div class="escalator-group" title="Escalator & Stairs">
                     <i class="fas fa-level-up-alt escalator-icon"></i>
-                    <div style="line-height:1;">
-                        <span style="font-size:.65rem;">ESCALATOR</span><br />
-                        <span style="font-size:.55rem;">& STAIRS</span>
+                    <div style="text-align:center; line-height:1;">
+                        <span style="font-size:0.6rem; display:block;">ESCALATOR</span>
+                        <span style="font-size:0.5rem;">&amp; STAIRS</span>
                     </div>
                     <i class="fas fa-level-down-alt escalator-icon"></i>
+                    <i class="fas fa-walking stairs-icon"></i>
                 </div>
 
                 <span>MAIN CORRIDOR (210m)</span>
 
-                <div class="escalator-group">
+                <div class="escalator-group" title="Escalator & Stairs">
                     <i class="fas fa-level-up-alt escalator-icon"></i>
-                    <div style="line-height:1;">
-                        <span style="font-size:.65rem;">ESCALATOR</span><br />
-                        <span style="font-size:.55rem;">& STAIRS</span>
+                    <div style="text-align:center; line-height:1;">
+                        <span style="font-size:0.6rem; display:block;">ESCALATOR</span>
+                        <span style="font-size:0.5rem;">&amp; STAIRS</span>
                     </div>
                     <i class="fas fa-level-down-alt escalator-icon"></i>
+                    <i class="fas fa-walking stairs-icon"></i>
                 </div>
 
-                <span style="color:#dc2626;">EAST</span>
+                <div style="width:80px; text-align:center;">
+                    @if (isGroundFloor)
+                    {
+                        <span style="font-size:0.7rem; font-weight:bold; color:#e74a3b;">
+                            EAST <i class="fas fa-chevron-left"></i>
+                        </span>
+                    }
+                </div>
             </div>
 
             <!-- BOTTOM STRIP -->
             <div class="shop-strip">
+                <div class="end-cap">Exit</div>
 
-                <div class="end-cap">EXIT</div>
+                <div class="shop-cluster">
+                    @foreach (var pos in botChunk1)
+                    {
+                        bool occ = pos.TenantPosition_Status == 1;
+                        var tenantName = pos.Tenant?.Tenant_Name ?? "";
+                        var tenantImg = pos.Tenant?.Tenant_Img ?? "";
+                        var desc = pos.Tenant?.Tenant_Description ?? "";
+                        var loc = pos.TenantPosition_Location ?? "";
+                        var area = pos.TenantPosition_Area_M2.ToString("0.#");
+                        int? tenantId = pos.Tenant?.Tenant_Id;
 
-                @foreach (var cluster in bottomClusters)
+                        bool isCinemaUnit =
+                        loc == "F1-A01" ||
+                        loc == "F1-A02" ||
+                        loc == "F1-A03" ||
+                        loc == "F1-A04";
+
+                        if (isCinemaUnit && string.IsNullOrWhiteSpace(tenantName))
+                        {
+                            tenantName = "ABCD Mall Cinema";
+                            desc = "Modern multiplex cinema with premium seats and exclusive combos.";
+                        }
+
+                        var css = "shop-unit " + (isCinemaUnit ? "unit-cinema" : (occ ? "unit-occupied" : "unit-vacant"));
+                        var title = !string.IsNullOrEmpty(loc) ? loc : $"Unit {pos.TenantPosition_ID}";
+                        var label = isCinemaUnit ? "CINEMA" : (occ ? tenantName : "Vacant");
+                        var detailsUrl = (occ && tenantId.HasValue)
+                        ? Url.Action("Details", "Stores", new { area = "Client", id = tenantId.Value })
+                        : "";
+
+                        <a href="#"
+                           class="@css"
+                           data-tenant-name="@tenantName"
+                           data-tenant-img="@tenantImg"
+                           data-tenant-desc="@desc"
+                           data-location="@loc"
+                           data-floor="@floor"
+                           data-area="@area"
+                           data-status="@pos.TenantPosition_Status"
+                           data-details-url="@detailsUrl">
+                            <div class="unit-title">@title</div>
+                            <div class="unit-tenant">@label</div>
+                        </a>
+                    }
+                    @for (int i = botChunk1.Count; i < 5; i++)
+                    {
+                        <div class="shop-unit unit-void"></div>
+                    }
+                </div>
+
+                <div class="util-block-inner util-lift">
+                    <i class="fas fa-elevator util-icon" style="color:#333;"></i>
+                    <div style="color:#333;">LIFT</div>
+                </div>
+
+                <div class="shop-cluster">
+                    @foreach (var pos in botChunk2)
+                    {
+                        bool occ = pos.TenantPosition_Status == 1;
+                        var tenantName = pos.Tenant?.Tenant_Name ?? "";
+                        var tenantImg = pos.Tenant?.Tenant_Img ?? "";
+                        var desc = pos.Tenant?.Tenant_Description ?? "";
+                        var loc = pos.TenantPosition_Location ?? "";
+                        var area = pos.TenantPosition_Area_M2.ToString("0.#");
+                        int? tenantId = pos.Tenant?.Tenant_Id;
+
+                        bool isCinemaUnit =
+                        loc == "F1-A01" ||
+                        loc == "F1-A02" ||
+                        loc == "F1-A03" ||
+                        loc == "F1-A04";
+
+                        if (isCinemaUnit && string.IsNullOrWhiteSpace(tenantName))
+                        {
+                            tenantName = "ABCD Mall Cinema";
+                            desc = "Modern multiplex cinema with premium seats and exclusive combos.";
+                        }
+
+                        var css = "shop-unit " + (isCinemaUnit ? "unit-cinema" : (occ ? "unit-occupied" : "unit-vacant"));
+                        var title = !string.IsNullOrEmpty(loc) ? loc : $"Unit {pos.TenantPosition_ID}";
+                        var label = isCinemaUnit ? "CINEMA" : (occ ? tenantName : "Vacant");
+                        var detailsUrl = (occ && tenantId.HasValue)
+                        ? Url.Action("Details", "Stores", new { area = "Client", id = tenantId.Value })
+                        : "";
+
+                        <a href="#"
+                           class="@css"
+                           data-tenant-name="@tenantName"
+                           data-tenant-img="@tenantImg"
+                           data-tenant-desc="@desc"
+                           data-location="@loc"
+                           data-floor="@floor"
+                           data-area="@area"
+                           data-status="@pos.TenantPosition_Status"
+                           data-details-url="@detailsUrl">
+                            <div class="unit-title">@title</div>
+                            <div class="unit-tenant">@label</div>
+                        </a>
+                    }
+                    @for (int i = botChunk2.Count; i < 5; i++)
+                    {
+                        <div class="shop-unit unit-void"></div>
+                    }
+                </div>
+
+                @if (isGroundFloor)
                 {
-                    <div class="shop-cluster">
-                        @foreach (var pos in cluster)
-                        {
-                            bool occ = pos.TenantPosition_Status == 1;
-                            var tenantName = pos.Tenant?.Tenant_Name ?? "";
-                            var tenantImg = pos.Tenant?.Tenant_Img ?? "";
-                            var desc = pos.Tenant?.Tenant_Description ?? "";
-                            var loc = pos.TenantPosition_Location ?? "";
-                            var area = pos.TenantPosition_Area_M2.ToString("0.#");
-                            int? tenantId = pos.Tenant?.Tenant_Id;
-
-                            <a href="#"
-                               class="shop-unit @(occ ? "unit-occupied" : "unit-vacant")"
-                               data-tenant-name="@tenantName"
-                               data-tenant-img="@tenantImg"
-                               data-tenant-desc="@desc"
-                               data-location="@loc"
-                               data-floor="@floor"
-                               data-area="@area"
-                               data-status="@pos.TenantPosition_Status"
-                               data-details-url="@(occ && tenantId.HasValue
-                              ? Url.Action("Details", "Stores", new { area = "Client", id = tenantId.Value })
-                              : "")">
-
-                                <div class="unit-title">@(!string.IsNullOrEmpty(loc) ? loc : $"Unit {pos.TenantPosition_ID}")</div>
-                                <div class="unit-tenant">@((occ ? tenantName : "Vacant"))</div>
-                            </a>
-                        }
-                        @for (int i = cluster.Count; i < 5; i++)
-                        {
-                            <div class="shop-unit unit-void"></div>
-                        }
+                    <div class="gate-center">
+                        <div>SOUTH</div>
+                        <i class="fas fa-arrow-up fa-2x mt-1"></i>
+                    </div>
+                }
+                else
+                {
+                    <div class="util-block-inner" style="background-color:#17a2b8; color:white;" title="Rest Area / Lounge">
+                        <i class="fas fa-couch util-icon" style="color:white;"></i>
+                        <div style="font-size:0.55rem;">LOUNGE</div>
                     </div>
                 }
 
-                <div class="util-block util-lift">
-                    <i class="fas fa-elevator util-icon"></i>
-                    <div>LIFT</div>
+                <div class="shop-cluster">
+                    @foreach (var pos in botChunk3)
+                    {
+                        bool occ = pos.TenantPosition_Status == 1;
+                        var tenantName = pos.Tenant?.Tenant_Name ?? "";
+                        var tenantImg = pos.Tenant?.Tenant_Img ?? "";
+                        var desc = pos.Tenant?.Tenant_Description ?? "";
+                        var loc = pos.TenantPosition_Location ?? "";
+                        var area = pos.TenantPosition_Area_M2.ToString("0.#");
+                        int? tenantId = pos.Tenant?.Tenant_Id;
+
+                        bool isCinemaUnit =
+                        loc == "F1-A01" ||
+                        loc == "F1-A02" ||
+                        loc == "F1-A03" ||
+                        loc == "F1-A04";
+
+                        if (isCinemaUnit && string.IsNullOrWhiteSpace(tenantName))
+                        {
+                            tenantName = "ABCD Mall Cinema";
+                            desc = "Modern multiplex cinema with premium seats and exclusive combos.";
+                        }
+
+                        var css = "shop-unit " + (isCinemaUnit ? "unit-cinema" : (occ ? "unit-occupied" : "unit-vacant"));
+                        var title = !string.IsNullOrEmpty(loc) ? loc : $"Unit {pos.TenantPosition_ID}";
+                        var label = isCinemaUnit ? "CINEMA" : (occ ? tenantName : "Vacant");
+                        var detailsUrl = (occ && tenantId.HasValue)
+                        ? Url.Action("Details", "Stores", new { area = "Client", id = tenantId.Value })
+                        : "";
+
+                        <a href="#"
+                           class="@css"
+                           data-tenant-name="@tenantName"
+                           data-tenant-img="@tenantImg"
+                           data-tenant-desc="@desc"
+                           data-location="@loc"
+                           data-floor="@floor"
+                           data-area="@area"
+                           data-status="@pos.TenantPosition_Status"
+                           data-details-url="@detailsUrl">
+                            <div class="unit-title">@title</div>
+                            <div class="unit-tenant">@label</div>
+                        </a>
+                    }
+                    @for (int i = botChunk3.Count; i < 5; i++)
+                    {
+                        <div class="shop-unit unit-void"></div>
+                    }
                 </div>
 
-                <div class="end-cap" style="transform:rotate(180deg);">EXIT</div>
+                <div class="util-block-inner util-lift">
+                    <i class="fas fa-elevator util-icon" style="color:#333;"></i>
+                    <div style="color:#333;">LIFT</div>
+                </div>
 
+                <div class="shop-cluster">
+                    @foreach (var pos in botChunk4)
+                    {
+                        bool occ = pos.TenantPosition_Status == 1;
+                        var tenantName = pos.Tenant?.Tenant_Name ?? "";
+                        var tenantImg = pos.Tenant?.Tenant_Img ?? "";
+                        var desc = pos.Tenant?.Tenant_Description ?? "";
+                        var loc = pos.TenantPosition_Location ?? "";
+                        var area = pos.TenantPosition_Area_M2.ToString("0.#");
+                        int? tenantId = pos.Tenant?.Tenant_Id;
+
+                        bool isCinemaUnit =
+                        loc == "F1-A01" ||
+                        loc == "F1-A02" ||
+                        loc == "F1-A03" ||
+                        loc == "F1-A04";
+
+                        if (isCinemaUnit && string.IsNullOrWhiteSpace(tenantName))
+                        {
+                            tenantName = "ABCD Mall Cinema";
+                            desc = "Modern multiplex cinema with premium seats and exclusive combos.";
+                        }
+
+                        var css = "shop-unit " + (isCinemaUnit ? "unit-cinema" : (occ ? "unit-occupied" : "unit-vacant"));
+                        var title = !string.IsNullOrEmpty(loc) ? loc : $"Unit {pos.TenantPosition_ID}";
+                        var label = isCinemaUnit ? "CINEMA" : (occ ? tenantName : "Vacant");
+                        var detailsUrl = (occ && tenantId.HasValue)
+                        ? Url.Action("Details", "Stores", new { area = "Client", id = tenantId.Value })
+                        : "";
+
+                        <a href="#"
+                           class="@css"
+                           data-tenant-name="@tenantName"
+                           data-tenant-img="@tenantImg"
+                           data-tenant-desc="@desc"
+                           data-location="@loc"
+                           data-floor="@floor"
+                           data-area="@area"
+                           data-status="@pos.TenantPosition_Status"
+                           data-details-url="@detailsUrl">
+                            <div class="unit-title">@title</div>
+                            <div class="unit-tenant">@label</div>
+                        </a>
+                    }
+                    @for (int i = botChunk4.Count; i < 5; i++)
+                    {
+                        <div class="shop-unit unit-void"></div>
+                    }
+                </div>
+
+                <div class="end-cap" style="transform: rotate(180deg);">Exit</div>
             </div>
 
         </div>
+    </div>
+}
+
+<!-- ======================= PARKING SECTION ======================= -->
+@if (parkingLevels.Any())
+{
+    <div class="parking-section">
+        <div class="parking-header">
+            <h2>Car Parking (@parkingLevels.Count() levels)</h2>
+            <p>
+                Multi-level car parking facility supporting the ABCD Mall.
+                Browse available, occupied and maintenance spots by level.
+            </p>
+
+            <div class="parking-header-meta">
+                <div class="parking-pill">
+                    <span class="parking-pill-dot"></span>
+                    Total available:
+                    @parkingLevels.Sum(l => l.Spots.Count(s => s.SpotStatus == 0))
+                </div>
+                <div class="parking-pill">
+                    <span class="parking-pill-dot parking-pill-dot-occupied"></span>
+                    Total occupied:
+                    @parkingLevels.Sum(l => l.Spots.Count(s => s.SpotStatus == 1))
+                </div>
+                <div class="parking-pill">
+                    <span class="parking-pill-dot parking-pill-dot-maint"></span>
+                    Maintenance:
+                    @parkingLevels.Sum(l => l.Spots.Count(s => s.SpotStatus == 2))
+                </div>
+            </div>
+        </div>
+
+        <div class="parking-toolbar">
+            @foreach (var lvl in parkingLevels)
+            {
+                var cls = (selectedParkingLevelId.HasValue && lvl.LevelId == selectedParkingLevelId.Value)
+                ? "parking-level-tab active"
+                : "parking-level-tab";
+
+                <button type="button"
+                        class="@cls"
+                        data-parking-level="@lvl.LevelId">
+                    @lvl.LevelName (@lvl.Spots.Count(s => s.SpotStatus == 0) available)
+                </button>
+            }
+        </div>
+
+        @foreach (var lvl in parkingLevels)
+        {
+            var rows = lvl.Spots
+            .GroupBy(s => s.SpotRow)
+            .OrderBy(g => g.Key)
+            .ToList();
+
+            var show = (selectedParkingLevelId.HasValue && lvl.LevelId == selectedParkingLevelId.Value);
+
+            <div class="parking-card"
+                 data-parking-level-card="@lvl.LevelId"
+                 style="@(show ? "" : "display:none;")">
+
+                <div class="d-flex justify-content-between mb-2">
+                    <div>
+                        <strong>@lvl.LevelName</strong>
+                        <span class="text-muted" style="font-size:.8rem;">
+                            &nbsp;Capacity: @lvl.LevelCapacity spots
+                        </span>
+                    </div>
+                    <div style="font-size:.8rem;">
+                        Occupied: @lvl.Spots.Count(s => s.SpotStatus == 1)
+                        &nbsp;•&nbsp; Available: @lvl.Spots.Count(s => s.SpotStatus == 0)
+                        &nbsp;•&nbsp; Maintenance: @lvl.Spots.Count(s => s.SpotStatus == 2)
+                    </div>
+                </div>
+
+                <div class="parking-map">
+                    <div class="parking-map-header-row">
+                        <span class="parking-direction">
+                            <i class="fas fa-sign-in-alt"></i> Entry
+                        </span>
+                        <span class="parking-direction">
+                            Ramp Up <i class="fas fa-arrow-up"></i>
+                        </span>
+                    </div>
+
+                    <!-- Zone labels A-D -->
+                    <div class="parking-zone-label-row">
+                        <div class="parking-row-label"></div>
+                        <div class="parking-side parking-side-left parking-side-zones">
+                            <div class="parking-zone-label">Zone A</div>
+                            <div class="parking-zone-label">Zone B</div>
+                        </div>
+                        <div class="parking-drive-label">Drive lane</div>
+                        <div class="parking-side parking-side-right parking-side-zones">
+                            <div class="parking-zone-label">Zone C</div>
+                            <div class="parking-zone-label">Zone D</div>
+                        </div>
+                    </div>
+
+                    @foreach (var row in rows)
+                    {
+                        <div class="parking-lane-row">
+                            <div class="parking-row-label">@row.Key</div>
+
+                            <div class="parking-side parking-side-left">
+                                @for (int c = 1; c <= 10; c++)
+                                {
+                                    var spot = row.FirstOrDefault(s => s.SpotCol == c);
+                                    if (spot == null)
+                                    {
+                                        <div class="parking-spot"></div>
+                                    }
+                                    else
+                                    {
+                                        string spotCls =
+                                        spot.SpotStatus == 1 ? "parking-spot spot-occupied" :
+                                        spot.SpotStatus == 2 ? "parking-spot spot-maintenance" :
+                                        "parking-spot spot-available";
+
+                                        string title = $"{spot.SpotCode} - " +
+                                        (spot.SpotStatus == 1 ? "Occupied"
+                                        : spot.SpotStatus == 2 ? "Under maintenance"
+                                        : "Available");
+
+                                        <div class="@spotCls" title="@title"></div>
+                                    }
+                                }
+                            </div>
+
+                            <div class="drive-lane">
+                                <div class="lane-arrow lane-arrow-up">
+                                    <i class="fas fa-car-side"></i>
+                                </div>
+                                <div class="lane-center-line"></div>
+                                <div class="lane-arrow lane-arrow-down">
+                                    <i class="fas fa-car-side"></i>
+                                </div>
+                            </div>
+
+                            <div class="parking-side parking-side-right">
+                                @for (int c = 11; c <= 20; c++)
+                                {
+                                    var spot = row.FirstOrDefault(s => s.SpotCol == c);
+                                    if (spot == null)
+                                    {
+                                        <div class="parking-spot"></div>
+                                    }
+                                    else
+                                    {
+                                        string spotCls =
+                                        spot.SpotStatus == 1 ? "parking-spot spot-occupied" :
+                                        spot.SpotStatus == 2 ? "parking-spot spot-maintenance" :
+                                        "parking-spot spot-available";
+
+                                        string title = $"{spot.SpotCode} - " +
+                                        (spot.SpotStatus == 1 ? "Occupied"
+                                        : spot.SpotStatus == 2 ? "Under maintenance"
+                                        : "Available");
+
+                                        <div class="@spotCls" title="@title"></div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="parking-map-footer-row">
+                        <span class="parking-direction">
+                            <i class="fas fa-arrow-down"></i> Ramp Down
+                        </span>
+                        <span class="parking-direction">
+                            Exit <i class="fas fa-sign-out-alt"></i>
+                        </span>
+                    </div>
+
+                    <div class="parking-legend">
+                        <span>
+                            <span class="parking-spot spot-available"></span> Available
+                        </span>
+                        <span>
+                            <span class="parking-spot spot-occupied"></span> Occupied
+                        </span>
+                        <span>
+                            <span class="parking-spot spot-maintenance"></span> Maintenance
+                        </span>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
 }
 
@@ -572,6 +1495,23 @@
                 });
             });
 
+            /* PARKING LEVEL TABS */
+            const parkingTabs  = document.querySelectorAll('.parking-level-tab');
+            const parkingCards = document.querySelectorAll('[data-parking-level-card]');
+
+            parkingTabs.forEach(tab => {
+                tab.addEventListener('click', function () {
+                    const lvlId = this.getAttribute('data-parking-level');
+
+                    parkingTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+
+                    parkingCards.forEach(card => {
+                        card.style.display = (card.getAttribute('data-parking-level-card') === lvlId) ? '' : 'none';
+                    });
+                });
+            });
+
             /* OVERLAY / PANEL ELEMENTS */
             const overlay     = document.getElementById('tenantOverlay');
             const panel       = document.getElementById('tenantPanel');
@@ -625,11 +1565,9 @@
                 if (s.indexOf('wwwroot/') === 0) {
                     s = '/' + s.substring('wwwroot/'.length);
                 }
-                // If already starts with http or / then just return
                 if (s.startsWith('http')) return s;
                 if (s.startsWith('/')) return s;
 
-                // Otherwise treat as relative path from web root
                 return '/' + s;
             }
 
@@ -646,7 +1584,6 @@
                 const detailsUrl = el.getAttribute('data-details-url') || '';
 
                 if (!name.trim()) {
-                    // no tenant
                     if (noShop)   noShop.style.display = '';
                     if (tenantInfo) tenantInfo.style.display = 'none';
                     if (detailsLink) detailsLink.style.display = 'none';
@@ -654,7 +1591,6 @@
                     return;
                 }
 
-                // show tenant info
                 if (noShop)     noShop.style.display = 'none';
                 if (tenantInfo) tenantInfo.style.display = '';
 
@@ -677,7 +1613,7 @@
                 }
 
                 if (tenantName)   tenantName.textContent   = name;
-                if (tenantDesc)   tenantDesc.textContent   = desc || 'No description.';
+                if (tenantDesc)   tenantDesc.textContent   = desc || 'No description available.';
                 if (metaLocation) metaLocation.textContent = location || '—';
                 if (metaFloor)    metaFloor.textContent    = floor || '—';
                 if (metaArea)     metaArea.textContent     = area || '—';

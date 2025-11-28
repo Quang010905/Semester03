@@ -59,9 +59,10 @@ builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<UserActivityRepository>();
 builder.Services.AddScoped<RoleRepository>();
 builder.Services.AddScoped<TicketRepository>();
-builder.Services.AddScoped<EventTicketRepository>(); // thêm dòng này
+builder.Services.AddScoped<EventTicketRepository>(); 
 builder.Services.AddScoped<EventBookingRepository>();
 builder.Services.AddScoped<TenantPromotionRepository>();
+
 
 
 

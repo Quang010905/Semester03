@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -42,6 +42,7 @@ namespace Semester03.Models.Repositories
                 Tenant = null
             }).ToList();
         }
+
         public async Task<List<TenantPositionDto>> GetPositionsByFloorWithTenantAsync(int floor)
         {
             var list = await _db.TblTenantPositions
@@ -74,7 +75,6 @@ namespace Semester03.Models.Repositories
                 }
             }).ToList();
         }
-
 
         public async Task<int> GetCountByFloorAsync(int floor)
         {
@@ -112,17 +112,16 @@ namespace Semester03.Models.Repositories
                     dto.Tenant = new TenantDto
                     {
                         Tenant_Id = t.TenantId,
-                        Tenant_Name = t.TenantName,       
-                        Tenant_Img = t.TenantImg,        
-                        Tenant_UserID = t.TenantUserId.ToString(),   
-                        Tenant_Status = t.TenantStatus   
+                        Tenant_Name = t.TenantName,
+                        Tenant_Img = t.TenantImg,
+                        Tenant_UserID = t.TenantUserId.ToString(),
+                        Tenant_Status = t.TenantStatus
                     };
                 }
             }
 
             return dto;
         }
-
 
         public async Task DeleteAsync(int id)
         {
@@ -184,7 +183,6 @@ namespace Semester03.Models.Repositories
                 );
         }
 
-
         // ==========================================================
         // === ADMIN METHODS ===
         // ==========================================================
@@ -233,6 +231,66 @@ namespace Semester03.Models.Repositories
                 .Include(p => p.TenantPositionAssignedCinema)
                 .FirstOrDefaultAsync(p => p.TenantPositionId == id);
         }
+
+        // ==========================================================
+        // === PARKING METHODS (7-level car park) ===
+        // ==========================================================
+
+        /// <summary>
+        /// Load toàn bộ level bãi đậu xe + danh sách chỗ đậu (Tbl_ParkingLevel + Tbl_ParkingSpot).
+        /// </summary>
+        public async Task<List<ParkingLevelDto>> GetParkingLevelsWithSpotsAsync()
+        {
+            // DbSet tên theo chuẩn scaffold từ Tbl_ParkingLevel / Tbl_ParkingSpot
+            var levels = await _db.TblParkingLevels
+                .AsNoTracking()
+                .OrderBy(l => l.LevelId)
+                .ToListAsync();
+
+            if (!levels.Any()) return new List<ParkingLevelDto>();
+
+            var levelIds = levels.Select(l => l.LevelId).ToList();
+
+            var spots = await _db.TblParkingSpots
+                .AsNoTracking()
+                .Where(s => levelIds.Contains(s.SpotLevelId))
+                .OrderBy(s => s.SpotRow)
+                .ThenBy(s => s.SpotCol)
+                .ToListAsync();
+
+            var result = new List<ParkingLevelDto>();
+
+            foreach (var lvl in levels)
+            {
+                var dto = new ParkingLevelDto
+                {
+                    LevelId = lvl.LevelId,
+                    LevelName = lvl.LevelName,
+                    LevelCapacity = lvl.LevelCapacity
+                };
+
+                dto.Spots = spots
+                    .Where(s => s.SpotLevelId == lvl.LevelId)
+                    .Select(s => new ParkingSpotDto
+                    {
+                        ParkingSpotId = s.ParkingSpotId,
+                        SpotLevelId = s.SpotLevelId,
+                        SpotCode = s.SpotCode,
+                        SpotRow = s.SpotRow,
+                        SpotCol = s.SpotCol,
+                        SpotStatus = s.SpotStatus
+                    })
+                    .ToList();
+
+                result.Add(dto);
+            }
+
+            return result;
+        }
+
+        // ==========================================================
+        // === LEASE / CONTRACT HELPERS ===
+        // ==========================================================
 
         public async Task<List<TblTenantPosition>> GetExpiringLeasesWithContactAsync(int daysThreshold = 30)
         {
