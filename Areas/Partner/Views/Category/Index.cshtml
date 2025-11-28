@@ -98,7 +98,7 @@
                                             <th scope="row">@i</th>
                                             <td>@item.Name</td>
                                             <td>
-                                                <img src="@Url.Content("~/uploads/" + item.Image)" style="max-width: 100px; max-height: 100px; display: block; margin-bottom: 10px;" />
+                                                <img src="@Url.Content("~/Content/Uploads/ProductCategory/" + item.Image)" style="max-width: 100px; max-height: 100px; display: block; margin-bottom: 10px;" />
                                             </td>
                                             <td>
                                                 @if (item.Status == 1)
@@ -111,6 +111,9 @@
                                                 }
                                             </td>
                                             <td>
+                                                <a href="@Url.Action("Index", "Product", new {id = item.Id})">
+                                                    <img src="@Url.Content("~/Icon/product.png")" style="width:1vw; height:2vh;" />
+                                                </a>
                                                 <a href="@Url.Action("Edit", "Category", new {id = item.Id})">
                                                     <img src="@Url.Content("~/Icon/pen.png")" style="width:1vw; height:2vh;" />
                                                 </a>

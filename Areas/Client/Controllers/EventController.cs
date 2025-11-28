@@ -7,6 +7,8 @@ using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace Semester03.Areas.Client.Controllers
 {
@@ -15,23 +17,39 @@ namespace Semester03.Areas.Client.Controllers
     {
         private readonly EventRepository _repo;
         private readonly AbcdmallContext _context;
+        private readonly ILogger<EventController> _logger;
 
         public EventController(
             TenantTypeRepository tenantTypeRepo,
             EventRepository repo,
-            AbcdmallContext context
+            AbcdmallContext context,
+            ILogger<EventController> logger = null
         ) : base(tenantTypeRepo)
         {
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _logger = logger;
         }
+        private int? GetCurrentUserId()
+        {
+            if (User?.Identity == null || !User.Identity.IsAuthenticated) return null;
+            var id = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                id = User.FindFirst("UserId")?.Value;
+            }
 
-        // Trang danh sách sự kiện
-        // - Sự kiện sắp diễn ra (Upcoming)
-        // - Sự kiện đã diễn ra (Past) + pagination
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                id = User.FindFirst(ClaimsIdentity.DefaultNameClaimType)?.Value;
+            }
+
+            if (int.TryParse(id, out var uid)) return uid;
+            return null;
+        }
         public async Task<IActionResult> Index(int page = 1)
         {
-            const int PageSize = 9; // 3 cột * 3 hàng
+            const int PageSize = 9; 
 
             ViewData["Title"] = "Events";
             ViewData["MallName"] = ViewData["MallName"] ?? "ABCD Mall";
@@ -42,7 +60,6 @@ namespace Semester03.Areas.Client.Controllers
                 Past = await _repo.GetPastEventsAsync(page, PageSize)
             };
 
-            // Dùng cho sidebar / section khác nếu cần
             ViewBag.Events = vm.Upcoming ?? new List<EventCardVm>();
 
             return View(vm);
@@ -50,12 +67,7 @@ namespace Semester03.Areas.Client.Controllers
 
         public async Task<IActionResult> Details(int id)
         {
-            int? currentUserId = null;
-            var claim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!string.IsNullOrWhiteSpace(claim) && int.TryParse(claim, out var uid))
-            {
-                currentUserId = uid;
-            }
+            int? currentUserId = GetCurrentUserId();
 
             var ev = await _repo.GetEventByIdAsync(id, currentUserId);
             if (ev == null)
@@ -66,64 +78,43 @@ namespace Semester03.Areas.Client.Controllers
 
             return View(ev);
         }
-
-        // ⭐ COMMENT EVENT – AJAX
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddComment(int eventId, int rate, string text)
         {
             if (!(User?.Identity?.IsAuthenticated ?? false))
             {
-                return Json(new { success = false, message = "Bạn phải đăng nhập để bình luận." });
+                return Json(new { success = false, message = "You must be logged in to comment." });
             }
 
-            var userIdClaim = User.FindFirst(ClaimsIdentity.DefaultNameClaimType)?.Value
-                              ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(userIdClaim, out var userId))
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
             {
-                return Json(new { success = false, message = "Không xác định được người dùng." });
+                return Json(new { success = false, message = "Unable to identify user." });
             }
 
             if (rate < 1 || rate > 5)
             {
-                return Json(new { success = false, message = "Điểm đánh giá không hợp lệ (1-5)." });
+                return Json(new { success = false, message = "Invalid rating (must be between 1 and 5)." });
             }
 
             text = (text ?? "").Trim();
             if (string.IsNullOrWhiteSpace(text))
             {
-                return Json(new { success = false, message = "Vui lòng nhập nội dung bình luận." });
+                return Json(new { success = false, message = "Please enter your comment content." });
             }
-
-            var evtExists = await _context.TblEvents
-                .AsNoTracking()
-                .AnyAsync(e => e.EventId == eventId && e.EventStatus == 1);
+            var evtExists = await _repo.EventExistsAsync(eventId);
 
             if (!evtExists)
             {
-                return Json(new { success = false, message = "Sự kiện không tồn tại hoặc đã ngừng." });
+                return Json(new { success = false, message = "The event does not exist or has been discontinued." });
             }
-
-            var entity = new TblCustomerComplaint
-            {
-                CustomerComplaintCustomerUserId = userId,
-                CustomerComplaintTenantId = null,
-                CustomerComplaintMovieId = null,
-                CustomerComplaintEventId = eventId,
-                CustomerComplaintRate = rate,
-                CustomerComplaintDescription = text,
-                CustomerComplaintStatus = 0,
-                CustomerComplaintCreatedAt = DateTime.UtcNow
-            };
-
-            _context.TblCustomerComplaints.Add(entity);
-            await _context.SaveChangesAsync();
+            await _repo.AddCommentAsync(eventId, userId.Value, rate, text);
 
             return Json(new
             {
                 success = true,
-                message = "Bình luận đã được gửi, sẽ hiển thị cho mọi người sau khi được duyệt."
+                message = "Your comment has been submitted and will be visible to everyone after approval."
             });
         }
     }

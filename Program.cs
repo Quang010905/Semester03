@@ -53,10 +53,19 @@ builder.Services.AddScoped<TenantPositionRepository>();
 builder.Services.AddScoped<ParkingLevelRepository>();
 builder.Services.AddScoped<ParkingSpotRepository>();
 builder.Services.AddScoped<CategoryRepository>();
+builder.Services.AddScoped<ProductRepository>();
 builder.Services.AddScoped<UserActivityRepository>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<UserActivityRepository>();
 builder.Services.AddScoped<RoleRepository>();
+builder.Services.AddScoped<TicketRepository>();
+builder.Services.AddScoped<EventTicketRepository>(); // thêm dòng này
+builder.Services.AddScoped<EventBookingRepository>();
+builder.Services.AddScoped<TenantPromotionRepository>();
+
+
+
+
 
 
 

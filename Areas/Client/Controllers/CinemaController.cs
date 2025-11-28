@@ -29,7 +29,8 @@ namespace Semester03.Areas.Client.Controllers
         {
             var vm = new CinemaHomeVm
             {
-                Featured = await _repo.GetFeaturedMoviesAsync(3),
+                // BỎ giới hạn 3, dùng default của repo (hiển thị tất cả phim trong khoảng công chiếu)
+                Featured = await _repo.GetFeaturedMoviesAsync(),
                 NowShowing = await _repo.GetNowShowingAsync()
             };
 

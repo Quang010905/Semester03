@@ -137,7 +137,7 @@
                                                 }
                                             </td>
                                             <td>
-                                                <img src="@Url.Content("~/uploads/" + item.Image)" style="max-width: 100px; max-height: 100px; display: block; margin-bottom: 10px;" />
+                                                <img src="@Url.Content("~/Content/Uploads/Tenant/" + item.Image)" style="max-width: 100px; max-height: 100px; display: block; margin-bottom: 10px;" />
                                             </td>
                                             <td>
                                                 @{
@@ -150,7 +150,7 @@
                                                 <a href="@Url.Action("Edit", "Tenant", new {id = item.Id})">
                                                     <img src="@Url.Content("~/Icon/pen.png")" style="width:1vw; height:2vh;" />
                                                 </a>
-                                                <a href="@Url.Action("DeleteTenant", "Tenant", new {id = item.Id, userId = item.UserId})" onclick="return confirm('Are you sure to delete this Tenant Type?')">
+                                                <a href="@Url.Action("DeleteTenant", "Tenant", new {id = item.Id, userId = item.UserId})" onclick="return confirm('Are you sure to delete this Tenant ?')">
                                                     <img src="@Url.Content("~/Icon/delete.png")" style="width:1vw; height:2vh;" />
                                                 </a>
                                             </td>

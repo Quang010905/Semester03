@@ -26,8 +26,15 @@
 
                     <div class="form-group">
                         <label asp-for="CouponDiscountPercent" class="control-label">Discount (%)</label>
-                        <input asp-for="CouponDiscountPercent" class="form-control" type="number" step="0.01" />
+                        <input asp-for="CouponDiscountPercent" class="form-control" type="number" step="0.1" min="0" max="100" />
                         <span asp-validation-for="CouponDiscountPercent" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="CouponMinimumPointsRequired" class="control-label">Minimum Points Required</label>
+                        <input asp-for="CouponMinimumPointsRequired" class="form-control" type="number" min="0" />
+                        <span asp-validation-for="CouponMinimumPointsRequired" class="text-danger"></span>
+                        <small class="form-text text-muted">Customer needs this many loyalty points to use this coupon.</small>
                     </div>
 
                     <div class="row">
@@ -53,12 +60,7 @@
                         <span asp-validation-for="CouponDescription" class="text-danger"></span>
                     </div>
 
-                    <div class="form-group">
-                        <label asp-for="CouponMinimumPointsRequired" class="control-label">Minimum Points Required</label>
-                        <input asp-for="CouponMinimumPointsRequired" class="form-control" type="number" min="0" />
-                        <span asp-validation-for="CouponMinimumPointsRequired" class="text-danger"></span>
-                        <small class="form-text text-muted">Leave empty if this coupon is free for everyone.</small>
-                    </div>
+                    
 
                     <div class="form-group">
                         <label asp-for="CouponIsActive" class="control-label">Status</label>

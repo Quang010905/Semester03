@@ -7,12 +7,16 @@ using System.Security.Claims;
 namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
-    public class ProfileController : Controller
+    public class ProfileController : ClientBaseController
     {
         private readonly UserRepository _userRepo;
         private readonly UserActivityRepository _activityRepo;
 
-        public ProfileController(UserRepository userRepo, UserActivityRepository activityRepo)
+        public ProfileController(
+            TenantTypeRepository tenantTypeRepo,  // 👈 thêm vào để truyền cho base
+            UserRepository userRepo,
+            UserActivityRepository activityRepo
+        ) : base(tenantTypeRepo)                 // 👈 gọi constructor cha
         {
             _userRepo = userRepo;
             _activityRepo = activityRepo;
@@ -52,7 +56,53 @@ namespace Semester03.Areas.Client.Controllers
             return View(vm);
         }
 
+        [HttpPost]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto model)
+        {
+            // Lấy userId từ Claims (giống action Profile)
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
+            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Bạn chưa đăng nhập."
+                });
+            }
+
+            if (model == null)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Dữ liệu gửi lên không hợp lệ."
+                });
+            }
+
+            var (success, error) = await _userRepo.UpdateProfileAsync(
+                userId,
+                model.FullName,
+                model.Email,
+                model.Phone,
+                model.NewPassword
+            );
+
+            if (!success)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = error ?? "Cập nhật thất bại."
+                });
+            }
+
+            return Json(new
+            {
+                success = true,
+                message = "Cập nhật hồ sơ thành công."
+            });
+        }
     }
 
 }

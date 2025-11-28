@@ -241,7 +241,6 @@
             <div class="form-group mb-2 mr-3">
                 <select name="floor" class="form-control">
                     <option value="">All Floors</option>
-                    <option value="0" selected="@(ViewData["CurrentFloor"]?.ToString() == "0")">Ground Floor</option>
                     <option value="1" selected="@(ViewData["CurrentFloor"]?.ToString() == "1")">Floor 1</option>
                     <option value="2" selected="@(ViewData["CurrentFloor"]?.ToString() == "2")">Floor 2</option>
                     <option value="3" selected="@(ViewData["CurrentFloor"]?.ToString() == "3")">Floor 3</option>
@@ -260,6 +259,15 @@
             <button type="submit" class="btn btn-primary mb-2 mr-2"><i class="fas fa-search"></i> Search</button>
             <a asp-action="Index" class="btn btn-secondary mb-2">Reset</a>
         </form>
+        <div class="mt-2 text-right">
+            <form asp-action="SendReminders" method="post" style="display:inline-block;"
+                  onsubmit="return confirm('WARNING: This will email ALL tenants expiring within 30 days. Are you sure?');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-warning btn-sm shadow-sm">
+                    <i class="fas fa-mail-bulk"></i> Email All Expiring Tenants
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 @if (TempData["Success"] != null)
@@ -278,7 +286,37 @@
 
 @foreach (var floorGroup in Model)
 {
+    string searchKeyword = (ViewData["CurrentSearch"] as string ?? "").ToLower();
+    int? searchStatus = ViewData["CurrentStatus"] as int?;
+
+    bool showThisFloor = true;
+
+    if (!string.IsNullOrEmpty(searchKeyword) || searchStatus.HasValue)
+    {
+        bool hasAnyMatch = floorGroup.Any(pos =>
+        {
+            bool nameMatch = string.IsNullOrEmpty(searchKeyword) ||
+                             (pos.TenantPositionAssignedTenant?.TenantName?.ToLower().Contains(searchKeyword) == true) ||
+                             (pos.TenantPositionLocation?.ToLower().Contains(searchKeyword) == true);
+
+            bool statusMatch = !searchStatus.HasValue || (pos.TenantPositionStatus == searchStatus.Value);
+
+            return nameMatch && statusMatch;
+        });
+
+        if (!hasAnyMatch)
+        {
+            showThisFloor = false;
+        }
+    }
+
+    if (!showThisFloor)
+    {
+        continue;
+    }
+
     bool isGroundFloor = (floorGroup.Key == 0 || floorGroup.Key == 1);
+    
 
     // Data Splitting (Same logic as before)
     var topRow = floorGroup.Where(p => p.TenantPositionTopPct < 50).OrderBy(p => p.TenantPositionLeftPct).ToList();
@@ -310,8 +348,39 @@
                 <div class="shop-cluster">
                     @foreach (var pos in topChunk1)
                     {
-                        <partial name="_ShopButtonPartial" model="pos" />
+                        bool isMatch = true;
+
+                        // A.(Location)
+                        if (!string.IsNullOrEmpty(searchKeyword))
+                        {
+                            string tName = pos.TenantPositionAssignedTenant?.TenantName?.ToLower() ?? "";
+                            string pLoc = pos.TenantPositionLocation?.ToLower() ?? "";
+
+                            if (!tName.Contains(searchKeyword) && !pLoc.Contains(searchKeyword))
+                            {
+                                isMatch = false;
+                            }
+                        }
+
+                        // B.(Vacant/Occupied)
+                        if (searchStatus.HasValue)
+                        {
+                            if (pos.TenantPositionStatus != searchStatus.Value)
+                            {
+                                isMatch = false;
+                            }
+                        }
+
+                        if (isMatch)
+                        {
+                            <partial name="_ShopButtonPartial" model="pos" />
+                        }
+                        else
+                        {
+                            <div class="shop-unit unit-void" style="opacity: 0.3;"></div>
+                        }
                     }
+
                     @for (int i = 0; i < (5 - topChunk1.Count); i++)
                     {
                         <div class="shop-unit unit-void"></div>
@@ -326,7 +395,37 @@
                 <div class="shop-cluster">
                     @foreach (var pos in topChunk2)
                     {
-                        <partial name="_ShopButtonPartial" model="pos" />
+                        bool isMatch = true;
+
+                        // A.(Location)
+                        if (!string.IsNullOrEmpty(searchKeyword))
+                        {
+                            string tName = pos.TenantPositionAssignedTenant?.TenantName?.ToLower() ?? "";
+                            string pLoc = pos.TenantPositionLocation?.ToLower() ?? "";
+
+                            if (!tName.Contains(searchKeyword) && !pLoc.Contains(searchKeyword))
+                            {
+                                isMatch = false;
+                            }
+                        }
+
+                        // B.(Vacant/Occupied)
+                        if (searchStatus.HasValue)
+                        {
+                            if (pos.TenantPositionStatus != searchStatus.Value)
+                            {
+                                isMatch = false;
+                            }
+                        }
+
+                        if (isMatch)
+                        {
+                            <partial name="_ShopButtonPartial" model="pos" />
+                        }
+                        else
+                        {
+                            <div class="shop-unit unit-void" style="opacity: 0.3;"></div>
+                        }
                     }
                     @for (int i = 0; i < (5 - topChunk2.Count); i++)
                     {
@@ -352,7 +451,37 @@
                 <div class="shop-cluster">
                     @foreach (var pos in topChunk3)
                     {
-                        <partial name="_ShopButtonPartial" model="pos" />
+                        bool isMatch = true;
+
+                        // A.(Location)
+                        if (!string.IsNullOrEmpty(searchKeyword))
+                        {
+                            string tName = pos.TenantPositionAssignedTenant?.TenantName?.ToLower() ?? "";
+                            string pLoc = pos.TenantPositionLocation?.ToLower() ?? "";
+
+                            if (!tName.Contains(searchKeyword) && !pLoc.Contains(searchKeyword))
+                            {
+                                isMatch = false;
+                            }
+                        }
+
+                        // B.(Vacant/Occupied)
+                        if (searchStatus.HasValue)
+                        {
+                            if (pos.TenantPositionStatus != searchStatus.Value)
+                            {
+                                isMatch = false;
+                            }
+                        }
+
+                        if (isMatch)
+                        {
+                            <partial name="_ShopButtonPartial" model="pos" />
+                        }
+                        else
+                        {
+                            <div class="shop-unit unit-void" style="opacity: 0.3;"></div>
+                        }
                     }
                     @for (int i = 0; i < (5 - topChunk3.Count); i++)
                     {
@@ -368,7 +497,37 @@
                 <div class="shop-cluster">
                     @foreach (var pos in topChunk4)
                     {
-                        <partial name="_ShopButtonPartial" model="pos" />
+                        bool isMatch = true;
+
+                        // A.(Location)
+                        if (!string.IsNullOrEmpty(searchKeyword))
+                        {
+                            string tName = pos.TenantPositionAssignedTenant?.TenantName?.ToLower() ?? "";
+                            string pLoc = pos.TenantPositionLocation?.ToLower() ?? "";
+
+                            if (!tName.Contains(searchKeyword) && !pLoc.Contains(searchKeyword))
+                            {
+                                isMatch = false;
+                            }
+                        }
+
+                        // B.(Vacant/Occupied)
+                        if (searchStatus.HasValue)
+                        {
+                            if (pos.TenantPositionStatus != searchStatus.Value)
+                            {
+                                isMatch = false;
+                            }
+                        }
+
+                        if (isMatch)
+                        {
+                            <partial name="_ShopButtonPartial" model="pos" />
+                        }
+                        else
+                        {
+                            <div class="shop-unit unit-void" style="opacity: 0.3;"></div>
+                        }
                     }
                     @for (int i = 0; i < (5 - topChunk4.Count); i++)
                     {
@@ -423,7 +582,37 @@
                 <div class="shop-cluster">
                     @foreach (var pos in botChunk1)
                     {
-                        <partial name="_ShopButtonPartial" model="pos" />
+                        bool isMatch = true;
+
+                        // A.(Location)
+                        if (!string.IsNullOrEmpty(searchKeyword))
+                        {
+                            string tName = pos.TenantPositionAssignedTenant?.TenantName?.ToLower() ?? "";
+                            string pLoc = pos.TenantPositionLocation?.ToLower() ?? "";
+
+                            if (!tName.Contains(searchKeyword) && !pLoc.Contains(searchKeyword))
+                            {
+                                isMatch = false;
+                            }
+                        }
+
+                        // B.(Vacant/Occupied)
+                        if (searchStatus.HasValue)
+                        {
+                            if (pos.TenantPositionStatus != searchStatus.Value)
+                            {
+                                isMatch = false;
+                            }
+                        }
+
+                        if (isMatch)
+                        {
+                            <partial name="_ShopButtonPartial" model="pos" />
+                        }
+                        else
+                        {
+                            <div class="shop-unit unit-void" style="opacity: 0.3;"></div>
+                        }
                     }
                     @for (int i = 0; i < (5 - botChunk1.Count); i++)
                     {
@@ -439,7 +628,37 @@
                 <div class="shop-cluster">
                     @foreach (var pos in botChunk2)
                     {
-                        <partial name="_ShopButtonPartial" model="pos" />
+                        bool isMatch = true;
+
+                        // A.(Location)
+                        if (!string.IsNullOrEmpty(searchKeyword))
+                        {
+                            string tName = pos.TenantPositionAssignedTenant?.TenantName?.ToLower() ?? "";
+                            string pLoc = pos.TenantPositionLocation?.ToLower() ?? "";
+
+                            if (!tName.Contains(searchKeyword) && !pLoc.Contains(searchKeyword))
+                            {
+                                isMatch = false;
+                            }
+                        }
+
+                        // B.(Vacant/Occupied)
+                        if (searchStatus.HasValue)
+                        {
+                            if (pos.TenantPositionStatus != searchStatus.Value)
+                            {
+                                isMatch = false;
+                            }
+                        }
+
+                        if (isMatch)
+                        {
+                            <partial name="_ShopButtonPartial" model="pos" />
+                        }
+                        else
+                        {
+                            <div class="shop-unit unit-void" style="opacity: 0.3;"></div>
+                        }
                     }
                     @for (int i = 0; i < (5 - botChunk2.Count); i++)
                     {
@@ -465,7 +684,37 @@
                 <div class="shop-cluster">
                     @foreach (var pos in botChunk3)
                     {
-                        <partial name="_ShopButtonPartial" model="pos" />
+                        bool isMatch = true;
+
+                        // A.(Location)
+                        if (!string.IsNullOrEmpty(searchKeyword))
+                        {
+                            string tName = pos.TenantPositionAssignedTenant?.TenantName?.ToLower() ?? "";
+                            string pLoc = pos.TenantPositionLocation?.ToLower() ?? "";
+
+                            if (!tName.Contains(searchKeyword) && !pLoc.Contains(searchKeyword))
+                            {
+                                isMatch = false;
+                            }
+                        }
+
+                        // B.(Vacant/Occupied)
+                        if (searchStatus.HasValue)
+                        {
+                            if (pos.TenantPositionStatus != searchStatus.Value)
+                            {
+                                isMatch = false;
+                            }
+                        }
+
+                        if (isMatch)
+                        {
+                            <partial name="_ShopButtonPartial" model="pos" />
+                        }
+                        else
+                        {
+                            <div class="shop-unit unit-void" style="opacity: 0.3;"></div>
+                        }
                     }
                     @for (int i = 0; i < (5 - botChunk3.Count); i++)
                     {
@@ -481,7 +730,37 @@
                 <div class="shop-cluster">
                     @foreach (var pos in botChunk4)
                     {
-                        <partial name="_ShopButtonPartial" model="pos" />
+                        bool isMatch = true;
+
+                        // A.(Location)
+                        if (!string.IsNullOrEmpty(searchKeyword))
+                        {
+                            string tName = pos.TenantPositionAssignedTenant?.TenantName?.ToLower() ?? "";
+                            string pLoc = pos.TenantPositionLocation?.ToLower() ?? "";
+
+                            if (!tName.Contains(searchKeyword) && !pLoc.Contains(searchKeyword))
+                            {
+                                isMatch = false;
+                            }
+                        }
+
+                        // B.(Vacant/Occupied)
+                        if (searchStatus.HasValue)
+                        {
+                            if (pos.TenantPositionStatus != searchStatus.Value)
+                            {
+                                isMatch = false;
+                            }
+                        }
+
+                        if (isMatch)
+                        {
+                            <partial name="_ShopButtonPartial" model="pos" />
+                        }
+                        else
+                        {
+                            <div class="shop-unit unit-void" style="opacity: 0.3;"></div>
+                        }
                     }
                     @for (int i = 0; i < (5 - botChunk4.Count); i++)
                     {

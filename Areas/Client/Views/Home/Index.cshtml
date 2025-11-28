@@ -1,109 +1,246 @@
-﻿@using Semester03.Areas.Client.Models.ViewModels
+﻿@using System
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
+@using Semester03.Models.ViewModels
+@using Semester03.Areas.Client.Models.ViewModels
 @inject Semester03.Models.Repositories.EventRepository _eventRepo
+@inject Semester03.Models.Repositories.TenantPromotionRepository _promotionRepo
+@inject Semester03.Models.Repositories.TenantRepository _tenantRepo
 
 @{
     ViewData["Title"] = "Events";
     ViewData["MallName"] = "ABCD Mall";
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
 
-    Func<string, string> Img = raw =>
+    // ========== HÀM ẢNH SỰ KIỆN ==========
+    Func<string, string> ImgEvent = (raw) =>
     {
-        if (string.IsNullOrWhiteSpace(raw))
-            return Url.Content("~/images/event-placeholder.png");
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
 
-        if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-            return raw;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
 
-        var s = raw.Replace("wwwroot/", "").TrimStart('~', '/').Replace(" ", "%20");
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
 
-        if (s.StartsWith("Content") || s.StartsWith("images") || s.StartsWith("Admin/img"))
-            return Url.Content("~/" + s);
+            var file = raw.Replace("\\", "/").Trim();
 
-        if (raw.StartsWith("/"))
-            return Url.Content("~" + raw);
+            var keyword = "Content/Uploads/Events";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
 
-        return Url.Content("~/Content/Uploads/Events/" + s);
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
+            }
+
+            var physical = System.IO.Path.Combine(env.WebRootPath ?? "wwwroot", "Content", "Uploads", "Events", file);
+
+            if (System.IO.File.Exists(physical))
+            {
+                return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
+            }
+
+            return noImageUrl;
+        }
+        catch
+        {
+            return noImageUrl;
+        }
+
+
     };
 
+    // ========== HÀM ẢNH PROMOTION ==========
+    Func<string, string> ImgPromotion = (raw) =>
+    {
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            var file = raw.Replace("\\", "/").Trim();
+
+            var keyword = "Content/Uploads/TenantPromotion";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
+
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                return Url.Content("~/Content/Uploads/TenantPromotion/" + Uri.EscapeDataString(file));
+            }
+
+            var physical = System.IO.Path.Combine(env.WebRootPath ?? "wwwroot", "Content", "Uploads", "TenantPromotion", file);
+
+            if (System.IO.File.Exists(physical))
+            {
+                return Url.Content("~/Content/Uploads/TenantPromotion/" + Uri.EscapeDataString(file));
+            }
+
+            return noImageUrl;
+        }
+        catch
+        {
+            return noImageUrl;
+        }
+    };
+
+    // ========== HÀM ẢNH STORE ==========
+    Func<string, string> ImgTenant = (raw) =>
+    {
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            var file = raw.Replace("\\", "/").Trim();
+
+            var keyword = "Content/Uploads/Tenant";
+            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idxKeyword >= 0)
+            {
+                var lastSlash = file.LastIndexOf('/');
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
+            }
+
+            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                file = file.Substring("wwwroot/".Length);
+            if (file.StartsWith("~/"))
+                file = file.Substring(2);
+            if (file.StartsWith("/"))
+                file = file.Substring(1);
+
+            if (string.IsNullOrWhiteSpace(file))
+                return noImageUrl;
+
+            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+            if (env == null)
+            {
+                return Url.Content("~/Content/Uploads/Tenant/" + Uri.EscapeDataString(file));
+            }
+
+            var physical = System.IO.Path.Combine(env.WebRootPath ?? "wwwroot", "Content", "Uploads", "Tenant", file);
+
+            if (System.IO.File.Exists(physical))
+            {
+                return Url.Content("~/Content/Uploads/Tenant/" + Uri.EscapeDataString(file));
+            }
+
+            return noImageUrl;
+        }
+        catch
+        {
+            return noImageUrl;
+        }
+    };
+
+    // ===== LẤY DATA =====
     var topEvents = await _eventRepo.GetUpcomingEventsAsync(6);
     topEvents ??= new List<EventCardVm>();
+
+    var topPromotions = _promotionRepo.GetTopLatestPromotions(6);
+    ViewBag.TopPromotions = topPromotions;
+
+    var featuredStores = _tenantRepo.GetFeaturedStores()
+        .Where(s => s.Rating == 5)
+        .ToList();
 }
 
 @section Styles {
     <style>
-
-        /* ===== PAGE WRAPPER ===== */
-        .events-home-wrapper {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        /* ===== TITLE ===== */
-        .events-title {
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            margin-bottom: 1.6rem;
-            font-size: 2.2rem;
-            text-transform: uppercase;
-            text-align: center;
-            background: linear-gradient(90deg,#0d6efd,#4f46e5);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* ===== CARD ===== */
-        .event-card {
+        /* ===== COMMON CARD ===== */
+        .card-common {
             border-radius: 1.1rem;
             overflow: hidden;
             background: #ffffff;
             border: 1px solid #e5e7eb;
             box-shadow: 0 12px 34px rgba(0,0,0,0.06);
             transition: .2s ease;
-            position: relative;
+            display: flex;
+            flex-direction: column;
         }
 
-            .event-card:hover {
+            .card-common:hover {
                 transform: translateY(-4px);
                 box-shadow: 0 16px 40px rgba(0,0,0,0.1);
             }
 
-            .event-card img {
+            .card-common img {
                 height: 220px;
                 object-fit: cover;
                 width: 100%;
                 display: block;
             }
 
-        /* ===== CARD BODY ===== */
-        .event-card-body {
-            padding: 1rem .9rem 1.2rem;
+        .card-body-common {
+            padding: 1rem;
             text-align: center;
+            flex: 1;
         }
 
-        .event-title {
+        .card-title-common {
             font-size: 1.05rem;
             font-weight: 700;
-            margin-bottom: .35rem;
+            margin-bottom: 0.5rem;
             color: #111827;
-            text-transform: capitalize;
         }
 
-        /* ===== MALL LABEL ===== */
-        .mall-label {
-            font-size: .75rem;
+        .card-label {
+            font-size: 0.75rem;
             background: #eff6ff;
-            padding: .25rem .65rem;
+            padding: 0.25rem 0.65rem;
             border-radius: 999px;
             font-weight: 600;
             color: #1d4ed8;
             display: inline-block;
-            margin-bottom: .4rem;
+            margin-bottom: 0.4rem;
         }
 
-        /* ===== DESCRIPTION ===== */
-        .event-desc {
+        .card-desc {
             color: #6b7280;
-            font-size: .85rem;
+            font-size: 0.85rem;
             line-height: 1.35;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -111,7 +248,17 @@
             overflow: hidden;
         }
 
-        /* EMPTY STATE */
+        .section-title {
+            font-weight: 800;
+            font-size: 2.2rem;
+            text-align: center;
+            margin-bottom: 1.6rem;
+            text-transform: uppercase;
+            background: linear-gradient(90deg,#0d6efd,#4f46e5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
         .empty-state {
             padding: 2.5rem;
             background: #f8fafc;
@@ -122,12 +269,24 @@
             color: #6b7280;
         }
 
+        .promo-title {
+            background: none !important;
+            color: red !important;
+            -webkit-text-fill-color: red !important;
+        }
+
+        .featured-title {
+            background: none !important;
+            color: gold !important;
+            -webkit-text-fill-color: gold !important;
+        }
     </style>
 }
 
 <div class="container py-5 events-home-wrapper">
 
-    <h1 class="events-title">Upcoming Events</h1>
+    <!-- UPCOMING EVENTS -->
+    <h1 class="section-title">Upcoming Events</h1>
 
     @if (!topEvents.Any())
     {
@@ -142,31 +301,141 @@
             @foreach (var e in topEvents)
             {
                 <div class="col-12 col-md-6 col-lg-4">
-                    <div class="event-card h-100">
-
-                        <a href="@Url.Action("Details","Event",new { area="Client", id=e.Id })">
-                            <img src="@Img(e.ImageUrl)" alt="@e.Title" />
+                    <div class="card-common h-100">
+                        <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">
+                            <img src="@ImgEvent(e.ImageUrl)" alt="@e.Title" />
                         </a>
+                        <div class="card-body-common">
+                            <div class="card-label">@ViewData["MallName"]</div>
 
-                        <div class="event-card-body">
-                            <div class="mall-label">@ViewData["MallName"]</div>
-
-                            <a href="@Url.Action("Details","Event",new { area="Client", id=e.Id })"
+                            <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })"
                                class="text-decoration-none text-dark">
-                                <div class="event-title text-truncate">@e.Title</div>
+                                <div class="card-title-common text-truncate">@e.Title</div>
                             </a>
-
                             @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
                             {
-                                <p class="event-desc" title="@e.ShortDescription">
-                                    @e.ShortDescription
-                                </p>
+                                <p class="card-desc" title="@e.ShortDescription">@e.ShortDescription</p>
                             }
+                            <p class="card-desc mb-1">
+                                <i class="bi bi-calendar-event"></i>
+                                @e.StartDate?.ToString("dd/MM/yyyy")
+                                @if (e.EndDate.HasValue)
+                                {
+                                    @: – @e.EndDate?.ToString("dd/MM/yyyy")
+                                }
+                            </p>
                         </div>
-
                     </div>
                 </div>
             }
+        </div>
+    }
+
+    <!-- Nút SEE ALL EVENTS -->
+    <div class="text-center mt-4">
+        <a href="@Url.Action("Index", "Event", new { area = "Client" })"
+           class="btn btn-outline-primary rounded-pill px-4">
+            See all events
+        </a>
+    </div>
+
+    <!-- LATEST PROMOTIONS -->
+    @if (ViewBag.TopPromotions != null && ((List<TenantPromotionVm>)ViewBag.TopPromotions).Any())
+    {
+        <h1 class="section-title mt-5 promo-title">Latest Promotions</h1>
+
+        <div class="row g-4">
+            @foreach (var p in (List<TenantPromotionVm>)ViewBag.TopPromotions)
+            {
+                var img = ImgPromotion(p.Img);
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card-common h-100 position-relative">
+
+                        @if (p.DiscountPercent.HasValue)
+                        {
+                            <span class="position-absolute top-0 start-0 m-2 badge bg-danger">
+                                @p.DiscountPercent% OFF
+                            </span>
+                        }
+                        else if (p.DiscountAmount.HasValue)
+                        {
+                            <span class="position-absolute top-0 start-0 m-2 badge bg-danger">
+                                @p.DiscountAmount.Value.ToString("#,0") ₫
+                            </span>
+                        }
+
+                        <a href="@Url.Action("Detail", "TenantPromotion", new { area = "Client", id = p.Id })">
+                            <img src="@img" alt="@p.Title" />
+                        </a>
+                        <div class="card-body-common">
+                            <div class="card-title-common">@p.Title</div>
+                            <p class="card-desc">
+                                @p.PromotionStart?.ToString("dd/MM/yyyy") – @p.PromotionEnd?.ToString("dd/MM/yyyy")
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Nút SEE ALL PROMOTIONS -->
+        <div class="text-center mt-4">
+            <a href="@Url.Action("Index", "TenantPromotion", new { area = "Client" })"
+               class="btn btn-outline-danger rounded-pill px-4">
+                See all promotions
+            </a>
+        </div>
+    }
+
+    <!-- FEATURED STORES -->
+    @if (featuredStores.Any())
+    {
+        <h1 class="section-title mt-5 featured-title">Featured Stores</h1>
+
+        <div id="featuredStoresCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+            <div class="carousel-inner">
+                @for (int i = 0; i < featuredStores.Count; i += 3)
+                {
+                    <div class="carousel-item @(i == 0 ? "active" : "")">
+                        <div class="row g-4 d-flex justify-content-start flex-wrap">
+                            @for (int j = i; j < i + 3 && j < featuredStores.Count; j++)
+                            {
+                                var s = featuredStores[j];
+                                var img = ImgTenant(s.TenantImg);
+
+                                <div class="col-12 col-md-4">
+                                    <div class="card-common h-100">
+                                        <a href="@Url.Action("Details", "Stores", new { area = "Client", id = s.TenantId })">
+                                            <img src="@img" alt="@s.TenantName" />
+                                        </a>
+                                        <div class="card-body-common">
+                                            <div class="card-label">@s.TenantTypeName</div>
+                                            <a href="@Url.Action("Details", "Stores", new { area = "Client", id = s.TenantId })"
+                                               class="text-decoration-none text-dark">
+                                                <div class="card-title-common text-truncate">@s.TenantName</div>
+                                            </a>
+                                            <div class="mb-1">
+                                                <span class="text-warning">★★★★★</span>
+                                            </div>
+                                            <p class="card-desc" title="@s.TenantDescription">@s.TenantDescription</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <button class="carousel-control-prev" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
         </div>
     }
 </div>

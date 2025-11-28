@@ -92,10 +92,10 @@ namespace Semester03.Models.Repositories
                 UsersFullName = fullName?.Trim(),
                 UsersEmail = email?.Trim().ToLowerInvariant(),
                 UsersPhone = phone?.Trim(),
-                UsersRoleId = 2, // role = 2 when registering
+                UsersRoleId = 3, // role = 2 when registering
                 UsersPoints = 0,
-                UsersCreatedAt = DateTime.UtcNow,
-                UsersUpdatedAt = DateTime.UtcNow,
+                UsersCreatedAt = DateTime.Now,
+                UsersUpdatedAt = DateTime.Now,
                 UsersStatus = 1 // <-- ensure account is active when created
             };
 
@@ -146,7 +146,7 @@ namespace Semester03.Models.Repositories
                     Point = x.UsersPoints ?? 0,
                     CreatedAt = (DateTime)x.UsersCreatedAt,
                     UpdatedAt = (DateTime)x.UsersUpdatedAt,
-                }).Where(x => x.Role == 3).OrderByDescending(x => x.CreatedAt)
+                }).Where(x => x.Role == 2).OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
         }
         public async Task<User?> CreateTenantByUserId(int id)
@@ -219,6 +219,61 @@ namespace Semester03.Models.Repositories
         }
 
 
+        // Cập nhật hồ sơ người dùng (họ tên, email, phone, password)
+        public async Task<(bool Success, string? Error)> UpdateProfileAsync(
+            int userId,
+            string? fullName,
+            string? email,
+            string? phone,
+            string? newPassword
+        )
+        {
+            var user = await _context.TblUsers.FirstOrDefaultAsync(u => u.UsersId == userId);
+            if (user == null)
+            {
+                return (false, "Không tìm thấy người dùng.");
+            }
+
+            // Chuẩn hóa dữ liệu
+            email = email?.Trim().ToLowerInvariant();
+            phone = phone?.Trim();
+            fullName = fullName?.Trim();
+
+            // Check trùng email (ngoại trừ chính mình)
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                bool emailExists = await _context.TblUsers
+                    .AnyAsync(u => u.UsersEmail.ToLower() == email && u.UsersId != userId);
+
+                if (emailExists)
+                    return (false, "Email đã được sử dụng bởi tài khoản khác.");
+            }
+
+            // Check trùng phone (ngoại trừ chính mình)
+            if (!string.IsNullOrWhiteSpace(phone))
+            {
+                bool phoneExists = await _context.TblUsers
+                    .AnyAsync(u => u.UsersPhone == phone && u.UsersId != userId);
+
+                if (phoneExists)
+                    return (false, "Số điện thoại đã được sử dụng bởi tài khoản khác.");
+            }
+
+            // Gán lại dữ liệu
+            user.UsersFullName = fullName;
+            user.UsersEmail = email;
+            user.UsersPhone = phone;
+            user.UsersUpdatedAt = DateTime.Now;
+
+            // Nếu có nhập mật khẩu mới thì hash lại
+            if (!string.IsNullOrWhiteSpace(newPassword))
+            {
+                user.UsersPassword = _hasher.HashPassword(user, newPassword);
+            }
+
+            await _context.SaveChangesAsync();
+            return (true, null);
+        }
 
         public async Task<TblUser?> GetUserByIdAsync(int id)
         {
