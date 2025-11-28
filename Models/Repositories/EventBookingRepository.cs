@@ -15,12 +15,13 @@ namespace Semester03.Models.Repositories
         {
             _db = db ?? throw new ArgumentNullException(nameof(db));
         }
+
         private IQueryable<TblEventBooking> GetFullBookingQuery()
         {
             return _db.TblEventBookings
                 .Include(b => b.EventBookingEvent)
                 .Include(b => b.EventBookingUser);
-            // .Include(b => b.EventBookingTenant); // <-- enable after fixing Tenant <-> TenantPosition mapping in DbContext
+            // .Include(b => b.EventBookingTenant); // enable later if mapping ok
         }
 
         public async Task<IEnumerable<TblEventBooking>> GetAllAsync()
@@ -63,11 +64,10 @@ namespace Semester03.Models.Repositories
         {
             if (booking == null) throw new ArgumentNullException(nameof(booking));
 
-            // ====== ĐẢM BẢO Quantity ======
+            // ===== Ensure Quantity =====
             int qty = 1;
             try
             {
-                // nếu entity đã có EventBookingQuantity (scaffold từ DB)
                 if (booking.EventBookingQuantity > 0)
                 {
                     qty = (int)booking.EventBookingQuantity;
@@ -85,7 +85,7 @@ namespace Semester03.Models.Repositories
                 if (qty <= 0) qty = 1;
             }
 
-            // ====== ĐẢM BẢO UnitPrice ======
+            // ===== Ensure UnitPrice =====
             try
             {
                 if ((booking.EventBookingUnitPrice == null || booking.EventBookingUnitPrice <= 0) &&
@@ -98,7 +98,7 @@ namespace Semester03.Models.Repositories
             }
             catch { }
 
-            // ====== ĐẢM BẢO Date ======
+            // ===== Ensure Date =====
             try
             {
                 if (booking.EventBookingDate == null ||
@@ -109,12 +109,10 @@ namespace Semester03.Models.Repositories
             }
             catch { }
 
-            // Không còn xử lý OrderGroup vì đã bỏ cột EventBooking_OrderGroup
-
             _db.TblEventBookings.Add(booking);
             await _db.SaveChangesAsync();
 
-            // Ghi lịch sử: CreatedBookingDay
+            // History: CreatedBookingDay
             await AddHistoryAsync(
                 booking.EventBookingId,
                 booking.EventBookingEventId,
@@ -131,8 +129,7 @@ namespace Semester03.Models.Repositories
         }
 
         /// <summary>
-        /// Tạo booking đơn giản cho Event (client đang dùng).
-        /// totalCost: tổng tiền, quantity: số slot/vé.
+        /// Simple create booking for event (client).
         /// </summary>
         public async Task<TblEventBooking> CreateBookingAsync(
             int tenantId,
@@ -145,7 +142,8 @@ namespace Semester03.Models.Repositories
             var combinedNotes = notes ?? "";
             if (!combinedNotes.Contains("Qty:", StringComparison.OrdinalIgnoreCase))
             {
-                combinedNotes = $"Qty:{quantity}" + (string.IsNullOrWhiteSpace(combinedNotes) ? "" : ";" + combinedNotes);
+                combinedNotes = $"Qty:{quantity}" +
+                                (string.IsNullOrWhiteSpace(combinedNotes) ? "" : ";" + combinedNotes);
             }
 
             var entity = new TblEventBooking
@@ -159,43 +157,32 @@ namespace Semester03.Models.Repositories
                 EventBookingCreatedDate = DateTime.Now
             };
 
-            // ====== Quantity ======
+            // Quantity
             try
             {
                 entity.EventBookingQuantity = quantity;
             }
-            catch
-            {
-                // nếu entity không có property này thì bỏ qua
-            }
+            catch { }
 
-            // ====== UnitPrice ======
+            // UnitPrice
             try
             {
                 var unitPrice = quantity > 0 ? totalCost / quantity : totalCost;
                 entity.EventBookingUnitPrice = unitPrice;
             }
-            catch
-            {
-                // nếu không có cột thì thôi
-            }
+            catch { }
 
-            // ====== Date ======
+            // Date
             try
             {
                 entity.EventBookingDate = DateOnly.FromDateTime(DateTime.Now);
             }
-            catch
-            {
-                // nếu cột kiểu DateTime, bạn có thể đổi sang DateTime.Now.Date
-            }
-
-            // Không còn OrderGroup (GUID) vì đã bỏ cột EventBooking_OrderGroup
+            catch { }
 
             _db.TblEventBookings.Add(entity);
             await _db.SaveChangesAsync();
 
-            // Lịch sử: CreatedBookingDay
+            // History: CreatedBookingDay
             await AddHistoryAsync(
                 entity.EventBookingId,
                 entity.EventBookingEventId,
@@ -234,7 +221,7 @@ namespace Semester03.Models.Repositories
             var booking = await _db.TblEventBookings.FindAsync(bookingId);
             if (booking == null) return false;
 
-            booking.EventBookingPaymentStatus = 1; // 1 = Paid
+            booking.EventBookingPaymentStatus = 1; // Paid
 
             try
             {
@@ -252,7 +239,7 @@ namespace Semester03.Models.Repositories
             _db.TblEventBookings.Update(booking);
             await _db.SaveChangesAsync();
 
-            // Ghi history PaymentSuccess
+            // History: PaymentSuccess
             await AddHistoryAsync(
                 booking.EventBookingId,
                 booking.EventBookingEventId,
@@ -274,7 +261,8 @@ namespace Semester03.Models.Repositories
             booking.EventBookingPaymentStatus = cancelStatus;
             try
             {
-                var updatedProp = booking.GetType().GetProperty("EventBookingUpdatedDate") ?? booking.GetType().GetProperty("UpdatedAt");
+                var updatedProp = booking.GetType().GetProperty("EventBookingUpdatedDate") ??
+                                  booking.GetType().GetProperty("UpdatedAt");
                 if (updatedProp != null && updatedProp.CanWrite)
                     updatedProp.SetValue(booking, DateTime.Now);
             }
@@ -283,7 +271,7 @@ namespace Semester03.Models.Repositories
             _db.TblEventBookings.Update(booking);
             await _db.SaveChangesAsync();
 
-            // History: AdminCancelled hoặc Cancelled
+            // History: AdminCancelled
             await AddHistoryAsync(
                 booking.EventBookingId,
                 booking.EventBookingEventId,
@@ -298,26 +286,35 @@ namespace Semester03.Models.Repositories
         }
 
         /// <summary>
-        /// Tính tổng slot đã confirm (payment status 1 or 2).
-        /// Dùng Qty trong notes (giữ backward-compatible).
+        /// Count confirmed slots by SUM(EventBooking_Quantity) (status 1 or 2).
+        /// Backward compatible with Notes when Quantity is null.
         /// </summary>
         public async Task<int> GetConfirmedSlotsForEventAsync(int eventId)
         {
-            var confirmedStatuses = new[] { 1, 2 };
+            var confirmedStatuses = new[] { 1, 2 }; // 1 = Paid, 2 = Free / PartiallyRefunded
+
             var bookings = await _db.TblEventBookings
                 .AsNoTracking()
                 .Where(b => b.EventBookingEventId == eventId &&
                             b.EventBookingPaymentStatus != null &&
                             confirmedStatuses.Contains(b.EventBookingPaymentStatus.Value))
-                .Select(b => new { b.EventBookingId, b.EventBookingNotes })
+                .Select(b => new { b.EventBookingId, b.EventBookingQuantity, b.EventBookingNotes })
                 .ToListAsync();
 
             int total = 0;
+
             foreach (var b in bookings)
             {
-                int qty = ParseQtyFromNotes(b.EventBookingNotes);
+                int qty = b.EventBookingQuantity ?? 0;
+
+                if (qty <= 0)
+                {
+                    qty = ParseQtyFromNotes(b.EventBookingNotes);
+                }
+
                 total += Math.Max(1, qty);
             }
+
             return total;
         }
 
@@ -421,19 +418,9 @@ namespace Semester03.Models.Repositories
         }
 
         // ==========================
-        // LỊCH SỬ BOOKING (History)
+        // BOOKING HISTORY (Tbl_EventBookingHistory)
         // ==========================
 
-        /// <summary>
-        /// Ghi 1 dòng vào Tbl_EventBookingHistory.
-        /// Action có thể là:
-        /// - CreatedBookingDay
-        /// - PaymentSuccess
-        /// - PaymentFailed
-        /// - BookingUpdated
-        /// - Refunded
-        /// - AdminCancelled
-        /// </summary>
         public async Task AddHistoryAsync(
             int? bookingId,
             int? eventId,
@@ -452,7 +439,9 @@ namespace Semester03.Models.Repositories
                 EventBookingHistoryUserId = userId,
                 EventBookingHistoryAction = action,
                 EventBookingHistoryDetails = details,
-                EventBookingHistoryRelatedDate = relatedDate.HasValue ? DateOnly.FromDateTime(relatedDate.Value) : (DateOnly?)null,
+                EventBookingHistoryRelatedDate = relatedDate.HasValue
+                    ? DateOnly.FromDateTime(relatedDate.Value)
+                    : (DateOnly?)null,
                 EventBookingHistoryQuantity = quantity,
                 EventBookingHistoryCreatedAt = DateTime.Now
             };

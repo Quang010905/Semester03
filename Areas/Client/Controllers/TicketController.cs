@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Semester03.Areas.Client.Models.ViewModels;
+using Semester03.Models.Entities;
 using Semester03.Models.Repositories;
 using Semester03.Services.Email;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 
 namespace Semester03.Areas.Client.Controllers
 {
@@ -18,17 +19,20 @@ namespace Semester03.Areas.Client.Controllers
         private readonly TicketRepository _ticketRepo;
         private readonly EventBookingRepository _eventBookingRepo;
         private readonly TicketEmailService _ticketEmailService;
+        private readonly AbcdmallContext _context;
 
         public TicketController(
             TenantTypeRepository tenantTypeRepo,
             TicketRepository ticketRepo,
             EventBookingRepository eventBookingRepo,
-            TicketEmailService ticketEmailService
+            TicketEmailService ticketEmailService,
+            AbcdmallContext context
         ) : base(tenantTypeRepo)
         {
             _ticketRepo = ticketRepo;
             _eventBookingRepo = eventBookingRepo;
             _ticketEmailService = ticketEmailService;
+            _context = context;
         }
 
         private int GetUserId()
@@ -37,7 +41,7 @@ namespace Semester03.Areas.Client.Controllers
         }
 
         // ===============================================
-        //        🎟  VÉ CỦA TÔI — 2 TAB LỚN
+        //        🎟  MY TICKETS — MOVIE + EVENTS
         // ===============================================
         public async Task<IActionResult> MyTickets()
         {
@@ -45,11 +49,10 @@ namespace Semester03.Areas.Client.Controllers
             DateTime now = DateTime.Now;
 
             // =======================
-            // 1) VÉ XEM PHIM (GROUP)
+            // 1) MOVIE TICKETS (GROUP)
             // =======================
             var movieDb = await _ticketRepo.GetTicketsByUserAsync(userId);
 
-            // Gộp theo: Phim + thời gian chiếu + phòng + poster + status
             var movieTickets = movieDb
                 .GroupBy(t =>
                 {
@@ -57,9 +60,9 @@ namespace Semester03.Areas.Client.Controllers
                     var movie = showtime.ShowtimeMovie;
 
                     string status =
-                        t.TicketStatus == "cancelled" ? "Canceled"
-                        : showtime.ShowtimeStart <= now ? "Seen"
-                        : "Coming up";
+                        string.Equals(t.TicketStatus, "cancelled", StringComparison.OrdinalIgnoreCase) ? "Cancelled"
+                        : showtime.ShowtimeStart <= now ? "Watched"
+                        : "Upcoming";
 
                     return new
                     {
@@ -75,50 +78,106 @@ namespace Semester03.Areas.Client.Controllers
                     var sample = g.First();
                     return new MyTicketVm
                     {
-                        // dùng 1 TicketId đại diện để đi tới trang chi tiết
                         TicketId = sample.TicketId,
                         MovieTitle = g.Key.MovieTitle,
                         Showtime = g.Key.Showtime,
                         ScreenName = g.Key.ScreenName,
-                        // giá: lấy giá của 1 vé (giả sử giống nhau)
                         Price = sample.TicketPrice,
                         Status = g.Key.Status,
-                        CreatedAt = (DateTime)sample.TicketCreatedAt,
+                        CreatedAt = sample.TicketCreatedAt ?? g.Key.Showtime,
                         PosterUrl = g.Key.PosterUrl,
                         Quantity = g.Count()
-                        // SeatLabel ở màn danh sách không dùng nữa,
-                        // nếu cần có thể nối string ghế tại đây.
                     };
                 })
                 .OrderByDescending(x => x.Showtime)
                 .ToList();
 
             // =======================
-            // 2) VÉ SỰ KIỆN (giữ nguyên)
+            // 2) EVENT TICKETS
             // =======================
             var eventDb = await _eventBookingRepo.GetBookingsForUserAsync(userId);
 
-            var eventTickets = eventDb.Select(e =>
+            // Lấy danh sách BookingId để query lịch sử huỷ (PartialCancel)
+            var bookingIds = eventDb
+                .Select(e => e.EventBookingId)
+                .ToList();
+
+            // Dictionary: BookingId -> tổng số vé đã huỷ (sum quantity PartialCancel)
+            var cancelledQtyDict = _context.TblEventBookingHistories
+                .Where(h =>
+                    bookingIds.Contains((int)h.EventBookingHistoryBookingId) &&
+                    h.EventBookingHistoryAction == "PartialCancel")
+                .GroupBy(h => h.EventBookingHistoryBookingId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Sum(x => x.EventBookingHistoryQuantity ?? 0)
+                );
+
+            var eventTickets = new List<MyEventTicketVm>();
+
+            foreach (var e in eventDb)
             {
                 var ev = e.EventBookingEvent;
+                var unitPrice = e.EventBookingUnitPrice ?? 0m;
 
-                string status =
-                    e.EventBookingStatus == 0 ? "Cancelled"
-                    : ev.EventEnd <= now ? "Occurred"
-                    : "Coming up";
+                int activeQty = e.EventBookingQuantity ?? 0;         // vé còn dùng
+                int cancelledQty = 0;
 
-                return new MyEventTicketVm
+                cancelledQtyDict.TryGetValue(e.EventBookingId, out cancelledQty);
+
+                bool isFullyCancelled =
+                    e.EventBookingStatus == 0            // status Cancelled
+                    || activeQty <= 0;                  // hoặc quantity 0
+
+                // ----------- 1. VÉ CÒN DÙNG (UPCOMING / OCCURRED) -----------
+                if (!isFullyCancelled && activeQty > 0)
                 {
-                    BookingId = e.EventBookingId,
-                    EventName = ev.EventName,
-                    EventImage = ev.EventImg,
-                    EventStart = ev.EventStart,
-                    EventEnd = ev.EventEnd,
-                    Quantity = e.EventBookingQuantity ?? 1,
-                    TotalCost = e.EventBookingTotalCost ?? 0m,
-                    Status = status
-                };
-            }).ToList();
+                    string activeStatus =
+                        ev.EventEnd <= now ? "Occurred" : "Upcoming";
+
+                    eventTickets.Add(new MyEventTicketVm
+                    {
+                        BookingId = e.EventBookingId,
+                        EventName = ev.EventName,
+                        EventImage = ev.EventImg,
+                        EventStart = ev.EventStart,
+                        EventEnd = ev.EventEnd,
+                        Quantity = activeQty,
+                        TotalCost = activeQty * unitPrice,
+                        Status = activeStatus
+                    });
+                }
+
+                // ----------- 2. DÒNG TỔNG HỢP VÉ ĐÃ HUỶ (CHO TAB CANCELLED) -----------
+                // Nếu booking đã huỷ hẳn hoặc có bất kỳ history PartialCancel nào
+                if (isFullyCancelled || cancelledQty > 0)
+                {
+                    // Nếu full cancel mà chưa có history PartialCancel (trường hợp cũ),
+                    // fallback: lấy số vé ban đầu = activeQty + cancelledQty (nếu có)
+                    if (cancelledQty == 0)
+                    {
+                        cancelledQty = activeQty; // best-effort
+                    }
+
+                    var cancelledTotal = cancelledQty * unitPrice;
+
+                    eventTickets.Add(new MyEventTicketVm
+                    {
+                        BookingId = e.EventBookingId,
+                        EventName = ev.EventName,
+                        EventImage = ev.EventImg,
+                        EventStart = ev.EventStart,
+                        EventEnd = ev.EventEnd,
+                        Quantity = cancelledQty,
+                        TotalCost = cancelledTotal,
+                        Status = "Cancelled"  // để view gom vào tab Cancelled
+                    });
+                }
+            }
+
+            eventTickets = eventTickets
+                .OrderByDescending(x => x.EventStart)
+                .ToList();
 
             return View(new MyTicketsPageVm
             {
@@ -128,7 +187,7 @@ namespace Semester03.Areas.Client.Controllers
         }
 
         // ===============================================
-        //          ❌ HỦY VÉ XEM PHIM (KHÓA 24H)
+        //          ❌ CANCEL MOVIE TICKET (24H RULE)
         // ===============================================
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -147,7 +206,7 @@ namespace Semester03.Areas.Client.Controllers
 
             if (showtime - DateTime.Now < TimeSpan.FromHours(24))
             {
-                TempData["Error"] = "You can only cancel the ticket at least 24 hours in advance.";
+                TempData["Error"] = "You can only cancel a movie ticket at least 24 hours in advance.";
                 return RedirectToAction("MyTickets");
             }
 
@@ -175,7 +234,7 @@ namespace Semester03.Areas.Client.Controllers
             }
 
             TempData[ok ? "Success" : "Error"] =
-                ok ? "Cancel thành công!" : "Cancel thất bại!";
+                ok ? "Cancellation successful!" : "Cancellation failed!";
 
             return RedirectToAction("Index", "TicketDetail", new { area = "Client", id = ticket.TicketId });
         }

@@ -39,21 +39,23 @@
         .ToList();
 
     // ===== GROUP EVENT TICKETS BY TIME + STATUS =====
-    //  - Upcoming: EventStart >= now && không bị hủy
-    //  - Past    : EventStart <  now && không bị hủy
-    //  - Cancelled: status chứa "CANCEL" / "HUỶ" / "HỦY"
+    //  - Upcoming: EventStart >= now && chưa hủy hoàn toàn (Quantity > 0 & status không chứa CANCEL/HỦY)
+    //  - Past    : EventStart <  now && chưa hủy hoàn toàn
+    //  - Cancelled:
+    //        + status chứa "CANCEL" / "HUỶ" / "HỦY"
+    //        + HOẶC Quantity <= 0  (đã hủy hết bằng PartialCancel)
     var upcomingEvents = Model.EventTickets
-        .Where(e => !IsCancelled(e.Status) && e.EventStart >= now)
+        .Where(e => !IsCancelled(e.Status) && e.Quantity > 0 && e.EventStart >= now)
         .OrderBy(e => e.EventStart)
         .ToList();
 
     var pastEvents = Model.EventTickets
-        .Where(e => !IsCancelled(e.Status) && e.EventStart < now)
+        .Where(e => !IsCancelled(e.Status) && e.Quantity > 0 && e.EventStart < now)
         .OrderByDescending(e => e.EventStart)
         .ToList();
 
     var cancelledEvents = Model.EventTickets
-        .Where(e => IsCancelled(e.Status))
+        .Where(e => IsCancelled(e.Status) || e.Quantity <= 0)
         .OrderByDescending(e => e.EventStart)
         .ToList();
 
@@ -177,6 +179,7 @@
 }
 
 <style>
+    /* ... (toàn bộ phần CSS của bạn giữ nguyên, không đổi) ... */
     /* TAB LỚN / NHỎ ----------------------------------------- */
     .big-tab-bar {
         display: flex;
@@ -232,9 +235,8 @@
             color: #ffffff;
         }
 
-    /* CARD VÉ ------------------------------------------------ */
     .ticket-card {
-        background: #0f172a; /* xanh đậm */
+        background: #0f172a;
         color: #ffffff;
         border-radius: 18px;
         overflow: hidden;
@@ -249,7 +251,6 @@
             border-color: #2563eb;
         }
 
-    /* Phần poster: nền trắng, ảnh “float” giống demo */
     .ticket-img {
         width: 100%;
         height: 200px;
@@ -278,7 +279,6 @@
         line-height: 1.2;
     }
 
-    /* BADGE TRẠNG THÁI -------------------------------------- */
     .badge-status {
         padding: 4px 12px;
         border-radius: 999px;
@@ -303,7 +303,6 @@
         background: linear-gradient(135deg, #dc2626, #b91c1c);
     }
 
-    /* Nút trong card (xem chi tiết / hủy vé) ---------------- */
     .ticket-card .btn {
         border-radius: 8px;
         font-weight: 600;
@@ -363,7 +362,6 @@
             transform: translateY(-2px);
         }
 
-    /* Hộp trống --------------------------------------------- */
     .empty-box {
         background: #cffafe;
         padding: 14px;
@@ -372,7 +370,6 @@
         border: 1px solid #0ea5e9;
     }
 
-    /* Responsive nhẹ cho mobile ----------------------------- */
     @@media (max-width: 575.98px) {
         .big-tab-bar {
             flex-direction: column;
@@ -469,16 +466,10 @@
                                     <div class="ticket-time">@t.Showtime.ToString("HH:mm")</div>
                                     <div class="ticket-time">Number of tickets: @t.Quantity</div>
 
-                                    <!-- View details -->
+                                    <!-- View details -> đi tới TicketDetail -->
                                     <a href="@Url.Action("Index", "TicketDetail", new { area = "Client", id = t.TicketId })"
                                        class="btn btn-primary btn-sm w-100 mt-2">
-                                        View details
-                                    </a>
-
-                                    <!-- Cancel -> go to detail page -->
-                                    <a href="@Url.Action("Index", "TicketDetail", new { area = "Client", id = t.TicketId })"
-                                       class="btn btn-danger btn-sm w-100 mt-2">
-                                        Cancel ticket
+                                        View Details
                                     </a>
 
                                 </div>
@@ -517,12 +508,6 @@
                                     <div class="ticket-time">@t.Showtime.ToString("dd/MM/yyyy")</div>
                                     <div class="ticket-time">@t.Showtime.ToString("HH:mm")</div>
                                     <div class="ticket-time">Number of tickets: @t.Quantity</div>
-
-                                    <a href="@Url.Action("Index", "TicketDetail", new { area = "Client", id = t.TicketId })"
-                                       class="btn btn-outline-light btn-sm w-100 mt-2">
-                                        Review tickets
-                                    </a>
-
                                 </div>
 
                             </div>
@@ -559,12 +544,6 @@
                                     <div class="ticket-time">@t.Showtime.ToString("dd/MM/yyyy")</div>
                                     <div class="ticket-time">@t.Showtime.ToString("HH:mm")</div>
                                     <div class="ticket-time">Number of tickets: @t.Quantity</div>
-
-                                    <a href="@Url.Action("Index", "TicketDetail", new { area = "Client", id = t.TicketId })"
-                                       class="btn btn-outline-danger btn-sm w-100 mt-2">
-                                        Review tickets
-                                    </a>
-
                                 </div>
 
                             </div>
@@ -669,11 +648,6 @@
                                         <div class="ticket-time">@e.EventStart.ToString("dd/MM/yyyy HH:mm")</div>
                                         <div class="ticket-time">Quantity: @e.Quantity</div>
                                         <div class="ticket-time">Total amount: @e.TotalCost.ToString("N0") đ</div>
-
-                                        <a href="@Url.Action("Details", "EventBooking", new { area = "Client", id = e.BookingId })"
-                                           class="btn btn-outline-light btn-sm w-100 mt-2">
-                                            Review tickets
-                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -705,12 +679,7 @@
                                         <div class="ticket-title">@e.EventName</div>
                                         <div class="ticket-time">@e.EventStart.ToString("dd/MM/yyyy HH:mm")</div>
                                         <div class="ticket-time">Quantity: @e.Quantity</div>
-                                        <div class="ticket-time">Total amount: @e.TotalCost.ToString("N0") đ</div>
-
-                                        <a href="@Url.Action("Details", "EventBooking", new { area = "Client", id = e.BookingId })"
-                                           class="btn btn-outline-danger btn-sm w-100 mt-2">
-                                            Review tickets
-                                        </a>
+                                        <div class="ticket-time">Total amount refund: @e.TotalCost.ToString("N0") đ</div>                                       
                                     </div>
                                 </div>
                             </div>

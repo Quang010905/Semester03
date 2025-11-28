@@ -61,33 +61,32 @@
     <div class="email-wrapper">
 
         <div class="header">
-            <h2>Xác nhận hủy vé xem phim</h2>
+            <h2>Movie Ticket Cancellation Confirmation</h2>
         </div>
 
-        <p>Xin chào <strong>@Model.UserName</strong>,</p>
+        <p>Hello <strong>@Model.UserName</strong>,</p>
 
-        <p>Bạn đã hủy các vé xem phim sau:</p>
+        <p>You have cancelled the following movie tickets:</p>
 
         <div class="value">
             @Model.MovieName
         </div>
 
-        <div class="label mt-3">Ngày chiếu</div>
+        <div class="label mt-3">Showtime</div>
         <div class="value">@Model.Showtime.ToString("HH:mm dd/MM/yyyy")</div>
 
-        <div class="label mt-3">Số vé đã hủy</div>
-        <div class="value">@Model.CancelledSeats.Count vé</div>
+        <div class="label mt-3">Number of tickets cancelled</div>
+        <div class="value">@Model.CancelledSeats.Count tickets</div>
 
-        <div class="label mt-3">Hoàn lại</div>
-        <div class="value">@Model.RefundAmount.ToString("N0") đ</div>
+        <div class="label mt-3">Refund amount</div>
+        <div class="value">@Model.RefundAmount.ToString("N0") VND</div>
 
-        <p class="mt-4">Nếu bạn không yêu cầu thao tác này, vui lòng liên hệ ngay.</p>
+        <p class="mt-4">If you did not request this action, please contact us immediately.</p>
 
         <div class="footer">
-            Email được gửi tự động – Xin đừng trả lời lại.
+            This is an automated email – please do not reply.
         </div>
     </div>
 
 </body>
 </html>
-    

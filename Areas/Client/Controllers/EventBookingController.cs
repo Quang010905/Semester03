@@ -305,7 +305,6 @@ namespace Semester03.Areas.Client.Controllers
             }
         }
 
-
         // =====================================================================================
         // GET: Client/EventBooking/Details/{id}
         // =====================================================================================
@@ -340,7 +339,7 @@ namespace Semester03.Areas.Client.Controllers
             var now = DateTime.Now;
 
             string status =
-                (booking.EventBookingStatus ?? 0) == 0 ? "Cancelled" :
+                (booking.EventBookingStatus ?? 1) == 0 ? "Cancelled" :
                 (evtDetail.EndDate ?? evtDetail.StartDate) <= now ? "Completed" :
                 "Upcoming";
 
@@ -465,79 +464,125 @@ namespace Semester03.Areas.Client.Controllers
         [Authorize]
         public async Task<IActionResult> PartialCancel(int bookingId, int cancelQuantity)
         {
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-
-            var booking = await _bookingRepo.GetByIdAsync(bookingId);
-
-            if (booking == null || booking.EventBookingUserId != userId)
-                return Json(new { success = false, message = "Booking not found." });
-
-            int qty = booking.EventBookingQuantity ?? 0;
-
-            if (cancelQuantity <= 0)
-                return Json(new { success = false, message = "Cancellation quantity must be greater than 0." });
-
-            if (cancelQuantity > qty)
-                return Json(new { success = false, message = "Cancellation quantity exceeds remaining tickets." });
-
-            int remainingQty = qty - cancelQuantity;
-            decimal unitPrice = booking.EventBookingUnitPrice ?? 0;
-            decimal refundAmount = unitPrice * cancelQuantity;
-
-            booking.EventBookingQuantity = remainingQty;
-            booking.EventBookingTotalCost = remainingQty * unitPrice;
-
-            booking.EventBookingPaymentStatus = remainingQty > 0 ? 2 : 3;
-            booking.EventBookingStatus = remainingQty > 0 ? 1 : 0;
-
-            string smallLog =
-                $"[Cancel {DateTime.Now:dd/MM HH:mm}] Cancelled {cancelQuantity} ticket(s) (remaining {remainingQty}).";
-
-            booking.EventBookingNotes =
-                string.IsNullOrWhiteSpace(booking.EventBookingNotes)
-                    ? smallLog
-                    : booking.EventBookingNotes + "\n" + smallLog;
-
-            var history = new TblEventBookingHistory
-            {
-                EventBookingHistoryBookingId = booking.EventBookingId,
-                EventBookingHistoryEventId = booking.EventBookingEventId,
-                EventBookingHistoryUserId = userId,
-                EventBookingHistoryAction = "PartialCancel",
-                EventBookingHistoryQuantity = cancelQuantity,
-                EventBookingHistoryDetails =
-                    $"User cancelled {cancelQuantity} ticket(s). From {qty} → {remainingQty}. Refund {refundAmount:N0}",
-                EventBookingHistoryRelatedDate = DateOnly.FromDateTime(DateTime.Now),
-                EventBookingHistoryCreatedAt = DateTime.Now
-            };
-
-            _context.TblEventBookingHistories.Add(history);
-            _context.Update(booking);
-            await _context.SaveChangesAsync();
-
             try
             {
-                var evt = await _eventRepo.GetEventByIdAsync(booking.EventBookingEventId);
-                string eventName = evt?.Title ?? "Event";
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userIdStr))
+                    return Json(new { success = false, message = "You must be logged in." });
 
-                await _ticketEmailService.SendEventCancelEmailAsync(
-                    userId: booking.EventBookingUserId,
-                    eventName: eventName,
-                    bookingId: booking.EventBookingId,
-                    cancelledQty: cancelQuantity,
-                    remainingQty: remainingQty,
-                    refundAmount: refundAmount
-                );
-            }
-            catch
-            {
-            }
+                int userId = int.Parse(userIdStr);
 
-            return Json(new
+                var booking = await _bookingRepo.GetByIdAsync(bookingId);
+
+                if (booking == null || booking.EventBookingUserId != userId)
+                    return Json(new { success = false, message = "Booking not found." });
+
+                var evt = booking.EventBookingEvent;
+                if (evt == null)
+                    return Json(new { success = false, message = "Event info could not be loaded." });
+
+                // 1) Check 24h rule
+                if (evt.EventStart - DateTime.Now < TimeSpan.FromHours(24))
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "You can only cancel tickets at least 24 hours before the event starts."
+                    });
+                }
+
+                // 2) Quantity checks
+                int qty = booking.EventBookingQuantity ?? 0;
+
+                if (qty <= 0)
+                    return Json(new { success = false, message = "You have no active tickets to cancel." });
+
+                if (cancelQuantity <= 0)
+                    return Json(new { success = false, message = "Cancellation quantity must be greater than 0." });
+
+                if (cancelQuantity > qty)
+                    return Json(new { success = false, message = "Cancellation quantity exceeds remaining tickets." });
+
+                int remainingQty = qty - cancelQuantity;
+                decimal unitPrice = booking.EventBookingUnitPrice ?? 0;
+                decimal refundAmount = unitPrice * cancelQuantity;
+
+                // 3) Update booking (match SQL design)
+                booking.EventBookingQuantity = remainingQty;
+                booking.EventBookingTotalCost = remainingQty * unitPrice;
+
+                // PaymentStatus: 1 = Paid, 2 = PartiallyRefunded, 3 = Cancelled
+                booking.EventBookingPaymentStatus = remainingQty > 0 ? 2 : 3;
+
+                // Status: 0 = Cancelled (UI đang dùng 0 => "Cancelled")
+                if (remainingQty == 0)
+                {
+                    booking.EventBookingStatus = 0;
+                }
+
+                // Append small note
+                string smallLog =
+                    $"[Cancel {DateTime.Now:dd/MM HH:mm}] Cancelled {cancelQuantity} ticket(s) (remaining {remainingQty}).";
+
+                booking.EventBookingNotes =
+                    string.IsNullOrWhiteSpace(booking.EventBookingNotes)
+                        ? smallLog
+                        : booking.EventBookingNotes + "\n" + smallLog;
+
+                // 4) Write history row
+                var history = new TblEventBookingHistory
+                {
+                    EventBookingHistoryBookingId = booking.EventBookingId,
+                    EventBookingHistoryEventId = booking.EventBookingEventId,
+                    EventBookingHistoryUserId = userId,
+                    EventBookingHistoryAction = "PartialCancel",
+                    EventBookingHistoryDetails =
+                        $"User cancelled {cancelQuantity} ticket(s). From {qty} to {remainingQty}. Refund {refundAmount:N0}",
+                    EventBookingHistoryRelatedDate = DateOnly.FromDateTime(DateTime.Now),
+                    EventBookingHistoryQuantity = cancelQuantity,
+                    EventBookingHistoryCreatedAt = DateTime.Now
+                };
+
+                _context.TblEventBookingHistories.Add(history);
+                _context.Update(booking);
+                await _context.SaveChangesAsync();
+
+                // 5) Send email
+                try
+                {
+                    var evtDetail = await _eventRepo.GetEventByIdAsync(booking.EventBookingEventId, userId);
+                    string eventName = evtDetail?.Title ?? "Event";
+
+                    await _ticketEmailService.SendEventCancelEmailAsync(
+                        userId: booking.EventBookingUserId,
+                        eventName: eventName,
+                        bookingId: booking.EventBookingId,
+                        cancelledQty: cancelQuantity,
+                        remainingQty: remainingQty,
+                        refundAmount: refundAmount
+                    );
+                }
+                catch (Exception exMail)
+                {
+                    _logger.LogError(exMail, "Error sending event cancel email for booking {BookingId}", bookingId);
+                    // Không throw, vì hủy vé vẫn coi là thành công
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"Cancelled {cancelQuantity} ticket(s), refund {refundAmount:N0}₫."
+                });
+            }
+            catch (Exception ex)
             {
-                success = true,
-                message = $"Cancelled {cancelQuantity} ticket(s), refund {refundAmount:N0}₫."
-            });
+                _logger.LogError(ex, "PartialCancel error");
+                return Json(new
+                {
+                    success = false,
+                    message = "Error while processing your cancellation request."
+                });
+            }
         }
     }
 }

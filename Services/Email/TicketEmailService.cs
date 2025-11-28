@@ -31,22 +31,19 @@ namespace Semester03.Services.Email
         }
 
         // ====================================================================
-        // 1) EMAIL VÉ XEM PHIM
+        // 1) MOVIE TICKET EMAIL
         // ====================================================================
 
         /// <summary>
-        /// Overload cũ: chỉ gửi theo list showtimeSeatIds, không truyền thông tin giảm giá.
+        /// Old overload: only showtimeSeatIds, no discount info.
         /// </summary>
         public Task SendTicketsEmailAsync(int userId, List<int> showtimeSeatIds)
         {
-            // truyền null cho các tham số tiền để bên trong tự tính baseTotal
             return SendTicketsEmailAsync(userId, showtimeSeatIds, null, null, null);
         }
 
         /// <summary>
-        /// Gửi email vé xem phim + hiển thị tổng tiền / giảm giá / điểm thưởng.
-        /// originalAmount, discountAmount, finalAmount được truyền từ PaymentSuccess
-        /// để luôn khớp với VNPAY.
+        /// Send movie ticket email + total / discount / reward points.
         /// </summary>
         public async Task SendTicketsEmailAsync(
             int userId,
@@ -77,11 +74,9 @@ namespace Semester03.Services.Email
                 return;
             }
 
-            // Build danh sách vé gửi ra email + QR payload cho từng vé
             var ticketVmList = ticketDetails
                 .Select(t =>
                 {
-                    // QR payload: chuỗi duy nhất dựa trên thông tin vé
                     var qrPayload =
                         $"TICKET|MOVIE={t.MovieTitle}|CINEMA={t.CinemaName}|SCREEN={t.ScreenName}|TIME={t.ShowtimeStart:yyyy-MM-dd HH:mm}|SEAT={t.SeatLabel}";
 
@@ -98,7 +93,6 @@ namespace Semester03.Services.Email
                 })
                 .ToList();
 
-            // Tổng tiền tính theo giá vé (backup khi caller không truyền)
             var baseTotal = ticketVmList.Sum(t => t.Price);
 
             var effectiveOriginal = originalAmount ?? baseTotal;
@@ -106,9 +100,7 @@ namespace Semester03.Services.Email
             var effectiveDiscount = discountAmount ?? (effectiveOriginal - effectiveFinal);
             if (effectiveDiscount < 0) effectiveDiscount = 0;
 
-            // Điểm thưởng dựa trên số tiền thực trả (final)
             var pointsAwarded = (int)Math.Floor(effectiveFinal / 100m);
-
             var purchaseDateUtc = DateTime.UtcNow;
 
             var model = new TicketEmailViewModel
@@ -139,7 +131,7 @@ namespace Semester03.Services.Email
             {
                 await _emailSender.SendEmailAsync(
                     user.UsersEmail,
-                    "Vé ABCD Mall - Đơn hàng của bạn",
+                    "ABCD Mall Tickets – Your order",
                     html);
 
                 _logger.LogInformation("SendTicketsEmailAsync: ticket email sent to {Email}", user.UsersEmail);
@@ -152,7 +144,7 @@ namespace Semester03.Services.Email
         }
 
         // ====================================================================
-        // 2) EMAIL HỦY VÉ XEM PHIM
+        // 2) MOVIE TICKET CANCELLATION EMAIL
         // ====================================================================
         public async Task SendMovieCancelEmailAsync(
             int userId,
@@ -179,12 +171,12 @@ namespace Semester03.Services.Email
 
             await _emailSender.SendEmailAsync(
                 user.UsersEmail,
-                "Cancel xem phim – Xác nhận",
+                "Movie ticket cancellation – Confirmation",
                 html);
         }
 
         // ====================================================================
-        // 3) EMAIL HỦY VÉ SỰ KIỆN
+        // 3) EVENT TICKET CANCELLATION EMAIL
         // ====================================================================
         public async Task SendEventCancelEmailAsync(
             int userId,
@@ -217,7 +209,7 @@ namespace Semester03.Services.Email
                 "~/Areas/Client/Views/Emails/EventCancelEmail.cshtml",
                 model);
 
-            string subject = $"Cancel sự kiện – Mã #{bookingId}";
+            string subject = $"Event cancellation – Booking #{bookingId}";
 
             try
             {
@@ -232,7 +224,7 @@ namespace Semester03.Services.Email
         }
 
         // ====================================================================
-        // 4) EMAIL ĐẶT VÉ SỰ KIỆN THÀNH CÔNG
+        // 4) EVENT BOOKING SUCCESS EMAIL
         // ====================================================================
         public async Task SendEventBookingSuccessEmailAsync(int bookingId)
         {
@@ -261,7 +253,6 @@ namespace Semester03.Services.Email
                 return;
             }
 
-            // ================= LẤY ORGANIZER + LOCATION QUA EventRepository =================
             string organizerName = "ABCD Mall";
             string location = string.Empty;
 
@@ -318,7 +309,7 @@ namespace Semester03.Services.Email
                 "~/Areas/Client/Views/Emails/EventBookingEmail.cshtml",
                 model);
 
-            string subject = $"ABCD Mall – Xác nhận đặt vé sự kiện #{booking.EventBookingId}";
+            string subject = $"ABCD Mall – Event booking confirmation #{booking.EventBookingId}";
 
             try
             {

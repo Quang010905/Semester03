@@ -26,5 +26,6 @@ namespace Semester03.Areas.Client.Models.ViewModels
 
         // QR check-in
         public string QRCodeUrl { get; set; } = "";
+
     }
 }
