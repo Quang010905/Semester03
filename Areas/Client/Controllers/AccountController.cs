@@ -16,7 +16,7 @@ using System.Collections.Generic;
 namespace Semester03.Areas.Client.Controllers
 {
     [Area("Client")]
-    [Route("Client/[controller]/[action]")]
+    [Route("[area]/[controller]/[action]")]
     public class AccountController : Controller
     {
         private readonly UserRepository _userRepo;
@@ -281,47 +281,23 @@ namespace Semester03.Areas.Client.Controllers
         // ------------------- LOGOUT unchanged -------------------
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Logout()
+        public IActionResult Logout()
         {
-            _logger?.LogInformation("Logout requested for user {User}, Authenticated={Auth}", User?.Identity?.Name, User?.Identity?.IsAuthenticated);
-
-            foreach (var key in Request.Cookies.Keys)
-            {
-                _logger?.LogInformation("Request cookie: {Key} = {Val}", key, Request.Cookies[key]);
-            }
-
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            await HttpContext.SignOutAsync();
-
-            var authCookieName = ".AspNetCore.Cookies";
-            Response.Cookies.Delete(authCookieName);
-            Response.Cookies.Append(authCookieName, "", new CookieOptions
-            {
-                Expires = DateTimeOffset.Now.AddDays(-1),
-                HttpOnly = true,
-                Secure = Request.IsHttps,
-                Path = "/",
-                SameSite = SameSiteMode.Lax
-            });
-
+            // Xóa cookie GigaMall_LastUserId (cookie phụ của bạn)
             Response.Cookies.Delete("GigaMall_LastUserId");
-            Response.Cookies.Append("GigaMall_LastUserId", "", new CookieOptions
-            {
-                Expires = DateTimeOffset.Now.AddDays(-1),
-                HttpOnly = false,
-                Secure = Request.IsHttps,
-                Path = "/",
-                SameSite = SameSiteMode.Lax
-            });
 
-            _logger?.LogInformation("Logout finished.");
+            var redirectUrl = Url.Action("Login", "Account", new { area = "Client" });
 
-            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-            {
-                return Ok();
-            }
-
-            return RedirectToAction("Index", "Home", new { area = "Client" });
+            // Để CookieAuthentication middleware xử lý signout + redirect
+            return SignOut(
+                new AuthenticationProperties
+                {
+                    RedirectUri = redirectUrl
+                },
+                CookieAuthenticationDefaults.AuthenticationScheme
+            );
         }
+
+
     }
 }
