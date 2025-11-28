@@ -9,7 +9,7 @@
     ViewData["Title"] = "Stores";
     var types = ViewBag.TenantTypes as List<Semester03.Areas.Admin.Models.TenantType>;
 
-    // ===== HÀM ẢNH CHO STORE / TENANT =====
+    // ===== IMAGE HELPER FOR STORES / TENANTS =====
     Func<string, string> ImgStore = (raw) =>
     {
         var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
@@ -19,14 +19,11 @@
             if (string.IsNullOrWhiteSpace(raw))
                 return noImageUrl;
 
-            // nếu đã là URL tuyệt đối
             if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 return raw;
 
-            // chuẩn hóa
             var file = raw.Replace("\\", "/").Trim();
 
-            // nếu raw chứa "Content/Uploads/Tenant", lấy filename cuối
             var keyword = "Content/Uploads/Tenant";
             var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
             if (idxKeyword >= 0)
@@ -35,7 +32,6 @@
                 if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
             }
 
-            // bỏ prefix "wwwroot/", "~/" hoặc "/"
             if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
                 file = file.Substring("wwwroot/".Length);
             if (file.StartsWith("~/"))
@@ -46,7 +42,6 @@
             if (string.IsNullOrWhiteSpace(file))
                 return noImageUrl;
 
-            // lấy IWebHostEnvironment để check file thật
             var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
             if (env == null)
             {
@@ -76,29 +71,48 @@
 
 @section Styles {
     <style>
+        /* ===== PAGE LAYOUT ================================================= */
         .stores-page {
             padding-block: 1.5rem 2.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .stores-header {
             display: flex;
-            align-items: center;
+            align-items: flex-end;
             justify-content: space-between;
-            gap: 1rem;
+            gap: 1.25rem;
             flex-wrap: wrap;
+        }
+
+        .stores-kicker {
+            font-weight: 800;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            font-size: .8rem;
+            color: #9ca3af;
         }
 
         .stores-title {
             margin: 0;
             font-weight: 800;
-            letter-spacing: -0.03em;
+            letter-spacing: -0.04em;
+            font-size: 1.9rem;
         }
+
+            .stores-title span {
+                background: linear-gradient(90deg,#4f46e5,#ec4899);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
 
         .stores-subtitle {
             font-size: 0.9rem;
             color: #6b7280;
         }
 
+        /* ===== FILTER BAR ================================================== */
         .stores-filter-form {
             display: flex;
             flex-wrap: wrap;
@@ -108,48 +122,131 @@
 
             .stores-filter-form .form-control,
             .stores-filter-form .form-select {
-                min-width: 150px;
+                min-width: 170px;
+                border-radius: 999px;
+                font-size: .85rem;
             }
 
             .stores-filter-form .btn {
                 white-space: nowrap;
+                border-radius: 999px;
+                font-size: .85rem;
+                padding-inline: 1rem;
             }
 
+        /* ===== STORE CARD (match cinema look) ============================= */
         .store-card {
-            border-radius: 1rem;
+            position: relative;
+            border-radius: 1.15rem;
             overflow: hidden;
-            border: none;
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
-            transition: transform 0.22s ease, box-shadow 0.22s ease;
-            background: white;
+            border: 1px solid rgba(148,163,184,0.4);
+            background: radial-gradient(circle at 0 0,#eef2ff,#ffffff 55%);
+            box-shadow: 0 12px 30px rgba(15,23,42,0.12);
+            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
         }
 
             .store-card:hover {
                 transform: translateY(-6px);
-                box-shadow: 0 18px 36px rgba(15, 23, 42, 0.2);
+                box-shadow: 0 18px 40px rgba(15,23,42,0.22);
+                border-color: rgba(59,130,246,0.7);
             }
 
-            .store-card img {
-                height: 160px;
-                object-fit: cover;
-                transition: transform 0.45s ease;
+        .store-image-wrapper {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .store-card img {
+            height: 190px;
+            width: 100%;
+            object-fit: cover;
+            display: block;
+            transform-origin: center;
+            transition: transform .35s ease;
+        }
+
+        .store-card:hover img {
+            transform: scale(1.05);
+        }
+
+        .store-gradient-overlay {
+            position: absolute;
+            inset: auto 0 0 0;
+            height: 40%;
+            background: linear-gradient(to top, rgba(15,23,42,0.96), transparent);
+            pointer-events: none;
+        }
+
+        .store-badge {
+            position: absolute;
+            left: .6rem;
+            top: .6rem;
+            background: rgba(15, 23, 42, 0.86);
+            color: #e5e7eb;
+            font-size: 0.7rem;
+            padding: .25rem .6rem;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+            z-index: 2;
+        }
+
+            .store-badge i {
+                font-size: .85rem;
             }
 
-            .store-card:hover img {
-                transform: scale(1.04);
+        .store-quick-link {
+            position: absolute;
+            right: .7rem;
+            bottom: .85rem;
+            z-index: 3;
+            padding-inline: .9rem;
+            padding-block: .25rem;
+            border-radius: 999px;
+            font-size: .78rem;
+            backdrop-filter: blur(8px);
+            background: rgba(15,23,42,0.8);
+            border: 1px solid rgba(148,163,184,0.7);
+            color: #f9fafb;
+        }
+
+            .store-quick-link i {
+                font-size: .85rem;
             }
 
-            .store-card .card-body {
-                padding: 0.75rem 0.75rem 0.85rem;
-            }
+        .store-card .card-body {
+            padding: 0.7rem 0.9rem 0.85rem;
+            text-align: left;
+        }
 
-            .store-card .card-title {
-                font-size: 0.95rem;
-                margin-bottom: 0.15rem;
-            }
+        .store-name {
+            font-size: 0.95rem;
+            margin-bottom: 0.15rem;
+            font-weight: 700;
+        }
 
         .store-position {
             font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .store-meta {
+            font-size: .78rem;
+            color: #9ca3af;
+        }
+
+        .store-rating {
+            color: #facc15;
+            font-size: .9rem;
+        }
+
+        .store-footer {
+            padding: 0.4rem 0.9rem 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: .78rem;
         }
 
         .store-view-btn {
@@ -158,20 +255,7 @@
             font-size: .8rem;
         }
 
-        .store-badge {
-            position: absolute;
-            left: .6rem;
-            top: .6rem;
-            background: rgba(15, 23, 42, 0.75);
-            color: #e5e7eb;
-            font-size: 0.7rem;
-            padding: .25rem .5rem;
-            border-radius: 999px;
-            display: inline-flex;
-            align-items: center;
-            gap: .25rem;
-        }
-
+        /* ===== EMPTY STATE & PAGINATION =================================== */
         .empty-state {
             padding: 2.5rem 1rem;
             text-align: center;
@@ -186,48 +270,69 @@
                 margin-bottom: .25rem;
             }
 
+        .pagination .page-link {
+            border-radius: 999px;
+            margin: 0 .15rem;
+            font-size: .85rem;
+        }
+
+        .pagination .page-item.active .page-link {
+            background: linear-gradient(90deg,#4f46e5,#0ea5e9);
+            border-color: transparent;
+        }
+
         @@media (max-width: 768px) {
             .stores-header {
                 align-items: flex-start;
+            }
+
+            .store-card img {
+                height: 170px;
             }
         }
     </style>
 }
 
 <div class="container stores-page">
+    <!-- HEADER -->
     <div class="stores-header mb-3">
         <div>
-            <h3 class="stores-title">@ViewBag.CurrentTypeName</h3>
+            <div class="stores-kicker">Store directory</div>
+            <h3 class="stores-title">
+                <span>@(ViewBag.CurrentTypeName ?? "All stores")</span>
+            </h3>
             <div class="stores-subtitle">
-                Discover stores and explore their products.
+                Discover your favorite brands, cafés and experiences at our mall.
             </div>
         </div>
 
+        <!-- FILTER BAR -->
         <form method="get" class="stores-filter-form">
             <input type="text"
                    name="search"
                    value="@ViewBag.SearchQuery"
                    class="form-control form-control-sm"
-                   placeholder="Search stores..." />
+                   placeholder="Search stores by name..." />
 
             <select name="typeId" class="form-select form-select-sm">
-                <option value="">All types</option>
+                <option value="">All categories</option>
                 @if (types != null)
                 {
                     foreach (var t in types)
                     {
-                        var selected = t.Name == (string)ViewBag.CurrentTypeName ? "selected" : "";
+                        var selected = t.Id == (int?)ViewBag.CurrentTypeId ? "selected" : "";
                         <option value="@t.Id" @selected>@t.Name</option>
                     }
                 }
             </select>
 
-            <button class="btn btn-sm btn-primary">
-                <i class="bi bi-funnel me-1"></i>Filter
+            <button class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-funnel me-1"></i> Filter
             </button>
         </form>
     </div>
 
+    <!-- GRID -->
     <div class="row g-3">
         @if (Model != null && Model.Any())
         {
@@ -235,21 +340,42 @@
             {
                 var img = ImgStore(s.TenantImg);
 
-                <div class="col-6 col-md-4 col-lg-3 col-xl-2">
-                    <div class="card store-card h-100 position-relative">
-                        <div class="position-relative">
-                            <img src="@img" class="card-img-top" alt="@s.TenantName" />
-                            <div class="store-badge">
-                                <i class="bi bi-shop"></i>Store
-                            </div>
+                <div class="col-6 col-md-4 col-lg-3 col-xl-3">
+                    <div class="store-card h-100">
+                        <div class="store-image-wrapper">
+                            <span class="store-badge">
+                                <i class="bi bi-shop"></i> Store
+                            </span>
+
+                            <a href="@Url.Action("Details", "Stores", new { id = s.TenantId })">
+                                <img src="@img" class="card-img-top" alt="@s.TenantName" />
+                            </a>
+
+                            <div class="store-gradient-overlay"></div>
+
+                            <a href="@Url.Action("Details", "Stores", new { id = s.TenantId })"
+                               class="store-quick-link">
+                                <i class="bi bi-arrow-right-circle me-1"></i> Explore
+                            </a>
                         </div>
-                        <div class="card-body text-center">
-                            <h6 class="card-title fw-bold text-truncate" title="@s.TenantName">
+
+                        <div class="card-body">
+                            <h6 class="store-name text-truncate" title="@s.TenantName">
                                 @s.TenantName
                             </h6>
-                            <small class="text-muted d-block mb-1 store-position text-truncate">
-                                @s.Position
-                            </small>
+                            <div class="store-position text-truncate mb-1">
+                                <i class="bi bi-geo-alt me-1"></i>@s.Position
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center store-meta">
+                                <span class="text-muted">Open daily</span>
+                                <span class="store-rating">★★★★☆</span>
+                            </div>
+                        </div>
+
+                        <div class="store-footer">
+                            <span class="text-muted">
+                                <i class="bi bi-bag me-1"></i>Visit store page
+                            </span>
                             <a href="@Url.Action("Details", "Stores", new { id = s.TenantId })"
                                class="btn btn-outline-primary btn-sm store-view-btn">
                                 View
@@ -271,23 +397,23 @@
                 </div>
             </div>
         }
-
-        <!-- PAGINATION -->
-        @if (ViewBag.TotalPages > 1)
-        {
-            <nav class="d-flex justify-content-center mt-4">
-                <ul class="pagination">
-                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
-                    {
-                        <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
-                            <a class="page-link"
-                               href="@Url.Action("Index", "Stores", new { typeId = ViewBag.CurrentTypeId, search = ViewBag.SearchQuery, page = i })">
-                                @i
-                            </a>
-                        </li>
-                    }
-                </ul>
-            </nav>
-        }
     </div>
+
+    <!-- PAGINATION -->
+    @if (ViewBag.TotalPages > 1)
+    {
+        <nav class="d-flex justify-content-center mt-4">
+            <ul class="pagination">
+                @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                {
+                    <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
+                        <a class="page-link"
+                           href="@Url.Action("Index", "Stores", new { typeId = ViewBag.CurrentTypeId, search = ViewBag.SearchQuery, page = i })">
+                            @i
+                        </a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
 </div>

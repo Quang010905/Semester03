@@ -44,8 +44,10 @@
                 return Url.Content("~/Content/Uploads/Movies/" + Uri.EscapeDataString(file));
             }
 
-            // DÙNG System.IO.Path.Combine để tránh xung đột với bất kỳ tên biến Path nào
-            var physical = System.IO.Path.Combine(env.WebRootPath ?? "wwwroot", "Content", "Uploads", "Movies", file);
+            var physical = System.IO.Path.Combine(
+                env.WebRootPath ?? "wwwroot",
+                "Content", "Uploads", "Movies", file
+            );
 
             if (System.IO.File.Exists(physical))
             {
@@ -72,106 +74,257 @@
         var target = Url.Action("BookTicket", "Booking", new { area = "Client", movieId });
         return Url.Action("Login", "Account", new { area = "Client", returnUrl = target });
     };
+
+    var mallName = ViewData["MallName"] as string ?? "ABCD Mall";
 }
 
 @section Styles {
     <style>
-        .movie-detail-page {
+        :root {
+            --mint-main: #10b981;
+            --mint-soft: #a7f3d0;
+            --mint-glow: rgba(34, 197, 94, 0.55);
+            --primary: #0ea5e9;
+            --bg-page: radial-gradient(circle at top, #ccfbf1 0, #e0f2fe 30%, #f9fafb 70%);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --glass-bg: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.04));
+            --glass-border: rgba(255,255,255,0.35);
+            --glass-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+            --radius-lg: 1.4rem;
+        }
+
+        body {
+            background: var(--bg-page);
+        }
+
+        .movie-detail-page-wrapper {
+            padding-block: 1.7rem 2.8rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: .45rem;
+            font-size: 0.85rem;
+            color: #0f172a;
+            text-decoration: none;
+            padding: .33rem .85rem;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.7);
+            border: 1px solid rgba(148,163,184,0.35);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all .18s ease;
+            box-shadow: 0 12px 30px rgba(15,23,42,0.12);
+        }
+
+            .back-link i {
+                font-size: .95rem;
+            }
+
+            .back-link:hover {
+                transform: translateX(-2px) translateY(-1px);
+                box-shadow: 0 18px 45px rgba(15,23,42,0.2);
+                background: rgba(255,255,255,0.9);
+            }
+
+        .movie-main-card {
             max-width: 1200px;
             margin: 0 auto;
+            background: var(--glass-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            padding: 1.7rem 1.9rem 2rem;
+            backdrop-filter: blur(24px) saturate(160%);
+            -webkit-backdrop-filter: blur(24px) saturate(160%);
+            position: relative;
+            overflow: hidden;
+        }
+
+            .movie-main-card::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                background: radial-gradient(circle at 0% 0%, rgba(16,185,129,0.22), transparent 52%), radial-gradient(circle at 100% 0%, rgba(56,189,248,0.21), transparent 55%);
+                opacity: .75;
+            }
+
+        .movie-main-inner {
+            position: relative;
+            z-index: 1;
         }
 
         .movie-hero {
             display: grid;
-            grid-template-columns: 320px minmax(0, 1fr);
-            gap: 2rem;
+            grid-template-columns: minmax(0, 290px) minmax(0, 1fr);
+            gap: 1.8rem;
             align-items: flex-start;
         }
 
-        .movie-poster {
-            border-radius: 1rem;
+        .movie-poster-glass {
+            border-radius: 1.3rem;
             overflow: hidden;
-            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
-            background: #fff;
+            position: relative;
+            background: radial-gradient(circle at top, #0f172a, #022c22);
+            box-shadow: 0 26px 60px rgba(15,23,42,0.7);
         }
 
-            .movie-poster img {
+            .movie-poster-glass img {
                 width: 100%;
                 height: 100%;
+                min-height: 320px;
                 object-fit: cover;
+                display: block;
+                transition: transform .7s ease;
             }
 
-        .movie-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: .25rem;
+            .movie-poster-glass::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(to top, rgba(15,23,42,0.65), transparent 40%);
+                mix-blend-mode: soft-light;
+            }
+
+            .movie-poster-glass:hover img {
+                transform: scale(1.06);
+            }
+
+        .movie-pill {
+            position: absolute;
+            left: .85rem;
+            top: .85rem;
+            background: radial-gradient(circle at 0 0, rgba(45,212,191,0.9), rgba(14,165,233,0.7));
+            color: #0f172a;
+            padding: 0.3rem .75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            box-shadow: 0 16px 40px rgba(8,47,73,0.65);
+        }
+
+            .movie-pill i {
+                font-size: .9rem;
+            }
+
+        .movie-title-main {
+            font-size: 2.1rem;
+            font-weight: 800;
+            margin-bottom: .2rem;
+            letter-spacing: -0.03em;
+            color: var(--text-main);
         }
 
         .movie-sub {
-            color: #6b7280;
+            color: var(--text-muted);
             margin-bottom: .35rem;
-            font-size: .95rem;
+            font-size: .92rem;
         }
 
         .movie-info-small {
-            color: #6b7280;
+            color: var(--text-muted);
             font-size: .85rem;
             margin-bottom: .75rem;
         }
 
         .rate-badge {
-            font-weight: 700;
-            background: linear-gradient(90deg,#ffb347,#ffcc33);
-            color: #111;
-            padding: .25rem .6rem;
-            border-radius: .5rem;
-            font-size: .85rem;
-            box-shadow: 0 4px 14px rgba(250,204,21,0.4);
+            font-weight: 800;
+            background: radial-gradient(circle at 0 0, #facc15, #f97316);
+            color: #111827;
+            padding: .3rem .7rem;
+            border-radius: 999px;
+            font-size: .9rem;
+            box-shadow: 0 18px 40px rgba(245,158,11,0.65);
         }
 
-        .stars {
+            .rate-badge small {
+                font-size: .75rem;
+                opacity: .85;
+            }
+
+        .stars,
+        .stars-readonly {
             display: flex;
-            gap: .2rem;
+            gap: .12rem;
         }
 
         .star {
-            font-size: 1.35rem;
+            font-size: 1.3rem;
             cursor: pointer;
-            color: #d1d5db;
+            color: #cbd5e1;
             transition: .12s ease;
         }
 
-            .star.filled, .star.bi-star-fill {
+            .star.filled,
+            .star.bi-star-fill {
                 color: #fbbf24;
                 transform: scale(1.06);
             }
 
-        .btn-primary-ghost {
-            background: linear-gradient(90deg,#0d6efd,#4f46e5);
+        .btn-book-mint {
+            background: linear-gradient(120deg, #22c55e, #14b8a6);
             border: none;
-            color: #fff !important;
-            padding: .55rem 1.2rem;
-            border-radius: .6rem;
-            font-weight: 600;
-            box-shadow: 0 6px 20px rgba(37,99,235,0.22);
+            color: #0f172a !important;
+            padding: .55rem 1.5rem;
+            border-radius: 999px;
+            font-weight: 650;
+            box-shadow: 0 18px 40px rgba(34,197,94,0.5);
         }
+
+            .btn-book-mint i {
+                font-size: 1rem;
+            }
+
+            .btn-book-mint:hover {
+                filter: brightness(1.05);
+                transform: translateY(-1px);
+            }
 
         .synopsis-card {
-            background: #fff;
+            margin-top: 1rem;
+            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(240,253,250,0.9));
             padding: 1rem 1.25rem;
             border-radius: 1rem;
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 8px 22px rgba(0,0,0,0.05);
+            border: 1px solid rgba(226,232,240,0.9);
+            box-shadow: 0 10px 26px rgba(15,23,42,0.08);
         }
 
-        .comment-box {
+            .synopsis-card h5 {
+                font-weight: 700;
+                margin-bottom: .35rem;
+            }
+
+            .synopsis-card p {
+                margin-bottom: 0;
+                font-size: .94rem;
+                color: #374151;
+            }
+
+        .comment-box-glass {
             margin-top: 1.5rem;
-            background: #fff;
-            border-radius: 1rem;
-            padding: 1.3rem;
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 8px 22px rgba(0,0,0,0.05);
+            background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(241,245,249,0.95));
+            border-radius: 1.1rem;
+            padding: 1.3rem 1.35rem;
+            border: 1px solid rgba(226,232,240,0.9);
+            box-shadow: 0 12px 30px rgba(15,23,42,0.08);
         }
+
+            .comment-box-glass h6 {
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                gap: .4rem;
+                font-size: .98rem;
+            }
+
+                .comment-box-glass h6 i {
+                    color: var(--mint-main);
+                }
 
         .comment-item {
             border-bottom: 1px solid #e5e7eb;
@@ -192,113 +345,164 @@
             color: #9ca3af;
         }
 
+        .comment-text {
+            margin-top: .25rem;
+            font-size: .9rem;
+        }
+
+        .empty-comments {
+            font-size: .9rem;
+            color: var(--text-muted);
+        }
+
         @@media (max-width: 992px) {
             .movie-hero {
-                grid-template-columns: 1fr;
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .movie-poster-glass img {
+                min-height: 260px;
+            }
+        }
+
+        @@media (max-width: 767.98px) {
+            .movie-main-card {
+                padding: 1.2rem 1.1rem 1.5rem;
+            }
+
+            .movie-title-main {
+                font-size: 1.7rem;
             }
         }
     </style>
 }
 
-<div class="container py-4 movie-detail-page">
-    <a class="btn btn-outline-secondary btn-sm mb-3" href="@Url.Action("Index","Cinema", new { area = "Client" })">&larr; Back to cinema</a>
+<div class="movie-detail-page-wrapper">
+    <div class="container">
+        <a class="back-link mb-3" href="@Url.Action("Index", "Cinema", new { area = "Client" })">
+            <i class="bi bi-arrow-left"></i> Back to cinema
+        </a>
 
-    <div class="movie-hero">
-        <!-- Poster -->
-        <div class="movie-poster">
-            <img src="@poster" alt="@Model.Title" />
-        </div>
-
-        <!-- Info -->
-        <div>
-            <div class="movie-title">@Model.Title</div>
-
-            <div class="movie-sub">
-                @Model.Genre
-                @if (!string.IsNullOrWhiteSpace(Model.Director))
-                {
-                    <span> • Directed by @Model.Director</span>
-                }
-            </div>
-
-            <div class="movie-info-small mb-2">
-                @(Model.DurationMin ?? 0) min • @(Model.StartDate?.ToString("dd MMM yyyy") ?? "--")
-            </div>
-
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <div class="rate-badge">@((Model.Rate ?? 0).ToString("0.0")) <small>/5</small></div>
-                <div class="stars">
-                    @for (int i = 1; i <= 5; i++)
-                    {
-                        var filled = Model.Rate.HasValue && Model.Rate.Value >= i;
-                        <i class="star @(filled ? "bi-star-fill filled" : "bi-star")"></i>
-                    }
-                </div>
-            </div>
-
-            <a href="@BookHref(Model.Id)" class="btn btn-primary-ghost mb-4"><i class="bi bi-ticket-perforated me-1"></i> Book tickets</a>
-
-            <div class="synopsis-card">
-                <h5 class="mb-2">Synopsis</h5>
-                <p class="text-muted mb-0">@Model.Description</p>
-            </div>
-
-            <div class="comment-box">
-                <h6>Comments & Rating</h6>
-
-                @if (User?.Identity?.IsAuthenticated == true)
-                {
-                    @Html.AntiForgeryToken()
-                    <div class="mb-2 mt-2"><strong>Your rating:</strong></div>
-                    <div id="userStars" class="stars mb-3">
-                        @for (int i = 1; i <= 5; i++)
-                        {
-                            <i class="star bi bi-star" data-value="@i"></i>
-                        }
+        <div class="movie-main-card">
+            <div class="movie-main-inner">
+                <div class="movie-hero">
+                    <!-- Poster -->
+                    <div class="movie-poster-glass">
+                        <img src="@poster" alt="@Model.Title" />
+                        <div class="movie-pill">
+                            <i class="bi bi-camera-reels"></i>
+                            <span>Now showing at @mallName</span>
+                        </div>
                     </div>
 
-                    <textarea id="commentText" class="form-control mb-2" rows="3" placeholder="Write your comment..."></textarea>
-                    <button id="submitComment" class="btn btn-primary btn-sm">Submit</button>
-                }
-                else
-                {
-                    <div class="alert alert-info mt-2">
-                        Please
-                        <a href="@Url.Action("Login", "Account", new { area = "Client", returnUrl = Url.Action("Details","Cinema", new { area = "Client", id = Model.Id }) })">sign in</a>
-                        to leave a comment.
-                    </div>
-                }
+                    <!-- Info + comments -->
+                    <div>
+                        <div class="movie-title-main">@Model.Title</div>
 
-                <hr />
+                        <div class="movie-sub">
+                            @Model.Genre
+                            @if (!string.IsNullOrWhiteSpace(Model.Director))
+                            {
+                                <span> • Directed by @Model.Director</span>
+                            }
+                        </div>
 
-                <div id="commentsList">
-                    @if (Model.Comments != null && Model.Comments.Any())
-                    {
-                        foreach (var c in Model.Comments)
-                        {
-                            <div class="comment-item">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <span class="comment-user">@c.UserName</span>
-                                        <span class="comment-time">@c.CreatedAt?.ToString("dd MMM yyyy HH:mm")</span>
-                                    </div>
-                                    <div class="stars">
-                                        @for (int i = 1; i <= 5; i++)
-                                        {
-                                            var filled = c.Rate >= i;
-                                            <i class="star @(filled ? "bi-star-fill filled" : "bi-star")"></i>
-                                        }
-                                    </div>
-                                </div>
-                                <div class="mt-1">@Html.Raw(c.Text)</div>
+                        <div class="movie-info-small mb-2">
+                            @(Model.DurationMin ?? 0) min
+                            @if (Model.StartDate.HasValue)
+                            {
+                                <span> • From @Model.StartDate.Value.ToString("dd MMM yyyy")</span>
+                            }
+                        </div>
+
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rate-badge">
+                                @((Model.Rate ?? 0).ToString("0.0")) <small>/5</small>
                             </div>
-                        }
-                    }
-                    else
-                    {
-                        <div class="text-muted">No comments yet.</div>
-                    }
-                </div>
+                            <div class="stars-readonly">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    var filled = Model.Rate.HasValue && Model.Rate.Value >= i;
+                                    <i class="star @(filled ? "bi-star-fill filled" : "bi-star")"></i>
+                                }
+                            </div>
+                        </div>
+
+                        <a href="@BookHref(Model.Id)" class="btn btn-book-mint mb-3">
+                            <i class="bi bi-ticket-perforated me-1"></i> Book tickets
+                        </a>
+
+                        <div class="synopsis-card">
+                            <h5>Synopsis</h5>
+                            <p class="text-muted mb-0">@Model.Description</p>
+                        </div>
+
+                        <div class="comment-box-glass">
+                            <h6><i class="bi bi-chat-right-text"></i> Comments & Rating</h6>
+
+                            @if (User?.Identity?.IsAuthenticated == true)
+                            {
+                                @Html.AntiForgeryToken()
+                                <div class="mb-2 mt-2"><strong>Your rating:</strong></div>
+                                <div id="userStars" class="stars mb-3">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        <i class="star bi bi-star" data-value="@i"></i>
+                                    }
+                                </div>
+
+                                <textarea id="commentText"
+                                      class="form-control mb-2"
+                                      rows="3"
+                                      placeholder="Share your thoughts about this movie..."></textarea>
+                                <button id="submitComment" class="btn btn-primary btn-sm rounded-pill px-3">
+                                    <i class="bi bi-send me-1"></i>Submit
+                                </button>
+                            }
+                            else
+                            {
+                                <div class="alert alert-info mt-2 py-2">
+                                    Please
+                                    <a href="@Url.Action("Login", "Account", new { area = "Client", returnUrl = Url.Action("Details", "Cinema", new { area = "Client", id = Model.Id }) })">sign in</a>
+                                    to leave a comment and rating.
+                                </div>
+                            }
+
+                            <hr class="my-3" />
+
+                            <div id="commentsList">
+                                @if (Model.Comments != null && Model.Comments.Any())
+                                {
+                                    foreach (var c in Model.Comments)
+                                    {
+                                        <div class="comment-item">
+                                            <div class="d-flex justify-content-between flex-wrap gap-2">
+                                                <div>
+                                                    <span class="comment-user">@c.UserName</span>
+                                                    <span class="comment-time">@c.CreatedAt?.ToString("dd MMM yyyy HH:mm")</span>
+                                                </div>
+                                                <div class="stars-readonly">
+                                                    @for (int i = 1; i <= 5; i++)
+                                                    {
+                                                        var filled = c.Rate >= i;
+                                                        <i class="star @(filled ? "bi-star-fill filled" : "bi-star")"></i>
+                                                    }
+                                                </div>
+                                            </div>
+                                            <div class="comment-text">
+                                                @Html.Raw(System.Net.WebUtility.HtmlEncode(c.Text))
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="empty-comments">No comments yet — be the first!</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- /movie-hero -->
             </div>
         </div>
     </div>
@@ -332,27 +536,47 @@
             if (!btn) return;
 
             btn.addEventListener('click', async () => {
-                const text = document.getElementById('commentText').value.trim();
+                const textEl = document.getElementById('commentText');
+                const text = (textEl?.value || '').trim();
                 if (!selected) return alert('Please choose a rating.');
                 if (!text) return alert('Please write a comment.');
 
-                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                const token = tokenInput ? tokenInput.value : '';
 
-                const resp = await fetch('@Url.Action("AddComment", "Cinema", new { area = "Client" })', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'RequestVerificationToken': token
-                    },
-                    body: new URLSearchParams({
-                        movieId: '@Model.Id',
-                        rate: selected,
-                        text: text
-                    })
-                });
+                btn.disabled = true;
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Submitting...';
 
-                const data = await resp.json();
-                alert(data?.message ?? 'Comment submitted.');
+                try {
+                    const resp = await fetch('@Url.Action("AddComment", "Cinema", new { area = "Client" })', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                            'RequestVerificationToken': token,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: new URLSearchParams({
+                            movieId: '@Model.Id',
+                            rate: selected,
+                            text: text
+                        })
+                    });
+
+                    const data = await resp.json();
+                    alert(data?.message ?? 'Comment submitted.');
+
+                    // Optionally reload to show new comment & updated rating
+                    if (data?.success) {
+                        window.location.reload();
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('Server error. Please try again later.');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
             });
         })();
     </script>

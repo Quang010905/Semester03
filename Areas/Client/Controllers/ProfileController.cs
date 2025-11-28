@@ -67,7 +67,7 @@ namespace Semester03.Areas.Client.Controllers
                 return Json(new
                 {
                     success = false,
-                    message = "Bạn chưa đăng nhập."
+                    message = "You are not logged in."
                 });
             }
 
@@ -76,7 +76,7 @@ namespace Semester03.Areas.Client.Controllers
                 return Json(new
                 {
                     success = false,
-                    message = "Dữ liệu gửi lên không hợp lệ."
+                    message = "The data submitted is invalid."
                 });
             }
 
@@ -93,14 +93,14 @@ namespace Semester03.Areas.Client.Controllers
                 return Json(new
                 {
                     success = false,
-                    message = error ?? "Cập nhật thất bại."
+                    message = error ?? "Update failed."
                 });
             }
 
             return Json(new
             {
                 success = true,
-                message = "Cập nhật hồ sơ thành công."
+                message = "Profile updated successfully."
             });
         }
     }

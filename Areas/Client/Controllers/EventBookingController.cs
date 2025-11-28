@@ -58,7 +58,7 @@ namespace Semester03.Areas.Client.Controllers
 
             decimal pricePerTicket = evt.Price ?? 0m;
 
-            // fallback nếu trong TblEvents chưa mapping Price
+            // Fallback if the Price is not mapped in TblEvents
             if (pricePerTicket <= 0m)
             {
                 try
@@ -113,8 +113,8 @@ namespace Semester03.Areas.Client.Controllers
                 var evt = await _eventRepo.GetEventByIdAsync(eventId);
                 if (evt == null)
                 {
-                    if (IsAjaxRequest()) return Json(new { success = false, message = "Sự kiện không tồn tại." });
-                    TempData["BookingError"] = "Sự kiện không tồn tại.";
+                    if (IsAjaxRequest()) return Json(new { success = false, message = "Event does not exist." });
+                    TempData["BookingError"] = "Event does not exist.";
                     return RedirectToAction("Index", "Event");
                 }
 
@@ -123,17 +123,17 @@ namespace Semester03.Areas.Client.Controllers
 
                 if (quantity > available)
                 {
-                    var msg = $"Không đủ slot. Còn {available} slot.";
+                    var msg = $"Not enough slots. Remaining {available} slot(s).";
 
                     if (IsAjaxRequest()) return Json(new { success = false, message = msg });
                     TempData["BookingError"] = msg;
                     return RedirectToAction("Register", new { id = eventId });
                 }
 
-                // ===== LẤY GIÁ =====
+                // ===== GET TICKET PRICE =====
                 decimal pricePerTicket = evt.Price ?? 0m;
 
-                // fallback
+                // Fallback price
                 if (pricePerTicket <= 0m)
                 {
                     try
@@ -181,7 +181,7 @@ namespace Semester03.Areas.Client.Controllers
                         notes: notes
                     );
 
-                    // Gửi email xác nhận đặt vé sự kiện
+                    // Send confirmation email for event booking
                     _ = Task.Run(async () =>
                     {
                         try
@@ -239,9 +239,9 @@ namespace Semester03.Areas.Client.Controllers
             {
                 _logger.LogError(ex, "CreateBooking error");
 
-                if (IsAjaxRequest()) return Json(new { success = false, message = "Lỗi server." });
+                if (IsAjaxRequest()) return Json(new { success = false, message = "Server error." });
 
-                TempData["BookingError"] = "Lỗi hệ thống khi đặt vé.";
+                TempData["BookingError"] = "System error while creating booking.";
                 return RedirectToAction("Register", new { id = eventId });
             }
         }
@@ -276,10 +276,10 @@ namespace Semester03.Areas.Client.Controllers
                 if (!marked)
                 {
                     _logger.LogWarning("PaymentCallbackVnpay: MarkBookingPaidAsync({BookingId}) failed", bookingId);
-                    return RedirectToAction("PaymentFailed", new { message = "Không tìm thấy booking hoặc không cập nhật được trạng thái thanh toán." });
+                    return RedirectToAction("PaymentFailed", new { message = "Booking not found or payment status could not be updated." });
                 }
 
-                // Gửi email xác nhận đặt vé sự kiện sau khi thanh toán thành công
+                // Send confirmation email after successful payment
                 try
                 {
                     await _ticketEmailService.SendEventBookingSuccessEmailAsync(bookingId);
@@ -332,9 +332,9 @@ namespace Semester03.Areas.Client.Controllers
             var now = DateTime.Now;
 
             string status =
-                (booking.EventBookingStatus ?? 0) == 0 ? "Đã hủy" :
-                (evtDetail.EndDate ?? evtDetail.StartDate) <= now ? "Đã diễn ra" :
-                "Sắp diễn ra";
+                (booking.EventBookingStatus ?? 0) == 0 ? "Cancelled" :
+                (evtDetail.EndDate ?? evtDetail.StartDate) <= now ? "Completed" :
+                "Upcoming";
 
             string qrUrl = Url.Action(
                 "Details",
@@ -462,15 +462,15 @@ namespace Semester03.Areas.Client.Controllers
             var booking = await _bookingRepo.GetByIdAsync(bookingId);
 
             if (booking == null || booking.EventBookingUserId != userId)
-                return Json(new { success = false, message = "Không tìm thấy đơn đặt vé." });
+                return Json(new { success = false, message = "Booking not found." });
 
             int qty = booking.EventBookingQuantity ?? 0;
 
             if (cancelQuantity <= 0)
-                return Json(new { success = false, message = "Số lượng hủy phải > 0." });
+                return Json(new { success = false, message = "Cancellation quantity must be greater than 0." });
 
             if (cancelQuantity > qty)
-                return Json(new { success = false, message = "Số vé cần hủy vượt quá số vé còn lại." });
+                return Json(new { success = false, message = "Cancellation quantity exceeds remaining tickets." });
 
             int remainingQty = qty - cancelQuantity;
             decimal unitPrice = booking.EventBookingUnitPrice ?? 0;
@@ -483,7 +483,7 @@ namespace Semester03.Areas.Client.Controllers
             booking.EventBookingStatus = remainingQty > 0 ? 1 : 0;
 
             string smallLog =
-                $"[Cancel {DateTime.Now:dd/MM HH:mm}] Hủy {cancelQuantity} vé (còn {remainingQty}).";
+                $"[Cancel {DateTime.Now:dd/MM HH:mm}] Cancelled {cancelQuantity} ticket(s) (remaining {remainingQty}).";
 
             booking.EventBookingNotes =
                 string.IsNullOrWhiteSpace(booking.EventBookingNotes)
@@ -510,7 +510,7 @@ namespace Semester03.Areas.Client.Controllers
             try
             {
                 var evt = await _eventRepo.GetEventByIdAsync(booking.EventBookingEventId);
-                string eventName = evt?.Title ?? "Sự kiện";
+                string eventName = evt?.Title ?? "Event";
 
                 await _ticketEmailService.SendEventCancelEmailAsync(
                     userId: booking.EventBookingUserId,
@@ -528,7 +528,7 @@ namespace Semester03.Areas.Client.Controllers
             return Json(new
             {
                 success = true,
-                message = $"Đã hủy {cancelQuantity} vé, hoàn lại {refundAmount:N0}đ."
+                message = $"Cancelled {cancelQuantity} ticket(s), refund {refundAmount:N0}₫."
             });
         }
     }

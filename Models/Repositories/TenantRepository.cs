@@ -256,12 +256,13 @@ namespace Semester03.Models.Repositories
                 .FirstOrDefaultAsync();
         }
         //kiem tra trung ten
-        public async Task<bool> CheckTenantNameAsync(string name, int? excludeId = null)
+        public async Task<bool> CheckTenantNameAsync(string name, int userId,  int? excludeId = null)
         {
             string normalizedInput = NormalizeName(name);
 
             var allTenantTypeNames = await _context.TblTenants
-                .Where(t => !excludeId.HasValue || t.TenantId != excludeId.Value)
+                .Where(t => t.TenantUserId == userId &&
+                (!excludeId.HasValue || t.TenantId != excludeId.Value))
                 .Select(t => t.TenantName)
                 .ToListAsync();
 

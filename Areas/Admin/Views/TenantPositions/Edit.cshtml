@@ -64,7 +64,10 @@ else
                         }
                         else
                         {
-                            <select asp-for="TenantPositionAssignedTenantId" class="form-control" asp-items="ViewBag.TenantList">
+                            <select asp-for="TenantPositionAssignedTenantId"
+                                    id="TenantPositionAssignedTenantId"
+                                    class="form-control"
+                                    asp-items="ViewBag.TenantList">
                                 <option value="">-- VACANT (No Tenant) --</option>
                             </select>
                             <small class="form-text text-muted">Select a shop to assign to this unit.</small>
@@ -92,7 +95,7 @@ else
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label asp-for="TenantPositionAreaM2" class="control-label">Area (m²)</label>
-                                <input asp-for="TenantPositionAreaM2" class="form-control" type="number" step="0.1" readonly="@isCinema" />
+                                <input asp-for="TenantPositionAreaM2" class="form-control" type="number"  readonly />
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -159,7 +162,88 @@ else
                         <li>Top Pct: @Model.TenantPositionTopPct%</li>
                     </ul>
                 </div>
+                @if (Model.PositionLeaseEnd.HasValue && Model.PositionLeaseEnd.Value <= DateTime.Now.AddDays(30) && Model.PositionLeaseEnd.Value > DateTime.Now)
+                {
+                    <div class="alert alert-warning mt-3 p-2">
+                        <small><i class="fas fa-clock"></i> Lease expires soon!</small>
+                        <form asp-action="SendReminders" method="post" class="mt-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.TenantPositionId" />
+                            <button type="submit" class="btn btn-sm btn-outline-warning btn-block"
+                                    onclick="return confirm('Send renewal reminder to @Model.TenantPositionAssignedTenant?.TenantName?');">
+                                <i class="fas fa-paper-plane"></i> Send Reminder Email
+                            </button>
+                        </form>
+                    </div>
+                }
+                @if (Model.PositionLeaseEnd.HasValue && Model.PositionLeaseEnd.Value < DateTime.Now)
+                {
+                    <div class="card shadow mb-4 border-left-danger">
+                        <div class="card-header py-3 bg-danger">
+                            <h6 class="m-0 font-weight-bold text-white">
+                                <i class="fas fa-exclamation-triangle"></i> EXPIRED ACTIONS
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-danger text-center">
+                                <strong>LEASE HAS EXPIRED!</strong><br />
+                                Date: @Model.PositionLeaseEnd.Value.ToString("dd/MM/yyyy")
+                                <br />
+                                (@((DateTime.Now - Model.PositionLeaseEnd.Value).Days) days overdue)
+                            </div>
+
+                            <form asp-action="SendOverstayNotice" method="post" class="mb-2">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.TenantPositionId" />
+                                <button type="submit" class="btn btn-warning btn-block"
+                                        onclick="return confirm('Send URGENT overstay notice to tenant?');">
+                                    <i class="fas fa-bullhorn"></i> Send Penalty Notice
+                                </button>
+                            </form>
+
+                            <hr />
+
+                            <p class="small text-muted mb-1">If tenant agrees to stay:</p>
+                            <button type="button" class="btn btn-success btn-block mb-2" onclick="$('#PositionLeaseEnd').focus();">
+                                <i class="fas fa-file-contract"></i> Renew Contract
+                            </button>
+
+                            <p class="small text-muted mb-1">If tenant leaves or is evicted:</p>
+                            <form asp-action="Evict" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.TenantPositionId" />
+                                <button type="submit" class="btn btn-danger btn-block"
+                                        onclick="return confirm('DANGER: This will remove the tenant and set the unit to VACANT. Are you sure you want to EVICT this tenant?');">
+                                    <i class="fas fa-user-times"></i> Evict / Vacate Unit
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@ttskch/select2-bootstrap4-theme@@1.5.2/dist/select2-bootstrap4.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // 3. Kích hoạt Select2 cho thẻ select tenant
+            $('#TenantPositionAssignedTenantId').select2({
+                theme: 'bootstrap4', // Sử dụng theme Bootstrap 4 cho đẹp
+                width: '100%',       // Chiều rộng full
+                placeholder: "-- Search & Select Tenant --",
+                allowClear: true     // Cho phép xóa chọn về trống (Vacant)
+            });
+        });
+    </script>
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

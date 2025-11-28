@@ -15,13 +15,6 @@ namespace Semester03.Models.Repositories
         {
             _db = db ?? throw new ArgumentNullException(nameof(db));
         }
-
-        /// <summary>
-        /// NOTE: We intentionally do NOT include EventBookingTenant here as a quick fix
-        /// because including Tenant currently causes EF to generate a bad column name
-        /// (TblTenantPositionTenantPositionId) — fix the model mapping in AbcdmallContext
-        /// (see comments in code) and you can safely add Include(b => b.EventBookingTenant).
-        /// </summary>
         private IQueryable<TblEventBooking> GetFullBookingQuery()
         {
             return _db.TblEventBookings
@@ -66,10 +59,6 @@ namespace Semester03.Models.Repositories
                 .ToListAsync();
         }
 
-        /// <summary>
-        /// Overload tạo booking từ entity có sẵn.
-        /// Đảm bảo set: Quantity, UnitPrice, Date nếu chưa có.
-        /// </summary>
         public async Task<TblEventBooking> CreateBookingAsync(TblEventBooking booking)
         {
             if (booking == null) throw new ArgumentNullException(nameof(booking));
@@ -115,7 +104,7 @@ namespace Semester03.Models.Repositories
                 if (booking.EventBookingDate == null ||
                     booking.EventBookingDate == default)
                 {
-                    booking.EventBookingDate = DateOnly.FromDateTime(DateTime.UtcNow);
+                    booking.EventBookingDate = DateOnly.FromDateTime(DateTime.Now);
                 }
             }
             catch { }
@@ -194,11 +183,11 @@ namespace Semester03.Models.Repositories
             // ====== Date ======
             try
             {
-                entity.EventBookingDate = DateOnly.FromDateTime(DateTime.UtcNow);
+                entity.EventBookingDate = DateOnly.FromDateTime(DateTime.Now);
             }
             catch
             {
-                // nếu cột kiểu DateTime, bạn có thể đổi sang DateTime.UtcNow.Date
+                // nếu cột kiểu DateTime, bạn có thể đổi sang DateTime.Now.Date
             }
 
             // Không còn OrderGroup (GUID) vì đã bỏ cột EventBooking_OrderGroup

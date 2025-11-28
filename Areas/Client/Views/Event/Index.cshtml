@@ -6,71 +6,50 @@
 @using Semester03.Areas.Client.Models.ViewModels
 
 @{
-    ViewData["Title"] = "Sự kiện";
+    ViewData["Title"] = "Events";
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
 
-    // Hàm xử lý ảnh sự kiện – giống style ImgEvent bên Tickets
+    // Image helper
     Func<string, string> Img = (raw) =>
     {
         var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
 
         try
         {
-            if (string.IsNullOrWhiteSpace(raw))
-                return noImageUrl;
+            if (string.IsNullOrWhiteSpace(raw)) return noImageUrl;
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return raw;
 
-            // Link external
-            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-                return raw;
-
-            // Chuẩn hóa path
             var file = raw.Replace("\\", "/").Trim();
-
-            // Nếu path chứa "Content/Uploads/Events" thì lấy filename cuối
             var keyword = "Content/Uploads/Events";
-            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
-            if (idxKeyword >= 0)
+            var idx = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+            if (idx >= 0)
             {
                 var lastSlash = file.LastIndexOf('/');
                 if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
             }
 
-            // Bỏ prefix không cần thiết
-            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
-                file = file.Substring("wwwroot/".Length);
-            if (file.StartsWith("~/"))
-                file = file.Substring(2);
-            if (file.StartsWith("/"))
-                file = file.Substring(1);
+            if (file.StartsWith("wwwroot/")) file = file[8..];
+            if (file.StartsWith("~/")) file = file[2..];
+            if (file.StartsWith("/")) file = file[1..];
 
-            if (string.IsNullOrWhiteSpace(file))
-                return noImageUrl;
+            if (string.IsNullOrWhiteSpace(file)) return noImageUrl;
 
-            // Lấy env để kiểm tra file thực tế
             var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
-            if (env == null)
-            {
-                return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
-            }
+            if (env == null) return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
 
             var physical = System.IO.Path.Combine(
                 env.WebRootPath ?? "wwwroot",
-                "Content", "Uploads", "Events", file
-            );
+                 "Content",
+                 "Uploads",
+                 "Events",
+                    file
+             );
 
-            if (System.IO.File.Exists(physical))
-            {
-                return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
-            }
-            else
-            {
-                return noImageUrl;
-            }
+            return System.IO.File.Exists(physical)
+                ? Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file))
+                : noImageUrl;
         }
-        catch
-        {
-            return Url.Content("~/Content/Uploads/noimage.png");
-        }
+        catch { return noImageUrl; }
     };
 
     var upcoming = Model.Upcoming ?? new List<EventCardVm>();
@@ -80,69 +59,143 @@
 
 @section Styles {
     <style>
+        /* SECTION TITLE --------------------------*/
+        .section-title {
+            font-weight: 800;
+            font-size: 1.8rem;
+            letter-spacing: -.03em;
+            margin-bottom: 1rem;
+            position: relative;
+            padding-bottom: .5rem;
+        }
+
+            .section-title::after {
+                content: "";
+                width: 85px;
+                height: 4px;
+                background: linear-gradient(90deg, #4f46e5, #ec4899);
+                border-radius: 5px;
+                position: absolute;
+                left: 0;
+                bottom: 0;
+            }
+
+        /* EVENT CARD ------------------------------*/
         .event-card {
-            border-radius: 1rem;
+            border-radius: 1.1rem;
             background: #fff;
             border: 1px solid #e5e7eb;
             overflow: hidden;
-            box-shadow: 0 18px 40px rgba(15,23,42,0.08);
+            box-shadow: 0 16px 40px rgba(15,23,42,0.08);
             cursor: pointer;
-            transition: .15s ease;
+            transition: .25s ease;
+            position: relative;
         }
 
             .event-card:hover {
-                transform: translateY(-4px);
-                box-shadow: 0 22px 50px rgba(15,23,42,0.15);
+                transform: translateY(-6px);
+                box-shadow: 0 26px 60px rgba(15,23,42,0.22);
             }
+
+        .event-img-wrapper {
+            height: 190px;
+            overflow: hidden;
+        }
 
         .event-img {
             width: 100%;
-            height: 180px;
+            height: 100%;
             object-fit: cover;
+            transition: .6s ease;
         }
 
-        .pill {
-            background: #e0e7ff;
-            color: #4338ca;
-            padding: 3px 10px;
-            font-size: .7rem;
-            border-radius: 999px;
+        .event-card:hover .event-img {
+            transform: scale(1.06);
+        }
+
+        .event-body {
+            padding: 1rem 1rem 1.2rem;
+        }
+
+        /* TAG / CHIP --------------------------------*/
+        .event-chip {
             display: inline-block;
+            background: #eef2ff;
+            color: #4338ca;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: .72rem;
+            font-weight: 600;
             margin-bottom: .4rem;
+        }
+
+        /* TEXT --------------------------------------*/
+        .event-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: .25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .event-desc {
+            font-size: .86rem;
+            color: #6b7280;
+            margin-bottom: .4rem;
+            height: 38px;
+            overflow: hidden;
+        }
+
+        .event-date {
+            font-size: .8rem;
+            color: #4b5563;
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+        }
+
+        /* PAST EVENTS ------------------------------*/
+        .event-card.expired {
+            opacity: .7;
+        }
+
+        .ended-badge {
+            font-size: .75rem;
+            background: #dc2626;
+            padding: 4px 10px;
+            border-radius: 6px;
+            color: #fff;
         }
     </style>
 }
 
 <div class="container py-3">
 
-    <!-- ░░ SỰ KIỆN SẮP DIỄN RA ░░ -->
-    <h2 class="fw-bold mb-3">Sự kiện sắp diễn ra</h2>
+    <!-- UPCOMING EVENTS ---------------------------------------------- -->
+    <h2 class="section-title">Upcoming Events</h2>
 
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
         @foreach (var e in upcoming)
         {
             var url = Url.Action("Details", "Event", new { area = "Client", id = e.Id });
 
             <div class="col">
                 <div class="event-card" onclick="location.href='@url'">
-                    <img src="@Img(e.ImageUrl)" class="event-img" />
+                    <div class="event-img-wrapper">
+                        <img src="@Img(e.ImageUrl)" class="event-img" />
+                    </div>
 
-                    <div class="p-3">
-                        <span class="pill">ABCD Mall</span>
+                    <div class="event-body">
+                        <span class="event-chip">ABCD Mall</span>
 
-                        <h5 class="fw-bold text-truncate">@e.Title</h5>
+                        <div class="event-title">@e.Title</div>
 
-                        <p class="text-muted small text-truncate">
-                            @e.ShortDescription
-                        </p>
+                        <div class="event-desc">@e.ShortDescription</div>
 
-                        <div class="small text-muted">
+                        <div class="event-date">
                             <i class="bi bi-calendar-event"></i>
-                            @e.StartDate?.ToString("dd/MM/yyyy HH:mm")
-                            @if (e.EndDate.HasValue)
-                            {
-                                <text> - @e.EndDate.Value.ToString("dd/MM/yyyy HH:mm")</text>
-                            }
+                            @e.StartDate?.ToString("dd MMM yyyy HH:mm")
                         </div>
                     </div>
                 </div>
@@ -150,44 +203,40 @@
         }
     </div>
 
-    <!-- ░░ SỰ KIỆN ĐÃ DIỄN RA (PAST + PAGINATION) ░░ -->
-    <h3 class="fw-bold mt-5 mb-3">Sự kiện đã diễn ra</h3>
+    <!-- PAST EVENTS --------------------------------------------------- -->
+    <h3 class="section-title mt-5">Past Events</h3>
 
     @if (!past.Any())
     {
-        <p class="text-muted">Hiện chưa có sự kiện nào đã diễn ra.</p>
+        <p class="text-muted">There are no past events yet.</p>
     }
     else
     {
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
             @foreach (var e in past)
             {
                 var url = Url.Action("Details", "Event", new { area = "Client", id = e.Id });
 
                 <div class="col">
-                    <div class="event-card" onclick="location.href='@url'">
-                        <img src="@Img(e.ImageUrl)" class="event-img" />
+                    <div class="event-card expired" onclick="location.href='@url'">
+                        <div class="event-img-wrapper">
+                            <img src="@Img(e.ImageUrl)" class="event-img" />
+                        </div>
 
-                        <div class="p-3">
-                            <span class="pill">ABCD Mall</span>
+                        <div class="event-body">
+                            <span class="event-chip">ABCD Mall</span>
 
-                            <h5 class="fw-bold text-truncate">@e.Title</h5>
+                            <div class="event-title">@e.Title</div>
 
-                            <p class="text-muted small text-truncate">
-                                @e.ShortDescription
-                            </p>
+                            <div class="event-desc">@e.ShortDescription</div>
 
-                            <div class="small text-muted d-flex justify-content-between align-items-center">
-                                <span>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <div class="event-date">
                                     <i class="bi bi-calendar-event"></i>
-                                    @e.StartDate?.ToString("dd/MM/yyyy HH:mm")
-                                    @if (e.EndDate.HasValue)
-                                    {
-                                        <text> - @e.EndDate.Value.ToString("dd/MM/yyyy HH:mm")</text>
-                                    }
-                                </span>
+                                    @e.StartDate?.ToString("dd MMM yyyy HH:mm")
+                                </div>
 
-                                <span class="badge bg-danger">Đã kết thúc</span>
+                                <span class="ended-badge">Ended</span>
                             </div>
                         </div>
                     </div>
@@ -195,7 +244,6 @@
             }
         </div>
 
-        <!-- PHÂN TRANG -->
         @if (pastPaged.TotalPages > 1)
         {
             <nav class="mt-4" aria-label="Page navigation">
@@ -204,9 +252,7 @@
                     @if (pastPaged.PageIndex > 1)
                     {
                         <li class="page-item">
-                            <a class="page-link" href="@Url.Action("Index", new { page = pastPaged.PageIndex - 1 })">
-                                «
-                            </a>
+                            <a class="page-link" href="@Url.Action("Index", new { page = pastPaged.PageIndex - 1 })">«</a>
                         </li>
                     }
 
@@ -220,9 +266,7 @@
                     @if (pastPaged.PageIndex < pastPaged.TotalPages)
                     {
                         <li class="page-item">
-                            <a class="page-link" href="@Url.Action("Index", new { page = pastPaged.PageIndex + 1 })">
-                                »
-                            </a>
+                            <a class="page-link" href="@Url.Action("Index", new { page = pastPaged.PageIndex + 1 })">»</a>
                         </li>
                     }
 
@@ -230,5 +274,4 @@
             </nav>
         }
     }
-
 </div>

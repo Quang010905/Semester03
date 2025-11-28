@@ -33,6 +33,12 @@ namespace Semester03.Models.Repositories
                 .FirstOrDefaultAsync(u => u.UsersId == id);
         }
 
+
+
+   
+
+
+
         // Verify password
         public PasswordVerificationResult VerifyPassword(TblUser user, string plainPassword)
         {
@@ -140,7 +146,7 @@ namespace Semester03.Models.Repositories
                     Point = x.UsersPoints ?? 0,
                     CreatedAt = (DateTime)x.UsersCreatedAt,
                     UpdatedAt = (DateTime)x.UsersUpdatedAt,
-                }).Where(x => x.Role == 3).OrderByDescending(x => x.CreatedAt)
+                }).Where(x => x.Role == 2).OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
         }
         public async Task<User?> CreateTenantByUserId(int id)
@@ -179,6 +185,7 @@ namespace Semester03.Models.Repositories
                     Phone = x.UsersPhone,
                     Role = x.UsersRoleId,
                     Point = x.UsersPoints ?? 0,
+                    Status = x.UsersStatus ?? 1,
                     CreatedAt = (DateTime)x.UsersCreatedAt,
                     UpdatedAt = (DateTime)x.UsersUpdatedAt,
                 })
@@ -203,6 +210,7 @@ namespace Semester03.Models.Repositories
                     Phone = x.UsersPhone,
                     Role = x.UsersRoleId,
                     Point = x.UsersPoints ?? 0,
+                    Status = x.UsersStatus ?? 1,
                     CreatedAt = (DateTime)x.UsersCreatedAt,
                     UpdatedAt = (DateTime)x.UsersUpdatedAt,
                 })
@@ -248,7 +256,7 @@ namespace Semester03.Models.Repositories
                     .AnyAsync(u => u.UsersPhone == phone && u.UsersId != userId);
 
                 if (phoneExists)
-                    return (false, "Số điện thoại đã được sử dụng bởi tài khoản khác.");
+                    return (false, "The phone number has already been used by another account.");
             }
 
             // Gán lại dữ liệu
@@ -267,6 +275,19 @@ namespace Semester03.Models.Repositories
             return (true, null);
         }
 
+        public async Task<TblUser?> GetUserByIdAsync(int id)
+        {
+            return await _context.TblUsers.FirstOrDefaultAsync(u => u.UsersId == id);
+        }
+
+
+
+
+        public async Task UpdateAsync(TblUser user)
+        {
+            _context.TblUsers.Update(user);
+            await _context.SaveChangesAsync();
+        }
 
 
     }

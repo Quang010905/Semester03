@@ -1,0 +1,107 @@
+﻿@{
+    Layout = "/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div style="padding:20px;">
+    <h3>Edit User Information</h3>
+
+    <form class="mt-3">
+
+        <div class="row g-3">
+
+            <!-- LEFT COLUMN -->
+            <div class="col-md-8">
+
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-control" placeholder="Enter username" name="UsersUsername" value="@Model.UsersUsername">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-control" placeholder="Enter full name" name="UsersFullName" value="@Model.UsersFullName">
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" placeholder="Enter email" name="UsersEmail" value="@Model.UsersEmail">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Phone</label>
+                        <input type="text" class="form-control" placeholder="Enter phone number" name="UsersPhone" value="@Model.UsersPhone">
+                    </div>
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Points</label>
+                        <input type="number" class="form-control" min="0" placeholder="0" name="UsersPoints" min="0" value="@Model.UsersPoints">
+                    </div>
+
+                    <div class="col-md-6 mb-3" >
+                        <label class="form-label d-block">Status</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="Status" id="statusActive" value="1" @(Model.UsersStatus == 1 ? "checked" : "")>
+                            <label class="form-check-label" for="statusActive">Active</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="Status" id="statusInactive" value="0" @(Model.UsersStatus == 0 ? "checked" : "")>
+                            <label class="form-check-label" for="statusInactive">Inactive</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Role</label>
+                        <select class="form-select">
+                            <option value="1">Admin</option>
+                            <option value="2">Store Owner</option>
+                            <option value="3">Customer</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Change Role Reason</label>
+                        <input type="text" class="form-control" placeholder="Enter reason" name="UsersRoleChangeReason" value="@Model.UsersRoleChangeReason">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Created At</label>
+                    <input type="text" class="form-control" value="@Model.UsersCreatedAt?.ToString("yyyy-MM-dd")" readonly>
+                </div>
+
+            </div>
+
+             
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center">
+
+                        <h6 class="text-muted">Actions</h6>
+                        <p class="small text-muted">
+                            Review changes carefully before saving.
+                        </p>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <a href="#" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </form>
+</div>
+    
+<style>
+    .form-check .form-check-inline{
+        margin-top: 50px
+    }
+</style>

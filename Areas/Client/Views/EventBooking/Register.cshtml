@@ -3,8 +3,6 @@
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
     ViewData["Title"] = "Register for Event";
     var price = ViewBag.Price as decimal? ?? 0m;
-
-    // hàm lấy ảnh (the function you asked to add)
     Func<string, string> Img = (raw) =>
     {
         if (string.IsNullOrWhiteSpace(raw))
@@ -29,7 +27,9 @@
         return Url.Content("~/Content/Uploads/Events/" + s);
     };
 
-    // fallback local file you uploaded (we'll use this when Event.ImageUrl is empty)
+    // mall name fallback
+    var mallName = ViewData["MallName"] as string ?? "ABCD Mall";
+
     var localFallback = "/mnt/data/42367463-3aa2-497c-8350-8f22d9917819.png";
     var imgSrc = string.IsNullOrWhiteSpace(Model?.Event?.ImageUrl)
         ? localFallback
@@ -38,7 +38,6 @@
 
 @section Styles {
     <style>
-        /* (keep your styles - shortened here for brevity) */
         :root {
             --card-bg: #fff;
             --muted: #6b7280;
@@ -230,8 +229,6 @@
 
 <div class="register-wrapper">
     <div class="grid">
-
-        <!-- LEFT: Event info -->
         <div class="event-card">
             <div class="event-hero">
                 <div class="event-img">
@@ -245,19 +242,20 @@
                     <div class="meta-row">
                         @if (!Model.Event.IsPast && Model.Event.Status == 1)
                         {
-                            <div class="meta-pill">Đang mở đăng ký</div>
+                            <div class="meta-pill">Registration open</div>
                         }
                         else if (Model.Event.IsOngoing && Model.Event.Status == 1)
                         {
-                            <div class="meta-pill">Đang diễn ra</div>
+                            <div class="meta-pill">Ongoing</div>
                         }
                         else if (Model.Event.IsUpcoming && Model.Event.Status == 1)
                         {
-                            <div class="meta-pill">Sắp diễn ra</div>
+                            <div class="meta-pill">Coming up</div>
+
                         }
                         else if (Model.Event.IsPast)
                         {
-                            <div class="meta-pill">Đã kết thúc</div>
+                            <div class="meta-pill">Ended</div>
                         }
 
                         <div class="meta-pill">
@@ -273,14 +271,14 @@
                         <div class="stat-item"><strong>Max slots:</strong> @Model.Event.MaxSlot</div>
                         <div class="stat-item"><strong>Available:</strong> <span id="availableSlots">@Model.AvailableSlots</span></div>
                         <div class="stat-item">
-                            <strong>Giá vé:</strong>
+                            <strong>Ticket price:</strong>
                             @if (price > 0m)
                             {
                                 @($"{price:N0} VND")
                             }
                             else
                             {
-                                <span>Miễn phí</span>
+                                <span>Free</span>
                             }
                         </div>
                     </div>
@@ -290,40 +288,42 @@
             <hr style="margin:1.1rem 0;" />
 
             <div class="event-details">
-                <div class="small-muted"><strong>Thành phần tổ chức:</strong></div>
+                <div class="small-muted">
+                    <strong>@(string.IsNullOrWhiteSpace(Model.Event?.OrganizerShopName) ? "Mall:" : "Shop:")</strong>
+                </div>
 
                 @{
-                    // Lấy tên shop trực tiếp từ Event. Nếu null/empty, hiển thị '-'
-                    var shop = !string.IsNullOrWhiteSpace(Model.Event?.OrganizerShopName)
+                    // Nếu có OrganizerShopName => sự kiện của shop
+                    // Ngược lại => sự kiện của mall
+                    var organizerName = !string.IsNullOrWhiteSpace(Model.Event?.OrganizerShopName)
                     ? Model.Event.OrganizerShopName
-                    : "-";
+                    : mallName;
 
-                    // Vị trí/tầng nếu có
                     var location = !string.IsNullOrWhiteSpace(Model.Event?.PositionLocation)
                     ? Model.Event.PositionLocation
-                    : null; // Removed reference to TenantPosition_Location
-                    int? floor = Model.Event?.PositionFloor; // Removed reference to TenantPosition_Floor
+                    : null;
+                    int? floor = Model.Event?.PositionFloor;
                 }
 
-                <div class="mb-2">@shop</div>
+                <div class="mb-2">@organizerName</div>
 
                 @if (!string.IsNullOrWhiteSpace(location) || floor.HasValue)
                 {
                     <div class="mt-1 small-muted">
                         @if (!string.IsNullOrWhiteSpace(location))
                         {
-                            <div><strong>Vị trí:</strong> @location</div>
+                            <div><strong>Location:</strong> @location</div>
                         }
                         @if (floor.HasValue)
                         {
-                            <div><strong>Tầng:</strong> @floor.Value</div>
+                            <div><strong>Floor:</strong> @floor.Value</div>
                         }
                     </div>
                 }
 
-                <div class="small-muted mt-3"><strong>Ghi chú:</strong></div>
+                <div class="small-muted mt-3"><strong>Notes:</strong></div>
                 <div class="mb-0" style="color:#374151;">
-                    Bạn sẽ nhận email xác nhận khi booking thành công. Với sự kiện có phí, hệ thống sẽ chuyển bạn sang cổng thanh toán.
+                    You will receive a confirmation email once your booking is successful. For paid events, the system will redirect you to the payment gateway.
                 </div>
             </div>
 
@@ -331,7 +331,7 @@
 
         <!-- RIGHT: Booking form -->
         <aside class="booking-card" aria-labelledby="bookingTitle">
-            <div class="booking-title" id="bookingTitle">Đăng ký tham gia</div>
+            <div class="booking-title" id="bookingTitle">Register</div>
 
             <form id="registerForm" method="post"
                   asp-area="Client" asp-controller="EventBooking" asp-action="CreateBooking" novalidate>
@@ -340,7 +340,7 @@
                 <input type="hidden" id="priceValue" value="@price" />
 
                 <div class="form-row">
-                    <label class="form-label" for="contactName">Họ và tên</label>
+                    <label class="form-label" for="contactName">Full name</label>
                     <input id="contactName" name="contactName" class="form-control" />
                 </div>
 
@@ -350,25 +350,25 @@
                 </div>
 
                 <div class="form-row">
-                    <label class="form-label" for="quantity">Số lượng</label>
+                    <label class="form-label" for="quantity">Quantity</label>
                     <input id="quantity" name="quantity" type="number" min="1" max="@Model.AvailableSlots" value="1" class="form-control" required />
-                    <div class="small-muted mt-1">Tối đa <strong id="maxSlots">@Model.AvailableSlots</strong> vé</div>
+                    <div class="small-muted mt-1">Maximum <strong id="maxSlots">@Model.AvailableSlots</strong> ticket(s)</div>
                 </div>
 
                 @if (price > 0m)
                 {
                     <div class="price-box">
-                        <div>Giá / vé</div>
+                        <div>Price / ticket</div>
                         <div id="priceLabel">@price.ToString("N0") VND</div>
                     </div>
 
                     <div class="total-box" aria-live="polite">
-                        <div>Tổng</div>
+                        <div>Total</div>
                         <div id="totalLabel">@((price * 1).ToString("N0")) VND</div>
                     </div>
 
                     <div class="form-row mt-3">
-                        <button id="btnSubmit" type="submit" class="btn btn-primary">Book & Pay</button>
+                        <button id="btnSubmit" type="submit" class="btn btn-primary">Book &amp; Pay</button>
                     </div>
                 }
                 else
@@ -416,7 +416,7 @@
                 const q = Math.max(1, parseInt(qty.value || '1'));
                 const total = priceValue * q;
                 if (totalLabel) {
-                    totalLabel.textContent = (total > 0 ? total.toLocaleString('en-US') + ' VND' : 'Miễn phí');
+                    totalLabel.textContent = (total > 0 ? total.toLocaleString('en-US') + ' VND' : 'Free');
                 }
             }
 
@@ -429,7 +429,7 @@
                     if (isNaN(v) || v < 1) v = 1;
                     if (v > parseInt(qty.max)) {
                         v = parseInt(qty.max);
-                        showAlert('Số lượng vượt quá số slot còn lại.', true);
+                        showAlert('Quantity exceeds the number of remaining slots.', true);
                     } else {
                         clearAlert();
                     }
@@ -453,13 +453,13 @@
                 const requested = parseInt(qty.value || '1');
                 const available = parseInt(availableEl.textContent || '0');
                 if (requested > available) {
-                    showAlert(`Không đủ slot. Còn ${available} slot.`, true);
+                    showAlert(`Not enough slots. Only ${available} slot(s) left.`, true);
                     return;
                 }
 
                 const original = btn.innerHTML;
                 btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Đang xử lý...';
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Processing...';
 
                 try {
                     const fd = new FormData(form);
@@ -481,11 +481,11 @@
                     const text = await resp.text();
                     let data;
                     try { data = JSON.parse(text); } catch {
-                        throw new Error('Server trả về dữ liệu không hợp lệ.');
+                        throw new Error('Server returned invalid data.');
                     }
 
                     if (!data.success) {
-                        throw new Error(data.message || 'Booking thất bại.');
+                        throw new Error(data.message || 'Booking failed.');
                     }
 
                     if (data.url || data.redirectUrl) {
@@ -493,7 +493,7 @@
                         return;
                     }
 
-                    showAlert('Đăng ký thành công!', false);
+                    showAlert('Registration successful!', false);
 
                     const newAvailable = Math.max(0, available - requested);
                     availableEl.textContent = newAvailable;
@@ -504,7 +504,7 @@
 
                 } catch (err) {
                     console.error(err);
-                    showAlert('Lỗi: ' + (err.message || 'Có lỗi xảy ra'), true);
+                    showAlert('Error: ' + (err.message || 'An error has occurred.'), true);
                 } finally {
                     btn.disabled = false;
                     btn.innerHTML = original;

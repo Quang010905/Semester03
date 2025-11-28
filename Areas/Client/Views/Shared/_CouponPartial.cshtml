@@ -40,10 +40,10 @@
             data-bs-target="#couponModal">
         <i class="bi bi-gift-fill"></i>
         <span>
-            Bạn có <strong>@Model.UserPoints</strong> điểm –
-            <strong>@Model.AvailableCoupons.Count</strong> coupon khả dụng
+            You have <strong>@Model.UserPoints</strong> coupon points
+            <strong>@Model.AvailableCoupons.Count</strong> available
         </span>
-        <span class="text-decoration-underline">Xem chi tiết</span>
+        <span class="text-decoration-underline">View details</span>
     </button>
 
     <!-- MODAL chi tiết coupon -->
@@ -52,17 +52,17 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="bi bi-gift-fill me-2"></i> Coupon khả dụng của bạn
+                        <i class="bi bi-gift-fill me-2"></i> Your available coupon
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
                 <div class="modal-body">
                     <p class="small text-muted mb-3">
-                        Bạn hiện có <strong>@Model.UserPoints</strong> điểm.
-                        Các coupon bên dưới sẽ được
-                        <strong>tự động áp dụng ở bước thanh toán</strong>
-                        nếu đơn hàng của bạn thỏa điều kiện.
+                        You currently have <strong>@Model.UserPoints</strong> points.
+                        The coupons below will be
+                        <strong>automatically applied at checkout</strong>
+                        if your order meets the conditions.
                     </p>
 
                     <div class="row g-3">
@@ -90,7 +90,7 @@
 
                                     <div class="card-footer bg-white border-0 d-flex justify-content-between align-items-center">
                                         <span class="badge bg-success-subtle text-success">
-                                            Bạn được áp dụng vì đủ điều kiện khi mua vé xem phim
+                                            You are eligible when purchasing a movie ticket
                                         </span>
                                     </div>
                                 </div>

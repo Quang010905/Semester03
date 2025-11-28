@@ -1,6 +1,5 @@
 ﻿@* _LayoutClient.cshtml
-   Full layout for Mall website - Modern Premium + Colorful Shopping
-*@
+   Full layout for Mall website - Modern Premium + Colorful Shopping *@
 @inject Semester03.Models.Repositories.TenantRepository _tenantRepo
 @inject Semester03.Models.Repositories.EventRepository _event_repo
 @using Semester03.Areas.Client.Models.ViewModels
@@ -102,11 +101,11 @@
             box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
         }
 
-        .mall-brand-logo img {
-            height: 42px;
-            width: auto;
-            border-radius: 999px;
-        }
+            .mall-brand-logo img {
+                height: 42px;
+                width: auto;
+                border-radius: 999px;
+            }
 
         .mall-brand-text-title {
             font-weight: 800;
@@ -124,46 +123,52 @@
             margin: 0 auto;
         }
 
-        .mall-nav .nav-link {
-            color: #111827;
-            font-weight: 500;
-            font-size: .9rem;
-            transition: var(--transition);
-            position: relative;
-            padding-bottom: .25rem;
-        }
-
-        .mall-nav .nav-link::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            bottom: 0;
-            width: 0;
-            height: 2px;
+        /* NAV TABS MỚI --------------------------------------------------- */
+        .mall-nav {
+            background: rgba(15, 23, 42, 0.02);
+            padding: .25rem .4rem;
             border-radius: 999px;
-            background-image: var(--accent-gradient);
-            transition: width 0.2s ease;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
         }
 
-        .mall-nav .nav-link:hover::after,
-        .mall-nav .nav-link.active::after {
-            width: 70%;
-        }
+            .mall-nav .nav-link {
+                position: relative;
+                padding: .45rem 1.15rem;
+                border-radius: 999px;
+                font-size: .9rem;
+                font-weight: 500;
+                color: #111827;
+                transition: transform .15s ease, box-shadow .15s ease, color .15s ease;
+                z-index: 1;
+                overflow: hidden;
+            }
 
-        .mall-nav .nav-link:hover,
-        .mall-nav .nav-link.active {
-            color: #111827;
-            font-weight: 600;
-        }
+                .mall-nav .nav-link::before {
+                    content: '';
+                    position: absolute;
+                    inset: 2px;
+                    border-radius: inherit;
+                    background: linear-gradient(135deg, #e0f2fe, #fee2e2);
+                    opacity: 0;
+                    transform: scale(.9);
+                    transition: opacity .18s ease, transform .18s ease;
+                    z-index: -1;
+                }
 
-        .user-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: .5rem;
-            padding: .3rem .7rem;
-            border-radius: 999px;
-            background: rgba(15, 23, 42, 0.03);
-        }
+                .mall-nav .nav-link:hover::before,
+                .mall-nav .nav-link.active::before {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+
+                .mall-nav .nav-link:hover,
+                .mall-nav .nav-link.active {
+                    color: #1d4ed8;
+                    font-weight: 600;
+                    transform: translateY(-1px);
+                    box-shadow: 0 10px 24px rgba(148, 163, 184, 0.35);
+                }
+
 
         .btn-icon-circle {
             border-radius: 999px;
@@ -178,6 +183,88 @@
         .notif-badge {
             transform: translate(40%, -40%);
         }
+
+        /* USER DROPDOWN MỚI ------------------------------------------- */
+        .user-menu-trigger {
+            padding: 0 !important;
+        }
+
+        .user-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 999px;
+            background: radial-gradient(circle at 0% 0%, #fecaca, #f97373, #ef4444);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            box-shadow: 0 10px 25px rgba(248, 113, 113, 0.45);
+            transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+        }
+
+        .user-avatar-initial {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .user-menu-trigger:hover .user-avatar {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 35px rgba(248, 113, 113, 0.65);
+            filter: brightness(1.05);
+        }
+
+        .user-menu-dropdown {
+            min-width: 230px;
+            border-radius: 18px;
+            padding: 4px 0 8px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .user-menu-header {
+            padding: 10px 14px 8px;
+            border-bottom: 1px solid #f3f4f6;
+            background: linear-gradient(135deg, #fee2e2, #fef3c7);
+        }
+
+        .user-menu-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #111827;
+        }
+
+        .user-menu-sub {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .user-menu-dropdown .dropdown-item {
+            font-size: 0.9rem;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #111827;
+        }
+
+            .user-menu-dropdown .dropdown-item i {
+                font-size: 1rem;
+            }
+
+            .user-menu-dropdown .dropdown-item:hover {
+                background: #eff6ff;
+                color: #1d4ed8;
+            }
+
+        .user-menu-logout {
+            color: #dc2626 !important;
+            font-weight: 600;
+        }
+
+            .user-menu-logout:hover {
+                background: #fee2e2;
+                color: #b91c1c !important;
+            }
 
         /* HERO ------------------------------------------------------------- */
         .hero {
@@ -195,16 +282,13 @@
             overflow: hidden;
         }
 
-        .hero::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background:
-                radial-gradient(circle at 10% 10%, rgba(239, 246, 255, 0.15), transparent 55%),
-                radial-gradient(circle at 90% 0%, rgba(248, 250, 252, 0.2), transparent 55%),
-                radial-gradient(circle at 80% 90%, rgba(255, 251, 235, 0.1), transparent 55%);
-            pointer-events: none;
-        }
+            .hero::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: radial-gradient(circle at 10% 10%, rgba(239, 246, 255, 0.15), transparent 55%), radial-gradient(circle at 90% 0%, rgba(248, 250, 252, 0.2), transparent 55%), radial-gradient(circle at 80% 90%, rgba(255, 251, 235, 0.1), transparent 55%);
+                pointer-events: none;
+            }
 
         .hero-content {
             position: relative;
@@ -233,13 +317,13 @@
             align-items: flex-start;
         }
 
-        .layout-grid .main-col {
-            align-self: stretch;
-        }
+            .layout-grid .main-col {
+                align-self: stretch;
+            }
 
-        .layout-grid .sidebar-col {
-            width: 340px;
-        }
+            .layout-grid .sidebar-col {
+                width: 340px;
+            }
 
         .main-shell {
             margin-top: 1.8rem;
@@ -282,56 +366,56 @@
             box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
         }
 
-        .small-event-slider .slider-track {
-            display: block;
-        }
+            .small-event-slider .slider-track {
+                display: block;
+            }
 
-        .small-event-slider .slider-item {
-            display: block;
-            margin-bottom: .7rem;
-        }
+            .small-event-slider .slider-item {
+                display: block;
+                margin-bottom: .7rem;
+            }
 
-        .small-event-slider .small-card {
-            display: flex;
-            gap: .75rem;
-            align-items: flex-start;
-            padding: .55rem .6rem;
-            border-radius: .9rem;
-            transition: transform .12s ease, box-shadow .12s ease, background .15s ease;
-            background: linear-gradient(135deg, #f9fafb, #ffffff);
-            border: 1px solid rgba(226, 232, 240, 0.9);
-        }
+            .small-event-slider .small-card {
+                display: flex;
+                gap: .75rem;
+                align-items: flex-start;
+                padding: .55rem .6rem;
+                border-radius: .9rem;
+                transition: transform .12s ease, box-shadow .12s ease, background .15s ease;
+                background: linear-gradient(135deg, #f9fafb, #ffffff);
+                border: 1px solid rgba(226, 232, 240, 0.9);
+            }
 
-        .small-event-slider .small-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
-            background: #ffffff;
-        }
+                .small-event-slider .small-card:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+                    background: #ffffff;
+                }
 
-        .small-event-slider .small-poster {
-            width: 110px;
-            height: 82px;
-            object-fit: cover;
-            border-radius: .8rem;
-            flex-shrink: 0;
-            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
-        }
+            .small-event-slider .small-poster {
+                width: 110px;
+                height: 82px;
+                object-fit: cover;
+                border-radius: .8rem;
+                flex-shrink: 0;
+                box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
+            }
 
-        .small-event-slider .small-card-body {
-            flex: 1;
-        }
+            .small-event-slider .small-card-body {
+                flex: 1;
+            }
 
-        .small-event-slider .small-title {
-            font-size: .9rem;
-            font-weight: 700;
-            margin-bottom: .2rem;
-        }
+            .small-event-slider .small-title {
+                font-size: .9rem;
+                font-weight: 700;
+                margin-bottom: .2rem;
+            }
 
-        .small-event-slider .small-meta {
-            color: #6b7280;
-            font-size: .78rem;
-            margin-bottom: .3rem;
-        }
+            .small-event-slider .small-meta {
+                color: #6b7280;
+                font-size: .78rem;
+                margin-bottom: .3rem;
+            }
 
         .sidebar-seeall {
             font-size: .76rem;
@@ -339,9 +423,9 @@
             color: #2563eb;
         }
 
-        .sidebar-seeall i {
-            vertical-align: middle;
-        }
+            .sidebar-seeall i {
+                vertical-align: middle;
+            }
 
         /* RESPONSIVE ------------------------------------------------------- */
         @@media (max-width: 991px) {
@@ -349,9 +433,9 @@
                 grid-template-columns: 1fr;
             }
 
-            .layout-grid .sidebar-col {
-                width: auto;
-            }
+                .layout-grid .sidebar-col {
+                    width: auto;
+                }
 
             .main-shell {
                 margin-top: 1.3rem;
@@ -381,9 +465,9 @@
                 padding: .5rem 0;
             }
 
-            .small-event-slider .small-card {
-                padding: .35rem;
-            }
+                .small-event-slider .small-card {
+                    padding: .35rem;
+                }
 
             .layout-grid .sidebar-col {
                 order: 2;
@@ -447,9 +531,10 @@
                 </div>
 
                 <!-- NAV -->
-                <nav class="d-none d-md-flex align-items-center gap-3 mall-nav">
+                <nav class="mall-nav d-none d-md-flex align-items-center gap-1">
                     <div class="nav-item dropdown">
-                        <a class="nav-link" href="@Url.Action("Index", "Stores", new { area = "Client" })"
+                        <a class="nav-link @(routeController == "Stores" ? "active" : "")"
+                           href="@Url.Action("Index", "Stores", new { area = "Client" })"
                            id="storesDropdown" role="button">
                             Stores
                         </a>
@@ -465,63 +550,95 @@
                             }
                         </ul>
                     </div>
-                    <a class="nav-link" href="@Url.Action("Index", "Cinema", new { area = "Client" })">Cinema</a>
-                    <a class="nav-link" href="@Url.Action("Index", "Map", new { area = "Client" })">Map</a>
-                    <a class="nav-link" href="@Url.Action("Entertainment", "Mall", new { area = "Client" })">Entertainment</a>
-                    <a class="nav-link" href="@Url.Action("Index", "Event", new { area = "Client" })">Events</a>
-                    <a class="nav-link" href="@Url.Action("Index", "TenantPromotion", new { area = "Client" })">Promotions</a>
-                    <a class="nav-link" href="@Url.Action("Contact", "Home", new { area = "Client" })">Contact</a>
+
+                    <a class="nav-link @(routeController == "Cinema" ? "active" : "")"
+                       href="@Url.Action("Index", "Cinema", new { area = "Client" })">
+                        Cinema
+                    </a>
+
+                    <a class="nav-link @(routeController == "Map" ? "active" : "")"
+                       href="@Url.Action("Index", "Map", new { area = "Client" })">
+                        Map
+                    </a>
+
+                    @* Entertainment removed *@
+
+                    <a class="nav-link @(routeController == "Event" ? "active" : "")"
+                       href="@Url.Action("Index", "Event", new { area = "Client" })">
+                        Events
+                    </a>
+
+                    <a class="nav-link @(routeController == "TenantPromotion" ? "active" : "")"
+                       href="@Url.Action("Index", "TenantPromotion", new { area = "Client" })">
+                        Promotions
+                    </a>
+
+                    <a class="nav-link @(routeController == "Home" && routeAction == "Contact" ? "active" : "")"
+                       href="@Url.Action("Contact", "Home", new { area = "Client" })">
+                        Contact
+                    </a>
                 </nav>
+
 
                 <!-- Right controls -->
                 <div class="d-flex align-items-center gap-2">
 
-                    @* Profile (only when logged in) *@
+                    @* USER MENU *@
                     @if (User?.Identity?.IsAuthenticated == true)
                     {
-                        <div class="dropdown me-1">
-                            <button class="btn btn-sm btn-outline-secondary btn-icon-circle"
-                                    id="profileDropdown"
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false">
-                                <i class="bi bi-person-circle"></i>
-                            </button>
+                        var name = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
+                        ?? User.Identity.Name ?? "User";
+                        var initialUser = string.IsNullOrWhiteSpace(name)
+                            ? "U"
+                            : name.Trim()[0].ToString().ToUpper();
 
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-                                <li>
-                                    <a class="dropdown-item"
-                                       href="@Url.Action("Profile", "Profile", new { area = "Client" })">
-                                        View Profile
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item"
-                                       href="@Url.Action("MyTickets", "Ticket", new { area = "Client" })">
-                                        Vé của tôi
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item"
-                                       href="@Url.Action("MyComplaints", "Complaint", new { area = "Client" })">
-                                        Khiếu nại
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider" /></li>
-                                <li>
-                                    <form method="post"
-                                          asp-area="Client"
-                                          asp-controller="Account"
-                                          asp-action="Logout"
-                                          class="m-0">
-                                        @Html.AntiForgeryToken()
-                                        <button class="dropdown-item text-danger">Logout</button>
-                                    </form>
-                                </li>
-                            </ul>
+                        <div class="dropdown me-1">
+                            <a href="#" class="user-menu-trigger" id="profileDropdown"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <div class="user-avatar">
+                                    <span class="user-avatar-initial">@initialUser</span>
+                                </div>
+                            </a>
+
+                            <div class="dropdown-menu dropdown-menu-end user-menu-dropdown shadow-lg border-0"
+                                 aria-labelledby="profileDropdown">
+                                <div class="user-menu-header">
+                                    <div class="user-menu-name">@name</div>
+                                    <div class="user-menu-sub">Manage your account</div>
+                                </div>
+
+                                <a class="dropdown-item"
+                                   href="@Url.Action("Profile", "Profile", new { area = "Client" })">
+                                    <i class="bi bi-person-lines-fill me-2"></i> Profile
+                                </a>
+
+                                <a class="dropdown-item"
+                                   href="@Url.Action("MyTickets", "Ticket", new { area = "Client" })">
+                                    <i class="bi bi-ticket-perforated me-2"></i> My Tickets
+                                </a>
+
+                                <a class="dropdown-item"
+                                   href="@Url.Action("MyComplaints", "Complaint", new { area = "Client" })">
+                                    <i class="bi bi-chat-dots me-2"></i> Complaints
+                                </a>
+
+                                <div class="dropdown-divider my-1"></div>
+
+                                <form method="post"
+                                      asp-area="Client"
+                                      asp-controller="Account"
+                                      asp-action="Logout"
+                                      class="m-0">
+                                    @Html.AntiForgeryToken()
+                                    <button class="dropdown-item user-menu-logout" type="submit">
+                                        <i class="bi bi-box-arrow-right me-2"></i> Logout
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     }
 
-                    <!-- Notifications -->
+                    @* NOTIFICATIONS *@
                     <div class="dropdown">
                         <button class="btn btn-sm btn-outline-secondary btn-icon-circle position-relative"
                                 id="notifDropdown"
@@ -550,41 +667,15 @@
                         </ul>
                     </div>
 
-                    <!-- Account text badge / Login -->
-                    <div id="accountArea" class="d-none d-md-block">
-                        @if (User?.Identity?.IsAuthenticated == true)
-                        {
-                            var name = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
-                                       ?? User.Identity.Name ?? "User";
-
-                            <div class="user-badge" id="userBadge">
-                                <span class="small text-muted">Hello,</span>
-                                <strong class="me-1">@name</strong>
-
-                                <form id="headerLogoutForm"
-                                      method="post"
-                                      asp-area="Client"
-                                      asp-controller="Account"
-                                      asp-action="Logout"
-                                      class="m-0 d-inline">
-                                    @Html.AntiForgeryToken()
-                                    <button id="headerLogoutBtn"
-                                            type="button"
-                                            class="btn btn-sm btn-outline-secondary">
-                                        Logout
-                                    </button>
-                                </form>
-                            </div>
-                        }
-                        else
-                        {
-                            <a id="loginLink"
-                               class="btn btn-sm btn-outline-primary rounded-pill px-3"
-                               href="@Url.Action("Login", "Account", new { area = "Client" })">
-                                Login
-                            </a>
-                        }
-                    </div>
+                    @* LOGIN BUTTON WHEN NOT AUTHENTICATED *@
+                    @if (User?.Identity?.IsAuthenticated != true)
+                    {
+                        <a id="loginLink"
+                           class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                           href="@Url.Action("Login", "Account", new { area = "Client" })">
+                            Login
+                        </a>
+                    }
                 </div>
             </div>
         </div>
@@ -596,7 +687,7 @@
         <main class="container-fluid py-3">
             <div class="content-maxwide">
 
-                @* Chỉ hiển thị hero ở Home/Index *@
+                @* Only show hero on Home/Index *@
                 @if (isHomeIndexRoute)
                 {
                     <section class="mb-3">
@@ -614,7 +705,7 @@
 
                     <!-- SIDEBAR -->
                     <aside class="sidebar-col">
-                        @* ==== CINEMA COUPON: chỉ hiện khi model là CinemaHomeVm ==== *@
+                        @* ==== CINEMA COUPON: only when model is CinemaHomeVm ==== *@
                         @if (ViewData.Model is CinemaHomeVm cinemaModel)
                         {
                             <div class="mb-3">
@@ -648,7 +739,7 @@
                                     return Url.Content("~/" + s);
 
                                 if (s.StartsWith("images", StringComparison.OrdinalIgnoreCase) ||
-                                    s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
+                                            s.StartsWith("Admin/img", StringComparison.OrdinalIgnoreCase))
                                     return Url.Content("~/" + s);
 
                                 if (raw.StartsWith("/"))
@@ -714,54 +805,6 @@
 
     <!-- Bootstrap JS (CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- AJAX logout handling -->
-    <script>
-        (function () {
-            var logoutBtn = document.getElementById('headerLogoutBtn');
-            var logoutForm = document.getElementById('headerLogoutForm');
-
-            if (!logoutBtn || !logoutForm) return;
-
-            var logoutUrl = '@Url.Action("Logout", "Account", new { area = "Client" })';
-
-            logoutBtn.addEventListener('click', function () {
-                try {
-                    var tokenInput = logoutForm.querySelector('input[name="__RequestVerificationToken"]');
-                    var tokenValue = tokenInput ? tokenInput.value : null;
-
-                    var params = new URLSearchParams();
-                    if (tokenValue) params.append('__RequestVerificationToken', tokenValue);
-
-                    var headers = {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    };
-                    if (tokenValue) headers['RequestVerificationToken'] = tokenValue;
-
-                    fetch(logoutUrl, {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: headers,
-                        body: params.toString()
-                    }).then(function (resp) {
-                        if (resp.ok) {
-                            window.location.reload();
-                            return;
-                        }
-                        console.warn('AJAX logout failed (status ' + resp.status + '), falling back to normal submit');
-                        logoutForm.submit();
-                    }).catch(function (err) {
-                        console.error('AJAX logout error:', err);
-                        logoutForm.submit();
-                    });
-                } catch (e) {
-                    console.error('Logout script exception', e);
-                    logoutForm.submit();
-                }
-            });
-        })();
-    </script>
 
     @RenderSection("Scripts", required: false)
 </body>

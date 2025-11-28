@@ -64,6 +64,8 @@
         {
             return noImageUrl;
         }
+
+
     };
 
     // ========== HÀM ẢNH PROMOTION ==========
@@ -188,6 +190,72 @@
 
 @section Styles {
     <style>
+        /* ===== KHUNG SECTION + HEADER ===== */
+        .home-section {
+            position: relative;
+            margin-bottom: 3.5rem;
+            padding-bottom: 2.5rem;
+        }
+
+            /* 3 line mảnh chia từng section */
+            .home-section::after {
+                content: "";
+                position: absolute;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                height: 3px;
+                background: linear-gradient(90deg, transparent, rgba(148,163,184,.5), transparent), linear-gradient(90deg, transparent, rgba(209,213,219,.7), transparent), linear-gradient(90deg, transparent, rgba(148,163,184,.5), transparent);
+                background-repeat: no-repeat;
+                background-size: 100% 1px, 90% 1px, 70% 1px;
+                background-position: 0 0, 5% 1px, 15% 2px;
+                opacity: .85;
+            }
+
+        .home-section-header {
+            text-align: center;
+            margin-bottom: 1.9rem;
+        }
+
+        .home-section-kicker {
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: .18em;
+            font-weight: 600;
+            color: #9ca3af;
+            margin-bottom: .35rem;
+        }
+
+        .home-section-title {
+            font-weight: 800;
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            background: linear-gradient(90deg, #0d6efd, #4f46e5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: .25rem;
+        }
+
+        .home-section-sub {
+            font-size: .95rem;
+            color: #6b7280;
+            max-width: 580px;
+            margin: 0 auto;
+        }
+
+        .home-section-title.promo-title {
+            background: none;
+            color: #ef4444;
+            -webkit-text-fill-color: #ef4444;
+        }
+
+        .home-section-title.featured-title {
+            background: none;
+            color: #fbbf24;
+            -webkit-text-fill-color: #fbbf24;
+        }
+
         /* ===== COMMON CARD ===== */
         .card-common {
             border-radius: 1.1rem;
@@ -221,7 +289,7 @@
         .card-title-common {
             font-size: 1.05rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
             color: #111827;
         }
 
@@ -238,23 +306,17 @@
 
         .card-desc {
             color: #6b7280;
-            font-size: 0.85rem;
-            line-height: 1.35;
+            font-size: 0.86rem;
+            line-height: 1.4;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
 
-        .section-title {
-            font-weight: 800;
-            font-size: 2.2rem;
-            text-align: center;
-            margin-bottom: 1.6rem;
-            text-transform: uppercase;
-            background: linear-gradient(90deg,#0d6efd,#4f46e5);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .card-meta {
+            font-size: 0.78rem;
+            color: #9ca3af;
         }
 
         .empty-state {
@@ -266,174 +328,191 @@
             font-size: 1rem;
             color: #6b7280;
         }
-
-        .promo-title {
-            background: none !important;
-            color: red !important;
-            -webkit-text-fill-color: red !important;
-        }
-
-        .featured-title {
-            background: none !important;
-            color: gold !important;
-            -webkit-text-fill-color: gold !important;
-        }
     </style>
 }
 
 <div class="container py-5 events-home-wrapper">
 
-    <!-- UPCOMING EVENTS -->
-    <h1 class="section-title">Upcoming Events</h1>
-
-    @if (!topEvents.Any())
-    {
-        <div class="empty-state">
-            <i class="bi bi-calendar-x fs-2 d-block mb-2"></i>
-            No events available at the moment.
+    <!-- ===================== UPCOMING EVENTS ===================== -->
+    <section class="home-section">
+        <div class="home-section-header">
+            <div class="home-section-kicker">ABCD Mall</div>
+            <h2 class="home-section-title">Upcoming Events</h2>
+            <p class="home-section-sub">
+                Upcoming activities at the shopping center – book your tickets in advance so you don't miss out on the fun experience.
+            </p>
         </div>
-    }
-    else
-    {
-        <div class="row g-4">
-            @foreach (var e in topEvents)
-            {
-                <div class="col-12 col-md-6 col-lg-4">
-                    <div class="card-common h-100">
-                        <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">
-                            <img src="@ImgEvent(e.ImageUrl)" alt="@e.Title" />
-                        </a>
-                        <div class="card-body-common">
-                            <div class="card-label">@ViewData["MallName"]</div>
 
-                            <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })"
-                               class="text-decoration-none text-dark">
-                                <div class="card-title-common text-truncate">@e.Title</div>
+        @if (!topEvents.Any())
+        {
+            <div class="empty-state">
+                <i class="bi bi-calendar-x fs-2 d-block mb-2"></i>
+                No events available at the moment.
+            </div>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var e in topEvents)
+                {
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="card-common h-100">
+                            <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })">
+                                <img src="@ImgEvent(e.ImageUrl)" alt="@e.Title" />
                             </a>
-                            @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
-                            {
-                                <p class="card-desc" title="@e.ShortDescription">@e.ShortDescription</p>
-                            }
-                            <p class="card-desc mb-1">
-                                <i class="bi bi-calendar-event"></i>
-                                @e.StartDate?.ToString("dd/MM/yyyy")
-                                @if (e.EndDate.HasValue)
+                            <div class="card-body-common">
+                                <div class="card-label">@ViewData["MallName"]</div>
+
+                                <a href="@Url.Action("Details", "Event", new { area = "Client", id = e.Id })"
+                                   class="text-decoration-none text-dark">
+                                    <div class="card-title-common text-truncate">@e.Title</div>
+                                </a>
+
+                                @if (!string.IsNullOrWhiteSpace(e.ShortDescription))
                                 {
-                                    @: – @e.EndDate?.ToString("dd/MM/yyyy")
+                                    <p class="card-desc mb-2" title="@e.ShortDescription">@e.ShortDescription</p>
                                 }
-                            </p>
+
+                                <p class="card-meta mb-0">
+                                    <i class="bi bi-calendar-event me-1"></i>
+                                    @e.StartDate?.ToString("dd/MM/yyyy")
+                                    @if (e.EndDate.HasValue)
+                                    {
+                                        @: – @e.EndDate?.ToString("dd/MM/yyyy")
+                                    }
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            }
-        </div>
-    }
+                }
+            </div>
+        }
 
-    <!-- Nút SEE ALL EVENTS -->
-    <div class="text-center mt-4">
-        <a href="@Url.Action("Index", "Event", new { area = "Client" })"
-           class="btn btn-outline-primary rounded-pill px-4">
-            See all events
-        </a>
-    </div>
-
-    <!-- LATEST PROMOTIONS -->
-    @if (ViewBag.TopPromotions != null && ((List<TenantPromotionVm>)ViewBag.TopPromotions).Any())
-    {
-        <h1 class="section-title mt-5 promo-title">Latest Promotions</h1>
-
-        <div class="row g-4">
-            @foreach (var p in (List<TenantPromotionVm>)ViewBag.TopPromotions)
-            {
-                var img = ImgPromotion(p.Img);
-
-                <div class="col-12 col-md-6 col-lg-4">
-                    <div class="card-common h-100 position-relative">
-
-                        @if (p.DiscountPercent.HasValue)
-                        {
-                            <span class="position-absolute top-0 start-0 m-2 badge bg-danger">
-                                @p.DiscountPercent% OFF
-                            </span>
-                        }
-                        else if (p.DiscountAmount.HasValue)
-                        {
-                            <span class="position-absolute top-0 start-0 m-2 badge bg-danger">
-                                @p.DiscountAmount.Value.ToString("#,0") ₫
-                            </span>
-                        }
-
-                        <a href="@Url.Action("Detail", "TenantPromotion", new { area = "Client", id = p.Id })">
-                            <img src="@img" alt="@p.Title" />
-                        </a>
-                        <div class="card-body-common">
-                            <div class="card-title-common">@p.Title</div>
-                            <p class="card-desc">
-                                @p.PromotionStart?.ToString("dd/MM/yyyy") – @p.PromotionEnd?.ToString("dd/MM/yyyy")
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            }
-        </div>
-
-        <!-- Nút SEE ALL PROMOTIONS -->
+        <!-- Nút SEE ALL EVENTS -->
         <div class="text-center mt-4">
-            <a href="@Url.Action("Index", "TenantPromotion", new { area = "Client" })"
-               class="btn btn-outline-danger rounded-pill px-4">
-                See all promotions
+            <a href="@Url.Action("Index", "Event", new { area = "Client" })"
+               class="btn btn-outline-primary rounded-pill px-4">
+                See all events
             </a>
         </div>
-    }
+    </section>
 
-    <!-- FEATURED STORES -->
-    @if (featuredStores.Any())
+    <!-- ===================== LATEST PROMOTIONS ===================== -->
+    @if (ViewBag.TopPromotions != null && ((List<TenantPromotionVm>)ViewBag.TopPromotions).Any())
     {
-        <h1 class="section-title mt-5 featured-title">Featured Stores</h1>
+        <section class="home-section">
+            <div class="home-section-header">
+                <div class="home-section-kicker">
 
-        <div id="featuredStoresCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
-            <div class="carousel-inner">
-                @for (int i = 0; i < featuredStores.Count; i += 3)
+                </div>
+                <h2 class="home-section-title promo-title">Latest Promotions</h2>
+                <p class="home-section-sub">
+                    Grab the hottest deals from your favorite stores at ABCD Mall.
+                </p>
+            </div>
+
+            <div class="row g-4">
+                @foreach (var p in (List<TenantPromotionVm>)ViewBag.TopPromotions)
                 {
-                    <div class="carousel-item @(i == 0 ? "active" : "")">
-                        <div class="row g-4 d-flex justify-content-start flex-wrap">
-                            @for (int j = i; j < i + 3 && j < featuredStores.Count; j++)
-                            {
-                                var s = featuredStores[j];
-                                var img = ImgTenant(s.TenantImg);
+                    var img = ImgPromotion(p.Img);
 
-                                <div class="col-12 col-md-4">
-                                    <div class="card-common h-100">
-                                        <a href="@Url.Action("Details", "Stores", new { area = "Client", id = s.TenantId })">
-                                            <img src="@img" alt="@s.TenantName" />
-                                        </a>
-                                        <div class="card-body-common">
-                                            <div class="card-label">@s.TenantTypeName</div>
-                                            <a href="@Url.Action("Details", "Stores", new { area = "Client", id = s.TenantId })"
-                                               class="text-decoration-none text-dark">
-                                                <div class="card-title-common text-truncate">@s.TenantName</div>
-                                            </a>
-                                            <div class="mb-1">
-                                                <span class="text-warning">★★★★★</span>
-                                            </div>
-                                            <p class="card-desc" title="@s.TenantDescription">@s.TenantDescription</p>
-                                        </div>
-                                    </div>
-                                </div>
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="card-common h-100 position-relative">
+
+                            @if (p.DiscountPercent.HasValue)
+                            {
+                                <span class="position-absolute top-0 start-0 m-2 badge bg-danger">
+                                    @p.DiscountPercent% OFF
+                                </span>
                             }
+                            else if (p.DiscountAmount.HasValue)
+                            {
+                                <span class="position-absolute top-0 start-0 m-2 badge bg-danger">
+                                    @p.DiscountAmount.Value.ToString("#,0") ₫
+                                </span>
+                            }
+
+                            <a href="@Url.Action("Detail", "TenantPromotion", new { area = "Client", id = p.Id })">
+                                <img src="@img" alt="@p.Title" />
+                            </a>
+                            <div class="card-body-common">
+                                <div class="card-title-common">@p.Title</div>
+                                <p class="card-meta mb-0">
+                                    <i class="bi bi-clock-history me-1"></i>
+                                    @p.PromotionStart?.ToString("dd/MM/yyyy") – @p.PromotionEnd?.ToString("dd/MM/yyyy")
+                                </p>
+                            </div>
                         </div>
                     </div>
                 }
             </div>
 
-            <button class="carousel-control-prev" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon"></span>
-                <span class="visually-hidden">Previous</span>
-            </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon"></span>
-                <span class="visually-hidden">Next</span>
-            </button>
-        </div>
+            <!-- Nút SEE ALL PROMOTIONS -->
+            <div class="text-center mt-4">
+                <a href="@Url.Action("Index", "TenantPromotion", new { area = "Client" })"
+                   class="btn btn-outline-danger rounded-pill px-4">
+                    See all promotions
+                </a>
+            </div>
+        </section>
+    }
+
+    <!-- ===================== FEATURED STORES ===================== -->
+    @if (featuredStores.Any())
+    {
+        <section class="home-section">
+            <div class="home-section-header">
+                <div class="home-section-kicker">Đề xuất</div>
+                <h2 class="home-section-title featured-title">Featured Stores</h2>
+                <p class="home-section-sub">
+                    The highest-rated stores by customers – stop by to experience the best service.
+                </p>
+            </div>
+
+            <div id="featuredStoresCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+                <div class="carousel-inner">
+                    @for (int i = 0; i < featuredStores.Count; i += 3)
+                    {
+                        <div class="carousel-item @(i == 0 ? "active" : "")">
+                            <div class="row g-4 d-flex justify-content-start flex-wrap">
+                                @for (int j = i; j < i + 3 && j < featuredStores.Count; j++)
+                                {
+                                    var s = featuredStores[j];
+                                    var img = ImgTenant(s.TenantImg);
+
+                                    <div class="col-12 col-md-4">
+                                        <div class="card-common h-100">
+                                            <a href="@Url.Action("Details", "Stores", new { area = "Client", id = s.TenantId })">
+                                                <img src="@img" alt="@s.TenantName" />
+                                            </a>
+                                            <div class="card-body-common">
+                                                <div class="card-label">@s.TenantTypeName</div>
+                                                <a href="@Url.Action("Details", "Stores", new { area = "Client", id = s.TenantId })"
+                                                   class="text-decoration-none text-dark">
+                                                    <div class="card-title-common text-truncate">@s.TenantName</div>
+                                                </a>
+                                                <div class="mb-1">
+                                                    <span class="text-warning">★★★★★</span>
+                                                </div>
+                                                <p class="card-desc" title="@s.TenantDescription">@s.TenantDescription</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <button class="carousel-control-prev" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#featuredStoresCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+        </section>
     }
 </div>

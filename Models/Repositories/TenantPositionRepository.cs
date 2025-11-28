@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -76,7 +76,6 @@ namespace Semester03.Models.Repositories
             }).ToList();
         }
 
-
         public async Task<int> GetCountByFloorAsync(int floor)
         {
             return await _db.TblTenantPositions.CountAsync(p => p.TenantPositionFloor == floor);
@@ -123,7 +122,6 @@ namespace Semester03.Models.Repositories
 
             return dto;
         }
-
 
         public async Task DeleteAsync(int id)
         {
@@ -185,7 +183,6 @@ namespace Semester03.Models.Repositories
                 );
         }
 
-
         // ==========================================================
         // === ADMIN METHODS ===
         // ==========================================================
@@ -230,6 +227,7 @@ namespace Semester03.Models.Repositories
         {
             return await _db.TblTenantPositions
                 .Include(p => p.TenantPositionAssignedTenant)
+                .ThenInclude(t => t.TenantUser)
                 .Include(p => p.TenantPositionAssignedCinema)
                 .FirstOrDefaultAsync(p => p.TenantPositionId == id);
         }
@@ -288,6 +286,24 @@ namespace Semester03.Models.Repositories
             }
 
             return result;
+        }
+
+        // ==========================================================
+        // === LEASE / CONTRACT HELPERS ===
+        // ==========================================================
+
+        public async Task<List<TblTenantPosition>> GetExpiringLeasesWithContactAsync(int daysThreshold = 30)
+        {
+            var today = DateTime.Now;
+            var thresholdDate = today.AddDays(daysThreshold);
+
+            return await _db.TblTenantPositions
+                .Include(p => p.TenantPositionAssignedTenant)
+                    .ThenInclude(t => t.TenantUser) // Quan trọng: Include TenantUser để lấy Email
+                .Where(p => p.PositionLeaseEnd.HasValue &&
+                            p.PositionLeaseEnd.Value > today &&
+                            p.PositionLeaseEnd.Value <= thresholdDate)
+                .ToListAsync();
         }
     }
 }

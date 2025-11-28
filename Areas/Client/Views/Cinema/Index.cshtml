@@ -7,9 +7,9 @@
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
     ViewData["HideCenterMain"] = false;
 
+    // Xử lý ảnh poster
     Func<string, string> Img = (raw) =>
     {
-        // fallback image trong wwwroot/Content/Uploads/noimage.png
         var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
 
         try
@@ -20,10 +20,8 @@
             if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 return raw;
 
-            // normalize và lấy filename
             var file = raw.Replace("\\", "/").Trim();
 
-            // nếu raw chứa "Content/Uploads/Movies", lấy filename cuối cùng
             var keyword = "Content/Uploads/Movies";
             var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
             if (idxKeyword >= 0)
@@ -32,7 +30,6 @@
                 if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
             }
 
-            // nếu raw chứa "wwwroot/" hoặc "~/" hoặc bắt đầu bằng '/', loại bỏ
             if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
                 file = file.Substring("wwwroot/".Length);
             if (file.StartsWith("~/"))
@@ -43,16 +40,12 @@
             if (string.IsNullOrWhiteSpace(file))
                 return noImageUrl;
 
-
-            // lấy IWebHostEnvironment để kiểm tra file thực tế trên đĩa
             var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
             if (env == null)
             {
-                // nếu không lấy được env thì trả đường dẫn URL theo mặc định
                 return Url.Content("~/Content/Uploads/Movies/" + Uri.EscapeDataString(file));
             }
 
-            // DÙNG System.IO.Path.Combine để tránh xung đột tên Path
             var physical = System.IO.Path.Combine(env.WebRootPath ?? "wwwroot", "Content", "Uploads", "Movies", file);
 
             if (System.IO.File.Exists(physical))
@@ -70,6 +63,7 @@
         }
     };
 
+    // Link book ticket (nếu chưa login sẽ redirect qua Login kèm returnUrl)
     Func<int, string> BookHref = (id) =>
     {
         if (User?.Identity?.IsAuthenticated == true)
@@ -82,61 +76,177 @@
 
 @section Styles {
     <style>
+        /* ==== PAGE WRAPPER ================================================== */
         .cinema-home-page {
             max-width: 1200px;
             margin: auto;
         }
 
         h4.page-title {
-            font-weight: 700;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            font-size: .9rem;
+            color: #6b7280;
         }
 
+        .cinema-subtitle {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -.03em;
+            margin-bottom: .5rem;
+        }
+
+            .cinema-subtitle span {
+                background: linear-gradient(90deg,#4f46e5,#ec4899);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+        /* ==== FEATURED CAROUSEL =========================================== */
         .carousel-poster {
             height: 420px;
             width: 100%;
             object-fit: cover;
-            border-radius: 1rem;
-            box-shadow: 0 10px 28px rgba(0,0,0,0.15);
+            border-radius: 1.4rem;
+            box-shadow: 0 18px 40px rgba(15,23,42,0.35);
         }
 
+        .featured-meta {
+            font-size: .9rem;
+            color: #6b7280;
+        }
+
+        .featured-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem .7rem;
+            border-radius: 999px;
+            background: #eef2ff;
+            font-size: .8rem;
+            font-weight: 600;
+            color: #4f46e5;
+        }
+
+        /* ==== MOVIE GRID ==================================================== */
         .movie-card {
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            border-radius: .9rem;
+            position: relative;
+            background: radial-gradient(circle at 0 0,#eef2ff,#ffffff 55%);
+            border-radius: 1.1rem;
             overflow: hidden;
-            transition: .2s ease;
+            border: 1px solid rgba(148,163,184,0.35);
+            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
         }
 
             .movie-card:hover {
-                transform: translateY(-4px);
-                box-shadow: 0 12px 30px rgba(0,0,0,0.16);
+                transform: translateY(-6px) translateZ(0);
+                box-shadow: 0 18px 40px rgba(15,23,42,0.25);
+                border-color: rgba(59,130,246,0.7);
             }
+
+        .movie-poster-wrapper {
+            position: relative;
+            overflow: hidden;
+        }
 
         .movie-poster {
             height: 260px;
             width: 100%;
             object-fit: cover;
-            border-bottom: 1px solid #e5e7eb;
+            display: block;
+            transform-origin: center;
+            transition: transform .35s ease;
         }
 
+        .movie-card:hover .movie-poster {
+            transform: scale(1.05);
+        }
+
+        .movie-gradient-overlay {
+            position: absolute;
+            inset: auto 0 0 0;
+            height: 40%;
+            background: linear-gradient(to top, rgba(15,23,42,0.95), transparent);
+            pointer-events: none;
+        }
+
+        .movie-badge {
+            position: absolute;
+            top: .6rem;
+            left: .6rem;
+            z-index: 2;
+        }
+
+            .movie-badge .badge {
+                border-radius: 999px;
+                font-size: .7rem;
+                padding: .18rem .55rem;
+            }
+
+            .movie-badge .badge-primary {
+                background: linear-gradient(135deg,#4f46e5,#0ea5e9);
+            }
+
+            .movie-badge .badge-danger {
+                background: linear-gradient(135deg,#ef4444,#f97316);
+            }
+
+        .movie-quick-book {
+            position: absolute;
+            right: .7rem;
+            bottom: .9rem;
+            z-index: 3;
+            padding-inline: .9rem;
+            font-size: .78rem;
+            border-radius: 999px;
+            backdrop-filter: blur(8px);
+            background: rgba(15,23,42,0.75);
+            color: #f9fafb;
+            border: 1px solid rgba(148,163,184,0.6);
+        }
+
+            .movie-quick-book i {
+                font-size: .85rem;
+            }
+
         .movie-title {
-            font-weight: 600;
+            font-weight: 700;
             font-size: .95rem;
         }
 
-        .slider-wrapper {
-            overflow: hidden;
+        .movie-meta-line {
+            font-size: .8rem;
+            color: #6b7280;
         }
 
-        .slider-track {
-            display: flex;
-            gap: 1rem;
-            transition: transform .5s ease;
+        .movie-footer {
+            font-size: .8rem;
         }
 
-        .slider-item {
-            min-width: 220px;
-            flex: 0 0 220px;
+        .movie-rating-stars {
+            color: #facc15;
+            font-size: .9rem;
+        }
+
+        .movie-tagline {
+            font-size: .78rem;
+            color: #9ca3af;
+        }
+
+        /* ==== SEARCH + FILTER ============================================= */
+        .movie-search-box input {
+            border-radius: 999px;
+        }
+
+        .movie-search-box button {
+            border-radius: 999px;
+        }
+
+        /* ==== RESPONSIVE =================================================== */
+        @@media (max-width: 992px) {
+            .carousel-poster {
+                height: 320px;
+            }
         }
 
         @@media (max-width: 768px) {
@@ -145,18 +255,20 @@
             }
 
             .movie-poster {
-                height: 200px;
-            }
-
-            .slider-item {
-                min-width: 160px;
+                height: 210px;
             }
         }
     </style>
 }
 
 <div class="cinema-home-page py-3">
-    <h4 class="page-title mb-3">Cinema</h4>
+    <h4 class="page-title">Cinema</h4>
+    <div class="d-flex justify-content-between align-items-end mb-3">
+        <div>
+            <div class="cinema-subtitle"><span>Big screen. Big stories.</span></div>
+            <div class="text-muted small">Pick a movie, grab your popcorn, and enjoy the show.</div>
+        </div>
+    </div>
 
     <!-- FEATURED -->
     @if (Model?.Featured?.Any() == true)
@@ -170,26 +282,38 @@
                     <div class="carousel-item @active">
                         <div class="row g-4 align-items-center">
                             <div class="col-lg-7">
-                                <a href="@Url.Action("Details", "Cinema", new { area="Client", id=f.Id })">
-                                    <img src="@Img(f.PosterUrl)" class="carousel-poster" />
+                                <a href="@Url.Action("Details", "Cinema", new { area = "Client", id = f.Id })">
+                                    <div class="position-relative">
+                                        <img src="@Img(f.PosterUrl)" class="carousel-poster" />
+                                        <span class="featured-chip position-absolute top-3 start-3 m-3">
+                                            <i class="bi bi-stars me-1"></i> Featured pick
+                                        </span>
+                                    </div>
                                 </a>
                             </div>
                             <div class="col-lg-5">
-                                <h2>@f.Title</h2>
+                                <h2 class="mb-2">@f.Title</h2>
+                                <p class="featured-meta mb-2">
+                                    @if (f.DurationMin.HasValue)
+                                    {
+                                        <span class="me-2">
+                                            <i class="bi bi-clock me-1"></i>@f.DurationMin min
+                                        </span>
+                                    }
+                                </p>
                                 <p class="text-muted">@f.Description</p>
-                                <p class="small">
+                                <p class="small mb-3">
                                     <strong>Next showtime:</strong>
                                     @if (f.NextShowtime.HasValue)
                                     {
-                                        <span>@f.NextShowtime.Value.ToString("dd MMM yyyy HH:mm")</span>
-                                        <span class="ms-2 text-muted">(@String.Format("{0:N0}", f.NextPrice) VND)</span>
+                                        <span class="ms-1">@f.NextShowtime.Value.ToString("dd MMM yyyy HH:mm")</span>
                                     }
                                     else
                                     {
-                                        <span class="text-muted">Not scheduled</span>
+                                        <span class="ms-1 text-muted">Not scheduled</span>
                                     }
                                 </p>
-                                <a href="@BookHref(f.Id)" class="btn btn-primary">
+                                <a href="@BookHref(f.Id)" class="btn btn-primary rounded-pill px-4">
                                     <i class="bi bi-ticket-perforated me-1"></i> Book ticket
                                 </a>
                             </div>
@@ -209,9 +333,9 @@
     }
 
     <!-- SEARCH -->
-    <div class="mb-4">
+    <div class="mb-4 movie-search-box">
         <form class="d-flex" onsubmit="event.preventDefault(); filterMovies();">
-            <input id="movieSearch" class="form-control me-2" placeholder="Search movies..." />
+            <input id="movieSearch" class="form-control me-2" placeholder="Search movies by title..." />
             <button type="submit" class="btn btn-outline-secondary">
                 <i class="bi bi-search me-1"></i> Search
             </button>
@@ -219,7 +343,10 @@
     </div>
 
     <!-- NOW SHOWING GRID -->
-    <h5 class="mb-3">Now showing</h5>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0 fw-bold">Now showing</h5>
+        <span class="text-muted small">@((Model.NowShowing?.Count ?? 0)) movies in theaters</span>
+    </div>
 
     <div class="row g-3" id="nowShowingGrid">
         @{
@@ -227,29 +354,64 @@
         }
         @foreach (var m in Model.NowShowing)
         {
+            var isToday = m.NextShowtime?.Date == DateTime.Today;
             <div class="col-6 col-md-4 col-lg-3 movie-grid-item" data-index="@index">
-                <div class="card movie-card h-100">
-                    <a href="@Url.Action("Details", "Cinema", new { area="Client", id = m.Id })">
-                        <img src="@Img(m.PosterUrl)" class="movie-poster" />
-                    </a>
+                <div class="movie-card h-100">
+                    <div class="movie-poster-wrapper">
+                        <div class="movie-badge">
+                            <span class="badge badge-primary text-white me-1">Now showing</span>
+                            @if (isToday)
+                            {
+                                <span class="badge badge-danger text-white">Today</span>
+                            }
+                        </div>
 
-                    <div class="card-body p-2">
-                        <h6 class="movie-title mb-1">@m.Title</h6>
-                        <small class="text-muted">@((m.DurationMin ?? 0) + " min")</small>
-                        <p class="small text-truncate">@m.Description</p>
-                    </div>
+                        <a href="@Url.Action("Details", "Cinema", new { area = "Client", id = m.Id })">
+                            <img src="@Img(m.PosterUrl)" class="movie-poster" />
+                        </a>
 
-                    <div class="card-footer bg-white border-0 d-flex justify-content-between">
-                        <small class="text-muted">@m.NextShowtime?.ToString("dd MMM HH:mm")</small>
+                        <div class="movie-gradient-overlay"></div>
 
                         @if (m.NextShowtimeId.HasValue)
                         {
-                            <a href="@BookHref(m.Id)" class="btn btn-sm btn-primary">Book</a>
+                            <a href="@BookHref(m.Id)" class="movie-quick-book btn btn-sm">
+                                <i class="bi bi-ticket-perforated me-1"></i> Quick book
+                            </a>
                         }
-                        else
-                        {
-                            <button class="btn btn-sm btn-secondary" disabled>No showtime</button>
-                        }
+                    </div>
+
+                    <div class="card-body px-3 pt-2 pb-1">
+                        <h6 class="movie-title mb-1 text-truncate">@m.Title</h6>
+                        <div class="movie-meta-line mb-1 d-flex justify-content-between">
+                            <span>
+                                <i class="bi bi-clock me-1"></i>@((m.DurationMin ?? 0) + " min")
+                            </span>
+                        </div>
+                        <div class="movie-tagline text-truncate">
+                            @m.Description
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-transparent border-0 px-3 pb-3 pt-1 movie-footer d-flex justify-content-between align-items-center">
+                        <div>
+                            @if (m.NextShowtime.HasValue)
+                            {
+                                <span class="text-muted">
+                                    <i class="bi bi-calendar-event me-1"></i>@m.NextShowtime.Value.ToString("dd MMM HH:mm")
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">
+                                    <i class="bi bi-calendar-x me-1"></i>No showtime
+                                </span>
+                            }
+                        </div>
+
+                        <div class="movie-rating-stars">
+                            @* nếu sau này có Rating thì thay thế *@
+                            ★★★★☆
+                        </div>
                     </div>
                 </div>
             </div>
@@ -260,7 +422,9 @@
     @if (Model.NowShowing != null && Model.NowShowing.Count > 8)
     {
         <div class="text-center mt-3">
-            <button type="button" id="btnViewMore" class="btn btn-outline-primary btn-sm">View more</button>
+            <button type="button" id="btnViewMore" class="btn btn-outline-primary btn-sm rounded-pill px-4">
+                View more movies
+            </button>
         </div>
     }
 </div>
@@ -268,11 +432,10 @@
 @section Scripts {
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            // ====== VIEW MORE cho GRID "Now showing" ======
-            const STEP = 8; // mỗi lần bấm hiện thêm 8 phim
+            const STEP = 8;
             const gridItems = Array.from(document.querySelectorAll(".movie-grid-item"));
             const btnMore = document.getElementById("btnViewMore");
-            let shown = 8; // hiển thị 8 phim ban đầu
+            let shown = 8;
 
             function updateGrid() {
                 gridItems.forEach((item, idx) => {
@@ -292,7 +455,6 @@
                 btnMore.addEventListener("click", () => {
                     shown += STEP;
                     updateGrid();
-                    // tùy chọn: cuộn nhẹ xuống phần vừa hiện thêm để người dùng thấy
                     if (shown - STEP < gridItems.length) {
                         const firstNew = gridItems[shown - STEP];
                         if (firstNew) firstNew.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -305,7 +467,7 @@
             const q = document.getElementById("movieSearch").value.toLowerCase();
             document.querySelectorAll(".movie-card").forEach(card => {
                 const title = (card.querySelector(".movie-title")?.innerText || "").toLowerCase();
-                const wrapper = card.closest(".col-6, .slider-item");
+                const wrapper = card.closest(".movie-grid-item");
                 if (!wrapper) return;
                 wrapper.style.display = title.includes(q) ? "" : "none";
             });

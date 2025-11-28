@@ -57,6 +57,7 @@ builder.Services.AddScoped<ProductRepository>();
 builder.Services.AddScoped<UserActivityRepository>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<UserActivityRepository>();
+builder.Services.AddScoped<RoleRepository>();
 builder.Services.AddScoped<TicketRepository>();
 builder.Services.AddScoped<EventTicketRepository>(); 
 builder.Services.AddScoped<EventBookingRepository>();
