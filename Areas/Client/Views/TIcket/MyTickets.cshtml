@@ -9,15 +9,53 @@
 
     var now = DateTime.Now;
 
-    // ===== GROUP MOVIE TICKETS BY STATUS (match backend enum/strings) =====
-    var futureMovies = Model.MovieTickets.Where(t => t.Status == "UPCOMING").ToList();
-    var pastMovies = Model.MovieTickets.Where(t => t.Status == "WATCHED").ToList();
-    var cancelledMovies = Model.MovieTickets.Where(t => t.Status == "CANCELLED").ToList();
+    // ===== HÀM CHECK STATUS CANCELLED (áp dụng cho cả Movie & Event) =====
+    Func<string, bool> IsCancelled = (status) =>
+    {
+        if (string.IsNullOrWhiteSpace(status)) return false;
 
-    // ===== GROUP EVENT TICKETS BY STATUS =====
-    var upcomingEvents = Model.EventTickets.Where(e => e.Status == "Upcoming").ToList();
-    var pastEvents = Model.EventTickets.Where(e => e.Status == "Past").ToList();
-    var cancelledEvents = Model.EventTickets.Where(e => e.Status == "Cancelled").ToList();
+        return status.IndexOf("CANCEL", StringComparison.OrdinalIgnoreCase) >= 0
+               || status.IndexOf("HUỶ", StringComparison.OrdinalIgnoreCase) >= 0
+               || status.IndexOf("HỦY", StringComparison.OrdinalIgnoreCase) >= 0;
+    };
+
+    // ===== GROUP MOVIE TICKETS BY TIME + STATUS =====
+    //  - Upcoming: Showtime >= now && không bị hủy
+    //  - Watched : Showtime <  now && không bị hủy
+    //  - Cancelled: status chứa "CANCEL" / "HUỶ" / "HỦY"
+    var futureMovies = Model.MovieTickets
+        .Where(t => !IsCancelled(t.Status) && t.Showtime >= now)
+        .OrderBy(t => t.Showtime)
+        .ToList();
+
+    var pastMovies = Model.MovieTickets
+        .Where(t => !IsCancelled(t.Status) && t.Showtime < now)
+        .OrderByDescending(t => t.Showtime)
+        .ToList();
+
+    var cancelledMovies = Model.MovieTickets
+        .Where(t => IsCancelled(t.Status))
+        .OrderByDescending(t => t.Showtime)
+        .ToList();
+
+    // ===== GROUP EVENT TICKETS BY TIME + STATUS =====
+    //  - Upcoming: EventStart >= now && không bị hủy
+    //  - Past    : EventStart <  now && không bị hủy
+    //  - Cancelled: status chứa "CANCEL" / "HUỶ" / "HỦY"
+    var upcomingEvents = Model.EventTickets
+        .Where(e => !IsCancelled(e.Status) && e.EventStart >= now)
+        .OrderBy(e => e.EventStart)
+        .ToList();
+
+    var pastEvents = Model.EventTickets
+        .Where(e => !IsCancelled(e.Status) && e.EventStart < now)
+        .OrderByDescending(e => e.EventStart)
+        .ToList();
+
+    var cancelledEvents = Model.EventTickets
+        .Where(e => IsCancelled(e.Status))
+        .OrderByDescending(e => e.EventStart)
+        .ToList();
 
     // ===== HÌNH PHIM (dựa theo Cinema) =====
     Func<string, string> ImgMovie = (raw) =>
