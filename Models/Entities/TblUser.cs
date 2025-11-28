@@ -19,7 +19,7 @@ public partial class TblUser
 
     public int UsersRoleId { get; set; }
 
-    public int? UsersStatus { get; set; }
+    public int? UsersStatus { get; set; } 
 
     public int? UsersPoints { get; set; }
 

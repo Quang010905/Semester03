@@ -33,6 +33,12 @@ namespace Semester03.Models.Repositories
                 .FirstOrDefaultAsync(u => u.UsersId == id);
         }
 
+
+
+   
+
+
+
         // Verify password
         public PasswordVerificationResult VerifyPassword(TblUser user, string plainPassword)
         {
@@ -179,6 +185,7 @@ namespace Semester03.Models.Repositories
                     Phone = x.UsersPhone,
                     Role = x.UsersRoleId,
                     Point = x.UsersPoints ?? 0,
+                    Status = x.UsersStatus ?? 1,
                     CreatedAt = (DateTime)x.UsersCreatedAt,
                     UpdatedAt = (DateTime)x.UsersUpdatedAt,
                 })
@@ -203,6 +210,7 @@ namespace Semester03.Models.Repositories
                     Phone = x.UsersPhone,
                     Role = x.UsersRoleId,
                     Point = x.UsersPoints ?? 0,
+                    Status = x.UsersStatus ?? 1,
                     CreatedAt = (DateTime)x.UsersCreatedAt,
                     UpdatedAt = (DateTime)x.UsersUpdatedAt,
                 })
@@ -267,6 +275,19 @@ namespace Semester03.Models.Repositories
             return (true, null);
         }
 
+        public async Task<TblUser?> GetUserByIdAsync(int id)
+        {
+            return await _context.TblUsers.FirstOrDefaultAsync(u => u.UsersId == id);
+        }
+
+
+
+
+        public async Task UpdateAsync(TblUser user)
+        {
+            _context.TblUsers.Update(user);
+            await _context.SaveChangesAsync();
+        }
 
 
     }
