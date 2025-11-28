@@ -256,7 +256,7 @@ namespace Semester03.Areas.Client.Controllers
             {
                 var response = _vnPayService.PaymentExecute(Request.Query);
                 if (response == null)
-                    return RedirectToAction("PaymentFailed");
+                    return RedirectToAction("PaymentFailed", new { message = "Không nhận được phản hồi từ VNPAY" });
 
                 int bookingId = 0;
 
@@ -265,13 +265,21 @@ namespace Semester03.Areas.Client.Controllers
 
                 foreach (var p in parts)
                 {
-                    if (p.StartsWith("BookingId:"))
+                    if (p.StartsWith("BookingId:", StringComparison.OrdinalIgnoreCase))
                         int.TryParse(p.Replace("BookingId:", "").Trim(), out bookingId);
                 }
 
-                if (!response.Success)
-                    return RedirectToAction("PaymentFailed");
+                // 🔴 kiểm tra mã phản hồi VNPAY
+                var vnpResponseCode = Request.Query["vnp_ResponseCode"].ToString();
+                if (string.IsNullOrEmpty(vnpResponseCode) || vnpResponseCode != "00")
+                {
+                    return RedirectToAction("PaymentFailed", new
+                    {
+                        message = $"Thanh toán thất bại (Mã lỗi: {vnpResponseCode})"
+                    });
+                }
 
+                // ✅ thành công: đánh dấu paid
                 var marked = await _bookingRepo.MarkBookingPaidAsync(bookingId);
                 if (!marked)
                 {
@@ -279,7 +287,6 @@ namespace Semester03.Areas.Client.Controllers
                     return RedirectToAction("PaymentFailed", new { message = "Booking not found or payment status could not be updated." });
                 }
 
-                // Send confirmation email after successful payment
                 try
                 {
                     await _ticketEmailService.SendEventBookingSuccessEmailAsync(bookingId);
@@ -294,9 +301,10 @@ namespace Semester03.Areas.Client.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "PaymentCallbackVnpay error");
-                return RedirectToAction("PaymentFailed");
+                return RedirectToAction("PaymentFailed", new { message = "Có lỗi trong quá trình xử lý thanh toán." });
             }
         }
+
 
         // =====================================================================================
         // GET: Client/EventBooking/Details/{id}

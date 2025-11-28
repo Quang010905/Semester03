@@ -1,57 +1,118 @@
 ﻿@{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
-    ViewData["Title"] = "Payment Failed";
+    ViewData["Title"] = "Event Payment Failed";
     var msg = ViewData["Message"] as string ?? "Payment failed or was cancelled.";
 }
 
 @section Styles {
     <style>
-        .fail-wrapper {
-            max-width: 700px;
-            margin: 2.5rem auto;
+        .event-fail-shell {
+            max-width: 760px;
+            margin: 3rem auto;
         }
 
-        .fail-card {
-            background: #fff;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 10px 26px rgba(0,0,0,0.06);
+        .event-fail-card {
+            background: radial-gradient(circle at top, #fee2e2 0, #ffffff 55%);
+            border-radius: 20px;
+            box-shadow: 0 18px 40px rgba(127,29,29,0.18);
+            padding: 2.3rem 2rem 2rem;
             text-align: center;
+            border: 1px solid rgba(248,113,113,0.55);
         }
 
-        .fail-icon {
-            width: 78px;
-            height: 78px;
-            background: #fee2e2;
+        .event-fail-icon {
+            width: 86px;
+            height: 86px;
             border-radius: 50%;
+            background: #fee2e2;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.6rem;
+            margin: 0 auto 1.1rem auto;
             color: #dc2626;
-            margin: 0 auto 1rem;
+            font-size: 2.6rem;
+            box-shadow: 0 14px 34px rgba(248,113,113,0.7);
+        }
+
+        .event-fail-title {
+            font-size: 1.7rem;
+            font-weight: 750;
+            color: #b91c1c;
+            margin-bottom: .35rem;
+        }
+
+        .event-fail-desc {
+            font-size: .97rem;
+            color: #4b5563;
+            max-width: 520px;
+            margin: 0 auto 1.2rem;
+        }
+
+        .event-fail-tip {
+            background: #fef2f2;
+            border-radius: 14px;
+            padding: .9rem 1rem;
+            border: 1px solid #fecaca;
+            font-size: .88rem;
+            color: #7f1d1d;
+            text-align: left;
+            max-width: 520px;
+            margin: 0.75rem auto 0;
+        }
+
+        .event-fail-actions {
+            margin-top: 1.8rem;
+            display: flex;
+            justify-content: center;
+            gap: .75rem;
+            flex-wrap: wrap;
         }
     </style>
 }
 
-<div class="container fail-wrapper">
-    <div class="fail-card">
-        <div class="fail-icon">
+<div class="container event-fail-shell">
+    <div class="event-fail-card">
+        <div class="event-fail-icon">
             <i class="bi bi-x-circle-fill"></i>
         </div>
 
-        <h3 class="mb-3">Payment Failed</h3>
-        <p class="text-danger fw-semibold">@msg</p>
+        <div class="event-fail-title">Payment failed</div>
+        <p class="event-fail-desc">
+            @msg
+        </p>
 
-        <div class="mt-4 d-flex justify-content-center gap-2">
-            <a href="javascript:history.back()" class="btn btn-outline-secondary">
-                Go Back
-            </a>
+        <div class="event-fail-tip">
+            <strong>Quick tips:</strong>
+            <ul class="mb-0 ps-3">
+                <li>Check that your card / wallet information is correct.</li>
+                <li>Make sure you didn’t close the VNPAY window too early.</li>
+                <li>If money has been deducted but the ticket is not shown, please contact our support team.</li>
+            </ul>
+        </div>
 
+        <div class="event-fail-actions">
             <a href="@Url.Action("Index", "Event", new { area = "Client" })"
                class="btn btn-primary">
-                Browse Events
+                <i class="bi bi-calendar-event me-1"></i> Browse other events
             </a>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const icon = document.querySelector(".event-fail-icon");
+            if (!icon) return;
+
+            icon.style.transform = "scale(0.7)";
+            icon.style.opacity = "0";
+            icon.style.transition = "transform .25s ease-out, opacity .25s ease-out";
+
+            setTimeout(() => {
+                icon.style.transform = "scale(1)";
+                icon.style.opacity = "1";
+            }, 60);
+        });
+    </script>
+}
