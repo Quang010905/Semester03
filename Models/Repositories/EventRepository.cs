@@ -17,9 +17,7 @@ namespace Semester03.Models.Repositories
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        // (GetPastEventsAsync and GetUpcomingEventsAsync - keep your existing implementations)
-        // I'll include them unchanged for completeness:
-
+        // PAST EVENTS (with paging)
         public async Task<PagedResult<EventCardVm>> GetPastEventsAsync(int pageIndex, int pageSize)
         {
             var now = DateTime.Now;
@@ -64,6 +62,7 @@ namespace Semester03.Models.Repositories
             };
         }
 
+        // UPCOMING EVENTS (top N)
         public async Task<List<EventCardVm>> GetUpcomingEventsAsync(int top = 6)
         {
             var now = DateTime.Now;
@@ -97,14 +96,15 @@ namespace Semester03.Models.Repositories
             }
             catch { }
 
+            // Default placeholder events if there are no upcoming events or DB error
             var defaults = new List<EventCardVm>(top);
             for (int i = 1; i <= top; i++)
             {
                 defaults.Add(new EventCardVm
                 {
                     Id = 0,
-                    Title = $"Sự kiện sắp tới #{i}",
-                    ShortDescription = "Thông tin sự kiện sẽ được cập nhật sớm nhất.",
+                    Title = $"Upcoming event #{i}",
+                    ShortDescription = "Event information will be updated soon.",
                     StartDate = now.AddDays(i),
                     EndDate = now.AddDays(i).AddHours(2),
                     ImageUrl = "/images/event-placeholder.png",
@@ -117,30 +117,34 @@ namespace Semester03.Models.Repositories
         }
 
         // ===============================
-        // EVENT DETAILS + COMMENT
+        // EVENT DETAILS + COMMENTS
         // ===============================
         public async Task<EventDetailsVm> GetEventByIdAsync(int eventId, int? currentUserId = null)
         {
-            // load event kèm position và bookings + tenant navs
+            // Load event with position, bookings, and tenant navigation
             var e = await _context.TblEvents
                 .AsNoTracking()
                 .Include(ev => ev.EventTenantPosition)
-                    .ThenInclude(tp => tp.TenantPositionAssignedTenant)   
+                    .ThenInclude(tp => tp.TenantPositionAssignedTenant)
                 .Include(ev => ev.TblEventBookings)
-                    .ThenInclude(b => b.EventBookingTenant)               
+                    .ThenInclude(b => b.EventBookingTenant)
                 .FirstOrDefaultAsync(ev => ev.EventId == eventId);
 
             if (e == null) return null;
 
             var now = DateTime.Now;
+
+            // Comments for this event
             var commentQuery = _context.TblCustomerComplaints
                 .AsNoTracking()
                 .Where(c => c.CustomerComplaintEventId == eventId);
 
+            // If logged in, show approved comments + the current user's pending comment
             if (currentUserId.HasValue)
                 commentQuery = commentQuery.Where(c => c.CustomerComplaintStatus == 1
                     || c.CustomerComplaintCustomerUserId == currentUserId.Value);
             else
+                // Guest: only see approved comments
                 commentQuery = commentQuery.Where(c => c.CustomerComplaintStatus == 1);
 
             var comments = await (from c in commentQuery
@@ -153,14 +157,16 @@ namespace Semester03.Models.Repositories
                                       Id = c.CustomerComplaintId,
                                       UserId = c.CustomerComplaintCustomerUserId,
                                       UserName = user != null
-                                          ? (string.IsNullOrWhiteSpace(user.UsersFullName) ? user.UsersUsername : user.UsersFullName)
-                                          : "Ẩn danh",
+                                          ? (string.IsNullOrWhiteSpace(user.UsersFullName)
+                                                ? user.UsersUsername
+                                                : user.UsersFullName)
+                                          : "Anonymous",
                                       Rate = c.CustomerComplaintRate,
                                       Text = c.CustomerComplaintDescription,
                                       CreatedAt = c.CustomerComplaintCreatedAt
                                   }).ToListAsync();
 
-            // price: nếu 0 => coi là miễn phí (theo yêu cầu)
+            // Price: if 0 => treat as free
             decimal? price = null;
             try
             {
@@ -172,7 +178,7 @@ namespace Semester03.Models.Repositories
                 price = null;
             }
 
-            // tổng số đã book = sum EventBookingQuantity (TblEventBookings nav)
+            // Total booked quantity = sum of EventBookingQuantity
             int totalBooked = 0;
             try
             {
@@ -202,7 +208,7 @@ namespace Semester03.Models.Repositories
             };
 
             vm.CommentCount = vm.Comments.Count;
-            vm.AvgRate = vm.CommentCount > 0 ? vm.Comments.Average(c => c.Rate) : 0; // mặc định 0 nếu chưa có comment
+            vm.AvgRate = vm.CommentCount > 0 ? vm.Comments.Average(c => c.Rate) : 0; // default 0 if no comments
 
             vm.IsActive = (e.EventStatus ?? 0) == 1;
             vm.IsPast = e.EventEnd < now;
@@ -218,7 +224,9 @@ namespace Semester03.Models.Repositories
                 vm.PositionFloor = e.EventTenantPosition.TenantPositionFloor;
             }
 
-            // --- Tenant (shop) priority: TenantPosition.AssignedTenant -> fallback latest booking.EventBookingTenant ---
+            // --- Tenant (shop) priority:
+            // 1. TenantPosition.AssignedTenant
+            // 2. Fallback: latest booking.EventBookingTenant
             TblTenant tenant = null;
 
             if (e.EventTenantPosition?.TenantPositionAssignedTenantId.HasValue == true
@@ -229,7 +237,7 @@ namespace Semester03.Models.Repositories
 
             if (tenant == null)
             {
-                // try from latest booking that has tenant navigation
+                // Try from latest booking that has tenant navigation
                 var latestBooking = e.TblEventBookings?
                     .OrderByDescending(b => b.EventBookingCreatedDate ?? DateTime.MinValue)
                     .FirstOrDefault(b => b.EventBookingTenant != null);
@@ -240,15 +248,19 @@ namespace Semester03.Models.Repositories
 
             if (tenant != null)
             {
-                vm.OrganizerShopName = !string.IsNullOrWhiteSpace(tenant.TenantName) ? tenant.TenantName : $"Tenant #{tenant.TenantId}";
+                vm.OrganizerShopName = !string.IsNullOrWhiteSpace(tenant.TenantName)
+                    ? tenant.TenantName
+                    : $"Tenant #{tenant.TenantId}";
+
                 vm.OrganizerDescription = tenant.TenantDescription ?? "";
 
-                // try to read tenant contact via TenantUserId (POCO maybe TenantUserId or Tenant_UserID)
+                // Try to read tenant contact via TenantUserId (POCO maybe TenantUserId or Tenant_UserID)
                 int? tenantUserId = null;
                 try
                 {
-                    // common property name in scaffolded POCO is TenantUserId or TenantUserID
-                    var prop = tenant.GetType().GetProperty("TenantUserId") ?? tenant.GetType().GetProperty("Tenant_UserID") ?? tenant.GetType().GetProperty("TenantUserID");
+                    var prop = tenant.GetType().GetProperty("TenantUserId")
+                              ?? tenant.GetType().GetProperty("Tenant_UserID")
+                              ?? tenant.GetType().GetProperty("TenantUserID");
                     if (prop != null)
                         tenantUserId = (int?)(prop.GetValue(tenant));
                 }
@@ -256,7 +268,9 @@ namespace Semester03.Models.Repositories
 
                 if (tenantUserId.HasValue && tenantUserId.Value != 0)
                 {
-                    var user = await _context.TblUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UsersId == tenantUserId.Value);
+                    var user = await _context.TblUsers.AsNoTracking()
+                        .FirstOrDefaultAsync(u => u.UsersId == tenantUserId.Value);
+
                     if (user != null)
                     {
                         vm.OrganizerEmail = user.UsersEmail ?? "";
@@ -266,38 +280,48 @@ namespace Semester03.Models.Repositories
             }
             else
             {
-                // final fallback: hiển thị '-' thay vì "Organizer #id" để tránh gây nhầm lẫn
-                vm.OrganizerShopName = "-";
+                // No specific shop -> leave null so views can treat it as a mall event
+                vm.OrganizerShopName = null;
+                vm.OrganizerDescription = vm.OrganizerDescription ?? "";
+                // OrganizerEmail / OrganizerPhone also remain empty
             }
 
-            // related events
-            vm.Related = await _context.TblEvents
+            // Related events
+            var relatedQuery = _context.TblEvents
                 .AsNoTracking()
                 .Where(x => x.EventId != e.EventId && x.EventStatus == 1 && x.EventEnd >= now)
                 .OrderBy(x => x.EventStart)
-                .Take(4)
+                .Take(4);
+
+            vm.Related = await relatedQuery
                 .Select(x => new EventCardVm
                 {
                     Id = x.EventId,
                     Title = x.EventName,
-                    ShortDescription = string.IsNullOrEmpty(x.EventDescription) ? "" :
-                        (x.EventDescription.Length > 200 ? x.EventDescription.Substring(0, 197) + "..." : x.EventDescription),
+                    ShortDescription = string.IsNullOrEmpty(x.EventDescription)
+                        ? ""
+                        : (x.EventDescription.Length > 200
+                            ? x.EventDescription.Substring(0, 197) + "..."
+                            : x.EventDescription),
                     StartDate = x.EventStart,
                     EndDate = x.EventEnd,
                     ImageUrl = string.IsNullOrEmpty(x.EventImg) ? "/images/event-placeholder.png" : x.EventImg,
                     MaxSlot = x.EventMaxSlot,
                     Status = (int)(x.EventStatus ?? 0),
                     TenantPositionId = x.EventTenantPositionId
-                }).ToListAsync();
+                })
+                .ToListAsync();
 
             return vm;
         }
+
         public async Task<bool> EventExistsAsync(int eventId)
         {
             return await _context.TblEvents
                 .AsNoTracking()
                 .AnyAsync(e => e.EventId == eventId && e.EventStatus == 1);
         }
+
         public async Task AddCommentAsync(int eventId, int userId, int rate, string text)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -311,15 +335,17 @@ namespace Semester03.Models.Repositories
                 CustomerComplaintEventId = eventId,
                 CustomerComplaintRate = rate,
                 CustomerComplaintDescription = text.Trim(),
-                CustomerComplaintStatus = 0, 
+                CustomerComplaintStatus = 0, // pending approval
                 CustomerComplaintCreatedAt = DateTime.UtcNow
             };
 
             _context.TblCustomerComplaints.Add(ent);
             await _context.SaveChangesAsync();
         }
-        //Addmin CRUD methods
-        // (CRUD methods unchanged...)
+
+        // ===============================
+        // ADMIN CRUD METHODS
+        // ===============================
         public async Task<IEnumerable<TblEvent>> GetAllAsync()
         {
             return await _context.TblEvents
@@ -374,7 +400,7 @@ namespace Semester03.Models.Repositories
         {
             var events = await _context.TblEvents
                 .Include(e => e.EventTenantPosition)
-                .Where(e => e.EventStatus == 1) // Only Active events
+                .Where(e => e.EventStatus == 1) // Only active events
                 .ToListAsync();
 
             return events.Select(e => new
@@ -392,19 +418,15 @@ namespace Semester03.Models.Repositories
 
         public async Task<bool> CheckOverlapAsync(int positionId, DateTime start, DateTime end, int? excludeEventId = null)
         {
-            
-
             var query = _context.TblEvents.AsNoTracking()
                 .Where(e => e.EventTenantPositionId == positionId);
 
-            
             if (excludeEventId.HasValue)
             {
                 query = query.Where(e => e.EventId != excludeEventId.Value);
             }
 
-            
-
+            // Overlap condition: existingStart < newEnd AND existingEnd > newStart
             return await query.AnyAsync(e => e.EventStart < end && e.EventEnd > start);
         }
     }

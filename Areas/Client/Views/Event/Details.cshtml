@@ -7,8 +7,6 @@
 @{
     ViewData["Title"] = Model.Title;
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
-
-    // Hàm xử lý ảnh sự kiện – đồng bộ với Index & Tickets
     Func<string, string> Img = (raw) =>
     {
         var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
@@ -68,8 +66,15 @@
     };
 
     var isPast = Model.IsPast;
-    // mặc định 0.0 khi chưa có comment
     var displayAvg = Model.CommentCount > 0 ? Model.AvgRate : 0.0;
+
+    // Mall name fallback
+    var mallName = ViewData["MallName"] as string ?? "ABCD Mall";
+
+    // If OrganizerShopName exists => event of shop; otherwise => event of mall
+    var organizerName = !string.IsNullOrWhiteSpace(Model.OrganizerShopName)
+        ? Model.OrganizerShopName
+        : mallName;
 }
 
 @section Styles {
@@ -413,7 +418,6 @@
             color: #facc15;
         }
 
-        /* sidebar */
         .event-side-card {
             background: #ffffff;
             border-radius: 1rem;
@@ -435,7 +439,6 @@
             font-weight: 600;
         }
 
-        /* upcoming events slider */
         .upcoming-wrapper {
             margin-top: .3rem;
         }
@@ -563,7 +566,6 @@
     </a>
 
     <div class="event-main-card">
-        <!-- HEADER -->
         <div class="event-header">
             <div class="event-poster">
                 <img src="@Img(Model.ImageUrl)" alt="@Model.Title" />
@@ -578,33 +580,33 @@
                 <div class="event-title-main">@Model.Title</div>
 
                 <div class="event-subline">
-                    Sự kiện tại ABCD Mall với nhiều hoạt động thú vị. Tham gia để trải nghiệm mua sắm
-                    và giải trí cùng bạn bè và gia đình.
+                    An event at ABCD Mall with many interesting activities. Join to enjoy shopping
+                    and entertainment with your friends and family.
                 </div>
 
                 <div class="event-tags">
                     @if (!isPast && Model.Status == 1)
                     {
                         <span class="tag-pill tag-open">
-                            <i class="bi bi-check-circle"></i> Đang mở đăng ký
+                            <i class="bi bi-check-circle"></i> Registration open
                         </span>
                     }
                     @if (Model.IsOngoing && Model.Status == 1)
                     {
                         <span class="tag-pill tag-ongoing">
-                            <i class="bi bi-broadcast"></i> Đang diễn ra
+                            <i class="bi bi-broadcast"></i> Ongoing
                         </span>
                     }
                     else if (Model.IsUpcoming && Model.Status == 1)
                     {
                         <span class="tag-pill tag-upcoming">
-                            <i class="bi bi-calendar2-event"></i> Sắp diễn ra
+                            <i class="bi bi-calendar2-event"></i> Upcoming
                         </span>
                     }
                     else if (Model.IsPast)
                     {
                         <span class="tag-pill tag-ended">
-                            <i class="bi bi-flag-fill"></i> Đã kết thúc
+                            <i class="bi bi-flag-fill"></i> Ended
                         </span>
                     }
                 </div>
@@ -640,12 +642,8 @@
         </div>
 
         <hr class="my-3" />
-
-        <!-- MAIN CONTENT -->
         <div class="row event-content-row g-4">
             <div class="col-lg-8">
-
-                <!-- comments -->
                 <section class="event-section">
                     <div class="event-section-title">
                         <i class="bi bi-chat-right-text"></i>
@@ -668,7 +666,7 @@
                                 else
                                 {
                                     <span class="text-muted small">
-                                        Bạn cần đăng nhập để đánh giá.
+                                        You need to log in to rate.
                                     </span>
                                 }
                             </div>
@@ -676,7 +674,7 @@
 
                         <div class="avg-rate-box">
                             <span class="big-rate">@displayAvg.ToString("0.0") / 5</span>
-                            <span>(@Model.CommentCount bình luận)</span>
+                            <span>(@Model.CommentCount review(s))</span>
                         </div>
                     </div>
 
@@ -690,22 +688,22 @@
                             <textarea id="commentText"
                                   class="form-control mb-2"
                                   rows="3"
-                                  placeholder="Chia sẻ trải nghiệm của bạn về sự kiện..."></textarea>
+                                  placeholder="Share your experience about this event..."></textarea>
                             <div class="d-flex gap-2 align-items-center flex-wrap">
                                 <button id="submitComment" class="btn btn-primary btn-sm">
-                                    <i class="bi bi-send me-1"></i>Gửi bình luận
+                                    <i class="bi bi-send me-1"></i>Submit comment
                                 </button>
                                 <small class="text-muted">
-                                    Bình luận có thể được kiểm duyệt trước khi hiển thị.
+                                    Comments may be moderated before being displayed.
                                 </small>
                             </div>
                         }
                         else
                         {
                             <div class="alert alert-info py-2 mb-2">
-                                Bạn cần
-                                <a href="@Url.Action("Login", "Account", new { area = "Client" })">đăng nhập</a>
-                                để bình luận và đánh giá sự kiện này.
+                                You need to
+                                <a href="@Url.Action("Login", "Account", new { area = "Client" })">log in</a>
+                                to comment and rate this event.
                             </div>
                         }
                     </div>
@@ -741,13 +739,11 @@
                         else
                         {
                             <div class="comment-empty">
-                                Chưa có bình luận nào — hãy là người đầu tiên!
+                                No comments yet — be the first!
                             </div>
                         }
                     </div>
                 </section>
-
-                <!-- upcoming events slider -->
                 @if (Model.Related != null && Model.Related.Any())
                 {
                     <section class="event-section upcoming-wrapper">
@@ -794,29 +790,27 @@
                     </section>
                 }
             </div>
-
-            <!-- SIDEBAR -->
             <aside class="col-lg-4">
                 <div class="event-side-card">
-                    <h6>Thông tin sự kiện</h6>
+                    <h6>Event information</h6>
 
-                    <p><strong>Ngày bắt đầu:</strong> @Model.StartDate.ToString("dd/MM/yyyy HH:mm")</p>
-                    <p><strong>Ngày kết thúc:</strong> @(Model.EndDate.HasValue? Model.EndDate.Value.ToString("dd/MM/yyyy HH:mm") : "-")</p>
+                    <p><strong>Start date:</strong> @Model.StartDate.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p><strong>End date:</strong> @(Model.EndDate.HasValue? Model.EndDate.Value.ToString("dd/MM/yyyy HH:mm") : "-")</p>
 
                     <p>
-                        <strong>Giá vé:</strong>
+                        <strong>Ticket price:</strong>
                         @if (Model.Price.HasValue)
                         {
                             @Model.Price.Value.ToString("C0", new CultureInfo("vi-VN"))
                         }
                         else
                         {
-                            <span>Miễn phí</span>
+                            <span>Free</span>
                         }
                     </p>
 
                     <p>
-                        <strong>Slots còn lại:</strong> @Model.AvailableSlots
+                        <strong>Remaining slots:</strong> @Model.AvailableSlots
                         @if (Model.MaxSlot > 0)
                         {
                             <span>/ @Model.MaxSlot</span>
@@ -824,23 +818,23 @@
                     </p>
 
                     <p>
-                        <strong>Trạng thái:</strong>
+                        <strong>Status:</strong>
                         @{
                             string statusTextSide;
-                            if (Model.IsPast) statusTextSide = "Đã kết thúc";
-                            else if (Model.IsOngoing && Model.Status == 1) statusTextSide = "Đang diễn ra";
-                            else if (Model.IsUpcoming && Model.Status == 1) statusTextSide = "Sắp diễn ra";
-                            else if (Model.Status == 1) statusTextSide = "Đang mở";
-                            else statusTextSide = "Không hoạt động";
+                            if (Model.IsPast) statusTextSide = "Ended";
+                            else if (Model.IsOngoing && Model.Status == 1) statusTextSide = "Ongoing";
+                            else if (Model.IsUpcoming && Model.Status == 1) statusTextSide = "Upcoming";
+                            else if (Model.Status == 1) statusTextSide = "Open";
+                            else statusTextSide = "Inactive";
                         }
                         @statusTextSide
                     </p>
 
                     <hr />
 
-                    <h6>Tổ chức / Shop</h6>
+                    <h6>Organizer</h6>
                     <div>
-                        <div class="fw-bold">@(!string.IsNullOrWhiteSpace(Model.OrganizerShopName) ? Model.OrganizerShopName : "-")</div>
+                        <div class="fw-bold">@organizerName</div>
                         @if (!string.IsNullOrWhiteSpace(Model.OrganizerDescription))
                         {
                             <div class="text-muted small">@Model.OrganizerDescription</div>
@@ -848,21 +842,21 @@
                     </div>
 
                     <div class="mt-2 small-muted">
-                        <div><strong>Vị trí:</strong></div>
+                        <div><strong>Location:</strong></div>
                         @if (!string.IsNullOrWhiteSpace(Model.PositionLocation))
                         {
                             <div>@Model.PositionLocation</div>
                         }
                         @if (Model.PositionFloor.HasValue)
                         {
-                            <div>Tầng: @Model.PositionFloor.Value</div>
+                            <div>Floor: @Model.PositionFloor.Value</div>
                         }
                     </div>
 
                     @if (!string.IsNullOrWhiteSpace(Model.OrganizerPhone) || !string.IsNullOrWhiteSpace(Model.OrganizerEmail))
                     {
                         <div class="mt-2">
-                            <small class="text-muted">Liên hệ:</small>
+                            <small class="text-muted">Contact:</small>
                             <div>
                                 @if (!string.IsNullOrWhiteSpace(Model.OrganizerPhone))
                                 {
@@ -880,7 +874,7 @@
                         @if (Model.IsPast || Model.Status != 1 || Model.AvailableSlots <= 0)
                         {
                             <button class="btn btn-secondary btn-register" disabled>
-                                @(Model.AvailableSlots <= 0 ? "Hết chỗ" : "Sự kiện đã kết thúc")
+                                @(Model.AvailableSlots <= 0 ? "Fully booked" : "Event has ended")
                             </button>
                         }
                         else
@@ -889,7 +883,7 @@
                             {
                                 <a href="@Url.Action("Register", "EventBooking", new { area = "Client", id = Model.Id })"
                                    class="btn btn-success btn-register">
-                                    Đăng ký ngay
+                                    Register now
                                 </a>
                             }
                             else
@@ -898,7 +892,7 @@
                                 var loginUrl = Url.Action("Login", "Account", new { area = "Client", returnUrl = registerUrl });
 
                                 <a href="@loginUrl" class="btn btn-outline-primary btn-register">
-                                    Đăng nhập để đăng ký
+                                    Log in to register
                                 </a>
                             }
                         }
@@ -941,15 +935,15 @@
             btn.addEventListener('click', async () => {
                 const textEl = document.getElementById('commentText');
                 const text = (textEl?.value || '').trim();
-                if (!selected) return alert('Vui lòng chọn số sao đánh giá.');
-                if (!text) return alert('Vui lòng viết bình luận.');
+                if (!selected) return alert('Please select a rating.');
+                if (!text) return alert('Please enter your comment.');
 
                 const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
                 const token = tokenInput ? tokenInput.value : '';
 
                 btn.disabled = true;
                 const originalHtml = btn.innerHTML;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang gửi...';
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Submitting...';
 
                 try {
                     const resp = await fetch('@Url.Action("AddComment", "Event", new { area = "Client" })', {
@@ -968,17 +962,17 @@
 
                     const data = await resp.json();
                     if (data && data.success) {
-                        alert(data.message || 'Gửi bình luận thành công.');
+                        alert(data.message || 'Comment submitted successfully.');
                         if (textEl) textEl.value = '';
                         selected = 0;
                         apply(0);
                         window.location.reload();
                     } else {
-                        alert(data?.message || 'Có lỗi khi gửi bình luận.');
+                        alert(data?.message || 'An error occurred while submitting your comment.');
                     }
                 } catch (e) {
                     console.error(e);
-                    alert('Lỗi server. Vui lòng thử lại sau.');
+                    alert('Server error. Please try again later.');
                 } finally {
                     btn.disabled = false;
                     btn.innerHTML = originalHtml;
