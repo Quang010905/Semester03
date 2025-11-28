@@ -8,7 +8,7 @@
     Layout = "_LayoutClient";
     ViewData["Title"] = "Promotions";
 
-    // ===== HÀM XỬ LÝ ẢNH PROMOTION (CÓ FALLBACK) =====
+    // ===== IMAGE HELPER WITH FALLBACK =====
     Func<string, string> ImgPromotion = (raw) =>
     {
         var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
@@ -18,14 +18,11 @@
             if (string.IsNullOrWhiteSpace(raw))
                 return noImageUrl;
 
-            // nếu là link tuyệt đối
             if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 return raw;
 
-            // chuẩn hóa path
             var file = raw.Replace("\\", "/").Trim();
 
-            // nếu trong chuỗi đã có "Content/Uploads/TenantPromotion" thì chỉ lấy tên file
             var keyword = "Content/Uploads/TenantPromotion";
             var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
             if (idxKeyword >= 0)
@@ -34,7 +31,6 @@
                 if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
             }
 
-            // bỏ các prefix thừa
             if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
                 file = file.Substring("wwwroot/".Length);
             if (file.StartsWith("~/"))
@@ -45,16 +41,16 @@
             if (string.IsNullOrWhiteSpace(file))
                 return noImageUrl;
 
-            // lấy IWebHostEnvironment để kiểm tra file vật lý
             var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
             if (env == null)
             {
-                // nếu không lấy được env thì trả luôn đường dẫn tương đối
                 return Url.Content("~/Content/Uploads/TenantPromotion/" + Uri.EscapeDataString(file));
             }
 
-            var physical = System.IO.Path.Combine(env.WebRootPath ?? "wwwroot", "Content", "Uploads", "TenantPromotion", file);
-
+            var physical = System.IO.Path.Combine(
+                env.WebRootPath ?? "wwwroot",
+                "Content", "Uploads", "TenantPromotion", file
+            );
 
             if (System.IO.File.Exists(physical))
             {
@@ -73,23 +69,86 @@
 @section Styles {
     <style>
         .promotion-page-wrapper {
-            padding: 2rem 0;
+            padding: 1.8rem 0 2.8rem;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        /* Dropdown Filter */
+        /* ===== HEADER ===================================================== */
+        .promo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 1.25rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .promo-kicker {
+            font-weight: 800;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            font-size: .78rem;
+            color: #9ca3af;
+        }
+
+        .promo-title {
+            margin: 0;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            font-size: 1.9rem;
+        }
+
+            .promo-title span {
+                background: linear-gradient(90deg,#4f46e5,#ec4899);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+        .promo-subtitle {
+            font-size: .9rem;
+            color: #6b7280;
+        }
+
+        /* ===== FILTER BOX ================================================== */
         .filter-box {
-            background: #fff;
-            padding: 1rem 1.5rem;
+            background: #ffffff;
+            padding: 0.9rem 1.2rem;
             border-radius: 1rem;
-            box-shadow: 0 6px 20px rgba(0,0,0,.08);
+            box-shadow: 0 10px 28px rgba(15,23,42,0.10);
             margin-bottom: 2rem;
             display: flex;
-            justify-content: flex-start;
-            gap: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
             align-items: center;
         }
 
-        /* CARD GRID */
+            .filter-box label {
+                font-size: .85rem;
+                font-weight: 600;
+                color: #4b5563;
+            }
+
+            .filter-box .form-select {
+                max-width: 260px;
+                border-radius: 999px;
+                font-size: .85rem;
+            }
+
+        /* ===== GRID + CARDS =============================================== */
+        .promo-section-title {
+            font-weight: 700;
+            font-size: 1.05rem;
+            text-transform: uppercase;
+            letter-spacing: .16em;
+            color: #6b7280;
+            margin-bottom: .75rem;
+        }
+
+            .promo-section-title span {
+                color: #111827;
+            }
+
         .promo-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill,minmax(270px,1fr));
@@ -97,93 +156,189 @@
         }
 
         .promo-card {
-            background: #fff;
-            border-radius: 1rem;
-            overflow: hidden;
-            box-shadow: 0 6px 16px rgba(0,0,0,.1);
-            transition: all .25s ease;
             position: relative;
+            background: radial-gradient(circle at top left,#eef2ff,#ffffff 55%);
+            border-radius: 1.1rem;
+            overflow: hidden;
+            box-shadow: 0 14px 34px rgba(15,23,42,.16);
+            border: 1px solid rgba(148,163,184,0.45);
+            transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+            color: #111827;
         }
 
             .promo-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 12px 28px rgba(0,0,0,.15);
+                transform: translateY(-6px);
+                box-shadow: 0 20px 46px rgba(15,23,42,.24);
+                border-color: rgba(37,99,235,0.9);
             }
 
             .promo-card img {
                 width: 100%;
-                height: 180px;
+                height: 190px;
                 object-fit: cover;
+                display: block;
+                transform-origin: center;
+                transition: transform .4s ease;
             }
 
-        .promo-body {
-            padding: 1rem;
-        }
+            .promo-card:hover img {
+                transform: scale(1.05);
+            }
 
-        .promo-title {
-            font-size: 1.05rem;
-            font-weight: 700;
-        }
-
-        .promo-time {
-            font-size: .85rem;
-            color: #64748b;
+        .promo-img-overlay {
+            position: absolute;
+            inset: auto 0 0 0;
+            height: 40%;
+            background: linear-gradient(to top,rgba(15,23,42,.96),transparent);
+            pointer-events: none;
         }
 
         .discount-badge {
-            background: #ef4444;
+            background: linear-gradient(135deg,#ef4444,#f97316);
             color: #fff;
             font-weight: 700;
-            padding: .25rem .55rem;
-            border-radius: .35rem;
-            font-size: .75rem;
+            padding: .3rem .7rem;
+            border-radius: 999px;
+            font-size: .78rem;
             position: absolute;
             top: 10px;
             left: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,.25);
+            box-shadow: 0 8px 18px rgba(0,0,0,.35);
+            z-index: 2;
+            display: inline-flex;
+            align-items: center;
+            gap: .25rem;
         }
 
+            .discount-badge i {
+                font-size: .9rem;
+            }
+
+        .promo-body {
+            padding: 0.85rem 1rem .85rem;
+        }
+
+        .promo-title-text {
+            font-size: 1.0rem;
+            font-weight: 700;
+            margin-bottom: .25rem;
+        }
+
+        .promo-time {
+            font-size: .82rem;
+            color: #6b7280;
+        }
+
+        .promo-footer {
+            padding: 0 1rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: .8rem;
+        }
+
+            .promo-footer span {
+                color: #6b7280;
+            }
+
+        .promo-detail-btn {
+            border-radius: 999px;
+            padding-inline: .9rem;
+            font-size: .8rem;
+        }
+
+        /* EXPIRED */
         .expired-card {
-            opacity: .55;
+            background: #f9fafb;
+            border-style: dashed;
+            border-color: #d1d5db;
+            box-shadow: none;
+            opacity: .75;
+        }
+
+        .expired-badge {
+            position: absolute;
+            right: .75rem;
+            top: .75rem;
+            font-size: .7rem;
+            padding: .25rem .5rem;
+            border-radius: 999px;
+            background: #e5e7eb;
+            color: #6b7280;
+            font-weight: 600;
+        }
+
+        .empty-state-text {
+            font-size: .9rem;
+            color: #9ca3af;
+            padding: 1.2rem 0;
         }
 
         /* Pagination */
         .pagination .page-link {
-            border-radius: 8px;
+            border-radius: 999px;
             margin: 0 3px;
+            font-size: .85rem;
         }
 
         .pagination .page-item.active .page-link {
-            background: #2563eb;
-            border-color: #2563eb;
+            background: linear-gradient(90deg,#4f46e5,#0ea5e9);
+            border-color: transparent;
             color: #fff;
+        }
+
+        @@media (max-width: 768px) {
+            .promo-header {
+                align-items: flex-start;
+            }
+
+            .promo-card img {
+                height: 170px;
+            }
         }
     </style>
 }
 
-<div class="container promotion-page-wrapper">
+<div class="promotion-page-wrapper">
 
-    <!-- AUTO FILTER -->
-    <div class="filter-box">
-        <label class="fw-bold me-2">Filter by Store:</label>
-        <select id="tenantFilter" class="form-select" style="max-width:260px;">
-            <option value="">All stores</option>
-            @foreach (var t in Model.Tenants)
-            {
-                <option value="@t.TenantId"
-                        selected="@(Model.SelectedTenantId == t.TenantId)">
-                    @t.TenantName
-                </option>
-            }
-        </select>
+    <!-- HEADER -->
+    <div class="promo-header">
+        <div>
+            <div class="promo-kicker">Mall deals</div>
+            <h2 class="promo-title<i class="bi bi-shop me-1
+                <span>Promotions & Offers</span>
+            </h2>
+            <div class="promo-subtitle">
+                Discover the latest discounts from your favorite stores.
+            </div>
+        </div>
+
+        <!-- FILTER -->
+        <div class="filter-box">
+            <label class="me-1">Filter by store</label>
+            <select id="tenantFilter" class="form-select form-select-sm">
+                <option value="">All stores</option>
+                @foreach (var t in Model.Tenants)
+                {
+                    <option value="@t.TenantId"
+                            selected="@(Model.SelectedTenantId == t.TenantId)">
+                        @t.TenantName
+                    </option>
+                }
+            </select>
+        </div>
     </div>
 
-    <!-- ACTIVE -->
-    <h4 class="fw-bold mb-3">🔥 Active Promotions</h4>
+    <!-- ACTIVE PROMOTIONS -->
+    <div class="mb-2 promo-section-title">
+        <span>Active promotions</span>
+    </div>
 
     @if (!Model.ActivePromotions.Any())
     {
-        <div class="text-muted">No promotions available.</div>
+        <div class="empty-state-text">
+            There are no active promotions at the moment. Please check back soon.
+        </div>
     }
     else
     {
@@ -192,28 +347,42 @@
             {
                 var img = ImgPromotion(p.Img);
 
-                <a href="@Url.Action("Detail", "TenantPromotion", new { area="Client", id = p.Id })"
-                   class="promo-card text-decoration-none text-dark">
+                <a href="@Url.Action("Detail", "TenantPromotion", new { area = "Client", id = p.Id })"
+                   class="promo-card text-decoration-none">
 
                     @* Discount badge *@
                     @if (p.DiscountPercent.HasValue)
                     {
-                        <span class="discount-badge">@p.DiscountPercent% OFF</span>
+                        <span class="discount-badge">
+                            <i class="bi bi-fire"></i>@p.DiscountPercent% OFF
+                        </span>
                     }
                     else if (p.DiscountAmount.HasValue)
                     {
-                        <span class="discount-badge">@p.DiscountAmount.Value.ToString("#,0") ₫</span>
+                        <span class="discount-badge">
+                            <i class="bi bi-fire"></i>@p.DiscountAmount.Value.ToString("#,0") ₫
+                        </span>
                     }
 
-                    <img src="@img" />
+                    <img src="@img" alt="@p.Title" />
+                    <div class="promo-img-overlay"></div>
 
                     <div class="promo-body">
-                        <div class="promo-title">@p.Title</div>
+                        <div class="promo-title-text text-truncate" title="@p.Title">@p.Title</div>
                         <div class="promo-time">
-                            <i class="bi bi-calendar3"></i>
-                            @p.PromotionStart?.ToString("dd/MM/yyyy") –
-                            @p.PromotionEnd?.ToString("dd/MM/yyyy")
+                            <i class="bi bi-calendar3 me-1"></i>
+                            @p.PromotionStart?.ToString("dd/MM/yyyy") – @p.PromotionEnd?.ToString("dd/MM/yyyy")
                         </div>
+                    </div>
+
+                    <div class="promo-footer">
+                        <span class="text-muted">
+                            <i class="bi bi-shop me-1"></i>Store
+                        </span>
+
+                        <span class="text-success fw-semibold">
+                            <i class="bi bi-clock me-1"></i>On going
+                        </span>
                     </div>
                 </a>
             }
@@ -228,7 +397,7 @@
                     {
                         <li class="page-item @(Model.Page == i ? "active" : "")">
                             <a class="page-link"
-                               href="@Url.Action("Index","TenantPromotion", new { area="Client", tenantId = Model.SelectedTenantId, page = i })">
+                               href="@Url.Action("Index", "TenantPromotion", new { area = "Client", tenantId = Model.SelectedTenantId, page = i })">
                                 @i
                             </a>
                         </li>
@@ -238,39 +407,54 @@
         }
     }
 
-    <!-- EXPIRED -->
-    <h4 class="fw-bold mt-5 mb-3 text-muted">🕒 Expired Promotions</h4>
-    <div class="promo-grid">
-        @foreach (var p in Model.ExpiredPromotions)
-        {
-            var img = ImgPromotion(p.Img);
-
-            <div class="promo-card expired-card">
-                <img src="@img" />
-                <div class="promo-body">
-                    <div class="promo-title">@p.Title</div>
-                    <div class="promo-time">
-                        Ended: @p.PromotionEnd?.ToString("dd/MM/yyyy")
-                    </div>
-                </div>
-            </div>
-        }
+    <!-- EXPIRED PROMOTIONS -->
+    <div class="promo-section-title mt-5 text-muted">
+        <span>Expired promotions</span>
     </div>
 
+    @if (!Model.ExpiredPromotions.Any())
+    {
+        <div class="empty-state-text">
+            No expired promotions to show.
+        </div>
+    }
+    else
+    {
+        <div class="promo-grid">
+            @foreach (var p in Model.ExpiredPromotions)
+            {
+                var img = ImgPromotion(p.Img);
+
+                <div class="promo-card expired-card">
+                    <span class="expired-badge">
+                        Expired
+                    </span>
+                    <img src="@img" alt="@p.Title" />
+                    <div class="promo-body">
+                        <div class="promo-title-text text-truncate" title="@p.Title">@p.Title</div>
+                        <div class="promo-time">
+                            Ended: @p.PromotionEnd?.ToString("dd/MM/yyyy")
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
 </div>
 
 @section Scripts {
     <script>
-        // 🔥 Auto filter on dropdown change
+        // Auto filter by store
         document.getElementById('tenantFilter').addEventListener('change', function () {
             const tenantId = this.value;
             const url = new URL(window.location.href);
-            if (tenantId)
-                url.searchParams.set("tenantId", tenantId);
-            else
-                url.searchParams.delete("tenantId");
 
-            url.searchParams.delete("page"); // reset page
+            if (tenantId) {
+                url.searchParams.set("tenantId", tenantId);
+            } else {
+                url.searchParams.delete("tenantId");
+            }
+            url.searchParams.delete("page"); // reset page on filter change
 
             window.location.href = url.toString();
         });

@@ -1,0 +1,225 @@
+﻿@model IEnumerable<Semester03.Areas.Client.Models.ViewModels.MyComplaintVm>
+
+@{
+    ViewData["Title"] = "My Complaints";
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
+}
+
+@section Styles {
+    <style>
+        .complaints-page {
+            padding: 10px 4px 4px;
+        }
+
+        .complaints-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            gap: .75rem;
+        }
+
+        .complaints-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+
+        .complaints-sub {
+            font-size: .85rem;
+            color: #6b7280;
+        }
+
+        .complaints-badge {
+            padding: .15rem .6rem;
+            border-radius: 999px;
+            background: #eff6ff;
+            font-size: .75rem;
+            font-weight: 600;
+            color: #1d4ed8;
+        }
+
+        .complaints-card {
+            border-radius: 1.1rem;
+            padding: 1rem 1.1rem;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+        }
+
+        .complaint-item {
+            padding: .75rem .4rem;
+            border-bottom: 1px dashed #e5e7eb;
+        }
+
+            .complaint-item:last-child {
+                border-bottom: none;
+            }
+
+        .complaint-topline {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: .75rem;
+            margin-bottom: .2rem;
+        }
+
+        .complaint-target {
+            font-weight: 700;
+            font-size: .95rem;
+            color: #111827;
+        }
+
+        .complaint-target-type {
+            font-size: .75rem;
+            font-weight: 600;
+            padding: .12rem .55rem;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+
+        .complaint-status {
+            font-size: .78rem;
+            font-weight: 600;
+            padding: .18rem .65rem;
+            border-radius: 999px;
+        }
+
+        .complaint-status-pending {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .complaint-status-approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .complaint-status-rejected {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .complaint-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .7rem;
+            font-size: .78rem;
+            color: #6b7280;
+            margin-bottom: .25rem;
+        }
+
+        .complaint-text {
+            font-size: .85rem;
+            color: #4b5563;
+            line-height: 1.4;
+        }
+
+        .complaint-rating {
+            font-size: .8rem;
+            color: #f59e0b;
+        }
+
+        .complaints-empty {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: #6b7280;
+            font-size: .95rem;
+        }
+
+        .complaints-empty-icon {
+            font-size: 2.2rem;
+            color: #cbd5f5;
+            margin-bottom: .4rem;
+        }
+
+        @@media (max-width: 576px) {
+            .complaints-card {
+                padding: .8rem .75rem;
+            }
+
+            .complaint-topline {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+}
+
+<div class="complaints-page">
+    <div class="complaints-header">
+        <div>
+            <div class="complaints-title">My Complaints</div>
+            <div class="complaints-sub">
+                All your feedback submitted to movies, events and stores.
+            </div>
+        </div>
+        <div class="complaints-badge">
+            @Model.Count() total
+        </div>
+    </div>
+
+    <div class="complaints-card">
+        @if (!Model.Any())
+        {
+            <div class="complaints-empty">
+                <div class="complaints-empty-icon">
+                    <i class="bi bi-emoji-neutral"></i>
+                </div>
+                You have not submitted any complaint yet.
+            </div>
+        }
+        else
+        {
+            @foreach (var c in Model)
+            {
+                var statusClass = c.StatusLabel switch
+                {
+                    "Approved" => "complaint-status complaint-status-approved",
+                    "Rejected" => "complaint-status complaint-status-rejected",
+                    _ => "complaint-status complaint-status-pending"
+                };
+
+                <div class="complaint-item">
+                    <div class="complaint-topline">
+                        <div>
+                            <div class="complaint-target">
+                                @c.TargetName
+                            </div>
+                            <div class="mt-1">
+                                <span class="complaint-target-type">
+                                    @c.TargetType
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="@statusClass">
+                            @c.StatusLabel
+                        </div>
+                    </div>
+
+                    <div class="complaint-meta">
+                        <span>
+                            <i class="bi bi-clock"></i>
+                            @c.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                        </span>
+
+                        @if (c.Rate.HasValue && c.Rate.Value > 0)
+                        {
+                            <span class="complaint-rating">
+                                <i class="bi bi-star-fill"></i> @c.Rate/5
+                            </span>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(c.ShortContent))
+                    {
+                        <div class="complaint-text">
+                            @c.ShortContent
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
