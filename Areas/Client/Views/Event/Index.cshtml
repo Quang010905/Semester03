@@ -69,6 +69,13 @@
             padding-bottom: .5rem;
         }
 
+            .section-title span {
+                background: linear-gradient(90deg,#4f46e5,#ec4899);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                color: transparent;
+            }
+
             .section-title::after {
                 content: "";
                 width: 85px;
@@ -173,7 +180,7 @@
 <div class="container py-3">
 
     <!-- UPCOMING EVENTS ---------------------------------------------- -->
-    <h2 class="section-title">Upcoming Events</h2>
+    <h2 class="section-title"><span>Upcoming events</span></h2>
 
     <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
         @foreach (var e in upcoming)
@@ -204,7 +211,7 @@
     </div>
 
     <!-- PAST EVENTS --------------------------------------------------- -->
-    <h3 class="section-title mt-5">Past Events</h3>
+    <h3 class="section-title mt-5"><span>Past events</span></h3>
 
     @if (!past.Any())
     {
