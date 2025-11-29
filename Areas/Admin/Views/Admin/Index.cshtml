@@ -2,84 +2,544 @@
 
 @{
     Layout = "/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
-    ViewData["Title"] = "Admin Dashboard";
+    ViewData["Title"] = "Admin Dashboard - ABCD Mall";
 }
 
+<style>
+    .stat-card {
+        border-radius: 10px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+
+    .progress-ring {
+        transform: rotate(-90deg);
+    }
+
+    .info-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .revenue-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+    }
+
+    .card-header-custom {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px 10px 0 0 !important;
+    }
+
+    .badge-custom {
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fc;
+        cursor: pointer;
+    }
+</style>
+
+<!-- Page Heading -->
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Dashboard Tổng quan</h1>
+    <div>
+        <h1 class="h3 mb-2 text-gray-800">
+            <i class="fas fa-tachometer-alt text-primary"></i> Dashboard ABCD Mall
+        </h1>
+        <p class="text-muted mb-0">
+            <i class="far fa-clock"></i> Cập nhật: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+        </p>
+    </div>
+    <div>
+        <button class="btn btn-primary btn-sm" onclick="location.reload()">
+            <i class="fas fa-sync-alt"></i> Làm mới
+        </button>
+    </div>
 </div>
 
-<div class="row">
+<!-- Thông tin Mall -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0" style="border-left: 5px solid #4e73df;">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="text-primary mb-2">
+                            <i class="fas fa-building"></i> ABCD Mall - Mumbai
+                        </h5>
+                        <p class="mb-1"><strong>Diện tích:</strong> 250,000 sq ft (23,000 m²) - 4 tầng thương mại</p>
+                        <p class="mb-1"><strong>Mặt tiền:</strong> 700 ft (210 m) | <strong>Bãi đỗ xe:</strong> 7 tầng</p>
+                        <p class="mb-0"><strong>Thiết kế:</strong> Cooper and Partners</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="info-icon bg-primary text-white mx-auto">
+                            <i class="fas fa-store"></i>
+                        </div>
+                        <h6 class="mt-2 text-primary">Premium Shopping Mall</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
+<!-- Doanh thu tháng này -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="revenue-card shadow">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h6 class="mb-1 text-white-50">DOANH THU THÁNG NÀY</h6>
+                    <h2 class="mb-0 font-weight-bold">@Model.MonthlyRevenue.ToString("N0") VNĐ</h2>
+                    <div class="mt-3">
+                        <span class="badge badge-light mr-2">
+                            <i class="fas fa-ticket-alt"></i> Vé: @Model.TotalTicketRevenue.ToString("N0")
+                        </span>
+                        <span class="badge badge-light">
+                            <i class="fas fa-calendar-alt"></i> Sự kiện: @Model.TotalEventRevenue.ToString("N0")
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <i class="fas fa-chart-line" style="font-size: 80px; opacity: 0.3;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Thống kê tổng quan -->
+<div class="row mb-4">
+    <!-- Người dùng -->
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-primary shadow h-100 py-2">
+        <div class="card stat-card border-left-primary shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                            Tổng số Người dùng
+                            Tổng Người dùng
                         </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalUsers</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            @Model.TotalUsers.ToString("N0")
+                        </div>
+                        <small class="text-muted">Đã đăng ký</small>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                        <div class="info-icon bg-primary text-white">
+                            <i class="fas fa-users"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Cửa hàng -->
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-success shadow h-100 py-2">
+        <div class="card stat-card border-left-success shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                            Tổng số Cửa hàng
+                            Cửa hàng / Đối tác
                         </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalTenants</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            @Model.TotalTenants.ToString("N0")
+                        </div>
+                        <small class="text-success">@Model.ActiveTenants đang hoạt động</small>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-store fa-2x text-gray-300"></i>
+                        <div class="info-icon bg-success text-white">
+                            <i class="fas fa-store"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Phim -->
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-info shadow h-100 py-2">
+        <div class="card stat-card border-left-info shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                            Tổng số Phim
+                            Phim / Rạp chiếu
                         </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalMovies</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            @Model.TotalMovies.ToString("N0")
+                        </div>
+                        <small class="text-info">@Model.ActiveMovies đang chiếu</small>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-film fa-2x text-gray-300"></i>
+                        <div class="info-icon bg-info text-white">
+                            <i class="fas fa-film"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Vé -->
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-warning shadow h-100 py-2">
+        <div class="card stat-card border-left-warning shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                            Tổng số Vé đã bán
+                            Vé đã bán
                         </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalTicketsSold</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            @Model.TotalTicketsSold.ToString("N0")
+                        </div>
+                        <small class="text-warning">@Model.TodayShowtimes suất chiếu hôm nay</small>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-ticket-alt fa-2x text-gray-300"></i>
+                        <div class="info-icon bg-warning text-white">
+                            <i class="fas fa-ticket-alt"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Hàng 2: Thống kê phụ -->
+<div class="row mb-4">
+    <!-- Sự kiện -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card border-left-danger shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            Sự kiện
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            @Model.TotalEvents.ToString("N0")
+                        </div>
+                        <small class="text-danger">@Model.TodayEventBookings đặt chỗ hôm nay</small>
+                    </div>
+                    <div class="col-auto">
+                        <div class="info-icon bg-danger text-white">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phim sắp chiếu -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card border-left-secondary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
+                            Phim sắp chiếu
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            @Model.UpcomingMovies.ToString("N0")
+                        </div>
+                        <small class="text-muted">Sẽ công chiếu</small>
+                    </div>
+                    <div class="col-auto">
+                        <div class="info-icon bg-secondary text-white">
+                            <i class="fas fa-video"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Khiếu nại -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card border-left-dark shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">
+                            Khiếu nại chờ xử lý
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            @Model.PendingComplaints.ToString("N0")
+                        </div>
+                        <small class="text-dark">Cần xem xét</small>
+                    </div>
+                    <div class="col-auto">
+                        <div class="info-icon bg-dark text-white">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bãi đỗ xe -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card shadow h-100 py-2" style="border-left: 4px solid #5a5c69;">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: #5a5c69;">
+                            Bãi đỗ xe (7 tầng)
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            @Model.OccupiedParkingSpots / @Model.TotalParkingSpots
+                        </div>
+                        <div class="progress mt-2" style="height: 8px;">
+                            <div class="progress-bar" role="progressbar"
+                                 style="width: @Model.ParkingOccupancyRate%; background-color: @(Model.ParkingOccupancyRate > 80 ? "#e74a3b" : Model.ParkingOccupancyRate > 50 ? "#f6c23e" : "#1cc88a")"></div>
+                        </div>
+                        <small class="text-muted">@Model.ParkingOccupancyRate.ToString("F1")% đã sử dụng</small>
+                    </div>
+                    <div class="col-auto">
+                        <div class="info-icon text-white" style="background-color: #5a5c69;">
+                            <i class="fas fa-parking"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Biểu đồ -->
+<div class="row mb-4">
+    <!-- Doanh thu 6 tháng -->
+    <div class="col-xl-8 col-lg-7 mb-4">
+        <div class="card shadow">
+            <div class="card-header card-header-custom py-3">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="fas fa-chart-area"></i> Doanh thu 6 tháng gần nhất
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phân bố loại cửa hàng -->
+    <div class="col-xl-4 col-lg-5 mb-4">
+        <div class="card shadow">
+            <div class="card-header card-header-custom py-3">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="fas fa-chart-pie"></i> Phân bố cửa hàng
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="tenantTypeChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bán vé 7 ngày & Top phim -->
+<div class="row mb-4">
+    <!-- Vé bán ra 7 ngày -->
+    <div class="col-xl-8 col-lg-7 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center" style="background-color: #f8f9fc;">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-chart-bar"></i> Vé bán ra 7 ngày gần nhất
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="dailyTicketChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top phim -->
+    <div class="col-xl-4 col-lg-5 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3" style="background-color: #f8f9fc;">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-trophy"></i> Top 5 Phim bán chạy
+                </h6>
+            </div>
+            <div class="card-body">
+                @if (Model.TopMovies.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0">
+                            <tbody>
+                                @for (int i = 0; i < Model.TopMovies.Count; i++)
+                                {
+                                    var movie = Model.TopMovies[i];
+                                    var badgeColor = i == 0 ? "warning" : i == 1 ? "secondary" : i == 2 ? "danger" : "info";
+                                    <tr>
+                                        <td width="30">
+                                            <span class="badge badge-@badgeColor badge-custom">@(i + 1)</span>
+                                        </td>
+                                        <td>
+                                            <strong>@movie.MovieTitle</strong><br />
+                                            <small class="text-muted">
+                                                <i class="fas fa-ticket-alt"></i> @movie.TicketsSold vé
+                                            </small>
+                                        </td>
+                                        <td class="text-right">
+                                            <strong class="text-success">@movie.Revenue.ToString("N0")</strong><br />
+                                            <small class="text-muted">VNĐ</small>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-center text-muted my-5">
+                        <i class="fas fa-film fa-3x mb-3 d-block"></i>
+                        Chưa có dữ liệu
+                    </p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script>
+        // Biểu đồ doanh thu 6 tháng
+        var revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        var revenueChart = new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.MonthlyRevenueChart.Select(x => x.Month))),
+                datasets: [{
+                    label: 'Doanh thu vé',
+                    data: @Html.Raw(Json.Serialize(Model.MonthlyRevenueChart.Select(x => x.TicketRevenue))),
+                    borderColor: '#4e73df',
+                    backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Doanh thu sự kiện',
+                    data: @Html.Raw(Json.Serialize(Model.MonthlyRevenueChart.Select(x => x.EventRevenue))),
+                    borderColor: '#1cc88a',
+                    backgroundColor: 'rgba(28, 200, 138, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + ' VNĐ';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' VNĐ';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Biểu đồ phân bố cửa hàng
+        var tenantTypeCtx = document.getElementById('tenantTypeChart').getContext('2d');
+        var tenantTypeChart = new Chart(tenantTypeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.TenantTypeStats.Select(x => x.TypeName))),
+                datasets: [{
+                    data: @Html.Raw(Json.Serialize(Model.TenantTypeStats.Select(x => x.Count))),
+                    backgroundColor: @Html.Raw(Json.Serialize(Model.TenantTypeStats.Select(x => x.Color)))
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+
+        // Biểu đồ vé bán ra 7 ngày
+        var dailyTicketCtx = document.getElementById('dailyTicketChart').getContext('2d');
+        var dailyTicketChart = new Chart(dailyTicketCtx, {
+            type: 'bar',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.DailyTicketSales.Select(x => x.Date))),
+                datasets: [{
+                    label: 'Số vé bán ra',
+                    data: @Html.Raw(Json.Serialize(Model.DailyTicketSales.Select(x => x.TicketCount))),
+                    backgroundColor: 'rgba(54, 185, 204, 0.8)',
+                    borderColor: '#36b9cc',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+}
