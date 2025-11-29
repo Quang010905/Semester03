@@ -45,14 +45,18 @@
     var upcoming = Model.Upcoming ?? new List<EventCardVm>();
     var pastPaged = Model.Past ?? new PagedResult<EventCardVm>();
     var past = pastPaged.Items ?? new List<EventCardVm>();
+
+    string fromDate = ViewBag.FromDate as string;
+    string toDate = ViewBag.ToDate as string;
+    bool showUpcomingAll = ViewBag.ShowUpcomingAll != null && (bool)ViewBag.ShowUpcomingAll;
 }
 
 @section Styles {
     <style>
 
         /* ============================================================
-               🔥 SECTION WRAPPER + NEON BORDER
-            ============================================================ */
+                       🔥 SECTION WRAPPER + NEON BORDER
+                    ============================================================ */
         .section-wrapper {
             position: relative;
             padding: 2.2rem 1.8rem 2.5rem;
@@ -75,16 +79,13 @@
             }
 
         @@keyframes glowMove {
-            from
+            from {
+                transform: translate3d(0,0,0) scale(1);
+            }
 
-        {
-            transform: translate3d(0,0,0) scale(1);
-        }
-
-        to {
-            transform: translate3d(4%, -4%, 0) scale(1.06);
-        }
-
+            to {
+                transform: translate3d(4%, -4%, 0) scale(1.06);
+            }
         }
 
         /* neon border line */
@@ -102,8 +103,8 @@
 
 
         /* ============================================================
-               SECTION TITLES
-            ============================================================ */
+                       SECTION TITLES
+                    ============================================================ */
         .section-title {
             font-weight: 800;
             font-size: 1.8rem;
@@ -118,8 +119,8 @@
             }
 
         /* ============================================================
-               EVENT CARD
-            ============================================================ */
+                       EVENT CARD
+                    ============================================================ */
         .event-card {
             border-radius: 1.2rem;
             background: #fff;
@@ -209,35 +210,85 @@
 
 <div class="container py-4">
 
+    <!-- FILTER BY DATE -->
+    <div class="section-wrapper mb-4">
+        <h2 class="section-title"><span>Filter Events</span></h2>
+
+        <form asp-action="Index" method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">From date</label>
+                <input type="date" name="fromDate" class="form-control" value="@fromDate" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">To date</label>
+                <input type="date" name="toDate" class="form-control" value="@toDate" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label d-block">&nbsp;</label>
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search"></i> Search
+                </button>
+                <a href="@Url.Action("Index", "Event", new { area = "Client" })" class="btn btn-outline-secondary">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
     <!-- UPCOMING EVENTS -->
     <div class="section-wrapper">
         <h2 class="section-title"><span>Upcoming Events</span></h2>
 
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
-            @foreach (var e in upcoming)
-            {
-                var url = Url.Action("Details", "Event", new { area = "Client", id = e.Id });
+        @if (!upcoming.Any())
+        {
+            <p class="text-muted">There are no upcoming events.</p>
+        }
+        else
+        {
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
+                @foreach (var e in upcoming)
+                {
+                    var url = Url.Action("Details", "Event", new { area = "Client", id = e.Id });
 
-                <div class="col">
-                    <div class="event-card" onclick="location.href='@url'">
-                        <div class="event-img-wrapper">
-                            <img src="@Img(e.ImageUrl)" class="event-img" />
-                        </div>
+                    <div class="col">
+                        <div class="event-card" onclick="location.href='@url'">
+                            <div class="event-img-wrapper">
+                                <img src="@Img(e.ImageUrl)" class="event-img" />
+                            </div>
 
-                        <div class="event-body">
-                            <span class="event-chip">ABCD Mall</span>
-                            <div class="event-title">@e.Title</div>
-                            <div class="event-desc">@e.ShortDescription</div>
+                            <div class="event-body">
+                                <span class="event-chip">ABCD Mall</span>
+                                <div class="event-title">@e.Title</div>
+                                <div class="event-desc">@e.ShortDescription</div>
 
-                            <div class="event-date">
-                                <i class="bi bi-calendar-event"></i>
-                                @e.StartDate?.ToString("dd MMM yyyy HH:mm")
+                                <div class="event-date">
+                                    <i class="bi bi-calendar-event"></i>
+                                    @e.StartDate?.ToString("dd MMM yyyy HH:mm")
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            }
-        </div>
+                }
+            </div>
+
+            <!-- VIEW MORE / SHOW LESS UPCOMING -->
+            <div class="text-center mt-3">
+                @if (!showUpcomingAll && upcoming.Count >= 6)
+                {
+                    <a class="btn btn-outline-primary"
+                       href="@Url.Action("Index", new { showUpcomingAll = true, fromDate = fromDate, toDate = toDate })">
+                        View more upcoming
+                    </a>
+                }
+                else if (showUpcomingAll)
+                {
+                    <a class="btn btn-outline-secondary"
+                       href="@Url.Action("Index", new { showUpcomingAll = false, fromDate = fromDate, toDate = toDate })">
+                        Show less
+                    </a>
+                }
+            </div>
+        }
     </div>
 
 
@@ -292,25 +343,36 @@
                     @if (pastPaged.PageIndex > 1)
                     {
                         <li class="page-item">
-                            <a class="page-link" href="@Url.Action("Index", new { page = pastPaged.PageIndex - 1 })">«</a>
+                            <a class="page-link" href="@Url.Action("Index", new { page = pastPaged.PageIndex - 1, showUpcomingAll = showUpcomingAll, fromDate = fromDate, toDate = toDate })">«</a>
                         </li>
                     }
 
                     @for (var i = 1; i <= pastPaged.TotalPages; i++)
                     {
                         <li class="page-item @(i == pastPaged.PageIndex ? "active" : "")">
-                            <a class="page-link" href="@Url.Action("Index", new { page = i })">@i</a>
+                            <a class="page-link" href="@Url.Action("Index", new { page = i, showUpcomingAll = showUpcomingAll, fromDate = fromDate, toDate = toDate })">@i</a>
                         </li>
                     }
 
                     @if (pastPaged.PageIndex < pastPaged.TotalPages)
                     {
                         <li class="page-item">
-                            <a class="page-link" href="@Url.Action("Index", new { page = pastPaged.PageIndex + 1 })">»</a>
+                            <a class="page-link" href="@Url.Action("Index", new { page = pastPaged.PageIndex + 1, showUpcomingAll = showUpcomingAll, fromDate = fromDate, toDate = toDate })">»</a>
                         </li>
                     }
                 </ul>
             </nav>
+
+            <!-- VIEW MORE PAST = NEXT PAGE -->
+            @if (pastPaged.PageIndex < pastPaged.TotalPages)
+            {
+                <div class="text-center mt-3">
+                    <a class="btn btn-outline-primary"
+                       href="@Url.Action("Index", new { page = pastPaged.PageIndex + 1, showUpcomingAll = showUpcomingAll, fromDate = fromDate, toDate = toDate })">
+                        View more past events
+                    </a>
+                </div>
+            }
         }
     </div>
 

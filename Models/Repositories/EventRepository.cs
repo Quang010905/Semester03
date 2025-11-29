@@ -23,8 +23,12 @@ namespace Semester03.Models.Repositories
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        // PAST EVENTS (with paging)
-        public async Task<PagedResult<EventCardVm>> GetPastEventsAsync(int pageIndex, int pageSize)
+        // PAST EVENTS (with paging + optional date filter)
+        public async Task<PagedResult<EventCardVm>> GetPastEventsAsync(
+            int pageIndex,
+            int pageSize,
+            DateTime? fromDate = null,
+            DateTime? toDate = null)
         {
             var now = DateTime.Now;
 
@@ -34,6 +38,16 @@ namespace Semester03.Models.Repositories
             var baseQuery = _context.TblEvents
                 .AsNoTracking()
                 .Where(e => e.EventStatus == 1 && e.EventEnd < now);
+
+            if (fromDate.HasValue)
+            {
+                baseQuery = baseQuery.Where(e => e.EventStart >= fromDate.Value);
+            }
+
+            if (toDate.HasValue)
+            {
+                baseQuery = baseQuery.Where(e => e.EventStart <= toDate.Value);
+            }
 
             var totalItems = await baseQuery.CountAsync();
 
@@ -68,16 +82,34 @@ namespace Semester03.Models.Repositories
             };
         }
 
-        // UPCOMING EVENTS (top N)
-        public async Task<List<EventCardVm>> GetUpcomingEventsAsync(int top = 6)
+        // UPCOMING EVENTS (top N, optional date filter)
+        // UPCOMING EVENTS (top N, optional date filter)
+        public async Task<List<EventCardVm>> GetUpcomingEventsAsync(
+            int top = 6,
+            DateTime? fromDate = null,
+            DateTime? toDate = null)
         {
             var now = DateTime.Now;
 
             try
             {
-                var q = _context.TblEvents
+                // query gốc là TblEvent
+                var query = _context.TblEvents
                     .AsNoTracking()
-                    .Where(e => e.EventEnd >= now && e.EventStatus == 1)
+                    .Where(e => e.EventEnd >= now && e.EventStatus == 1);
+
+                if (fromDate.HasValue)
+                {
+                    query = query.Where(e => e.EventStart >= fromDate.Value);
+                }
+
+                if (toDate.HasValue)
+                {
+                    query = query.Where(e => e.EventStart <= toDate.Value);
+                }
+
+                // ĐẾN ĐÂY MỚI SELECT sang EventCardVm
+                var list = await query
                     .OrderBy(e => e.EventStart)
                     .Take(top)
                     .Select(e => new EventCardVm
@@ -95,12 +127,16 @@ namespace Semester03.Models.Repositories
                         MaxSlot = e.EventMaxSlot,
                         Status = (int)e.EventStatus,
                         TenantPositionId = e.EventTenantPositionId
-                    });
+                    })
+                    .ToListAsync();
 
-                var list = await q.ToListAsync();
-                if (list != null && list.Any()) return list;
+                if (list != null && list.Any())
+                    return list;
             }
-            catch { }
+            catch
+            {
+                // log nếu cần
+            }
 
             // Default placeholder events if there are no upcoming events or DB error
             var defaults = new List<EventCardVm>(top);
@@ -120,6 +156,47 @@ namespace Semester03.Models.Repositories
                 });
             }
             return defaults;
+        }
+
+        // ALL UPCOMING EVENTS (for View more)
+        public async Task<List<EventCardVm>> GetAllUpcomingEventsAsync(
+            DateTime? fromDate = null,
+            DateTime? toDate = null)
+        {
+            var now = DateTime.Now;
+
+            var q = _context.TblEvents
+                .AsNoTracking()
+                .Where(e => e.EventEnd >= now && e.EventStatus == 1);
+
+            if (fromDate.HasValue)
+            {
+                q = q.Where(e => e.EventStart >= fromDate.Value);
+            }
+
+            if (toDate.HasValue)
+            {
+                q = q.Where(e => e.EventStart <= toDate.Value);
+            }
+
+            return await q.OrderBy(e => e.EventStart)
+                .Select(e => new EventCardVm
+                {
+                    Id = e.EventId,
+                    Title = e.EventName,
+                    ShortDescription = string.IsNullOrEmpty(e.EventDescription)
+                        ? ""
+                        : (e.EventDescription.Length > 200
+                            ? e.EventDescription.Substring(0, 197) + "..."
+                            : e.EventDescription),
+                    StartDate = e.EventStart,
+                    EndDate = e.EventEnd,
+                    ImageUrl = string.IsNullOrEmpty(e.EventImg) ? "/images/event-placeholder.png" : e.EventImg,
+                    MaxSlot = e.EventMaxSlot,
+                    Status = (int)(e.EventStatus ?? 0),
+                    TenantPositionId = e.EventTenantPositionId
+                })
+                .ToListAsync();
         }
 
         // ===============================
@@ -415,7 +492,6 @@ namespace Semester03.Models.Repositories
                 title = e.EventName,
                 start = e.EventStart,
                 end = e.EventEnd,
-                // Color based on location or type (optional)
                 backgroundColor = "#4e73df",
                 borderColor = "#4e73df",
                 url = $"/Admin/Events/Details/{e.EventId}" // Click to view details
