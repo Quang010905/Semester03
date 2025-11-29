@@ -315,6 +315,78 @@
                 background: #fee2e2;
                 color: #b91c1c !important;
             }
+        /* ===== NOTIFICATION BELL ===== */
+        /* ===== NOTIFICATION BELL – same style as profile avatar ===== */
+        #notifDropdown {
+            width: 38px;
+            height: 38px;
+            border-radius: 999px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none; /* bỏ viền xám của btn-outline-secondary */
+            background: radial-gradient(circle at 0% 0%, #fef9c3, #fde047, #facc15);
+            box-shadow: 0 10px 25px rgba(250, 204, 21, 0.45);
+            transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+        }
+
+            #notifDropdown i {
+                color: #ffffff !important; /* icon trắng như chữ L */
+                font-size: 1.2rem;
+                transition: transform .2s ease, color .2s ease;
+            }
+
+            /* hover giống avatar */
+            #notifDropdown:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 16px 35px rgba(250, 204, 21, 0.65);
+                filter: brightness(1.05);
+            }
+
+                /* giữ hiệu ứng rung + glow khi hover */
+                #notifDropdown:hover i {
+                    color: #ffffff !important;
+                    animation: bell-shake .45s ease-in-out;
+                }
+
+
+                }
+
+        /* hiệu ứng rung chuông khi hover */
+        @@keyframes bell-shake {
+            0% {
+                transform: rotate(0);
+            }
+
+            15% {
+                transform: rotate(-15deg);
+            }
+
+            30% {
+                transform: rotate(15deg);
+            }
+
+            45% {
+                transform: rotate(-10deg);
+            }
+
+            60% {
+                transform: rotate(10deg);
+            }
+
+            75% {
+                transform: rotate(-5deg);
+            }
+
+            100% {
+                transform: rotate(0);
+            }
+        }
+
+        #notifDropdown:hover i {
+            animation: bell-shake .45s ease-in-out;
+        }
 
         /* MOBILE NAV (OFFCANVAS) */
         .mobile-nav-toggle {
@@ -480,6 +552,8 @@
             .mall-nav {
                 display: none !important;
             }
+
+
 
             .small-event-slider {
                 height: auto;
