@@ -76,6 +76,49 @@
 
 @section Styles {
     <style>
+        /* ===== SECTION WRAPPER (glow giống Events/Map) ===================== */
+        .section-wrapper {
+            position: relative;
+            padding: 2.2rem 1.8rem 2.5rem;
+            border-radius: 1.7rem;
+            background: rgba(255,255,255,0.95);
+            box-shadow: 0 20px 55px rgba(15,23,42,0.12);
+            margin-bottom: 3rem;
+            overflow: hidden;
+        }
+
+            .section-wrapper::before {
+                content: "";
+                position: absolute;
+                inset: -40%;
+                background: radial-gradient(circle at 0 0, rgba(99,102,241,.25), transparent 60%), radial-gradient(circle at 100% 100%, rgba(236,72,153,.25), transparent 60%);
+                mix-blend-mode: screen;
+                animation: glowMove 22s linear infinite alternate;
+                pointer-events: none;
+            }
+
+        @@keyframes glowMove {
+            from {
+                transform: translate3d(0,0,0) scale(1);
+            }
+
+            to {
+                transform: translate3d(4%, -4%, 0) scale(1.06);
+            }
+        }
+
+        .section-wrapper::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 1.7rem;
+            padding: 2px;
+            background: linear-gradient(135deg, #6366f1, #ec4899);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
         /* ==== PAGE WRAPPER ================================================== */
         .cinema-home-page {
             max-width: 1200px;
@@ -262,171 +305,173 @@
 }
 
 <div class="cinema-home-page py-3">
-    <h4 class="page-title">Cinema</h4>
-    <div class="d-flex justify-content-between align-items-end mb-3">
-        <div>
-            <div class="cinema-subtitle"><span>Big screen. Big stories.</span></div>
-            <div class="text-muted small">Pick a movie, grab your popcorn, and enjoy the show.</div>
-        </div>
-    </div>
-
-    <!-- FEATURED -->
-    @if (Model?.Featured?.Any() == true)
-    {
-        <div id="featuredCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
-            <div class="carousel-inner">
-                @for (int i = 0; i < Model.Featured.Count; i++)
-                {
-                    var f = Model.Featured[i];
-                    var active = i == 0 ? "active" : "";
-                    <div class="carousel-item @active">
-                        <div class="row g-4 align-items-center">
-                            <div class="col-lg-7">
-                                <a href="@Url.Action("Details", "Cinema", new { area = "Client", id = f.Id })">
-                                    <div class="position-relative">
-                                        <img src="@Img(f.PosterUrl)" class="carousel-poster" />
-                                        <span class="featured-chip position-absolute top-3 start-3 m-3">
-                                            <i class="bi bi-stars me-1"></i> Featured pick
-                                        </span>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="col-lg-5">
-                                <h2 class="mb-2">@f.Title</h2>
-                                <p class="featured-meta mb-2">
-                                    @if (f.DurationMin.HasValue)
-                                    {
-                                        <span class="me-2">
-                                            <i class="bi bi-clock me-1"></i>@f.DurationMin min
-                                        </span>
-                                    }
-                                </p>
-                                <p class="text-muted">@f.Description</p>
-                                <p class="small mb-3">
-                                    <strong>Next showtime:</strong>
-                                    @if (f.NextShowtime.HasValue)
-                                    {
-                                        <span class="ms-1">@f.NextShowtime.Value.ToString("dd MMM yyyy HH:mm")</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="ms-1 text-muted">Not scheduled</span>
-                                    }
-                                </p>
-                                <a href="@BookHref(f.Id)" class="btn btn-primary rounded-pill px-4">
-                                    <i class="bi bi-ticket-perforated me-1"></i> Book ticket
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                }
+    <div class="section-wrapper">
+        <h4 class="page-title">Cinema</h4>
+        <div class="d-flex justify-content-between align-items-end mb-3">
+            <div>
+                <div class="cinema-subtitle"><span>Big screen. Big stories.</span></div>
+                <div class="text-muted small">Pick a movie, grab your popcorn, and enjoy the show.</div>
             </div>
-
-            <button class="carousel-control-prev" type="button" data-bs-target="#featuredCarousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon"></span>
-            </button>
-
-            <button class="carousel-control-next" type="button" data-bs-target="#featuredCarousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon"></span>
-            </button>
         </div>
-    }
 
-    <!-- SEARCH -->
-    <div class="mb-4 movie-search-box">
-        <form class="d-flex" onsubmit="event.preventDefault(); filterMovies();">
-            <input id="movieSearch" class="form-control me-2" placeholder="Search movies by title..." />
-            <button type="submit" class="btn btn-outline-secondary">
-                <i class="bi bi-search me-1"></i> Search
-            </button>
-        </form>
-    </div>
-
-    <!-- NOW SHOWING GRID -->
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <h5 class="mb-0 fw-bold">Now showing</h5>
-        <span class="text-muted small">@((Model.NowShowing?.Count ?? 0)) movies in theaters</span>
-    </div>
-
-    <div class="row g-3" id="nowShowingGrid">
-        @{
-            var index = 0;
-        }
-        @foreach (var m in Model.NowShowing)
+        <!-- FEATURED -->
+        @if (Model?.Featured?.Any() == true)
         {
-            var isToday = m.NextShowtime?.Date == DateTime.Today;
-            <div class="col-6 col-md-4 col-lg-3 movie-grid-item" data-index="@index">
-                <div class="movie-card h-100">
-                    <div class="movie-poster-wrapper">
-                        <div class="movie-badge">
-                            <span class="badge badge-primary text-white me-1">Now showing</span>
-                            @if (isToday)
-                            {
-                                <span class="badge badge-danger text-white">Today</span>
-                            }
+            <div id="featuredCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                    @for (int i = 0; i < Model.Featured.Count; i++)
+                    {
+                        var f = Model.Featured[i];
+                        var active = i == 0 ? "active" : "";
+                        <div class="carousel-item @active">
+                            <div class="row g-4 align-items-center">
+                                <div class="col-lg-7">
+                                    <a href="@Url.Action("Details", "Cinema", new { area = "Client", id = f.Id })">
+                                        <div class="position-relative">
+                                            <img src="@Img(f.PosterUrl)" class="carousel-poster" />
+                                            <span class="featured-chip position-absolute top-3 start-3 m-3">
+                                                <i class="bi bi-stars me-1"></i> Featured pick
+                                            </span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-lg-5">
+                                    <h2 class="mb-2">@f.Title</h2>
+                                    <p class="featured-meta mb-2">
+                                        @if (f.DurationMin.HasValue)
+                                        {
+                                            <span class="me-2">
+                                                <i class="bi bi-clock me-1"></i>@f.DurationMin min
+                                            </span>
+                                        }
+                                    </p>
+                                    <p class="text-muted">@f.Description</p>
+                                    <p class="small mb-3">
+                                        <strong>Next showtime:</strong>
+                                        @if (f.NextShowtime.HasValue)
+                                        {
+                                            <span class="ms-1">@f.NextShowtime.Value.ToString("dd MMM yyyy HH:mm")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="ms-1 text-muted">Not scheduled</span>
+                                        }
+                                    </p>
+                                    <a href="@BookHref(f.Id)" class="btn btn-primary rounded-pill px-4">
+                                        <i class="bi bi-ticket-perforated me-1"></i> Book ticket
+                                    </a>
+                                </div>
+                            </div>
                         </div>
+                    }
+                </div>
 
-                        <a href="@Url.Action("Details", "Cinema", new { area = "Client", id = m.Id })">
-                            <img src="@Img(m.PosterUrl)" class="movie-poster" />
-                        </a>
+                <button class="carousel-control-prev" type="button" data-bs-target="#featuredCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon"></span>
+                </button>
 
-                        <div class="movie-gradient-overlay"></div>
+                <button class="carousel-control-next" type="button" data-bs-target="#featuredCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon"></span>
+                </button>
+            </div>
+        }
 
-                        @if (m.NextShowtimeId.HasValue)
-                        {
-                            <a href="@BookHref(m.Id)" class="movie-quick-book btn btn-sm">
-                                <i class="bi bi-ticket-perforated me-1"></i> Quick book
+        <!-- SEARCH -->
+        <div class="mb-4 movie-search-box">
+            <form class="d-flex" onsubmit="event.preventDefault(); filterMovies();">
+                <input id="movieSearch" class="form-control me-2" placeholder="Search movies by title..." />
+                <button type="submit" class="btn btn-outline-secondary">
+                    <i class="bi bi-search me-1"></i> Search
+                </button>
+            </form>
+        </div>
+
+        <!-- NOW SHOWING GRID -->
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="mb-0 fw-bold">Now showing</h5>
+            <span class="text-muted small">@((Model.NowShowing?.Count ?? 0)) movies in theaters</span>
+        </div>
+
+        <div class="row g-3" id="nowShowingGrid">
+            @{
+                var index = 0;
+            }
+            @foreach (var m in Model.NowShowing)
+            {
+                var isToday = m.NextShowtime?.Date == DateTime.Today;
+                <div class="col-6 col-md-4 col-lg-3 movie-grid-item" data-index="@index">
+                    <div class="movie-card h-100">
+                        <div class="movie-poster-wrapper">
+                            <div class="movie-badge">
+                                <span class="badge badge-primary text-white me-1">Now showing</span>
+                                @if (isToday)
+                                {
+                                    <span class="badge badge-danger text-white">Today</span>
+                                }
+                            </div>
+
+                            <a href="@Url.Action("Details", "Cinema", new { area = "Client", id = m.Id })">
+                                <img src="@Img(m.PosterUrl)" class="movie-poster" />
                             </a>
-                        }
-                    </div>
 
-                    <div class="card-body px-3 pt-2 pb-1">
-                        <h6 class="movie-title mb-1 text-truncate">@m.Title</h6>
-                        <div class="movie-meta-line mb-1 d-flex justify-content-between">
-                            <span>
-                                <i class="bi bi-clock me-1"></i>@((m.DurationMin ?? 0) + " min")
-                            </span>
-                        </div>
-                        <div class="movie-tagline text-truncate">
-                            @m.Description
-                        </div>
-                    </div>
+                            <div class="movie-gradient-overlay"></div>
 
-                    <div class="card-footer bg-transparent border-0 px-3 pb-3 pt-1 movie-footer d-flex justify-content-between align-items-center">
-                        <div>
-                            @if (m.NextShowtime.HasValue)
+                            @if (m.NextShowtimeId.HasValue)
                             {
-                                <span class="text-muted">
-                                    <i class="bi bi-calendar-event me-1"></i>@m.NextShowtime.Value.ToString("dd MMM HH:mm")
-                                </span>
-                            }
-                            else
-                            {
-                                <span class="text-muted">
-                                    <i class="bi bi-calendar-x me-1"></i>No showtime
-                                </span>
+                                <a href="@BookHref(m.Id)" class="movie-quick-book btn btn-sm">
+                                    <i class="bi bi-ticket-perforated me-1"></i> Quick book
+                                </a>
                             }
                         </div>
 
-                        <div class="movie-rating-stars">
-                            @* nếu sau này có Rating thì thay thế *@
-                            ★★★★☆
+                        <div class="card-body px-3 pt-2 pb-1">
+                            <h6 class="movie-title mb-1 text-truncate">@m.Title</h6>
+                            <div class="movie-meta-line mb-1 d-flex justify-content-between">
+                                <span>
+                                    <i class="bi bi-clock me-1"></i>@((m.DurationMin ?? 0) + " min")
+                                </span>
+                            </div>
+                            <div class="movie-tagline text-truncate">
+                                @m.Description
+                            </div>
+                        </div>
+
+                        <div class="card-footer bg-transparent border-0 px-3 pb-3 pt-1 movie-footer d-flex justify-content-between align-items-center">
+                            <div>
+                                @if (m.NextShowtime.HasValue)
+                                {
+                                    <span class="text-muted">
+                                        <i class="bi bi-calendar-event me-1"></i>@m.NextShowtime.Value.ToString("dd MMM HH:mm")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">
+                                        <i class="bi bi-calendar-x me-1"></i>No showtime
+                                    </span>
+                                }
+                            </div>
+
+                            <div class="movie-rating-stars">
+                                @* nếu sau này có Rating thì thay thế *@
+                                ★★★★☆
+                            </div>
                         </div>
                     </div>
                 </div>
+                index++;
+            }
+        </div>
+
+        @if (Model.NowShowing != null && Model.NowShowing.Count > 8)
+        {
+            <div class="text-center mt-3">
+                <button type="button" id="btnViewMore" class="btn btn-outline-primary btn-sm rounded-pill px-4">
+                    View more movies
+                </button>
             </div>
-            index++;
         }
     </div>
-
-    @if (Model.NowShowing != null && Model.NowShowing.Count > 8)
-    {
-        <div class="text-center mt-3">
-            <button type="button" id="btnViewMore" class="btn btn-outline-primary btn-sm rounded-pill px-4">
-                View more movies
-            </button>
-        </div>
-    }
 </div>
 
 @section Scripts {
