@@ -6,7 +6,7 @@ namespace Semester03.Areas.Admin.Controllers
 
     public class ComplaintController : Controller
     {
-        public IActionResult Index()
+        public IActionResult Index()    
         {
             return View();
         }

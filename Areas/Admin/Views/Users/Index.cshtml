@@ -16,6 +16,13 @@
         <span class="tab-title">Customer account</span>
     </a>
 
+    <a href="#" class="browser-tab">
+        <span class="tab-icon">
+            <i class="fa-solid fa-user-shield"></i>
+        </span>
+        <span class="tab-title">Admin Account</span>
+    </a>
+
 
     <a href="#" class="browser-tab">
         <span class="tab-icon"> 
@@ -37,7 +44,7 @@
 <div id="customer-tab-content" style="padding: 20px; display: none;">
     <h3>Customer Accounts</h3>
     <div class="search-container">
-        <input type="text" placeholder="Search..." class="search-customer-input">
+        <input type="text" placeholder="Search..." class="search-customer-input"         >
         <i class="fa fa-search search-icon"></i>
     </div>
 
@@ -70,7 +77,7 @@
                         <span class="status-dot @(c.Status == 1 ? "active-dot" : "inactive-dot")"></span>
 
                         <div class="btn-group">
-                            <a href="@Url.Action("Edit","Users",new{area="Admin"})"
+                            <a href="@Url.Action("Edit","Users",new{area="Admin", id = c.Id})"
                                class="btn btn-primary btn-sm">
                                 Edit
                             </a>
@@ -99,7 +106,7 @@
 
 <!-- TAB: PARTNER ACCOUNT -->
 <div id="partner-tab-content" style="padding: 20px; display: none;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0px;">
         <h3>Partner Accounts</h3>
         <a asp-area="Admin" asp-controller="Tenant" asp-action="Index" class="btn btn-info">
             Tenant
@@ -141,6 +148,8 @@
                         <span class="status-dot @(c.Status == 1 ? "active-dot" : "inactive-dot")"></span>
 
                         <div class="btn-group">
+                 
+
                             <a href="@Url.Action("Edit","Users",new{area="Admin", id = c.Id})"
                                class="btn btn-primary btn-sm">
                                 Edit
@@ -165,12 +174,71 @@
 
 
 
-<!-- TAB: CREATE TENANT -->
+<!-- TAB: ADMIN ACCOUNT -->
+<div id="admin-tab-content" style="padding: 20px; display: none;">
+    <h3>Admin Accounts</h3>
+    <div class="search-container">
+        <input type="text" placeholder="Search..." class="search-admin-input">
+        <i class="fa fa-search search-icon"></i>
+    </div>
+
+    <table class="table table-bordered table-hover mt-3">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Fullname</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Created</th>
+                <th class="text-center">Action</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var a in ViewBag.Admin)
+            {
+                <tr>
+                    <td>@a.Id</td>
+                    <td>@a.Username</td>
+                    <td>@a.FullName</td>
+                    <td>@a.Email</td>
+                    <td>@a.Phone</td>
+                    <td>@a.CreatedAt.ToString("dd/MM/yyyy")</td>
+                    <td class="text-center">
+                        <span class="status-dot @(a.Status == 1 ? "active-dot" : "inactive-dot")"></span>
+
+                        <div class="btn-group">
+                            <a href="@Url.Action("Edit","Users",new{area="Admin", id = a.Id})"
+                               class="btn btn-primary btn-sm">
+                                Edit
+                            </a>
+                            <a href="@Url.Action("ResetPassword","User",new{id=a.Id, area="Admin"})"
+                               class="btn btn-warning btn-sm">
+                                Reset
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+
+
+
+
+<!-- TAB: CREATE PARTNER -->
 
 <div id="create-account-tab-content" style="padding: 20px; display: none;">
     <h3>Create Partner Account</h3>
 
-    <form id="createAccountForm" method="post" enctype="multipart/form-data" novalidate>
+    <form id="createAccountForm" method="post" enctype="multipart/form-data" novalidate asp-action="CreatePartner" asp-controller="Users" asp-area="Admin">
         @Html.AntiForgeryToken()
 
         <div class="row g-3">
@@ -178,23 +246,23 @@
             <div class="col-md-8">
                 <div class="mb-3">
                     <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
-                    <input id="username" name="Username" class="form-control" required minlength="3" placeholder="Enter username" />
+                    <input id="username" name="UsersUsername" class="form-control" required minlength="3" placeholder="Enter username" />
                 </div>
 
                 <div class="mb-3">
                     <label for="fullname" class="form-label">Full name</label>
-                    <input id="fullname" name="FullName" class="form-control" placeholder="John Doe" />
+                    <input id="fullname" name="UsersFullName" class="form-control" placeholder="John Doe" />
                 </div>
 
                 <div class="row g-2">
                     <div class="col-md-6 mb-3">
                         <label for="email" class="form-label">Email</label>
-                        <input id="email" name="Email" type="email" class="form-control" placeholder="name@example.com" />
+                        <input id="email" name="UsersEmail" type="email" class="form-control" placeholder="name@example.com" />
                     </div>
 
                     <div class="col-md-6 mb-3">
                         <label for="phone" class="form-label">Phone</label>
-                        <input id="phone" name="Phone" class="form-control" placeholder="+84 9xx xxx xxx" />
+                        <input id="phone" name="UsersPhone" class="form-control" placeholder="+84 9xx xxx xxx" />
                     </div>
                 </div>
 
@@ -214,11 +282,11 @@
                     <div class="col-md-6 mb-3">
                         <label class="form-label d-block">Status</label>
                         <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="Status" id="statusActive" value="1" checked>
+                            <input class="form-check-input" type="radio" name="UsersStatus" id="statusActive" value="1" checked>
                             <label class="form-check-label" for="statusActive">Active</label>
                         </div>
                         <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="Status" id="statusInactive" value="0">
+                            <input class="form-check-input" type="radio" name="UsersStatus" id="statusInactive" value="0">
                             <label class="form-check-label" for="statusInactive">Inactive</label>
                         </div>
                     </div>
@@ -228,7 +296,7 @@
                 <div class="row g-2 align-items-center">
                     <div class="col-md-6 mb-3">
                         <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
-                        <input id="password" name="Password" type="password" class="form-control" required minlength="6" placeholder="Enter password" />
+                        <input id="password" name="UsersPassword" type="password" class="form-control" required minlength="6" placeholder="Enter password" />
                     </div>
 
                     <div class="col-md-6 mb-3">
@@ -253,7 +321,7 @@
 
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">Create account</button>
-                            <a href="#" class="btn btn-outline-secondary">Cancel</a>
+                            <a href="#" id="cancelBtn" class="btn btn-outline-secondary">Cancel</a>
                         </div>
                     </div>
                 </div>
@@ -267,6 +335,69 @@
 
 
 
+
+
+
+
+
+
+
+
+    <!-- TAB: INACTIVE ACCOUNT -->
+    <div id="inactive-tab-content" style="padding: 20px; display: none;">
+        <h3>Inactive Accounts</h3>
+
+        <div class="search-container">
+            <input type="text" placeholder="Search..." class="search-inactive-input">
+            <i class="fa fa-search search-icon"></i>
+        </div>
+
+        <table class="table table-bordered table-hover mt-3">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Fullname</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Points</th>
+                    <th>Created</th>
+                    <th class="text-center">Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+            @foreach (var u in ViewBag.Inactive)
+                {
+                    <tr>
+                        <td>@u.Id</td>
+                        <td>@u.Username</td>
+                        <td>@u.FullName</td>
+                        <td>@u.Email</td>
+                        <td>@u.Phone</td>
+                        <td>@u.Point</td>
+                        <td>@u.CreatedAt.ToString("dd/MM/yyyy")</td>
+
+                        <td class="text-center">
+                            <span class="status-dot inactive-dot"></span>
+
+                            <div class="btn-group">
+
+                            <a href="@Url.Action("RestoreUser", "Users", new { area = "Admin", id = u.Id })"
+                               class="btn btn-success btn-sm">
+                                Restore
+                            </a>
+
+                          
+
+
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 
 
 
@@ -400,18 +531,46 @@
     /* =========================================search box's css======================================== */
 
 
-    .search-container {
-        position: relative;
-        width: 280px;
-    }
-
-    .search-partner-input {
+    .search-inactive-input {
         width: 100%;
         padding: 10px 40px 10px 15px;
         border-radius: 25px;
         border: 1px solid #ccc;
         transition: 0.3s;
     }
+
+
+    .search-container {
+        position: relative;
+        width: 280px;
+    }
+
+    .search-partner-input  {
+        width: 100%;
+        padding: 10px 40px 10px 15px;
+        border-radius: 25px;
+        border: 1px solid #ccc;
+        transition: 0.3s;
+    }
+
+    .search-admin-input {
+        width: 100%;
+        padding: 10px 40px 10px 15px;
+        border-radius: 25px;
+        border: 1px solid #ccc;
+        transition: 0.3s;
+    }
+
+
+
+    .search-admin-input {
+        width: 100%;
+        padding: 10px 40px 10px 15px;
+        border-radius: 25px;
+        border: 1px solid #ccc;
+        transition: 0.3s;
+    }
+
 
     .search-input:focus {
         border-color: #4e73df;
@@ -448,14 +607,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const tabs = document.querySelectorAll(".browser-tab");
     const partnerTab = tabs[0];
     const customerTab = tabs[1];
-    const createTab = tabs[2] ; 
+    const adminTab = tabs[2]; 
+    const createTab = tabs[3] ; 
     const inactiveTab = document.querySelector(".undo-tab");
 
     const partnerContent = document.getElementById("partner-tab-content");
     const customerContent = document.getElementById("customer-tab-content");
     const createAccount = document.getElementById("create-account-tab-content")
+        const adminContent = document.getElementById("admin-tab-content");
 
-    const inactiveContent = document.getElementById("inactive-tab-content"); // nếu có
+    const inactiveContent = document.getElementById("inactive-tab-content"); 
 
 
 
@@ -482,6 +643,8 @@ document.addEventListener("DOMContentLoaded", () => {
         safeHide(customerContent);
             safeHide(createAccount)
         safeHide(inactiveContent);
+     safeHide(adminContent);
+
     }
 
     function deactivateAllTabs() {
@@ -512,6 +675,16 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+        if (adminTab) {
+        adminTab.addEventListener("click", (e) => {
+            e.preventDefault();
+            deactivateAllTabs();
+            hideAllContent();
+
+            adminTab.classList.add("active");
+            safeShow(adminContent);
+        });
+    }
 
         if (createTab) {
                     createTab.addEventListener("click", (e) => {
@@ -532,6 +705,7 @@ document.addEventListener("DOMContentLoaded", () => {
             hideAllContent();
 
                 inactiveTab.classList.add("active");   // ->light up tab
+                     safeShow(inactiveContent);
         });
     }
 
@@ -540,4 +714,141 @@ document.addEventListener("DOMContentLoaded", () => {
     if (partnerTab) partnerTab.classList.add("active");
     safeShow(partnerContent);
 });
+
+
+
+
+
+//SEARCH CUSTOMER
+    document.addEventListener("DOMContentLoaded", () => {
+        const searchInput = document.querySelector(".search-customer-input");
+        const table = document.querySelector("#customer-tab-content table tbody");
+
+        if (searchInput && table) {
+            searchInput.addEventListener("keyup", () => {
+                const filter = searchInput.value.toLowerCase();
+                const rows = table.querySelectorAll("tr");
+
+                rows.forEach(row => {
+                    // Lấy tất cả cell trong hàng
+                    const cells = row.querySelectorAll("td");
+                    let match = false;
+
+                    cells.forEach(cell => {
+                        if (cell.textContent.toLowerCase().includes(filter)) {
+                            match = true;
+                        }
+                    });
+
+                    // Hiện hoặc ẩn row
+                    row.style.display = match ? "" : "none";
+                });
+            });
+        }
+    });
+
+
+
+    // SEARCH PARTNER
+    document.addEventListener("DOMContentLoaded", () => {
+        const searchInput = document.querySelector(".search-partner-input");
+        const table = document.querySelector("#partner-tab-content table tbody");
+
+        if (searchInput && table) {
+            searchInput.addEventListener("keyup", () => {
+                const filter = searchInput.value.toLowerCase();
+                const rows = table.querySelectorAll("tr");
+
+                rows.forEach(row => {
+                    // Lấy tất cả cell trong hàng
+                    const cells = row.querySelectorAll("td");
+                    let match = false;
+
+                    cells.forEach(cell => {
+                        if (cell.textContent.toLowerCase().includes(filter)) {
+                            match = true;
+                        }
+                    });
+
+                    // Hiện hoặc ẩn row
+                    row.style.display = match ? "" : "none";
+                });
+            });
+        }
+    });
+
+         // SEARCH ADMIN
+    document.addEventListener("DOMContentLoaded", () => {
+        const searchInput = document.querySelector(".search-admin-input");
+        const table = document.querySelector("#admin-tab-content table tbody");
+
+        if (searchInput && table) {
+            searchInput.addEventListener("keyup", () => {
+                const filter = searchInput.value.toLowerCase();
+                const rows = table.querySelectorAll("tr");
+
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll("td");
+                    let match = false;
+
+                    cells.forEach(cell => {
+                        if (cell.textContent.toLowerCase().includes(filter)) {
+                            match = true;
+                        }
+                    });
+
+                    row.style.display = match ? "" : "none";
+                });
+            });
+        }
+    });
+
+
+
+        // SEARCH INACTIVE 
+    document.addEventListener("DOMContentLoaded", () => {
+        const searchInput = document.querySelector(".search-inactive-input");
+        const table = document.querySelector("#inactive-tab-content table tbody");
+
+        if (searchInput && table) {
+            searchInput.addEventListener("keyup", () => {
+                const filter = searchInput.value.toLowerCase();
+                const rows = table.querySelectorAll("tr");
+
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll("td");
+                    let match = false;
+
+                    cells.forEach(cell => {
+                        if (cell.textContent.toLowerCase().includes(filter)) {
+                            match = true;
+                        }
+                    });
+
+                    row.style.display = match ? "" : "none";
+                });
+            });
+        }
+    });
+
+
+
+    // cancel btn
+        document.addEventListener("DOMContentLoaded", () => {
+        const cancelBtn = document.getElementById("cancelBtn");
+        const form = document.getElementById("createAccountForm");
+
+        if (cancelBtn && form) {
+            cancelBtn.addEventListener("click", (e) => {
+                e.preventDefault(); // tránh redirect
+                // reset toàn bộ input trong form
+                form.reset();
+
+                // Nếu muốn ẩn thông báo lỗi confirm password
+                const confirmError = document.getElementById("confirmPasswordError");
+                if (confirmError) confirmError.style.display = "none";
+            });
+        }
+    });
+
 </script>
