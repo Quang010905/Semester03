@@ -30,7 +30,6 @@ namespace Semester03.Areas.Client.Controllers
         // 1️⃣ Store listing page
         // =======================
         [HttpGet]
-        [HttpGet]
         public async Task<IActionResult> Index(int? typeId, string search, int page = 1)
         {
             int pageSize = 18;
@@ -64,20 +63,29 @@ namespace Semester03.Areas.Client.Controllers
             return View(stores);
         }
 
-
         // =======================
         // 2️⃣ Store details page
         // =======================
         [HttpGet]
         public IActionResult Details(int id)
         {
-            var model = _tenantRepo.GetTenantDetails(id);
+            int? currentUserId = null;
+
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(userIdStr, out var uid))
+                {
+                    currentUserId = uid;
+                }
+            }
+
+            var model = _tenantRepo.GetTenantDetails(id, currentUserId);
             if (model == null) return NotFound();
 
             model.ProductCategories = _tenantRepo.GetProductCategoriesByTenant(id)
                                         ?? new List<ProductCategoryVm>();
 
-            // Comments, AvgRate, Promotions... nên được fill trong GetTenantDetails
             return View(model);
         }
 

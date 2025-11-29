@@ -51,8 +51,7 @@
                                         <th scope="col">Username</th>
                                         <th scope="col">Fullname</th>
                                         <th scope="col">Email</th>
-                                        <th scope="col">Phone</th>
-                                        <th scope="col">Role</th>
+                                        <th scope="col">Phone</th>                                      
                                         <th scope="col">Created At</th>
                                         <th scope="col">Action</th>
                                     </tr>
@@ -64,7 +63,6 @@
                                         <th scope="col">Fullname</th>
                                         <th scope="col">Email</th>
                                         <th scope="col">Phone</th>
-                                        <th scope="col">Role</th>
                                         <th scope="col">Created At</th>
                                         <th scope="col">Action</th>
                                     </tr>
@@ -77,13 +75,7 @@
                                             <td>@item.Username</td>
                                             <td>@item.FullName</td>
                                             <td>@item.Email</td>
-                                            <td>@item.Phone</td>
-                                            <td>
-                                                @if (item.Role == 3)
-                                                {
-                                                    <span style="color:green">Partner</span>
-                                                }
-                                            </td>
+                                            <td>@item.Phone</td>                                          
                                             <td>@item.CreatedAt</td>
                                             <td>
                                                 <a href="@Url.Action("CreateTenant", "Tenant", new {id = item.Id})">
@@ -146,7 +138,6 @@
                             <th scope="col">Fullname</th>
                             <th scope="col">Email</th>
                             <th scope="col">Phone</th>
-                            <th scope="col">Role</th>
                             <th scope="col">Created At</th>
                             <th scope="col">Action</th>
                         </tr>
@@ -158,7 +149,6 @@
                             <th scope="col">Fullname</th>
                             <th scope="col">Email</th>
                             <th scope="col">Phone</th>
-                            <th scope="col">Role</th>
                             <th scope="col">Created At</th>
                             <th scope="col">Action</th>
                         </tr>
@@ -181,7 +171,6 @@
                         <th scope="col">Fullname</th>
                         <th scope="col">Email</th>
                         <th scope="col">Phone</th>
-                        <th scope="col">Role</th>
                         <th scope="col">Created At</th>
                         <th scope="col">Action</th>
                     </tr>
@@ -193,7 +182,6 @@
                         <th scope="col">Fullname</th>
                         <th scope="col">Email</th>
                         <th scope="col">Phone</th>
-                        <th scope="col">Role</th>
                         <th scope="col">Created At</th>
                         <th scope="col">Action</th>
                     </tr>

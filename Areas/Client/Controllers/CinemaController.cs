@@ -54,7 +54,20 @@ namespace Semester03.Areas.Client.Controllers
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
-            var vm = await _repo.GetMovieDetailsAsync(id);
+            int? currentUserId = null;
+
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                ?? User.FindFirst("UserId")?.Value;
+
+                if (int.TryParse(userIdStr, out var uid))
+                {
+                    currentUserId = uid;
+                }
+            }
+
+            var vm = await _repo.GetMovieDetailsAsync(id, currentUserId);
             if (vm == null) return NotFound();
             return View(vm);
         }
