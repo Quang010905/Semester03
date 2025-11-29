@@ -49,19 +49,45 @@ namespace Semester03.Areas.Client.Controllers
             return null;
         }
 
-        public async Task<IActionResult> Index(int page = 1)
+        // Index with paging + filter + view more
+        public async Task<IActionResult> Index(
+            int page = 1,
+            bool showUpcomingAll = false,
+            DateTime? fromDate = null,
+            DateTime? toDate = null)
         {
             const int PageSize = 9;
 
             ViewData["Title"] = "Events";
             ViewData["MallName"] = ViewData["MallName"] ?? "ABCD Mall";
 
+            // Lưu format yyyy-MM-dd để gán lại vào input type="date"
+            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+            ViewBag.ShowUpcomingAll = showUpcomingAll;
+
+            List<EventCardVm> upcoming;
+
+            if (showUpcomingAll)
+            {
+                // View more: lấy tất cả upcoming
+                upcoming = await _repo.GetAllUpcomingEventsAsync(fromDate, toDate);
+            }
+            else
+            {
+                // Mặc định: chỉ lấy top 6 upcoming
+                upcoming = await _repo.GetUpcomingEventsAsync(6, fromDate, toDate);
+            }
+
+            var past = await _repo.GetPastEventsAsync(page, PageSize, fromDate, toDate);
+
             var vm = new EventHomeVm
             {
-                Upcoming = await _repo.GetUpcomingEventsAsync(),
-                Past = await _repo.GetPastEventsAsync(page, PageSize)
+                Upcoming = upcoming,
+                Past = past
             };
 
+            // Dùng cho layout (carousel / sidebar)
             ViewBag.Events = vm.Upcoming ?? new List<EventCardVm>();
 
             return View(vm);
