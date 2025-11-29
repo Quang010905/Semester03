@@ -44,7 +44,6 @@
             color: #6b7280;
         }
 
-        /* Selected seats chip */
         .badge-seat {
             display: inline-flex;
             align-items: center;
@@ -53,9 +52,9 @@
             font-weight: 650;
             margin: .12rem;
             font-size: .85rem;
-            background: #e0f2fe; /* light blue */
-            color: #0f172a; /* dark text */
-            border: 1px solid #0ea5e9; /* accent border */
+            background: #e0f2fe;
+            color: #0f172a;
+            border: 1px solid #0ea5e9;
             box-shadow: 0 2px 8px rgba(37,99,235,0.28);
         }
 
@@ -206,10 +205,10 @@
             <div class="card p-3 mb-3">
                 <h6 class="mb-2">Payment</h6>
 
+                <!-- FORM ĐI THẲNG TỚI CreatePaymentUrlVnpay -->
                 <form id="payForm"
-                      asp-controller="Booking"
-                      asp-action="CreatePaymentUrlVnpay"
-                      method="post">
+                      method="post"
+                      action="@Url.Action("CreatePaymentUrlVnpay", "Booking", new { area = "Client" })">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="showtimeId" value='@Model.ShowtimeId' />
                     <input type="hidden" id="seatIdsInput" name="seatIds"
@@ -219,10 +218,7 @@
                            value='@totalAmount.ToString("F0", CultureInfo.InvariantCulture)' />
 
                     <div class="d-grid gap-2 actions mt-2">
-                        <button id="btnPay" type="button"
-                                class="btn btn-primary btn-lg"
-                                data-bs-toggle="modal"
-                                data-bs-target="#confirmPayModal">
+                        <button id="btnPay" type="submit" class="btn btn-primary btn-lg">
                             Pay with VNPAY
                         </button>
                         <a href="javascript:history.back()" class="btn btn-light">
@@ -252,39 +248,6 @@
     </div>
 </div>
 
-<!-- Confirm VNPAY modal -->
-<div class="modal fade" id="confirmPayModal" tabindex="-1" aria-labelledby="confirmPayModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirm payment</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>You are about to be redirected to VNPAY to complete the payment.</p>
-                <ul>
-                    <li>Number of seats: <strong>@seatCount</strong></li>
-                    <li>Total amount: <strong>@totalAmount.ToString("N0") VND</strong></li>
-                </ul>
-                <p class="muted-sm mb-0">
-                    After the payment is completed, you will be redirected back to this site and your tickets
-                    will be recorded.
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" id="btnCancelModal"
-                        class="btn btn-light"
-                        data-bs-dismiss="modal">
-                    Cancel
-                </button>
-                <button type="button" id="btnConfirmPay" class="btn btn-primary">
-                    Confirm & go to VNPAY
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 @section Scripts {
     <script>
         window.timer = window.timer || null;
@@ -292,50 +255,41 @@
 
     <script>
         (function () {
-            const payForm = document.getElementById('payForm');
-            const btnConfirmPay = document.getElementById('btnConfirmPay');
-            const btnPrint = document.getElementById('btnPrint');
-            const btnPay = document.getElementById('btnPay');
-            const seatIdsInput = document.getElementById('seatIdsInput');
-            const couponSelect = document.getElementById('couponSelect');
-            const btnApplyCoupon = document.getElementById('btnApplyCoupon');
-            const couponNote = document.getElementById('couponNote');
-            const couponIdInput = document.getElementById('couponIdInput');
-            const discountRow = document.getElementById('discountRow');
-            const discountAmountEl = document.getElementById('discountAmount');
+            const payForm            = document.getElementById('payForm');
+            const seatIdsInput       = document.getElementById('seatIdsInput');
+            const couponSelect       = document.getElementById('couponSelect');
+            const btnApplyCoupon     = document.getElementById('btnApplyCoupon');
+            const couponNote         = document.getElementById('couponNote');
+            const couponIdInput      = document.getElementById('couponIdInput');
+            const discountRow        = document.getElementById('discountRow');
+            const discountAmountEl   = document.getElementById('discountAmount');
             const totalAmountDisplay = document.getElementById('totalAmountDisplay');
-            const amountHidden = document.getElementById('amountHidden');
+            const amountHidden       = document.getElementById('amountHidden');
 
-            if (!seatIdsInput.value) {
-                const qs = new URLSearchParams(window.location.search);
-                const qSeatIds = qs.get('seatIds') || qs.get('seatids');
-                if (qSeatIds) {
-                    seatIdsInput.value = String(qSeatIds)
+            if (!payForm) return;
+
+            // Chuẩn hoá seatIds
+            if (seatIdsInput) {
+                if (!seatIdsInput.value) {
+                    const qs = new URLSearchParams(window.location.search);
+                    const qSeatIds = qs.get('seatIds') || qs.get('seatids');
+                    if (qSeatIds) {
+                        seatIdsInput.value = String(qSeatIds)
+                            .replace(/[^\d,]/g, '')
+                            .replace(/,+/g, ',')
+                            .replace(/(^,|,$)/g, '');
+                    }
+                } else {
+                    seatIdsInput.value = seatIdsInput.value
                         .replace(/[^\d,]/g, '')
                         .replace(/,+/g, ',')
                         .replace(/(^,|,$)/g, '');
                 }
-            } else {
-                seatIdsInput.value = seatIdsInput.value
-                    .replace(/[^\d,]/g, '')
-                    .replace(/,+/g, ',')
-                    .replace(/(^,|,$)/g, '');
             }
 
             function getAntiForgeryToken() {
                 const t = document.querySelector('input[name="__RequestVerificationToken"]');
                 return t ? t.value : null;
-            }
-
-            function hideBootstrapModalById(id) {
-                try {
-                    const mEl = document.getElementById(id);
-                    if (!mEl) return;
-                    const inst = bootstrap.Modal.getInstance(mEl) || bootstrap.Modal.getOrCreateInstance(mEl);
-                    if (inst) inst.hide();
-                } catch (e) {
-                    console.warn('Could not hide modal', e);
-                }
             }
 
             const originalTotal = Number('@totalAmount.ToString("F0", CultureInfo.InvariantCulture)');
@@ -344,171 +298,81 @@
                 return Math.round(n).toLocaleString('en-US') + ' VND';
             }
 
-            btnApplyCoupon.addEventListener('click', async function (ev) {
-                ev.preventDefault();
-                couponNote.style.display = 'none';
+            // Áp dụng coupon
+            if (btnApplyCoupon && couponSelect && couponNote &&
+                couponIdInput && discountRow && discountAmountEl &&
+                totalAmountDisplay && amountHidden) {
 
-                const couponId = couponSelect.value;
-                if (!couponId) {
-                    couponIdInput.value = "";
-                    discountRow.style.display = 'none';
-                    discountAmountEl.innerText = '0 VND';
-                    amountHidden.value = originalTotal;
-                    totalAmountDisplay.innerText = formatVnd(originalTotal);
-                    couponSelect.disabled = false;
-                    btnApplyCoupon.disabled = false;
-                    return;
-                }
+                btnApplyCoupon.addEventListener('click', async function (ev) {
+                    ev.preventDefault();
+                    couponNote.style.display = 'none';
 
-                const token = getAntiForgeryToken();
-                const form = new FormData();
-                form.append('couponId', couponId);
-                form.append('showtimeId', payForm.querySelector('input[name="showtimeId"]').value);
-                form.append('seatIds', seatIdsInput.value);
-                form.append('amount', amountHidden.value);
-
-                const headers = {};
-                if (token) headers['RequestVerificationToken'] = token;
-
-                try {
-                    const res = await fetch('@Url.Action("ValidateCouponAjax", "Booking", new { area = "Client" })', {
-                        method: 'POST',
-                        headers: headers,
-                        body: form,
-                        credentials: 'same-origin'
-                    });
-
-                    const data = await res.json();
-                    if (!res.ok || !data) {
-                        throw new Error((data && data.message) ? data.message : ('Server error: ' + res.status));
-                    }
-
-                    if (data.success) {
-                        const discount = Number(data.discountAmount || 0);
-                        const newTotal = Number(data.newTotal || 0);
-
-                        couponIdInput.value = couponId;
-                        discountRow.style.display = '';
-                        discountAmountEl.innerText = formatVnd(discount);
-                        totalAmountDisplay.innerText = formatVnd(newTotal);
-                        amountHidden.value = newTotal.toString();
-
-                        couponNote.style.display = 'none';
-                        btnApplyCoupon.disabled = true;
-                        couponSelect.disabled = true;
-                    } else {
-                        couponNote.innerText = data.message || 'This discount code cannot be applied.';
-                        couponNote.style.display = '';
+                    const couponId = couponSelect.value;
+                    if (!couponId) {
                         couponIdInput.value = "";
                         discountRow.style.display = 'none';
                         discountAmountEl.innerText = '0 VND';
                         amountHidden.value = originalTotal;
                         totalAmountDisplay.innerText = formatVnd(originalTotal);
+                        couponSelect.disabled = false;
+                        btnApplyCoupon.disabled = false;
+                        return;
                     }
-                } catch (err) {
-                    console.error('Validate coupon error', err);
-                    couponNote.innerText = 'Error while validating discount code.';
-                    couponNote.style.display = '';
-                }
-            });
 
-            btnConfirmPay.addEventListener('click', function () {
-                btnConfirmPay.disabled = true;
-                const originalBtnText = btnConfirmPay.innerText;
-                btnConfirmPay.innerText = 'Redirecting...';
+                    const token = getAntiForgeryToken();
+                    const form = new FormData();
+                    form.append('couponId', couponId);
+                    form.append('showtimeId', payForm.querySelector('input[name="showtimeId"]').value);
+                    form.append('seatIds', seatIdsInput ? seatIdsInput.value : '');
+                    form.append('amount', amountHidden.value);
 
-                (async () => {
+                    const headers = {};
+                    if (token) headers['RequestVerificationToken'] = token;
+
                     try {
-                        if (!seatIdsInput.value) {
-                            alert('No seats to pay for. Please check again.');
-                            return;
-                        }
-
-                        const rawAmount = amountHidden.value;
-                        const numericAmount = Number(String(rawAmount).replace(/[^\d.\-]/g, ''));
-                        if (!rawAmount || Number.isNaN(numericAmount) || !isFinite(numericAmount) || numericAmount <= 0) {
-                            alert('Invalid amount.');
-                            return;
-                        }
-
-                        const cleanedSeatIds = seatIdsInput.value
-                            .replace(/[^\d,]/g, '')
-                            .replace(/,+/g, ',')
-                            .replace(/(^,|,$)/g, '');
-
-                        if (!cleanedSeatIds) {
-                            alert('No valid seats to pay for.');
-                            return;
-                        }
-
-                        const formData = new FormData();
-                        formData.append('showtimeId', payForm.querySelector('input[name="showtimeId"]').value);
-                        formData.append('seatIds', cleanedSeatIds);
-                        formData.append('amount', numericAmount.toString());
-                        formData.append('couponId', document.getElementById('couponIdInput').value || "");
-
-                        const headers = { 'X-Requested-With': 'XMLHttpRequest' };
-                        const token = getAntiForgeryToken();
-                        if (token) headers['RequestVerificationToken'] = token;
-
-                        const res = await fetch('@Url.Action("CreatePaymentUrlVnpay", "Booking", new { area = "Client" })', {
+                        const res = await fetch('@Url.Action("ValidateCouponAjax", "Booking", new { area = "Client" })', {
                             method: 'POST',
                             headers: headers,
-                            body: formData,
+                            body: form,
                             credentials: 'same-origin'
                         });
 
-                        const txt = await res.text();
-                        let data;
-                        try {
-                            data = txt ? JSON.parse(txt) : null;
-                        } catch (e) {
-                            throw new Error('Server returned invalid data: ' + txt);
-                        }
-
+                        const data = await res.json();
                         if (!res.ok || !data) {
-                            const msg = (data && data.message) ? data.message : ('Server error: ' + res.status);
-                            throw new Error(msg);
+                            throw new Error((data && data.message) ? data.message : ('Server error: ' + res.status));
                         }
 
-                        if (data.success && data.url) {
-                            try {
-                                if (window.top && window.top !== window) {
-                                    window.top.location.href = data.url;
-                                } else {
-                                    window.location.href = data.url;
-                                }
-                            } catch (e) {
-                                try {
-                                    window.open(data.url, '_blank');
-                                } catch (exOpen) {
-                                    window.location.href = data.url;
-                                }
-                            }
+                        if (data.success) {
+                            const discount = Number(data.discountAmount || 0);
+                            const newTotal = Number(data.newTotal || 0);
+
+                            couponIdInput.value        = couponId;
+                            discountRow.style.display  = '';
+                            discountAmountEl.innerText = formatVnd(discount);
+                            totalAmountDisplay.innerText = formatVnd(newTotal);
+                            amountHidden.value         = newTotal.toString();
+
+                            couponNote.style.display = 'none';
+                            btnApplyCoupon.disabled  = true;
+                            couponSelect.disabled    = true;
                         } else {
-                            const msg = (data && data.message)
-                                ? data.message
-                                : 'Could not create payment URL.';
-                            throw new Error(msg);
+                            couponNote.innerText = data.message || 'This discount code cannot be applied.';
+                            couponNote.style.display = '';
+                            couponIdInput.value      = "";
+                            discountRow.style.display = 'none';
+                            discountAmountEl.innerText = '0 VND';
+                            amountHidden.value        = originalTotal;
+                            totalAmountDisplay.innerText = formatVnd(originalTotal);
                         }
                     } catch (err) {
-                        console.error("Error when creating VNPAY request:", err);
-                        alert('Error while creating payment request: ' + (err && err.message ? err.message : err));
-                    } finally {
-                        btnConfirmPay.disabled = false;
-                        btnConfirmPay.innerText = originalBtnText || 'Confirm & go to VNPAY';
-                        hideBootstrapModalById('confirmPayModal');
+                        console.error('Validate coupon error', err);
+                        couponNote.innerText = 'Error while validating discount code.';
+                        couponNote.style.display = '';
                     }
-                })();
-            });
+                });
+            }
 
-            btnPrint.addEventListener('click', function () {
-                window.print();
-            });
-
-            btnPay.addEventListener('click', function () {
-                // only triggers modal
-            });
+            // Không chặn submit – để form post thẳng sang CreatePaymentUrlVnpay
         })();
     </script>
 }
