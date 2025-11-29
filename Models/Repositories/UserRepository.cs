@@ -130,7 +130,6 @@ namespace Semester03.Models.Repositories
                 .ToArray());
         }
 
-        //Lay danh sach chu shop loc theo trang thai va ngay tao
         public async Task<List<User>> GetAllUserFilterByStatus()
         {
             return await _context.TblUsers
