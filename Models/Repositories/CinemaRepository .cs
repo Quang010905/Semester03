@@ -64,14 +64,13 @@ namespace Semester03.Models.Repositories
                 .GroupJoin(showInfo,
                            m => m.MovieId,
                            si => si.MovieId,
-                           (m, sis) => new { Movie = m, Show = sis.FirstOrDefault() }) // FirstOrDefault on the joined set is translatable here
+                           (m, sis) => new { Movie = m, Show = sis.FirstOrDefault() })
                 .Select(x => new
                 {
                     MovieId = x.Movie.MovieId,
                     MovieTitle = x.Movie.MovieTitle,
                     MovieDescription = x.Movie.MovieDescription,
                     MovieDurationMin = x.Movie.MovieDurationMin,
-                    // Show may be null => ShowtimeStart is nullable
                     ShowtimeStart = x.Show != null ? x.Show.ShowtimeStart : (DateTime?)null,
                     ShowtimePrice = x.Show != null ? x.Show.ShowtimePrice : (decimal?)null,
                     ShowtimeId = x.Show != null ? x.Show.ShowtimeId : (int?)null,
@@ -79,7 +78,6 @@ namespace Semester03.Models.Repositories
                     CinemaName = x.Show != null ? x.Show.CinemaName : null,
                     ScreenName = x.Show != null ? x.Show.ScreenName : null
                 })
-                // 5) order: ưu tiên có showtime trước (0), không có showtime sau (1); sau đó theo thời gian showtime
                 .OrderBy(x => x.ShowtimeStart == null ? 1 : 0)
                 .ThenBy(x => x.ShowtimeStart ?? DateTime.MaxValue);
 
@@ -155,7 +153,8 @@ namespace Semester03.Models.Repositories
             }).ToList();
         }
 
-        public async Task<MovieDetailsVm> GetMovieDetailsAsync(int movieId)
+        // ==================== CHI TIẾT PHIM + COMMENT ====================
+        public async Task<MovieDetailsVm> GetMovieDetailsAsync(int movieId, int? currentUserId = null)
         {
             var movie = await _db.TblMovies
                 .AsNoTracking()
@@ -176,15 +175,33 @@ namespace Semester03.Models.Repositories
 
             if (movie == null) return null;
 
-            movie.Comments = await _db.TblCustomerComplaints
+            var commentsQuery = _db.TblCustomerComplaints
                 .AsNoTracking()
-                .Where(c => c.CustomerComplaintMovieId == movieId && c.CustomerComplaintStatus == 1)
+                .Where(c => c.CustomerComplaintMovieId == movieId);
+
+            // người dùng hiện tại: thấy comment đã duyệt + comment của chính họ (kể cả chưa duyệt)
+            if (currentUserId.HasValue)
+            {
+                var uid = currentUserId.Value;
+                commentsQuery = commentsQuery.Where(c =>
+                    c.CustomerComplaintStatus == 1 ||
+                    c.CustomerComplaintCustomerUserId == uid);
+            }
+            else
+            {
+                // khách / user khác: chỉ thấy comment đã duyệt
+                commentsQuery = commentsQuery.Where(c => c.CustomerComplaintStatus == 1);
+            }
+
+            movie.Comments = await commentsQuery
                 .OrderByDescending(c => c.CustomerComplaintCreatedAt)
                 .Select(c => new CommentVm
                 {
                     Id = c.CustomerComplaintId,
                     UserId = c.CustomerComplaintCustomerUserId,
-                    UserName = c.CustomerComplaintCustomerUser != null ? c.CustomerComplaintCustomerUser.UsersFullName : "Khách",
+                    UserName = c.CustomerComplaintCustomerUser != null
+                        ? c.CustomerComplaintCustomerUser.UsersFullName
+                        : "Khách",
                     Rate = c.CustomerComplaintRate,
                     Text = c.CustomerComplaintDescription,
                     CreatedAt = c.CustomerComplaintCreatedAt
@@ -201,7 +218,7 @@ namespace Semester03.Models.Repositories
                 CustomerComplaintMovieId = movieId,
                 CustomerComplaintRate = rate,
                 CustomerComplaintDescription = text,
-                CustomerComplaintStatus = 0,
+                CustomerComplaintStatus = 0,      // 0 = chờ duyệt
                 CustomerComplaintCreatedAt = DateTime.Now
             };
 

@@ -7,6 +7,7 @@ using Semester03.Areas.Admin.Models;
 using System.Globalization;
 using System.Text;
 using Semester03.Areas.Client.Models.ViewModels;
+using System;
 
 namespace Semester03.Models.Repositories
 {
@@ -42,10 +43,6 @@ namespace Semester03.Models.Repositories
                 .ToList();
         }
 
-
-
-
-
         // Lấy stores theo typeId và search
         public List<FeaturedStoreViewModel> GetStores(int? typeId = null, string search = "")
         {
@@ -75,7 +72,10 @@ namespace Semester03.Models.Repositories
                         .ToList();
         }
 
-        public TenantDetailsViewModel? GetTenantDetails(int tenantId)
+        // =========================
+        // Tenant details + comments
+        // =========================
+        public TenantDetailsViewModel? GetTenantDetails(int tenantId, int? currentUserId = null)
         {
             var tenant = _context.TblTenants
                 .Include(t => t.TenantType)
@@ -84,10 +84,24 @@ namespace Semester03.Models.Repositories
 
             if (tenant == null) return null;
 
-            // Lấy bình luận tenant (status = 1) – Movie/Event để null
-            var comments = _context.TblCustomerComplaints
+            // Comments query
+            var commentsQuery = _context.TblCustomerComplaints
                 .Include(c => c.CustomerComplaintCustomerUser)
-                .Where(c => c.CustomerComplaintTenantId == tenantId && c.CustomerComplaintStatus == 1)
+                .Where(c => c.CustomerComplaintTenantId == tenantId);
+
+            if (currentUserId.HasValue)
+            {
+                int uid = currentUserId.Value;
+                commentsQuery = commentsQuery.Where(c =>
+                    c.CustomerComplaintStatus == 1 ||
+                    c.CustomerComplaintCustomerUserId == uid);
+            }
+            else
+            {
+                commentsQuery = commentsQuery.Where(c => c.CustomerComplaintStatus == 1);
+            }
+
+            var comments = commentsQuery
                 .Select(c => new CustomerCommentVm
                 {
                     UserName = c.CustomerComplaintCustomerUser.UsersFullName,
@@ -99,7 +113,6 @@ namespace Semester03.Models.Repositories
                 .ToList();
 
             double? avgRate = comments.Any() ? comments.Average(c => c.Rate) : null;
-
 
             var promotions = GetTenantPromotions(tenantId);
 
@@ -118,8 +131,6 @@ namespace Semester03.Models.Repositories
                 Promotions = promotions
             };
         }
-
-
 
         public bool AddTenantComment(int tenantId, int userId, int rate, string text)
         {
@@ -147,7 +158,6 @@ namespace Semester03.Models.Repositories
             }
         }
 
-
         public List<ProductCategoryVm> GetProductCategoriesByTenant(int tenantId)
         {
             return _context.TblProductCategories
@@ -170,7 +180,7 @@ namespace Semester03.Models.Repositories
                     Id = x.TenantId,
                     Name = x.TenantName,
                     Image = x.TenantImg,
-                    UserId = x.TenantUserId,    
+                    UserId = x.TenantUserId,
                     TypeId = x.TenantTypeId,
                     Description = x.TenantDescription,
                     Status = x.TenantStatus ?? 0
@@ -256,7 +266,7 @@ namespace Semester03.Models.Repositories
                 .FirstOrDefaultAsync();
         }
         //kiem tra trung ten
-        public async Task<bool> CheckTenantNameAsync(string name, int userId,  int? excludeId = null)
+        public async Task<bool> CheckTenantNameAsync(string name, int userId, int? excludeId = null)
         {
             string normalizedInput = NormalizeName(name);
 
@@ -301,8 +311,6 @@ namespace Semester03.Models.Repositories
                 .ToArray());
         }
 
-
-
         //hàm lấy Promotions
         public List<TenantPromotionVm> GetTenantPromotions(int tenantId)
         {
@@ -328,11 +336,5 @@ namespace Semester03.Models.Repositories
                 })
                 .ToList();
         }
-
-
-
-       
-
-
     }
 }

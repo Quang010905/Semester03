@@ -13,20 +13,18 @@ namespace Semester03.Areas.Client.Controllers
         private readonly UserActivityRepository _activityRepo;
 
         public ProfileController(
-            TenantTypeRepository tenantTypeRepo,  // 👈 thêm vào để truyền cho base
+            TenantTypeRepository tenantTypeRepo,
             UserRepository userRepo,
             UserActivityRepository activityRepo
-        ) : base(tenantTypeRepo)                 // 👈 gọi constructor cha
+        ) : base(tenantTypeRepo)
         {
             _userRepo = userRepo;
             _activityRepo = activityRepo;
         }
 
-
         [HttpGet]
         public async Task<IActionResult> Profile()
         {
-            // Lấy user ID từ Claims
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
@@ -34,18 +32,15 @@ namespace Semester03.Areas.Client.Controllers
                 return RedirectToAction("Login", "Account", new { area = "Client" });
             }
 
-            // Lấy user từ DB
             var user = await _userRepo.GetByIdAsync(userId);
             if (user == null)
             {
                 return NotFound("User not found");
             }
 
-            // Lấy lịch sử vé & khiếu nại
             var tickets = _activityRepo.GetTicketHistory(userId);
             var complaints = _activityRepo.GetComplaintHistory(userId);
 
-            // Trả về ViewModel
             var vm = new ProfileViewModel
             {
                 User = user,
@@ -59,7 +54,6 @@ namespace Semester03.Areas.Client.Controllers
         [HttpPost]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto model)
         {
-            // Lấy userId từ Claims (giống action Profile)
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
@@ -104,6 +98,4 @@ namespace Semester03.Areas.Client.Controllers
             });
         }
     }
-
 }
-
