@@ -78,34 +78,46 @@
 @section Styles {
     <style>
         .promo-detail-wrapper {
-            padding: 2rem 0;
+            padding: 2.3rem 0 2.8rem;
         }
 
-        /* Back button */
+        .promo-detail-shell {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* BACK BUTTON */
         .back-btn {
-            padding: .45rem 1rem;
+            padding: .42rem 1.1rem;
             border-radius: 999px;
-            transition: .25s ease;
-            border: 1px solid #ddd;
+            transition: .2s ease;
+            border: 1px solid #e5e7eb;
+            font-size: .85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            background: #ffffffcc;
+            backdrop-filter: blur(8px);
         }
 
             .back-btn:hover {
-                background: #ff4b5c;
-                color: white !important;
-                border-color: #ff4b5c;
-                transform: translateX(-3px);
+                background: #fee2e2;
+                color: #b91c1c !important;
+                border-color: #fecaca;
+                transform: translateX(-2px);
             }
 
-        /* Main card */
+        /* MAIN CARD */
         .promo-card-detail {
-            border-radius: 1.2rem;
-            padding: 2rem;
-            background: #ffffff;
-            box-shadow: 0 15px 40px rgba(0,0,0,.12);
-            animation: fadeIn .5s ease;
+            border-radius: 1.4rem;
+            padding: 1.8rem 1.8rem 2.1rem;
+            background: radial-gradient(circle at top, #eff6ff 0, #ffffff 55%, #fdf2f8 100%);
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.16);
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            animation: promo-fade-in .45s ease;
         }
 
-        @@keyframes fadeIn {
+        @@keyframes promo-fade-in {
             from {
                 opacity: 0;
                 transform: translateY(10px);
@@ -117,113 +129,273 @@
             }
         }
 
-        /* Title */
-        .promo-title {
-            font-size: 2rem;
+        /* TITLE */
+        .promo-kicker {
             font-weight: 800;
-            color: #dc3545;
-            letter-spacing: -0.5px;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+            font-size: .78rem;
+            color: #9ca3af;
+            margin-bottom: .25rem;
         }
 
-        /* Image banner */
+        .promo-title {
+            margin: 0 0 .35rem 0;
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+        }
+
+            .promo-title span {
+                background: linear-gradient(90deg,#4f46e5,#ec4899);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                color: transparent;
+            }
+
+        .promo-period {
+            font-size: .9rem;
+            color: #4b5563;
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+            .promo-period i {
+                color: #fb7185;
+            }
+
+        /* TOP META / BADGES */
+        .promo-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+            margin-top: .7rem;
+        }
+
+        .badge-pill-soft {
+            border-radius: 999px;
+            padding: .25rem .7rem;
+            font-size: .78rem;
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            font-weight: 600;
+        }
+
+        .badge-discount {
+            background: linear-gradient(135deg,#ef4444,#f97316);
+            color: #fff;
+            box-shadow: 0 10px 26px rgba(248, 113, 113, .6);
+        }
+
+        .badge-store {
+            background: rgba(59,130,246,.06);
+            color: #1d4ed8;
+            border: 1px solid rgba(129,140,248,.5);
+        }
+
+        .badge-status {
+            background: rgba(16,185,129,.08);
+            color: #047857;
+            border: 1px solid rgba(45,212,191,.6);
+        }
+
+        /* BANNER */
         .promo-banner {
-            border-radius: 1rem;
+            border-radius: 1.1rem;
             overflow: hidden;
-            box-shadow: 0 10px 35px rgba(220,53,69,0.3);
-            transition: .4s ease;
+            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.28);
+            background: #020617;
+            position: relative;
         }
 
             .promo-banner img {
                 width: 100%;
-                height: 420px;
+                height: 360px;
                 object-fit: cover;
+                display: block;
+                transition: transform .5s ease;
             }
 
-            .promo-banner:hover {
-                transform: scale(1.02);
-            }
-
-        /* Time */
-        .promo-time {
-            font-size: 1rem;
-            margin-top: .8rem;
-            color: #555;
+        .promo-card-detail:hover .promo-banner img {
+            transform: scale(1.04);
         }
 
-        /* Discount blocks */
-        .discount-box {
-            background: linear-gradient(135deg, #ff4b5c, #dc3545);
-            color: white;
-            padding: .65rem 1.2rem;
-            border-radius: .65rem;
-            font-size: 1rem;
-            font-weight: 700;
-            display: inline-block;
-            box-shadow: 0 8px 25px rgba(255,76,76,0.45);
-            margin-top: 1rem;
+        .promo-banner-tag {
+            position: absolute;
+            bottom: .95rem;
+            left: .95rem;
+            padding: .25rem .7rem;
+            border-radius: 999px;
+            font-size: .75rem;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            background: rgba(15,23,42,.7);
+            color: #e5e7eb;
+            backdrop-filter: blur(10px);
         }
 
-        /* Price details */
-        .detail-label {
-            font-weight: 700;
-            color: #dc3545;
-        }
-
+        /* CONTENT SIDE */
         .promo-desc {
-            font-size: 1.05rem;
+            font-size: .95rem;
             margin-top: 1rem;
-            line-height: 1.65;
-            color: #333;
+            line-height: 1.7;
+            color: #111827;
+        }
+
+        .promo-sidebar-box {
+            border-radius: 1rem;
+            background: #ffffffcc;
+            backdrop-filter: blur(10px);
+            padding: 1rem 1.1rem;
+            border: 1px solid rgba(209,213,219,.9);
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+            font-size: .9rem;
+        }
+
+        .promo-meta-row {
+            display: flex;
+            justify-content: space-between;
+            gap: .75rem;
+            margin-bottom: .4rem;
+        }
+
+        .promo-meta-label {
+            font-weight: 600;
+            color: #6b7280;
+        }
+
+        .promo-meta-value {
+            font-weight: 600;
+            color: #111827;
+            text-align: right;
+        }
+
+        .promo-note {
+            margin-top: .6rem;
+            font-size: .82rem;
+            color: #9ca3af;
+        }
+
+        @@media (max-width: 991px) {
+            .promo-card-detail {
+                padding: 1.4rem 1.2rem 1.7rem;
+            }
+
+            .promo-banner img {
+                height: 260px;
+            }
         }
     </style>
 }
 
-<div class="container promo-detail-wrapper">
+<div class="promo-detail-wrapper">
+    <div class="promo-detail-shell">
 
-    <a href="@Url.Action("Index", "TenantPromotion", new { area = "Client" })"
-       class="btn btn-light back-btn mb-3">
-        <i class="bi bi-arrow-left"></i> Back
-    </a>
+        <a href="@Url.Action("Index", "TenantPromotion", new { area = "Client" })"
+           class="back-btn mb-3">
+            <i class="bi bi-arrow-left"></i>
+            Back to promotions
+        </a>
 
-    <div class="promo-card-detail">
+        <div class="promo-card-detail">
+            <div class="row g-4 align-items-start">
+                <!-- LEFT: IMAGE -->
+                <div class="col-lg-6">
+                    <div class="promo-banner">
+                        <img src="@ImgPromotion(Model.Img)" alt="@Model.Title" />
+                        <div class="promo-banner-tag">
+                            ABCD Mall • Promotion
+                        </div>
+                    </div>
+                </div>
 
-        <h2 class="promo-title mb-3">@Model.Title</h2>
+                <!-- RIGHT: TEXT / META -->
+                <div class="col-lg-6">
+                    <div class="promo-kicker">Limited time offer</div>
+                    <h2 class="promo-title">
+                        <span>@Model.Title</span>
+                    </h2>
 
-        <div class="promo-banner mb-3">
-            <img src="@ImgPromotion(Model.Img)" alt="@Model.Title" />
+                    <div class="promo-period">
+                        <i class="bi bi-calendar3"></i>
+                        <span>
+                            @Model.PromotionStart?.ToString("dd/MM/yyyy")
+                            –
+                            @Model.PromotionEnd?.ToString("dd/MM/yyyy")
+                        </span>
+                    </div>
+
+                    <div class="promo-badges">
+                        @if (Model.DiscountPercent.HasValue)
+                        {
+                            <div class="badge-pill-soft badge-discount">
+                                <i class="bi bi-fire"></i>
+                                @Model.DiscountPercent% OFF
+                            </div>
+                        }
+                        else if (Model.DiscountAmount.HasValue)
+                        {
+                            <div class="badge-pill-soft badge-discount">
+                                <i class="bi bi-fire"></i>
+                                @Model.DiscountAmount.Value.ToString("#,0") ₫ OFF
+                            </div>
+                        }
+
+                        <div class="badge-pill-soft badge-store">
+                            <i class="bi bi-shop"></i>
+                            Special mall offer
+                        </div>
+
+                        <div class="badge-pill-soft badge-status">
+                            <i class="bi bi-clock-history"></i>
+                            Currently active
+                        </div>
+                    </div>
+
+                    <div class="promo-desc">
+                        @Html.Raw(Model.Description)
+                    </div>
+
+                    <div class="promo-sidebar-box mt-3">
+                        @if (Model.MinBillAmount.HasValue)
+                        {
+                            <div class="promo-meta-row">
+                                <div class="promo-meta-label">Minimum bill</div>
+                                <div class="promo-meta-value">
+                                    @Model.MinBillAmount.Value.ToString("#,0") ₫
+                                </div>
+                            </div>
+                        }
+
+                        @if (Model.DiscountPercent.HasValue)
+                        {
+                            <div class="promo-meta-row">
+                                <div class="promo-meta-label">Discount rate</div>
+                                <div class="promo-meta-value">
+                                    @Model.DiscountPercent%
+                                </div>
+                            </div>
+                        }
+
+                        @if (Model.DiscountAmount.HasValue)
+                        {
+                            <div class="promo-meta-row">
+                                <div class="promo-meta-label">Discount amount</div>
+                                <div class="promo-meta-value">
+                                    @Model.DiscountAmount.Value.ToString("#,0") ₫
+                                </div>
+                            </div>
+                        }
+
+                        <div class="promo-note">
+                            * Please check with the store for detailed terms & conditions of this promotion.
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <p class="promo-time">
-            <i class="bi bi-calendar3 text-danger"></i>
-            <strong>
-                @Model.PromotionStart?.ToString("dd/MM/yyyy") – @Model.PromotionEnd?.ToString("dd/MM/yyyy")
-            </strong>
-        </p>
-
-        @if (Model.DiscountPercent.HasValue)
-        {
-            <div class="discount-box">
-                @Model.DiscountPercent% OFF
-            </div>
-        }
-
-        @if (Model.DiscountAmount.HasValue)
-        {
-            <div class="discount-box">
-                @Model.DiscountAmount.Value.ToString("#,0") ₫ OFF
-            </div>
-        }
-
-        <div class="promo-desc">
-            @Html.Raw(Model.Description)
-        </div>
-
-        @if (Model.MinBillAmount.HasValue)
-        {
-            <p class="mt-3">
-                <span class="detail-label">Minimum bill:</span>
-                @Model.MinBillAmount.Value.ToString("#,0") ₫
-            </p>
-        }
     </div>
 </div>
