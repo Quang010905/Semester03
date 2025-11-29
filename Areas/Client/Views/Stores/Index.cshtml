@@ -71,6 +71,51 @@
 
 @section Styles {
     <style>
+        /* ============================================================
+                   🔥 GLOW WRAPPER (copy từ trang Events)
+                ============================================================ */
+        .section-wrapper {
+            position: relative;
+            padding: 2.2rem 1.8rem 2.5rem;
+            border-radius: 1.7rem;
+            background: rgba(255,255,255,0.92);
+            box-shadow: 0 20px 55px rgba(15,23,42,0.12);
+            margin-bottom: 3rem;
+            overflow: hidden;
+        }
+
+            .section-wrapper::before {
+                content: "";
+                position: absolute;
+                inset: -40%;
+                background: radial-gradient(circle at 0 0, rgba(99,102,241,.25), transparent 60%), radial-gradient(circle at 100% 100%, rgba(236,72,153,.25), transparent 60%);
+                mix-blend-mode: screen;
+                animation: glowMove 22s linear infinite alternate;
+                pointer-events: none;
+            }
+
+        @@keyframes glowMove {
+            from {
+                transform: translate3d(0,0,0) scale(1);
+            }
+
+            to {
+                transform: translate3d(4%, -4%, 0) scale(1.06);
+            }
+        }
+
+        .section-wrapper::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 1.7rem;
+            padding: 2px;
+            background: linear-gradient(135deg, #6366f1, #ec4899);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
         /* ===== PAGE LAYOUT ================================================= */
         .stores-page {
             padding-block: 1.5rem 2.5rem;
@@ -134,7 +179,7 @@
                 padding-inline: 1rem;
             }
 
-        /* ===== STORE CARD (match cinema look) ============================= */
+        /* ===== STORE CARD ================================================== */
         .store-card {
             position: relative;
             border-radius: 1.15rem;
@@ -294,126 +339,129 @@
 }
 
 <div class="container stores-page">
-    <!-- HEADER -->
-    <div class="stores-header mb-3">
-        <div>
-            <div class="stores-kicker">Store directory</div>
-            <h3 class="stores-title">
-                <span>@(ViewBag.CurrentTypeName ?? "All stores")</span>
-            </h3>
-            <div class="stores-subtitle">
-                Discover your favorite brands, cafés and experiences at our mall.
+    <!-- BỌC TOÀN BỘ BẰNG SECTION-WRAPPER -->
+    <div class="section-wrapper">
+        <!-- HEADER -->
+        <div class="stores-header mb-3">
+            <div>
+                <div class="stores-kicker">Store directory</div>
+                <h3 class="stores-title">
+                    <span>@(ViewBag.CurrentTypeName ?? "All stores")</span>
+                </h3>
+                <div class="stores-subtitle">
+                    Discover your favorite brands, cafés and experiences at our mall.
+                </div>
             </div>
+
+            <!-- FILTER BAR -->
+            <form method="get" class="stores-filter-form">
+                <input type="text"
+                       name="search"
+                       value="@ViewBag.SearchQuery"
+                       class="form-control form-control-sm"
+                       placeholder="Search stores by name..." />
+
+                <select name="typeId" class="form-select form-select-sm">
+                    <option value="">All categories</option>
+                    @if (types != null)
+                    {
+                        foreach (var t in types)
+                        {
+                            var selected = t.Id == (int?)ViewBag.CurrentTypeId ? "selected" : "";
+                            <option value="@t.Id" @selected>@t.Name</option>
+                        }
+                    }
+                </select>
+
+                <button class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-funnel me-1"></i> Filter
+                </button>
+            </form>
         </div>
 
-        <!-- FILTER BAR -->
-        <form method="get" class="stores-filter-form">
-            <input type="text"
-                   name="search"
-                   value="@ViewBag.SearchQuery"
-                   class="form-control form-control-sm"
-                   placeholder="Search stores by name..." />
-
-            <select name="typeId" class="form-select form-select-sm">
-                <option value="">All categories</option>
-                @if (types != null)
-                {
-                    foreach (var t in types)
-                    {
-                        var selected = t.Id == (int?)ViewBag.CurrentTypeId ? "selected" : "";
-                        <option value="@t.Id" @selected>@t.Name</option>
-                    }
-                }
-            </select>
-
-            <button class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-funnel me-1"></i> Filter
-            </button>
-        </form>
-    </div>
-
-    <!-- GRID -->
-    <div class="row g-3">
-        @if (Model != null && Model.Any())
-        {
-            foreach (var s in Model)
+        <!-- GRID -->
+        <div class="row g-3">
+            @if (Model != null && Model.Any())
             {
-                var img = ImgStore(s.TenantImg);
+                foreach (var s in Model)
+                {
+                    var img = ImgStore(s.TenantImg);
 
-                <div class="col-6 col-md-4 col-lg-3 col-xl-3">
-                    <div class="store-card h-100">
-                        <div class="store-image-wrapper">
-                            <span class="store-badge">
-                                <i class="bi bi-shop"></i> Store
-                            </span>
+                    <div class="col-6 col-md-4 col-lg-3 col-xl-3">
+                        <div class="store-card h-100">
+                            <div class="store-image-wrapper">
+                                <span class="store-badge">
+                                    <i class="bi bi-shop"></i> Store
+                                </span>
 
-                            <a href="@Url.Action("Details", "Stores", new { id = s.TenantId })">
-                                <img src="@img" class="card-img-top" alt="@s.TenantName" />
-                            </a>
+                                <a href="@Url.Action("Details", "Stores", new { id = s.TenantId })">
+                                    <img src="@img" class="card-img-top" alt="@s.TenantName" />
+                                </a>
 
-                            <div class="store-gradient-overlay"></div>
+                                <div class="store-gradient-overlay"></div>
 
-                            <a href="@Url.Action("Details", "Stores", new { id = s.TenantId })"
-                               class="store-quick-link">
-                                <i class="bi bi-arrow-right-circle me-1"></i> Explore
-                            </a>
-                        </div>
-
-                        <div class="card-body">
-                            <h6 class="store-name text-truncate" title="@s.TenantName">
-                                @s.TenantName
-                            </h6>
-                            <div class="store-position text-truncate mb-1">
-                                <i class="bi bi-geo-alt me-1"></i>@s.Position
+                                <a href="@Url.Action("Details", "Stores", new { id = s.TenantId })"
+                                   class="store-quick-link">
+                                    <i class="bi bi-arrow-right-circle me-1"></i> Explore
+                                </a>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center store-meta">
-                                <span class="text-muted">Open daily</span>
-                                <span class="store-rating">★★★★☆</span>
+
+                            <div class="card-body">
+                                <h6 class="store-name text-truncate" title="@s.TenantName">
+                                    @s.TenantName
+                                </h6>
+                                <div class="store-position text-truncate mb-1">
+                                    <i class="bi bi-geo-alt me-1"></i>@s.Position
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center store-meta">
+                                    <span class="text-muted">Open daily</span>
+                                    <span class="store-rating">★★★★☆</span>
+                                </div>
+                            </div>
+
+                            <div class="store-footer">
+                                <span class="text-muted">
+                                    <i class="bi bi-bag me-1"></i>Visit store page
+                                </span>
+                                <a href="@Url.Action("Details", "Stores", new { id = s.TenantId })"
+                                   class="btn btn-outline-primary btn-sm store-view-btn">
+                                    View
+                                </a>
                             </div>
                         </div>
-
-                        <div class="store-footer">
-                            <span class="text-muted">
-                                <i class="bi bi-bag me-1"></i>Visit store page
-                            </span>
-                            <a href="@Url.Action("Details", "Stores", new { id = s.TenantId })"
-                               class="btn btn-outline-primary btn-sm store-view-btn">
-                                View
-                            </a>
-                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="col-12">
+                    <div class="empty-state">
+                        <i class="bi bi-emoji-neutral"></i>
+                        <p class="mb-1 fw-semibold">No stores found</p>
+                        <p class="mb-0 text-muted" style="font-size: .9rem;">
+                            Try changing the filters or search keywords.
+                        </p>
                     </div>
                 </div>
             }
-        }
-        else
+        </div>
+
+        <!-- PAGINATION -->
+        @if (ViewBag.TotalPages > 1)
         {
-            <div class="col-12">
-                <div class="empty-state">
-                    <i class="bi bi-emoji-neutral"></i>
-                    <p class="mb-1 fw-semibold">No stores found</p>
-                    <p class="mb-0 text-muted" style="font-size: .9rem;">
-                        Try changing the filters or search keywords.
-                    </p>
-                </div>
-            </div>
+            <nav class="d-flex justify-content-center mt-4">
+                <ul class="pagination">
+                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                    {
+                        <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
+                            <a class="page-link"
+                               href="@Url.Action("Index", "Stores", new { typeId = ViewBag.CurrentTypeId, search = ViewBag.SearchQuery, page = i })">
+                                @i
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </nav>
         }
     </div>
-
-    <!-- PAGINATION -->
-    @if (ViewBag.TotalPages > 1)
-    {
-        <nav class="d-flex justify-content-center mt-4">
-            <ul class="pagination">
-                @for (int i = 1; i <= ViewBag.TotalPages; i++)
-                {
-                    <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
-                        <a class="page-link"
-                           href="@Url.Action("Index", "Stores", new { typeId = ViewBag.CurrentTypeId, search = ViewBag.SearchQuery, page = i })">
-                            @i
-                        </a>
-                    </li>
-                }
-            </ul>
-        </nav>
-    }
 </div>

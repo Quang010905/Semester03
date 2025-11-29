@@ -5,7 +5,7 @@
 @model TenantPromotionListVm
 
 @{
-    Layout = "_LayoutClient";
+    Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
     ViewData["Title"] = "Promotions";
 
     // ===== IMAGE HELPER WITH FALLBACK =====
@@ -68,6 +68,49 @@
 
 @section Styles {
     <style>
+        /* ===== SECTION WRAPPER (glow giống Events/Map) ===================== */
+        .section-wrapper {
+            position: relative;
+            padding: 2.2rem 1.8rem 2.5rem;
+            border-radius: 1.7rem;
+            background: rgba(255,255,255,0.95);
+            box-shadow: 0 20px 55px rgba(15,23,42,0.12);
+            margin-bottom: 3rem;
+            overflow: hidden;
+        }
+
+            .section-wrapper::before {
+                content: "";
+                position: absolute;
+                inset: -40%;
+                background: radial-gradient(circle at 0 0, rgba(99,102,241,.25), transparent 60%), radial-gradient(circle at 100% 100%, rgba(236,72,153,.25), transparent 60%);
+                mix-blend-mode: screen;
+                animation: glowMove 22s linear infinite alternate;
+                pointer-events: none;
+            }
+
+        @@keyframes glowMove {
+            from {
+                transform: translate3d(0,0,0) scale(1);
+            }
+
+            to {
+                transform: translate3d(4%, -4%, 0) scale(1.06);
+            }
+        }
+
+        .section-wrapper::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 1.7rem;
+            padding: 2px;
+            background: linear-gradient(135deg, #6366f1, #ec4899);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
         .promotion-page-wrapper {
             padding: 1.8rem 0 2.8rem;
             max-width: 1200px;
@@ -314,149 +357,150 @@
 }
 
 <div class="promotion-page-wrapper">
+    <div class="section-wrapper">
+        <!-- HEADER + FILTER -->
+        <div class="promo-header">
+            <div>
+                <div class="promo-kicker">Mall deals</div>
+                <h2 class="promo-title">
+                    <span>Promotions &amp; Offers</span>
+                </h2>
+                <div class="promo-subtitle">
+                    Discover the latest discounts from your favorite stores.
+                </div>
+            </div>
 
-    <!-- HEADER -->
-    <div class="promo-header">
-        <div>
-            <div class="promo-kicker">Mall deals</div>
-            <h2 class="promo-title">
-                <span>Promotions &amp; Offers</span>
-            </h2>
-            <div class="promo-subtitle">
-                Discover the latest discounts from your favorite stores.
+            <!-- FILTER -->
+            <div class="filter-box">
+                <label class="me-1">Filter by store</label>
+                <select id="tenantFilter" class="form-select form-select-sm">
+                    <option value="">All stores</option>
+                    @foreach (var t in Model.Tenants)
+                    {
+                        <option value="@t.TenantId"
+                                selected="@(Model.SelectedTenantId == t.TenantId)">
+                            @t.TenantName
+                        </option>
+                    }
+                </select>
             </div>
         </div>
 
-        <!-- FILTER -->
-        <div class="filter-box">
-            <label class="me-1">Filter by store</label>
-            <select id="tenantFilter" class="form-select form-select-sm">
-                <option value="">All stores</option>
-                @foreach (var t in Model.Tenants)
-                {
-                    <option value="@t.TenantId"
-                            selected="@(Model.SelectedTenantId == t.TenantId)">
-                        @t.TenantName
-                    </option>
-                }
-            </select>
-        </div>
-    </div>
-
-    <!-- ACTIVE PROMOTIONS -->
-    <div class="mb-2 promo-section-title">
-        <span>Active promotions</span>
-    </div>
-
-    @if (!Model.ActivePromotions.Any())
-    {
-        <div class="empty-state-text">
-            There are no active promotions at the moment. Please check back soon.
-        </div>
-    }
-    else
-    {
-        <div class="promo-grid">
-            @foreach (var p in Model.ActivePromotions)
-            {
-                var img = ImgPromotion(p.Img);
-
-                <a href="@Url.Action("Detail", "TenantPromotion", new { area = "Client", id = p.Id })"
-                   class="promo-card text-decoration-none">
-
-                    <div class="promo-img-wrapper">
-                        <img src="@img" alt="@p.Title" />
-
-                        @if (p.DiscountPercent.HasValue)
-                        {
-                            <span class="discount-badge">
-                                <i class="bi bi-fire"></i>@p.DiscountPercent% OFF
-                            </span>
-                        }
-                        else if (p.DiscountAmount.HasValue)
-                        {
-                            <span class="discount-badge">
-                                <i class="bi bi-fire"></i>@p.DiscountAmount.Value.ToString("#,0") ₫ OFF
-                            </span>
-                        }
-                    </div>
-
-                    <div class="promo-content">
-                        <div class="promo-title-text text-truncate" title="@p.Title">@p.Title</div>
-
-                        <div class="promo-time">
-                            <i class="bi bi-calendar3"></i>
-                            @p.PromotionStart?.ToString("dd/MM/yyyy") – @p.PromotionEnd?.ToString("dd/MM/yyyy")
-                        </div>
-
-                        <div class="promo-footer-row">
-                            <span class="promo-footer-store">
-                                <i class="bi bi-shop"></i>Store
-                            </span>
-
-                            <span class="promo-footer-status">
-                                <i class="bi bi-clock"></i>On going
-                            </span>
-                        </div>
-                    </div>
-                </a>
-            }
+        <!-- ACTIVE PROMOTIONS -->
+        <div class="mb-2 promo-section-title">
+            <span>Active promotions</span>
         </div>
 
-        <!-- PAGINATION -->
-        @if (Model.TotalPages > 1)
+        @if (!Model.ActivePromotions.Any())
         {
-            <nav class="d-flex justify-content-center mt-4">
-                <ul class="pagination">
-                    @for (int i = 1; i <= Model.TotalPages; i++)
-                    {
-                        <li class="page-item @(Model.Page == i ? "active" : "")">
-                            <a class="page-link"
-                               href="@Url.Action("Index", "TenantPromotion", new { area = "Client", tenantId = Model.SelectedTenantId, page = i })">
-                                @i
-                            </a>
-                        </li>
-                    }
-                </ul>
-            </nav>
+            <div class="empty-state-text">
+                There are no active promotions at the moment. Please check back soon.
+            </div>
         }
-    }
+        else
+        {
+            <div class="promo-grid">
+                @foreach (var p in Model.ActivePromotions)
+                {
+                    var img = ImgPromotion(p.Img);
 
-    <!-- EXPIRED PROMOTIONS -->
-    <div class="promo-section-title mt-5 text-muted">
-        <span>Expired promotions</span>
-    </div>
+                    <a href="@Url.Action("Detail", "TenantPromotion", new { area = "Client", id = p.Id })"
+                       class="promo-card text-decoration-none">
 
-    @if (!Model.ExpiredPromotions.Any())
-    {
-        <div class="empty-state-text">
-            No expired promotions to show.
-        </div>
-    }
-    else
-    {
-        <div class="promo-grid">
-            @foreach (var p in Model.ExpiredPromotions)
+                        <div class="promo-img-wrapper">
+                            <img src="@img" alt="@p.Title" />
+
+                            @if (p.DiscountPercent.HasValue)
+                            {
+                                <span class="discount-badge">
+                                    <i class="bi bi-fire"></i>@p.DiscountPercent% OFF
+                                </span>
+                            }
+                            else if (p.DiscountAmount.HasValue)
+                            {
+                                <span class="discount-badge">
+                                    <i class="bi bi-fire"></i>@p.DiscountAmount.Value.ToString("#,0") ₫ OFF
+                                </span>
+                            }
+                        </div>
+
+                        <div class="promo-content">
+                            <div class="promo-title-text text-truncate" title="@p.Title">@p.Title</div>
+
+                            <div class="promo-time">
+                                <i class="bi bi-calendar3"></i>
+                                @p.PromotionStart?.ToString("dd/MM/yyyy") – @p.PromotionEnd?.ToString("dd/MM/yyyy")
+                            </div>
+
+                            <div class="promo-footer-row">
+                                <span class="promo-footer-store">
+                                    <i class="bi bi-shop"></i>Store
+                                </span>
+
+                                <span class="promo-footer-status">
+                                    <i class="bi bi-clock"></i>Ongoing
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                }
+            </div>
+
+            <!-- PAGINATION -->
+            @if (Model.TotalPages > 1)
             {
-                var img = ImgPromotion(p.Img);
+                <nav class="d-flex justify-content-center mt-4">
+                    <ul class="pagination">
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(Model.Page == i ? "active" : "")">
+                                <a class="page-link"
+                                   href="@Url.Action("Index", "TenantPromotion", new { area = "Client", tenantId = Model.SelectedTenantId, page = i })">
+                                    @i
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            }
+        }
 
-                <div class="promo-card expired-card">
-                    <span class="expired-badge">
-                        Expired
-                    </span>
-                    <div class="promo-img-wrapper">
-                        <img src="@img" alt="@p.Title" />
-                    </div>
-                    <div class="promo-content">
-                        <div class="promo-title-text text-truncate" title="@p.Title">@p.Title</div>
-                        <div class="promo-time">
-                            Ended: @p.PromotionEnd?.ToString("dd/MM/yyyy")
+        <!-- EXPIRED PROMOTIONS -->
+        <div class="promo-section-title mt-5 text-muted">
+            <span>Expired promotions</span>
+        </div>
+
+        @if (!Model.ExpiredPromotions.Any())
+        {
+            <div class="empty-state-text">
+                No expired promotions to show.
+            </div>
+        }
+        else
+        {
+            <div class="promo-grid">
+                @foreach (var p in Model.ExpiredPromotions)
+                {
+                    var img = ImgPromotion(p.Img);
+
+                    <div class="promo-card expired-card">
+                        <span class="expired-badge">
+                            Expired
+                        </span>
+                        <div class="promo-img-wrapper">
+                            <img src="@img" alt="@p.Title" />
+                        </div>
+                        <div class="promo-content">
+                            <div class="promo-title-text text-truncate" title="@p.Title">@p.Title</div>
+                            <div class="promo-time">
+                                Ended: @p.PromotionEnd?.ToString("dd/MM/yyyy")
+                            </div>
                         </div>
                     </div>
-                </div>
-            }
-        </div>
-    }
+                }
+            </div>
+        }
+    </div>
 </div>
 
 @section Scripts {
