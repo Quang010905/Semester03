@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2018.3.1017/styles/kendo.material.mobile.min.css" />
 }
 <div style="margin-left:20px; margin-right: 50px">
-    <h2>Product</h2>
+    <h2>Event</h2>
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -31,40 +31,50 @@
             </button>
         </div>
     }
-    <form action="@Url.Action("UpdatePro", "Product")" method="post" enctype="multipart/form-data">
-        @if (ViewBag.itemPro != null)
+    <form action="@Url.Action("UpdateEvent", "Event")" method="post" enctype="multipart/form-data">
+        @if (ViewBag.itemEvent != null)
         {
-            Semester03.Areas.Partner.Models.Product pro =
-            (Semester03.Areas.Partner.Models.Product)ViewBag.itemPro;
-            <input type="hidden" value="@pro.CateId" name="CateId">
-            <input type="hidden" value="@pro.Id" name="ProductId">
+            Semester03.Areas.Partner.Models.Event eve =
+            (Semester03.Areas.Partner.Models.Event)ViewBag.itemEvent;
+            <input type="hidden" value="@eve.TenantPositionId" name="PositionId">
+            <input type="hidden" value="@eve.Id" name="EventId">
             <div class="form-group mb-3">
                 <label>Name</label>
-                <input type="text" class="form-control" name="ProductName" value="@pro.Name" style="width: 300px;" required />
+                <input type="text" class="form-control" name="EventName" value="@eve.Name" style="width: 300px;" required />
             </div>
             <div class="form-group mb-3">
-                <label for="proPrice">Price</label>
-                <input type="text" class="form-control" name="proPriceFormatted" value="@pro.Price" id="proPriceFormatted" style="width: 300px;" />
-                <input type="hidden" name="ProductPrice" id="proPrice" value="@pro.Price" />
+                <label>Max Slot</label>
+                <input type="number" class="form-control" name="MaxSlot" value="@eve.MaxSlot" style="width: 300px;" required />
+            </div>
+            <div class="form-group mb-3">
+                <label for="eventPrice">Price</label>
+                <input type="text" class="form-control" name="EventPriceFormatted" value="@eve.UnitPrice" id="EventPriceFormatted" style="width: 300px;" required />
+                <input type="hidden" name="EventPrice" id="EventPrice"  value="@eve.UnitPrice"/>
             </div>
             <div class="form-group mb-3">
                 <label for="upFile">Image</label>
-                <img src="@Url.Content("~/Content/Uploads/Product/" + pro.Img)" style="max-width: 200px; max-height: 200px; display: block; margin-bottom: 10px;" />
+                <img src="@Url.Content("~/Content/Uploads/Events/" + eve.Img)" style="max-width: 200px; max-height: 200px; display: block; margin-bottom: 10px;" />
                 <input type="file" class="form-control-file" id="upFile" name="upFile" />
-                <input type="hidden" name="OldImage" value="@pro.Img" />
+                <input type="hidden" name="OldImage" value="@eve.Img" />
             </div>
             <div>
                 <label>Description</label>
-                <textarea id="proDescription" name="proDescription">@Html.Raw(pro.Description)</textarea>
+                <textarea id="EventDescription" name="EventDescription">@Html.Raw(eve.Description)</textarea>
             </div>
             <div class="form-group mb-3">
-                <label>Status</label><br />
-                <input type="checkbox" name="ProductStatus" value="1" @(pro.Status == 1 ? "checked" : "") />
-                <label class="form-check-label" for="Active">Enable</label>
+                <label>Start Date</label>
+                <input type="date" class="form-control" name="Start"
+                       value="@eve.Start.ToString("yyyy-MM-dd")" required style="width: 300px;" />
+            </div>
+
+            <div class="form-group mb-3">
+                <label>End Date</label>
+                <input type="date" class="form-control" name="End"
+                       value="@eve.End.ToString("yyyy-MM-dd")" required style="width: 300px;" />
             </div>
             <div class="form-group">
                 <button type="submit" class="btn btn-primary">Save</button>
-                <a href="@Url.Action("Index", "Product", new{id = pro.CateId})" class="btn btn-secondary">Back</a>
+                <a href="@Url.Action("CreateEvent", "Event", new{id = eve.TenantPositionId})" class="btn btn-secondary">Back</a>
             </div>
         }
     </form>
@@ -76,7 +86,7 @@
     <script type="text/javascript">
 
         $(document).ready(function () {
-            var editor = $("#proDescription").kendoEditor({
+            var editor = $("#EventDescription").kendoEditor({
                 tools: [
                     "bold",
                     "italic",
@@ -131,7 +141,7 @@
                 this.value = raw.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
             });
         }
-        setupFormattedInput('proPriceFormatted', 'proPrice');
+        setupFormattedInput('EventPriceFormatted', 'EventPrice');
     </script>
 
 }

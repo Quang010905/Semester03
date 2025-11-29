@@ -1,0 +1,353 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "/Areas/Partner/Views/Shared/_LayoutPartner.cshtml";
+    ViewData["Title"] = "Partner Dashboard";
+}
+@section headerContent
+{
+<link rel="stylesheet" href="https://kendo.cdn.telerik.com/2018.3.1017/styles/kendo.common-material.min.css" />
+<link rel="stylesheet" href="https://kendo.cdn.telerik.com/2018.3.1017/styles/kendo.material.min.css" />
+<link rel="stylesheet" href="https://kendo.cdn.telerik.com/2018.3.1017/styles/kendo.material.mobile.min.css" />
+}
+<div style="margin-left:20px; margin-right: 50px">
+    <h2>Event</h2>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+    <form action="@Url.Action("AddEvent", "Event")" method="post" enctype="multipart/form-data">
+        @if (ViewBag.itemPosition != null)
+        {
+            Semester03.Areas.Partner.Models.Position po =
+            (Semester03.Areas.Partner.Models.Position)ViewBag.itemPosition;
+            <input type="hidden" value="@po.Id" name="PositionId">
+            <div class="form-group mb-3">
+                <label>Position</label>
+                <input type="text" class="form-control" value="@po.Location" style="width: 300px;" readonly />
+            </div>
+
+            <div class="form-group mb-3">
+                <label>Name</label>
+                <input type="text" class="form-control" name="EventName" placeholder="Event name" style="width: 300px;" required />
+            </div>
+            <div class="form-group mb-3">
+                <label>Max Slot</label>
+                <input type="number" class="form-control" name="MaxSlot" placeholder="Max Slot" style="width: 300px;" required />
+            </div>
+            <div class="form-group mb-3">
+                <label for="eventPrice">Price</label>
+                <input type="text" class="form-control" name="EventPriceFormatted" placeholder="e.g. 10.000" id="EventPriceFormatted" style="width: 300px;" required />
+                <input type="hidden" name="EventPrice" id="EventPrice" />
+            </div>
+            <div class="form-group mb-3">
+                <label for="upFile">Image</label>
+                <input type="file" class="form-control-file" name="upFile" id="upFile" />
+            </div>
+            <div>
+                <label>Description</label>
+                <textarea id="EventDescription" name="EventDescription"></textarea>
+            </div>
+            <div class="form-group mb-3">
+                <label>Start Date</label>
+                <input type="date" class="form-control" name="Start" required style="width: 300px;" />
+            </div>
+
+            <div class="form-group mb-3">
+                <label>End Date</label>
+                <input type="date" class="form-control" name="End" required style="width: 300px;" />
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="@Url.Action("Index", "Event", new{id = po.AssignedTenantId})" class="btn btn-secondary">Back</a>
+            </div>
+        }
+    </form>
+
+    <form method="get" action="@Url.Action("CreateEvent", "Event")">
+        <div>
+            <strong>Search</strong>
+        </div>
+        <div class="input-group mb-3" style="width: 300px;">
+            <input type="text" name="search" value="@ViewBag.Search" placeholder="Enter event name..." class="form-control" />
+            <div class="input-group-append">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </div>
+
+        @if (ViewBag.listEvent != null)
+        {
+            var ls = (List<Semester03.Areas.Partner.Models.Event>)ViewBag.listEvent;
+            if (ls != null && ls.Count > 0)
+            {
+                int i = ViewBag.StartIndex;
+                <div class="card shadow mb-4">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">No</th>
+                                        <th scope="col">Name</th>
+                                        <th scope="col">Max Slot</th>
+                                        <th scope="col">Unit Price</th>
+                                        <th scope="col">Image</th>
+                                        <th scope="col">Start Date</th>
+                                        <th scope="col">End Date</th>
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Action</th>
+                                    </tr>
+                                </thead>
+                                <tfoot>
+                                    <tr>
+                                        <th scope="col">No</th>
+                                        <th scope="col">Name</th>
+                                        <th scope="col">Max Slot</th>
+                                        <th scope="col">Unit Price</th>
+                                        <th scope="col">Image</th>
+                                        <th scope="col">Start Date</th>
+                                        <th scope="col">End Date</th>
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Action</th>
+                                    </tr>
+                                </tfoot>
+                                <tbody>
+                                    @foreach (var item in ls)
+                                    {
+                                        <tr>
+                                            <th scope="row">@i</th>
+                                            <td>@item.Name</td>
+                                            <td>@item.MaxSlot</td>
+                                            <td>@(item.UnitPrice.ToString("N0") + " VND")</td>
+                                            <td>
+                                                <img src="@Url.Content("~/Content/Uploads/Events/" + item.Img)" style="max-width: 100px; max-height: 100px; display: block; margin-bottom: 10px;" />
+                                            </td>
+                                            <td>@item.Start</td>
+                                            <td>@item.End</td>
+                                            <td>
+                                                @if (item.Status == 1)
+                                                {
+                                                    <span style="color:green">Active</span>
+                                                }
+                                                else if (item.Status == 2)
+                                                {
+                                                    <span style="color:orange">Pending</span>
+                                                }
+                                                else
+                                                {
+                                                    <span style="color:red">InActive</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (item.Status == 2)
+                                                {
+                                                    <a href="@Url.Action("Edit", "Event", new {id = item.Id})">
+                                                        <img src="@Url.Content("~/Icon/pen.png")" style="width:1vw; height:2vh;" />
+                                                    </a>
+                                                    <a href="@Url.Action("DeleteEvent", "Event", new {id = item.Id, positionId = item.TenantPositionId})" onclick="return confirm('Are you sure to delete this event ?')">
+                                                        <img src="@Url.Content("~/Icon/delete.png")" style="width:1vw; height:2vh;" />
+                                                    </a>
+                                                }
+                                            </td>
+                                        </tr>
+                                        i++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    @{
+                        string search = ViewBag.Search ?? "";
+                    }
+                    <div class="row">
+                        <div class="col-sm-12 col-md-5">
+                            <div class="dataTables_info" role="status" aria-live="polite" style="margin-left:20px">
+                                @if (ViewBag.TotalItems > 0)
+                                {
+                                    <text>
+                                        Page @ViewBag.CurrentPage
+                                        of @ViewBag.TotalPages
+                                    </text>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="col-sm-12 col-md-7">
+                            <div class="dataTables_paginate paging_simple_numbers">
+                                <ul class="pagination">
+                                    <li class="paginate_button page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                                        <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage - 1 , search = search})">Previous</a>
+                                    </li>
+
+                                    @for (int j = 1; j <= ViewBag.TotalPages; j++)
+                                    {
+                                        <li class="paginate_button page-item @(j == ViewBag.CurrentPage ? "active" : "")">
+                                            <a class="page-link" href="@Url.Action("Index", new { page = j, search = search })">@j</a>
+                                        </li>
+                                    }
+
+                                    <li class="paginate_button page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                                        <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage + 1, search = search })">Next</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th scope="col">No</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Max Slot</th>
+                            <th scope="col">Unit Price</th>
+                            <th scope="col">Image</th>
+                            <th scope="col">Start Date</th>
+                            <th scope="col">End Date</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th scope="col">No</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Max Slot</th>
+                            <th scope="col">Unit Price</th>
+                            <th scope="col">Image</th>
+                            <th scope="col">Start Date</th>
+                            <th scope="col">End Date</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </tfoot>
+                    <tbody>
+                        <tr>
+                            <td colspan="4" class="text-center">No Event.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            }
+        }
+        else
+        {
+            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th scope="col">No</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Max Slot</th>
+                        <th scope="col">Unit Price</th>
+                        <th scope="col">Image</th>
+                        <th scope="col">Start Date</th>
+                        <th scope="col">End Date</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tfoot>
+                    <tr>
+                        <th scope="col">No</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Max Slot</th>
+                        <th scope="col">Unit Price</th>
+                        <th scope="col">Image</th>
+                        <th scope="col">Start Date</th>
+                        <th scope="col">End Date</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </tfoot>
+                <tbody>
+                    <tr>
+                        <td colspan="4" class="text-center">No Event.</td>
+                    </tr>
+                </tbody>
+            </table>
+        }
+    </form>
+</div>
+@section scripts
+{
+    <script src="https://kendo.cdn.telerik.com/2018.3.1017/js/jquery.min.js"></script>
+    <script src="https://kendo.cdn.telerik.com/2018.3.1017/js/kendo.all.min.js"></script>
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            var editor = $("#EventDescription").kendoEditor({
+                tools: [
+                    "bold",
+                    "italic",
+                    "underline",
+                    "strikethrough",
+                    "justifyLeft",
+                    "justifyCenter",
+                    "justifyRight",
+                    "justifyFull",
+                    "insertUnorderedList",
+                    "insertOrderedList",
+                    "indent",
+                    "outdent",
+                    "createLink",
+                    "unlink",
+                    "insertImage",
+                    "insertFile",
+                    "subscript",
+                    "superscript",
+                    "tableWizard",
+                    "addRowAbove",
+                    "addRowBelow",
+                    "addColumnLeft",
+                    "addColumnRight",
+                    "deleteRow",
+                    "deleteColumn",
+                    "viewHtml",
+                    "formatting",
+                    "cleanFormatting",
+                    "fontName",
+                    "fontSize",
+                    "foreColor",
+                    "backColor",
+                    "print",
+                ]
+            }).data("kendoEditor");
+        });
+    </script>
+    <script>
+           function setupFormattedInput(formattedId, hiddenId) {
+            const formattedInput = document.getElementById(formattedId);
+            const hiddenInput = document.getElementById(hiddenId);
+
+            formattedInput.addEventListener('input', function () {
+                // Xóa các ký tự không phải số
+                let raw = this.value.replace(/\D/g, '');
+
+                // Gán giá trị thật vào input ẩn
+                hiddenInput.value = raw;
+
+                // Hiển thị lại có dấu chấm hàng nghìn
+                this.value = raw.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            });
+        }
+        setupFormattedInput('EventPriceFormatted', 'EventPrice');
+    </script>
+
+}

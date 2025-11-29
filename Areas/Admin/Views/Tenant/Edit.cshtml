@@ -45,7 +45,7 @@
                 <input type="text" class="form-control" name="TenantName" value="@tenant.Name" style="width: 300px;" required />
             </div>
             <input type="hidden" value="@tenant.UserId" name="UserId"/>
-            <input type="text" value="@tenant.Id" name="TenantId" />
+            <input type="hidden" value="@tenant.Id" name="TenantId" />
             <div class="form-group mb-3">
                 <label for="upFile">Image</label>
                 <img src="@Url.Content("~/Content/Uploads/Tenant/" + tenant.Image)" style="max-width: 200px; max-height: 200px; display: block; margin-bottom: 10px;" />
