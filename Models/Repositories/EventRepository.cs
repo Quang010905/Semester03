@@ -5,6 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Semester03.Areas.Partner.Models;
+using Microsoft.Extensions.Logging;
+using System.ComponentModel;
+using DocumentFormat.OpenXml.Vml.Office;
+using System.Globalization;
+using System.Text;
 
 namespace Semester03.Models.Repositories
 {
@@ -428,6 +434,158 @@ namespace Semester03.Models.Repositories
 
             // Overlap condition: existingStart < newEnd AND existingEnd > newStart
             return await query.AnyAsync(e => e.EventStart < end && e.EventEnd > start);
+        }
+
+        //Partner
+        public async Task<List<Event>> GetAllEventsByPositionId(int positionId)
+        {
+            return await _context.TblEvents
+                .Where(x => x.EventTenantPositionId == positionId)
+                .Select(x => new Event
+                {
+                    Id = x.EventId,
+                    Name = x.EventName,
+                    Img = x.EventImg,
+                    Description = x.EventDescription,
+                    Start = x.EventStart,
+                    End = x.EventEnd,
+                    Status = x.EventStatus ?? 0,
+                    MaxSlot = x.EventMaxSlot,
+                    UnitPrice = x.EventUnitPrice,
+                    TenantPositionId = x.EventTenantPositionId,
+                })
+                .ToListAsync();
+        }
+
+        public async Task AddEvent(Event entity)
+        {
+            try
+            {
+                var item = new TblEvent
+                {
+                    EventName = entity.Name,
+                    EventImg = entity.Img,
+                    EventDescription = entity.Description,
+                    EventStart = entity.Start,
+                    EventEnd = entity.End,
+                    EventStatus = entity.Status,
+                    EventMaxSlot = entity.MaxSlot,
+                    EventUnitPrice = entity.UnitPrice,
+                    EventTenantPositionId = entity.TenantPositionId,
+                };
+                _context.TblEvents.Add(item);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+        //Xóa category
+        public async Task<bool> DeleteEvent(int Id)
+        {
+            try
+            {
+                var item = await _context.TblEvents.FirstOrDefaultAsync(t => t.EventId == Id);
+                if (item != null)
+                {
+                    _context.TblEvents.Remove(item);
+                    return await _context.SaveChangesAsync() > 0;
+                }
+                return false;
+            }
+            catch (Exception)
+            {
+
+                return false;
+            }
+        }
+        //Update category
+        public async Task<bool> UpdateEvent(Event entity)
+        {
+            var q = await _context.TblEvents.FirstOrDefaultAsync(t => t.EventId == entity.Id);
+            if (q != null)
+            {
+                q.EventName = entity.Name;
+                q.EventImg = entity.Img;
+                q.EventDescription = entity.Description;
+                q.EventStart = entity.Start;
+                q.EventEnd = entity.End;
+                q.EventStatus = entity.Status;
+                q.EventMaxSlot = entity.MaxSlot;
+                q.EventUnitPrice = entity.UnitPrice;
+                q.EventTenantPositionId = entity.TenantPositionId;
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            return false;
+        }
+        public async Task<Event?> FindById(int id)
+        {
+            return await _context.TblEvents
+                .Where(t => t.EventId == id)
+                .Select(t => new Event
+                {
+                    Id = t.EventId,
+                    Name = t.EventName,
+                    Status = t.EventStatus ?? 0,
+                    Img = t.EventImg,
+                    Description = t.EventDescription,
+                    Start = t.EventStart,
+                    End = t.EventEnd,
+                    MaxSlot = t.EventMaxSlot,
+                    UnitPrice  = t.EventUnitPrice,
+                    TenantPositionId = t.EventTenantPositionId
+                })
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<bool> CheckEventNameAsync(string name, int positionId, int? excludeId = null)
+        {
+            string normalizedInput = NormalizeName(name);
+
+            var allEventsNames = await _context.TblEvents
+                .Where(t =>
+                    t.EventTenantPositionId == positionId &&
+                    (!excludeId.HasValue || t.EventId != excludeId.Value)
+                )
+                .Select(t => t.EventName)
+                .ToListAsync();
+
+            return allEventsNames.Any(dbName => NormalizeName(dbName) == normalizedInput);
+        }
+
+
+        private string NormalizeName(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            // Bỏ khoảng trắng và chuyển về chữ thường
+            return new string(input.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToLowerInvariant();
+        }
+        public string NormalizeSearch(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            string lower = input.ToLowerInvariant();
+            string normalized = lower.Normalize(NormalizationForm.FormD);
+
+            StringBuilder sb = new StringBuilder();
+            foreach (char c in normalized)
+            {
+                UnicodeCategory uc = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (uc != UnicodeCategory.NonSpacingMark)
+                {
+                    sb.Append(c);
+                }
+            }
+
+            return new string(sb.ToString()
+                .Where(c => !char.IsWhiteSpace(c))
+                .ToArray());
         }
     }
 }

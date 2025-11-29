@@ -74,14 +74,25 @@ namespace Semester03.Models.Repositories
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var item = await _context.TblTenantTypes.FirstOrDefaultAsync(t => t.TenantTypeId == id);
-            if (item != null)
+            try
             {
+                var item = await _context.TblTenantTypes
+                    .FirstOrDefaultAsync(t => t.TenantTypeId == id);
+
+                if (item == null) return false;
+
                 _context.TblTenantTypes.Remove(item);
-                return await _context.SaveChangesAsync() > 0;
+
+                await _context.SaveChangesAsync();
+                return true;
             }
-            return false;
+            catch (DbUpdateException)
+            {
+                // Lỗi khóa ngoại
+                return false;
+            }
         }
+
 
         public async Task<bool> UpdateAsync(TenantType entity)
         {

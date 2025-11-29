@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using DocumentFormat.OpenXml.InkML;
 using Microsoft.EntityFrameworkCore;
 using Semester03.Areas.Client.Models.ViewModels;
+using Semester03.Areas.Partner.Models;
 using Semester03.Models.Entities;
 
 namespace Semester03.Models.Repositories
@@ -304,6 +308,88 @@ namespace Semester03.Models.Repositories
                             p.PositionLeaseEnd.Value > today &&
                             p.PositionLeaseEnd.Value <= thresholdDate)
                 .ToListAsync();
+        }
+
+        //Partner Method
+        public async Task<List<Position>> GetAllPositionsByTenantId(int tenantId)
+        {
+            return await _db.TblTenantPositions
+                .Where(x => x.TenantPositionAssignedTenantId == tenantId)
+                .Select(x => new Position
+                {
+                    Id = x.TenantPositionId,
+                    Location = x.TenantPositionLocation,
+                    Floor = x.TenantPositionFloor,
+                    Area = x.TenantPositionAreaM2,
+                    PricePerM2 = x.TenantPositionRentPricePerM2,
+                    Status = x.TenantPositionStatus ?? 0,
+                    AssignedTenantId = x.TenantPositionAssignedTenantId ?? 0,
+                    Start = x.PositionLeaseStart ?? DateTime.MinValue,
+                    End = x.PositionLeaseEnd ?? DateTime.MinValue
+                })
+                .ToListAsync();
+        }
+        public async Task<Position?> FindById(int id)
+        {
+            return await _db.TblTenantPositions
+                .Where(t => t.TenantPositionId == id)
+                .Select(t => new Position
+                {
+                    Id = t.TenantPositionId,
+                    Location = t.TenantPositionLocation,
+                    Floor = t.TenantPositionFloor,
+                    Area = t.TenantPositionAreaM2,
+                    PricePerM2 = t.TenantPositionRentPricePerM2,
+                    Status = t.TenantPositionStatus ?? 0,
+                    AssignedTenantId = t.TenantPositionAssignedTenantId ?? 0,
+                    Start = t.PositionLeaseStart ?? DateTime.MinValue,
+                    End = t.PositionLeaseEnd ?? DateTime.MinValue
+                })
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<bool> CheckProductNameAsync(string name, int cateId, int? excludeId = null)
+        {
+            string normalizedInput = NormalizeName(name);
+
+            var allProductNames = await _db.TblProducts
+                .Where(t => t.ProductCategoryId == cateId &&
+                (!excludeId.HasValue || t.ProductId != excludeId.Value))
+                .Select(t => t.ProductName)
+                .ToListAsync();
+
+            return allProductNames.Any(dbName => NormalizeName(dbName) == normalizedInput);
+        }
+        private string NormalizeName(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            // Bỏ khoảng trắng và chuyển về chữ thường
+            return new string(input.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToLowerInvariant();
+        }
+
+        public string NormalizeSearch(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            string lower = input.ToLowerInvariant();
+            string normalized = lower.Normalize(NormalizationForm.FormD);
+
+            StringBuilder sb = new StringBuilder();
+            foreach (char c in normalized)
+            {
+                UnicodeCategory uc = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (uc != UnicodeCategory.NonSpacingMark)
+                {
+                    sb.Append(c);
+                }
+            }
+
+            return new string(sb.ToString()
+                .Where(c => !char.IsWhiteSpace(c))
+                .ToArray());
         }
     }
 }
