@@ -1,4 +1,596 @@
 ﻿@{
     Layout = "/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
 }
-<h1>Complaints</h1>
+
+<div class="browser-tab-bar">
+    <a href="#" class="browser-tab active">
+        <span class="tab-icon">
+            <i class="fa-solid fa-shop"></i>
+        </span>
+        <span class="tab-title">Complaint Tenant</span>
+    </a>
+
+
+    <a href="#" class="browser-tab">
+        <span class="tab-icon">
+            <i class="fa-solid fa-film"></i>
+        </span>
+        <span class="tab-title">Complaint Movie</span>
+    </a>
+
+
+    <a href="#" class="browser-tab">
+        <span class="tab-icon">
+            <i class="fa-solid fa-calendar-days"></i>
+        </span>
+        <span class="tab-title">Complaint Event</span>
+    </a>
+
+
+</div>
+
+
+<!-- TAB: Complaint Tenant -->
+<div id="tenant-tab-content" style="padding: 20px; display: none;">
+    <h3>Complaint Tenant</h3>
+    <div class="table-header">
+
+        <div class="search-container">
+            <input type="text" placeholder="Search..." class="search-tenant-input">
+            <i class="fa fa-search search-icon"></i>
+        </div>
+        <div class="table-actions" style="margin-bottom: 10px;">
+            <button class="approve-selected btn btn-success btn-sm" data-tab="tenant">Approve Selected</button>
+            <button class="delete-selected btn btn-danger btn-sm" data-tab="tenant">Delete Selected</button>
+
+        </div>
+    </div>
+    <table class="table table-bordered table-hover mt-3">
+        <thead>
+            <tr>
+                <th>
+                    <input type="checkbox" id="select-all-tenant" />
+                </th>
+                <th>ID</th>
+                <th>Customer</th>
+                <th>Tenant</th>
+                <th>Rate</th>
+                <th>Description</th>
+                <th>Created</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in ViewBag.ComplaintTenant)
+            {
+                <tr>
+                    <td>
+                        <input type="checkbox" class="select-tenant" value="@c.CustomerComplaintId" />
+                    </td>
+                    <td>@c.CustomerComplaintId</td>
+                    <td>@c.CustomerComplaintCustomerUser.UsersUsername</td>
+                    <td>@c.CustomerComplaintTenant?.TenantName</td>
+                    <td>
+                        @c.CustomerComplaintRate
+                        <i class="fa-solid fa-star yellow-star"></i>
+                    </td>
+                    <td>@c.CustomerComplaintDescription</td>
+                    <td>@c.CustomerComplaintCreatedAt?.ToString("dd/MM/yyyy")</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="@Url.Action("Approve","Complaint", new { area="Admin", id = c.CustomerComplaintId })"
+                               class="btn btn-success btn-sm">
+                                Approve
+                            </a>
+                            <a href="@Url.Action("Cancel","Complaint", new { area="Admin", id = c.CustomerComplaintId })"
+                               class="btn btn-danger btn-sm">
+                                Cancel
+                            </a>
+                        </div>
+                    </td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- TAB: Complaint Movie -->
+<div id="movie-tab-content" style="padding: 20px; display: none;">
+    <h3>Complaint Movie</h3>
+    <div class="table-header">
+
+        <div class="search-container">
+            <input type="text" placeholder="Search..." class="search-tenant-input">
+            <i class="fa fa-search search-icon"></i>
+        </div>
+        <div class="table-actions" style="margin-bottom: 10px;">
+            <div class="table-actions" style="margin-bottom: 10px;">
+                <button class="approve-selected btn btn-success btn-sm" data-tab="movie">Approve Selected</button>
+                <button class="delete-selected btn btn-danger btn-sm" data-tab="movie">Delete Selected</button>
+            </div>
+        </div>
+    </div>
+    <table class="table table-bordered table-hover mt-3">
+        <thead>
+            <tr>
+                <th>
+                    <input type="checkbox" id="select-all-tenant" />
+                </th>
+                <th>ID</th>
+                <th>Customer</th>
+                <th>Movie</th>
+                <th>Rate</th>
+                <th>Description</th>
+                <th>Created</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in ViewBag.ComplaintMovie)
+            {
+                <tr>
+                    <td>
+                        <input type="checkbox" class="select-tenant" value="@c.CustomerComplaintId" />
+                    </td>
+                    <td>@c.CustomerComplaintId</td>
+                    <td>@c.CustomerComplaintCustomerUser.UsersUsername</td>
+                    <td>@c.CustomerComplaintMovie?.MovieTitle</td>
+                    <td>
+                        @c.CustomerComplaintRate
+                        <i class="fa-solid fa-star yellow-star"></i>
+                    </td>
+                    <td>@c.CustomerComplaintDescription</td>
+                    <td>@c.CustomerComplaintCreatedAt?.ToString("dd/MM/yyyy")</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="@Url.Action("Approve","Complaint", new { area="Admin", id = c.CustomerComplaintId })"
+                               class="btn btn-success btn-sm">
+                                Approve
+                            </a>
+                            <a href="@Url.Action("Cancel","Complaint", new { area="Admin", id = c.CustomerComplaintId })"
+                               class="btn btn-danger btn-sm">
+                                Cancel
+                            </a>
+                        </div>
+                    </td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- TAB: Complaint Event -->
+<div id="event-tab-content" style="padding: 20px; display: none;">
+    <h3>Complaint Event</h3>
+    <div class="table-header">
+
+        <div class="search-container">
+            <input type="text" placeholder="Search..." class="search-tenant-input">
+            <i class="fa fa-search search-icon"></i>
+        </div>
+        <div class="table-actions" style="margin-bottom: 10px;">
+
+            <div class="table-actions" style="margin-bottom: 10px;">
+                <button class="approve-selected btn btn-success btn-sm" data-tab="event">Approve Selected</button>
+                <button class="delete-selected btn btn-danger btn-sm" data-tab="event">Delete Selected</button>
+            </div>
+        </div>
+    </div>
+    <table class="table table-bordered table-hover mt-3">
+        <thead>
+            <tr>
+               
+                <th>
+                    <input type="checkbox" id="select-all-tenant" />
+                </th>
+                <th>ID</th>
+                <th>Customer</th>
+                <th>Event</th>
+                <th>Rate</th>
+                <th>Description</th>
+                <th>Created</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        <tbody>
+                @foreach (var c in ViewBag.ComplaintEvent)
+                {
+                <tr>
+                    <td>
+                        <input type="checkbox" class="select-tenant" value="@c.CustomerComplaintId" />
+                    </td>
+                    <td>@c.CustomerComplaintId</td>
+                    <td>@c.CustomerComplaintCustomerUser.UsersUsername</td>
+                    <td>@c.CustomerComplaintEvent?.EventName</td>
+                    <td>
+                        @c.CustomerComplaintRate
+                        <i class="fa-solid fa-star yellow-star"></i>
+                    </td>
+                    <td>@c.CustomerComplaintDescription</td>
+                    <td>@c.CustomerComplaintCreatedAt?.ToString("dd/MM/yyyy")</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="@Url.Action("Approve","Complaint", new { area="Admin", id = c.CustomerComplaintId })"
+                               class="btn btn-success btn-sm">
+                                Approve
+                            </a>
+                            <a href="@Url.Action("Cancel","Complaint", new { area="Admin", id = c.CustomerComplaintId })"
+                               class="btn btn-danger btn-sm">
+                                Cancel
+                            </a>
+                        </div>
+                    </td>
+
+                </tr>
+                }
+        </tbody>
+    </table>
+</div>
+
+
+
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background-color: #f1f3f4;
+    }
+    /* ====================================================end css tab ==================================== */
+
+    .browser-tab-bar {
+        display: flex;
+        align-items: flex-end; /* Quan trọng để các tab "dính" vào đường phân cách dưới */
+        height: 40px; /* Chiều cao tổng thể của thanh tab */
+        padding-left: 5px;
+        background-color: #e8eaed; /* Màu nền của thanh công cụ bên dưới tab */
+        border-bottom: 1px solid #c2c3c5;
+    }
+
+    .undo-tab {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: #3c4043;
+        font-size: 13px;
+        height: 34px; /* Chiều cao tab */
+        padding: 0 10px 0 8px; /* Padding để căn chỉnh nội dung */
+        margin-left: auto;
+        margin-right: 0;
+        background-color: #e8eaed; /* Màu nền tab không hoạt động */
+        /* Tạo hình dạng giống tab Chrome (dạng hình thang/bo góc) */
+        border-radius: 8px 8px 0 0; /* Bo góc trên */
+        border: 1px solid transparent;
+        border-bottom: none;
+    }
+
+        .undo-tab.active {
+            background-color: #ff6262;
+            /* Màu trắng cho tab đang hoạt động */
+            color: #202124;
+            z-index: 2; /* Đặt tab hoạt động lên trên cùng */
+            height: 35px; /* Cao hơn 1px để che đi đường border dưới */
+            border: 1px solid #c2c3c5;
+            border-bottom: 1px solid #fff; /* Màu trắng để che đường border dưới của thanh tab */
+        }
+
+
+
+
+    /* Kiểu dáng chung cho một tab */
+    .browser-tab {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: #3c4043;
+        font-size: 13px;
+        height: 34px; /* Chiều cao tab */
+        padding: 0 10px 0 8px; /* Padding để căn chỉnh nội dung */
+        margin-right: -5px; /* Quan trọng: làm cho các tab chồng lên nhau một chút */
+        position: relative;
+        z-index: 1; /* Các tab sẽ chồng lên nhau theo Z-index */
+        background-color: #e8eaed; /* Màu nền tab không hoạt động */
+        /* Tạo hình dạng giống tab Chrome (dạng hình thang/bo góc) */
+        border-radius: 8px 8px 0 0; /* Bo góc trên */
+        border: 1px solid transparent;
+        border-bottom: none;
+        /* Thiết lập hình dáng hình thang/bo góc phức tạp hơn */
+        /* Có thể dùng clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); để cắt góc nếu cần */
+    }
+
+        .browser-tab.active {
+            background-color: #fff; /* Màu trắng cho tab đang hoạt động */
+            color: #202124;
+            z-index: 2; /* Đặt tab hoạt động lên trên cùng */
+            height: 35px; /* Cao hơn 1px để che đi đường border dưới */
+            border: 1px solid #c2c3c5;
+            border-bottom: 1px solid #fff; /* Màu trắng để che đường border dưới của thanh tab */
+        }
+
+    /* Icon (Ví dụ: favicon) */
+    .tab-icon {
+        width: 16px;
+        height: 16px;
+        margin-right: 8px;
+        border-radius: 2px;
+    }
+
+    /* Tiêu đề tab */
+    .tab-title {
+        max-width: 150px; /* Giới hạn chiều rộng để tiêu đề không quá dài */
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis; /* Hiển thị dấu ... khi tiêu đề quá dài */
+    }
+    /* ====================================================end css tab ==================================== */
+
+
+
+
+
+
+    /* ====================================================search box==================================== */
+
+
+    .search-tenant-input {
+        width: 100%;
+        padding: 10px 40px 10px 15px;
+        border-radius: 25px;
+        border: 1px solid #ccc;
+        transition: 0.3s;
+    }
+
+
+    .search-rate-input {
+        width: 100%;
+        padding: 10px 40px 10px 15px;
+        border-radius: 25px;
+        border: 1px solid #ccc;
+        transition: 0.3s;
+    }
+
+
+
+
+    .search-movie-input {
+        width: 100%;
+        padding: 10px 40px 10px 15px;
+        border-radius: 25px;
+        border: 1px solid #ccc;
+        transition: 0.3s;
+    }
+
+    .search-event-input {
+        width: 100%;
+        padding: 10px 40px 10px 15px;
+        border-radius: 25px;
+        border: 1px solid #ccc;
+        transition: 0.3s;
+    }
+
+
+    .search-container {
+        position: relative;
+        width: 280px;
+    }
+
+
+    .search-input:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 5px rgba(78,115,223,0.5);
+    }
+
+    .search-icon {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #888;
+    }
+    /* ====================================================end search box==================================== */
+
+
+
+
+
+
+    .yellow-star {
+        color: #FFD700; /* Mã hex của màu vàng gold */
+        font-size: 24px; /* Tùy chọn kích thước */
+    }
+
+
+
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px; /* khoảng cách dưới so với table */
+        flex-wrap: wrap; /* nếu màn hình nhỏ, search và nút xuống dòng */
+        gap: 10px; /* khoảng cách giữa search và nút */
+    }
+
+    .table-actions button {
+        margin-left: 5px; /* cách nhau giữa 2 nút */
+    }
+
+    .search-container {
+        flex: 1; /* search chiếm nhiều không gian */
+        max-width: 300px;
+        position: relative;
+    }
+
+    .search-tenant-input {
+        width: 100%;
+        padding: 8px 35px 8px 12px;
+        border-radius: 25px;
+        border: 1px solid #ccc;
+    }
+
+    .search-icon {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #888;
+    }
+
+
+
+</style>
+
+
+
+
+
+<script>
+
+
+        document.addEventListener("DOMContentLoaded", () => {
+        const tabs = document.querySelectorAll(".browser-tab");
+        const tenantTab = tabs[0];
+        const movieTab = tabs[1];
+        const eventTab = tabs[2];
+
+        const tenantContent = document.getElementById("tenant-tab-content");
+        const movieContent = document.getElementById("movie-tab-content");
+        const eventContent = document.getElementById("event-tab-content");
+
+        function safeHide(el){ if(el) el.style.display="none"; }
+        function safeShow(el){ if(el) el.style.display="block"; }
+
+        function hideAll(){ safeHide(tenantContent); safeHide(movieContent); safeHide(eventContent); }
+        function deactivateAll(){ tabs.forEach(t => t.classList.remove("active")); }
+
+        function setupTab(tab, content){
+            if(tab){
+                tab.addEventListener("click", e=>{
+                    e.preventDefault();
+                    deactivateAll(); hideAll();
+                    tab.classList.add("active");
+                    safeShow(content);
+                });
+            }
+        }
+
+        setupTab(tenantTab, tenantContent);
+        setupTab(movieTab, movieContent);
+        setupTab(eventTab, eventContent);
+
+        deactivateAll();
+        hideAll();
+        if(tenantTab) tenantTab.classList.add("active");
+        safeShow(tenantContent);
+
+       
+
+
+            function setupSearch(inputClass, tableSelector){
+        const searchInput = document.querySelector(inputClass);
+        const table = document.querySelector(tableSelector);
+        if(searchInput && table){
+            searchInput.addEventListener("keyup", ()=>{
+                const filter = searchInput.value.toLowerCase();
+                table.querySelectorAll("tbody tr").forEach(row=>{
+                    let match = false;
+                    row.querySelectorAll("td").forEach(cell=>{
+                        if(cell.textContent.toLowerCase().includes(filter)) match = true;
+                    });
+                    row.style.display = match ? "" : "none";
+                });
+            });
+        }
+    }
+
+    // Chọn table chính xác từng tab
+    setupSearch(".search-tenant-input","#tenant-tab-content table");
+    setupSearch(".search-movie-input","#movie-tab-content table");
+    setupSearch(".search-event-input","#event-tab-content table");
+
+
+
+         
+    });
+
+
+        document.addEventListener("DOMContentLoaded", () => {
+        // Checkbox header
+        const selectAllTenant = document.getElementById("select-all-tenant");
+        // Checkbox dòng
+        const tenantCheckboxes = document.querySelectorAll(".select-tenant");
+
+        if(selectAllTenant){
+            selectAllTenant.addEventListener("change", function(){
+                tenantCheckboxes.forEach(cb => {
+                    cb.checked = selectAllTenant.checked;
+                });
+            });
+        }
+
+        // Optional: nếu 1 checkbox dòng bị uncheck, header cũng uncheck
+        tenantCheckboxes.forEach(cb => {
+            cb.addEventListener("change", function(){
+                if(!cb.checked){
+                    selectAllTenant.checked = false;
+                } else {
+                    // nếu tất cả checkbox dòng được check, header cũng check
+                    selectAllTenant.checked = Array.from(tenantCheckboxes).every(c => c.checked);
+                }
+            });
+        });
+    });
+
+
+
+
+
+
+
+
+
+            document.querySelectorAll(".approve-selected").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const tab = btn.dataset.tab;
+            const checkboxes = document.querySelectorAll(`#${tab}-tab-content .select-tenant:checked`);
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+
+            if(ids.length === 0) { alert("Please select at least one complaint."); return; }
+            if(confirm("Are you sure to approve selected complaints?")){
+                fetch(`@Url.Action("ApproveMultiple", "Complaint", new { area = "Admin" })`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    body: JSON.stringify(ids)
+                }).then(() => location.reload());
+            }
+        });
+    });
+
+    document.querySelectorAll(".delete-selected").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const tab = btn.dataset.tab;
+            const checkboxes = document.querySelectorAll(`#${tab}-tab-content .select-tenant:checked`);
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+
+            if(ids.length === 0) { alert("Please select at least one complaint."); return; }
+            if(confirm("Are you sure to delete selected complaints?")){
+                fetch(`@Url.Action("DeleteMultiple", "Complaint", new { area = "Admin" })`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    body: JSON.stringify(ids)
+                }).then(() => location.reload());
+            }
+        });
+    });
+
+
+</script>
