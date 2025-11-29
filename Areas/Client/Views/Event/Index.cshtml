@@ -9,7 +9,6 @@
     ViewData["Title"] = "Events";
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
 
-    // Image helper
     Func<string, string> Img = (raw) =>
     {
         var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
@@ -28,22 +27,13 @@
                 if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
             }
 
-            if (file.StartsWith("wwwroot/")) file = file[8..];
-            if (file.StartsWith("~/")) file = file[2..];
-            if (file.StartsWith("/")) file = file[1..];
+            file = file.Replace("wwwroot/", "").TrimStart('~', '/');
 
             if (string.IsNullOrWhiteSpace(file)) return noImageUrl;
 
             var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
-            if (env == null) return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
 
-            var physical = System.IO.Path.Combine(
-                env.WebRootPath ?? "wwwroot",
-                 "Content",
-                 "Uploads",
-                 "Events",
-                    file
-             );
+            var physical = Path.Combine(env.WebRootPath, "Content", "Uploads", "Events", file);
 
             return System.IO.File.Exists(physical)
                 ? Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file))
@@ -59,49 +49,90 @@
 
 @section Styles {
     <style>
-        /* SECTION TITLE --------------------------*/
+
+        /* ============================================================
+               🔥 SECTION WRAPPER + NEON BORDER
+            ============================================================ */
+        .section-wrapper {
+            position: relative;
+            padding: 2.2rem 1.8rem 2.5rem;
+            border-radius: 1.7rem;
+            background: rgba(255,255,255,0.92);
+            box-shadow: 0 20px 55px rgba(15,23,42,0.12);
+            margin-bottom: 3rem;
+            overflow: hidden;
+        }
+
+            /* glow background */
+            .section-wrapper::before {
+                content: "";
+                position: absolute;
+                inset: -40%;
+                background: radial-gradient(circle at 0 0, rgba(99,102,241,.25), transparent 60%), radial-gradient(circle at 100% 100%, rgba(236,72,153,.25), transparent 60%);
+                mix-blend-mode: screen;
+                animation: glowMove 22s linear infinite alternate;
+                pointer-events: none;
+            }
+
+        @keyframes glowMove {
+            from
+
+        {
+            transform: translate3d(0,0,0) scale(1);
+        }
+
+        to {
+            transform: translate3d(4%, -4%, 0) scale(1.06);
+        }
+
+        }
+
+        /* neon border line */
+        .section-wrapper::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 1.7rem;
+            padding: 2px;
+            background: linear-gradient(135deg, #6366f1, #ec4899);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+
+        /* ============================================================
+               SECTION TITLES
+            ============================================================ */
         .section-title {
             font-weight: 800;
             font-size: 1.8rem;
-            letter-spacing: -.03em;
-            margin-bottom: 1rem;
-            position: relative;
-            padding-bottom: .5rem;
+            margin-bottom: 1.2rem;
+            letter-spacing: -.02em;
         }
 
             .section-title span {
                 background: linear-gradient(90deg,#4f46e5,#ec4899);
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
-                color: transparent;
             }
 
-            .section-title::after {
-                content: "";
-                width: 85px;
-                height: 4px;
-                background: linear-gradient(90deg, #4f46e5, #ec4899);
-                border-radius: 5px;
-                position: absolute;
-                left: 0;
-                bottom: 0;
-            }
-
-        /* EVENT CARD ------------------------------*/
+        /* ============================================================
+               EVENT CARD
+            ============================================================ */
         .event-card {
-            border-radius: 1.1rem;
+            border-radius: 1.2rem;
             background: #fff;
             border: 1px solid #e5e7eb;
             overflow: hidden;
             box-shadow: 0 16px 40px rgba(15,23,42,0.08);
-            cursor: pointer;
             transition: .25s ease;
-            position: relative;
+            cursor: pointer;
         }
 
             .event-card:hover {
                 transform: translateY(-6px);
-                box-shadow: 0 26px 60px rgba(15,23,42,0.22);
+                box-shadow: 0 28px 60px rgba(15,23,42,.22);
             }
 
         .event-img-wrapper {
@@ -121,25 +152,23 @@
         }
 
         .event-body {
-            padding: 1rem 1rem 1.2rem;
+            padding: 1rem 1rem 1.25rem;
         }
 
-        /* TAG / CHIP --------------------------------*/
         .event-chip {
             display: inline-block;
             background: #eef2ff;
             color: #4338ca;
             padding: 4px 12px;
-            border-radius: 999px;
             font-size: .72rem;
+            border-radius: 999px;
             font-weight: 600;
-            margin-bottom: .4rem;
+            margin-bottom: .35rem;
         }
 
-        /* TEXT --------------------------------------*/
         .event-title {
-            font-size: 1.05rem;
             font-weight: 700;
+            font-size: 1.05rem;
             margin-bottom: .25rem;
             white-space: nowrap;
             overflow: hidden;
@@ -147,11 +176,11 @@
         }
 
         .event-desc {
-            font-size: .86rem;
             color: #6b7280;
-            margin-bottom: .4rem;
+            font-size: .86rem;
             height: 38px;
             overflow: hidden;
+            margin-bottom: .4rem;
         }
 
         .event-date {
@@ -162,100 +191,104 @@
             gap: .35rem;
         }
 
-        /* PAST EVENTS ------------------------------*/
+        /* Past events */
         .event-card.expired {
-            opacity: .7;
+            opacity: .75;
         }
 
         .ended-badge {
+            padding: 4px 10px;
             font-size: .75rem;
             background: #dc2626;
-            padding: 4px 10px;
+            color: white;
             border-radius: 6px;
-            color: #fff;
         }
+
     </style>
 }
 
-<div class="container py-3">
+<div class="container py-4">
 
-    <!-- UPCOMING EVENTS ---------------------------------------------- -->
-    <h2 class="section-title"><span>Upcoming events</span></h2>
+    <!-- UPCOMING EVENTS -->
+    <div class="section-wrapper">
+        <h2 class="section-title"><span>Upcoming Events</span></h2>
 
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
-        @foreach (var e in upcoming)
-        {
-            var url = Url.Action("Details", "Event", new { area = "Client", id = e.Id });
-
-            <div class="col">
-                <div class="event-card" onclick="location.href='@url'">
-                    <div class="event-img-wrapper">
-                        <img src="@Img(e.ImageUrl)" class="event-img" />
-                    </div>
-
-                    <div class="event-body">
-                        <span class="event-chip">ABCD Mall</span>
-
-                        <div class="event-title">@e.Title</div>
-
-                        <div class="event-desc">@e.ShortDescription</div>
-
-                        <div class="event-date">
-                            <i class="bi bi-calendar-event"></i>
-                            @e.StartDate?.ToString("dd MMM yyyy HH:mm")
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }
-    </div>
-
-    <!-- PAST EVENTS --------------------------------------------------- -->
-    <h3 class="section-title mt-5"><span>Past events</span></h3>
-
-    @if (!past.Any())
-    {
-        <p class="text-muted">There are no past events yet.</p>
-    }
-    else
-    {
         <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
-            @foreach (var e in past)
+            @foreach (var e in upcoming)
             {
                 var url = Url.Action("Details", "Event", new { area = "Client", id = e.Id });
 
                 <div class="col">
-                    <div class="event-card expired" onclick="location.href='@url'">
+                    <div class="event-card" onclick="location.href='@url'">
                         <div class="event-img-wrapper">
                             <img src="@Img(e.ImageUrl)" class="event-img" />
                         </div>
 
                         <div class="event-body">
                             <span class="event-chip">ABCD Mall</span>
-
                             <div class="event-title">@e.Title</div>
-
                             <div class="event-desc">@e.ShortDescription</div>
 
-                            <div class="d-flex justify-content-between align-items-center mt-1">
-                                <div class="event-date">
-                                    <i class="bi bi-calendar-event"></i>
-                                    @e.StartDate?.ToString("dd MMM yyyy HH:mm")
-                                </div>
-
-                                <span class="ended-badge">Ended</span>
+                            <div class="event-date">
+                                <i class="bi bi-calendar-event"></i>
+                                @e.StartDate?.ToString("dd MMM yyyy HH:mm")
                             </div>
                         </div>
                     </div>
                 </div>
             }
         </div>
+    </div>
+
+
+    <!-- PAST EVENTS -->
+    <div class="section-wrapper">
+        <h3 class="section-title"><span>Past Events</span></h3>
+
+        @if (!past.Any())
+        {
+            <p class="text-muted">There are no past events yet.</p>
+        }
+        else
+        {
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
+                @foreach (var e in past)
+                {
+                    var url = Url.Action("Details", "Event", new { area = "Client", id = e.Id });
+
+                    <div class="col">
+                        <div class="event-card expired" onclick="location.href='@url'">
+
+                            <div class="event-img-wrapper">
+                                <img src="@Img(e.ImageUrl)" class="event-img" />
+                            </div>
+
+                            <div class="event-body">
+                                <span class="event-chip">ABCD Mall</span>
+
+                                <div class="event-title">@e.Title</div>
+                                <div class="event-desc">@e.ShortDescription</div>
+
+                                <div class="d-flex justify-content-between mt-1">
+                                    <div class="event-date">
+                                        <i class="bi bi-calendar-event"></i>
+                                        @e.StartDate?.ToString("dd MMM yyyy HH:mm")
+                                    </div>
+
+                                    <span class="ended-badge">Ended</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                }
+            </div>
+        }
 
         @if (pastPaged.TotalPages > 1)
         {
-            <nav class="mt-4" aria-label="Page navigation">
+            <nav class="mt-4">
                 <ul class="pagination justify-content-center">
-
                     @if (pastPaged.PageIndex > 1)
                     {
                         <li class="page-item">
@@ -276,9 +309,9 @@
                             <a class="page-link" href="@Url.Action("Index", new { page = pastPaged.PageIndex + 1 })">»</a>
                         </li>
                     }
-
                 </ul>
             </nav>
         }
-    }
+    </div>
+
 </div>
