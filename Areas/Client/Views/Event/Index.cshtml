@@ -33,7 +33,7 @@
 
             var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
 
-            var physical = Path.Combine(env.WebRootPath, "Content", "Uploads", "Events", file);
+            var physical = System.IO.Path.Combine(env.WebRootPath, "Content", "Uploads", "Events", file);
 
             return System.IO.File.Exists(physical)
                 ? Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file))
@@ -74,7 +74,7 @@
                 pointer-events: none;
             }
 
-        @keyframes glowMove {
+        @@keyframes glowMove {
             from
 
         {
