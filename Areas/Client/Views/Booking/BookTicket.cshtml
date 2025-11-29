@@ -28,109 +28,186 @@
 
 @section Styles {
     <style>
+
+        /* ===========================
+                MOVIE HEADER
+            ============================ */
         .movie-shell {
-            max-width: 1100px;
+            max-width: 950px;
             margin: 0 auto;
         }
 
         .movie-head {
             display: flex;
-            gap: 1.1rem;
+            gap: 1.3rem;
             align-items: flex-start;
+            padding: 1.2rem 1rem;
+            border-radius: 1.3rem;
+            background: rgba(255,255,255,0.65);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 12px 38px rgba(0,0,0,.06);
         }
 
             .movie-head img {
-                width: 96px;
-                height: 140px;
+                width: 110px;
+                height: 160px;
                 object-fit: cover;
-                border-radius: .75rem;
-                box-shadow: 0 16px 32px rgba(15,23,42,0.55);
+                border-radius: 1rem;
+                box-shadow: 0 20px 40px rgba(15, 23, 42, .35);
+                transition: transform .25s ease;
             }
 
-        .week-days {
-            display: flex;
-            gap: .6rem;
-            overflow-x: auto;
-            padding-bottom: .5rem;
-        }
+                .movie-head img:hover {
+                    transform: scale(1.04);
+                }
 
-        .day-card {
-            min-width: 110px;
-            text-align: center;
-            padding: .55rem .6rem;
-            border-radius: .9rem;
-            cursor: pointer;
-            border: 1px solid transparent;
-            background: #f3f4f6;
-            font-size: .85rem;
-            transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, border-color 0.12s ease;
-        }
+            .movie-head h3 {
+                font-size: 1.55rem;
+                font-weight: 800;
+                color: #0f172a;
+            }
 
-            .day-card .fw-semibold {
+            .movie-head .text-muted {
                 font-size: .9rem;
             }
 
-            .day-card.selected {
-                background: linear-gradient(135deg, #0d6efd, #6366f1);
-                color: #fff;
-                border-color: transparent;
-                box-shadow: 0 10px 28px rgba(37,99,235,0.4);
+            .movie-head .small {
+                color: #64748b;
+                line-height: 1.45;
             }
 
+        /* ===========================
+                DAY SELECTOR
+            ============================ */
+        .week-days {
+            display: flex;
+            gap: .65rem;
+            overflow-x: auto;
+            padding: .35rem 0 .6rem;
+            scroll-behavior: smooth;
+        }
+
+        .day-card {
+            min-width: 105px;
+            text-align: center;
+            padding: .65rem .6rem;
+            border-radius: 1rem;
+            cursor: pointer;
+            border: 1px solid #e5e7eb;
+            background: #ffffff;
+            font-size: .85rem;
+            transition: .18s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,.04);
+        }
+
+            .day-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 14px 32px rgba(0,0,0,.12);
+            }
+
+            .day-card .fw-semibold {
+                font-size: .95rem;
+                font-weight: 700;
+                color: #0f172a;
+            }
+
+            .day-card.selected {
+                background: linear-gradient(135deg, #2563eb, #4f46e5);
+                color: #fff;
+                border-color: transparent;
+                box-shadow: 0 14px 32px rgba(59,130,246,0.45);
+                transform: translateY(-1px);
+            }
+
+        /* ===========================
+                SHOWTIME GRID
+            ============================ */
         .showtime-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: .75rem;
-            margin-top: 1rem;
+            gap: .9rem;
+            margin-top: 1.2rem;
         }
 
         .showtime-slot {
-            padding: .7rem .6rem .75rem;
-            border-radius: .9rem;
-            border: 1px solid #e5e7eb;
+            padding: .85rem .7rem;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
             text-align: center;
             background: #ffffff;
-            transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+            font-weight: 600;
+            font-size: .92rem;
+            color: #0f172a;
+            transition: .15s ease;
+            box-shadow: 0 4px 14px rgba(0,0,0,.05);
         }
 
             .showtime-slot:hover {
-                box-shadow: 0 12px 30px rgba(15,23,42,0.16);
+                background: #eff6ff;
+                border-color: #3b82f6;
                 transform: translateY(-3px);
-                border-color: #0d6efd;
+                box-shadow: 0 16px 36px rgba(59,130,246,0.25);
             }
 
-        @@media (max-width: 576px) {
-            .movie-head {
-                flex-direction: row;
+            .showtime-slot i {
+                margin-right: .25rem;
+                color: #3b82f6;
             }
+
+        /* Loading */
+        #loadingInitial {
+            font-size: 1.1rem;
+            color: #64748b;
+        }
+
+        /* Responsive */
+        @@media (max-width: 576px) {
+            .movie-head
+
+        {
+            flex-direction: row;
+            padding: 1rem .7rem;
+        }
+
+        .movie-head img {
+            width: 95px;
+            height: 135px;
+        }
+
+        .movie-shell {
+            padding: 0 .5rem;
+        }
+
+        .showtime-grid {
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        }
+
         }
     </style>
 }
+
 
 <div class="container py-4 movie-shell">
     <div class="mb-3 movie-head">
         <img src="@posterUrl"
              alt="@Model.Movie?.Title"
              class="rounded shadow-sm" />
+
         <div>
             <h3 class="mb-1">@Model.Movie?.Title</h3>
+
             <div class="text-muted">
                 Duration:
-                @if (Model.Movie?.DurationMin != null)
-                {
-                    @Model.Movie.DurationMin
-                }
-                else
-                {
-                    @("--")
-                }
+                @(Model.Movie?.DurationMin.HasValue == true ? Model.Movie.DurationMin.Value.ToString() : "--") min
             </div>
+
             <div class="mt-2 small">
                 @Model.Movie?.Description
             </div>
         </div>
     </div>
 
+    <!-- Day selector -->
     <div class="card p-3 mb-3">
         <div class="week-days" id="weekDays">
             @foreach (var d in Model.WeekDays)
@@ -144,6 +221,7 @@
         </div>
     </div>
 
+    <!-- Showtime container -->
     <div id="showtimeContainer">
         <div id="loadingInitial" class="text-center py-5">Loading showtimes…</div>
         <div id="showtimeContent"></div>
@@ -158,31 +236,26 @@
                     loading.style.display = '';
                     container.innerHTML = '';
                     fetch('@Url.Action("GetShowtimes", "Booking", new { area = "Client" })' + '?movieId=' + movieId + '&date=' + date)
-                        .then(r => {
-                            if (!r.ok) throw new Error('Failed to load showtimes.');
-                            return r.text();
-                        })
+                        .then(r => r.text())
                         .then(html => container.innerHTML = html)
-                        .catch(err => {
-                            container.innerHTML = '<div class="text-danger p-3">Unable to load showtimes.</div>';
-                            console.error(err);
-                        })
+                        .catch(() => container.innerHTML = '<div class="text-danger p-3">Unable to load showtimes.</div>')
                         .finally(() => loading.style.display = 'none');
                 }
 
                 const selDay = document.querySelector('.day-card.selected');
-                if (selDay) {
-                    loadFor(selDay.getAttribute('data-date'));
-                }
+                if (selDay) loadFor(selDay.getAttribute('data-date'));
 
                 document.getElementById('weekDays').addEventListener('click', function (e) {
                     const card = e.target.closest('.day-card');
                     if (!card) return;
+
                     document.querySelectorAll('.day-card').forEach(c => c.classList.remove('selected'));
                     card.classList.add('selected');
-                    loadFor(card.getAttribute('data-date'));
+                    loadFor(card.dataset.date);
                 });
+
             })();
         </script>
     </div>
 </div>
+
