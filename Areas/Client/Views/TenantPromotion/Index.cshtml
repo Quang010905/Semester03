@@ -103,6 +103,7 @@
                 background: linear-gradient(90deg,#4f46e5,#ec4899);
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
+                color: transparent;
             }
 
         .promo-subtitle {
@@ -157,47 +158,48 @@
 
         .promo-card {
             position: relative;
-            background: radial-gradient(circle at top left,#eef2ff,#ffffff 55%);
             border-radius: 1.1rem;
             overflow: hidden;
-            box-shadow: 0 14px 34px rgba(15,23,42,.16);
+            background: #f9fafb;
             border: 1px solid rgba(148,163,184,0.45);
+            box-shadow: 0 18px 40px rgba(15,23,42,.16);
             transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
             color: #111827;
+            display: flex;
+            flex-direction: column;
         }
 
             .promo-card:hover {
                 transform: translateY(-6px);
-                box-shadow: 0 20px 46px rgba(15,23,42,.24);
+                box-shadow: 0 24px 60px rgba(15,23,42,.24);
                 border-color: rgba(37,99,235,0.9);
             }
 
-            .promo-card img {
+        .promo-img-wrapper {
+            position: relative;
+            height: 190px;
+            overflow: hidden;
+            background: #020617;
+        }
+
+            .promo-img-wrapper img {
                 width: 100%;
-                height: 190px;
+                height: 100%;
                 object-fit: cover;
                 display: block;
                 transform-origin: center;
                 transition: transform .4s ease;
             }
 
-            .promo-card:hover img {
-                transform: scale(1.05);
-            }
-
-        .promo-img-overlay {
-            position: absolute;
-            inset: auto 0 0 0;
-            height: 40%;
-            background: linear-gradient(to top,rgba(15,23,42,.96),transparent);
-            pointer-events: none;
+        .promo-card:hover .promo-img-wrapper img {
+            transform: scale(1.05);
         }
 
         .discount-badge {
             background: linear-gradient(135deg,#ef4444,#f97316);
             color: #fff;
             font-weight: 700;
-            padding: .3rem .7rem;
+            padding: .25rem .7rem;
             border-radius: 999px;
             font-size: .78rem;
             position: absolute;
@@ -214,37 +216,49 @@
                 font-size: .9rem;
             }
 
-        .promo-body {
-            padding: 0.85rem 1rem .85rem;
+        .promo-content {
+            background: #ffffff;
+            padding: .8rem 1rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: .25rem;
         }
 
         .promo-title-text {
             font-size: 1.0rem;
             font-weight: 700;
-            margin-bottom: .25rem;
+            margin-bottom: .1rem;
         }
 
         .promo-time {
             font-size: .82rem;
             color: #6b7280;
+            display: flex;
+            align-items: center;
+            gap: .35rem;
         }
 
-        .promo-footer {
-            padding: 0 1rem 1rem;
+        .promo-footer-row {
+            margin-top: .35rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-size: .8rem;
         }
 
-            .promo-footer span {
-                color: #6b7280;
-            }
+        .promo-footer-store {
+            color: #6b7280;
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+        }
 
-        .promo-detail-btn {
-            border-radius: 999px;
-            padding-inline: .9rem;
-            font-size: .8rem;
+        .promo-footer-status {
+            color: #16a34a;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
         }
 
         /* EXPIRED */
@@ -253,7 +267,7 @@
             border-style: dashed;
             border-color: #d1d5db;
             box-shadow: none;
-            opacity: .75;
+            opacity: .8;
         }
 
         .expired-badge {
@@ -305,8 +319,8 @@
     <div class="promo-header">
         <div>
             <div class="promo-kicker">Mall deals</div>
-            <h2 class="promo-title<i class="bi bi-shop me-1
-                <span>Promotions & Offers</span>
+            <h2 class="promo-title">
+                <span>Promotions &amp; Offers</span>
             </h2>
             <div class="promo-subtitle">
                 Discover the latest discounts from your favorite stores.
@@ -350,39 +364,40 @@
                 <a href="@Url.Action("Detail", "TenantPromotion", new { area = "Client", id = p.Id })"
                    class="promo-card text-decoration-none">
 
-                    @* Discount badge *@
-                    @if (p.DiscountPercent.HasValue)
-                    {
-                        <span class="discount-badge">
-                            <i class="bi bi-fire"></i>@p.DiscountPercent% OFF
-                        </span>
-                    }
-                    else if (p.DiscountAmount.HasValue)
-                    {
-                        <span class="discount-badge">
-                            <i class="bi bi-fire"></i>@p.DiscountAmount.Value.ToString("#,0") ₫
-                        </span>
-                    }
+                    <div class="promo-img-wrapper">
+                        <img src="@img" alt="@p.Title" />
 
-                    <img src="@img" alt="@p.Title" />
-                    <div class="promo-img-overlay"></div>
-
-                    <div class="promo-body">
-                        <div class="promo-title-text text-truncate" title="@p.Title">@p.Title</div>
-                        <div class="promo-time">
-                            <i class="bi bi-calendar3 me-1"></i>
-                            @p.PromotionStart?.ToString("dd/MM/yyyy") – @p.PromotionEnd?.ToString("dd/MM/yyyy")
-                        </div>
+                        @if (p.DiscountPercent.HasValue)
+                        {
+                            <span class="discount-badge">
+                                <i class="bi bi-fire"></i>@p.DiscountPercent% OFF
+                            </span>
+                        }
+                        else if (p.DiscountAmount.HasValue)
+                        {
+                            <span class="discount-badge">
+                                <i class="bi bi-fire"></i>@p.DiscountAmount.Value.ToString("#,0") ₫ OFF
+                            </span>
+                        }
                     </div>
 
-                    <div class="promo-footer">
-                        <span class="text-muted">
-                            <i class="bi bi-shop me-1"></i>Store
-                        </span>
+                    <div class="promo-content">
+                        <div class="promo-title-text text-truncate" title="@p.Title">@p.Title</div>
 
-                        <span class="text-success fw-semibold">
-                            <i class="bi bi-clock me-1"></i>On going
-                        </span>
+                        <div class="promo-time">
+                            <i class="bi bi-calendar3"></i>
+                            @p.PromotionStart?.ToString("dd/MM/yyyy") – @p.PromotionEnd?.ToString("dd/MM/yyyy")
+                        </div>
+
+                        <div class="promo-footer-row">
+                            <span class="promo-footer-store">
+                                <i class="bi bi-shop"></i>Store
+                            </span>
+
+                            <span class="promo-footer-status">
+                                <i class="bi bi-clock"></i>On going
+                            </span>
+                        </div>
                     </div>
                 </a>
             }
@@ -429,8 +444,10 @@
                     <span class="expired-badge">
                         Expired
                     </span>
-                    <img src="@img" alt="@p.Title" />
-                    <div class="promo-body">
+                    <div class="promo-img-wrapper">
+                        <img src="@img" alt="@p.Title" />
+                    </div>
+                    <div class="promo-content">
                         <div class="promo-title-text text-truncate" title="@p.Title">@p.Title</div>
                         <div class="promo-time">
                             Ended: @p.PromotionEnd?.ToString("dd/MM/yyyy")
