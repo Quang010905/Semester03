@@ -12,31 +12,17 @@ namespace Semester03.Models.ViewModels
         public string? TenantImg { get; set; }        // store image
         public string TenantDescription { get; set; } = "";
         public string TenantTypeName { get; set; } = "";
-
-        /// <summary>
-        /// Store location / unit code (e.g. "F1-A03").
-        /// </summary>
         public string Position { get; set; } = "";
 
-        /// <summary>
-        /// Average rating (1–5). Can be null if no comments.
-        /// </summary>
         public double? AvgRate { get; set; }
-
-        /// <summary>
-        /// Product categories of this tenant.
-        /// </summary>
         public List<ProductCategoryVm> ProductCategories { get; set; } = new();
-
-        /// <summary>
-        /// List of customer comments.
-        /// </summary>
         public List<CustomerCommentVm> Comments { get; set; } = new();
-
-        /// <summary>
-        /// Current promotions of this tenant.
-        /// </summary>
+        public int CommentPageIndex { get; set; }      
+        public int CommentPageSize { get; set; }       
+        public int CommentTotalPages { get; set; }     
+        public int CommentCount { get; set; }
         public List<TenantPromotionVm> Promotions { get; set; } = new();
+
     }
 
     public class CustomerCommentVm

@@ -154,8 +154,15 @@ namespace Semester03.Models.Repositories
         }
 
         // ==================== CHI TIẾT PHIM + COMMENT ====================
-        public async Task<MovieDetailsVm> GetMovieDetailsAsync(int movieId, int? currentUserId = null)
+        public async Task<MovieDetailsVm> GetMovieDetailsAsync(
+     int movieId,
+     int? currentUserId,
+     int commentPage,
+     int pageSize)
         {
+            if (commentPage < 1) commentPage = 1;
+            if (pageSize < 1) pageSize = 5;
+
             var movie = await _db.TblMovies
                 .AsNoTracking()
                 .Where(m => m.MovieId == movieId)
@@ -175,11 +182,11 @@ namespace Semester03.Models.Repositories
 
             if (movie == null) return null;
 
+            // ====== BASE QUERY COMMENT ======
             var commentsQuery = _db.TblCustomerComplaints
                 .AsNoTracking()
                 .Where(c => c.CustomerComplaintMovieId == movieId);
 
-            // người dùng hiện tại: thấy comment đã duyệt + comment của chính họ (kể cả chưa duyệt)
             if (currentUserId.HasValue)
             {
                 var uid = currentUserId.Value;
@@ -189,23 +196,39 @@ namespace Semester03.Models.Repositories
             }
             else
             {
-                // khách / user khác: chỉ thấy comment đã duyệt
                 commentsQuery = commentsQuery.Where(c => c.CustomerComplaintStatus == 1);
             }
 
-            movie.Comments = await commentsQuery
+            // Tổng số comment
+            var totalComments = await commentsQuery.CountAsync();
+
+            // Lấy page
+            var comments = await commentsQuery
                 .OrderByDescending(c => c.CustomerComplaintCreatedAt)
+                .Skip((commentPage - 1) * pageSize)
+                .Take(pageSize)
                 .Select(c => new CommentVm
                 {
                     Id = c.CustomerComplaintId,
                     UserId = c.CustomerComplaintCustomerUserId,
                     UserName = c.CustomerComplaintCustomerUser != null
-                        ? c.CustomerComplaintCustomerUser.UsersFullName
+                        ? (string.IsNullOrWhiteSpace(c.CustomerComplaintCustomerUser.UsersFullName)
+                            ? c.CustomerComplaintCustomerUser.UsersUsername
+                            : c.CustomerComplaintCustomerUser.UsersFullName)
                         : "Khách",
                     Rate = c.CustomerComplaintRate,
                     Text = c.CustomerComplaintDescription,
                     CreatedAt = c.CustomerComplaintCreatedAt
-                }).ToListAsync();
+                })
+                .ToListAsync();
+
+            movie.Comments = comments;
+            movie.CommentCount = totalComments;
+            movie.CommentPageIndex = commentPage;
+            movie.CommentPageSize = pageSize;
+            movie.CommentTotalPages = pageSize == 0
+                ? 0
+                : (int)Math.Ceiling(totalComments / (double)pageSize);
 
             return movie;
         }

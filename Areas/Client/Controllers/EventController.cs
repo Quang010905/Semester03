@@ -60,8 +60,6 @@ namespace Semester03.Areas.Client.Controllers
 
             ViewData["Title"] = "Events";
             ViewData["MallName"] = ViewData["MallName"] ?? "ABCD Mall";
-
-            // format để đưa lại vào input type="date"
             ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
             ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
             ViewBag.ShowUpcomingAll = showUpcomingAll;
@@ -70,12 +68,10 @@ namespace Semester03.Areas.Client.Controllers
 
             if (showUpcomingAll)
             {
-                // Xem tất cả upcoming
                 upcoming = await _repo.GetAllUpcomingEventsAsync(fromDate, toDate);
             }
             else
             {
-                // Mặc định: top 6 upcoming
                 upcoming = await _repo.GetUpcomingEventsAsync(6, fromDate, toDate);
             }
 
@@ -86,8 +82,6 @@ namespace Semester03.Areas.Client.Controllers
                 Upcoming = upcoming,
                 Past = past
             };
-
-            // cho layout dùng (carousel / sidebar)
             ViewBag.Events = vm.Upcoming ?? new List<EventCardVm>();
 
             return View(vm);
@@ -96,7 +90,7 @@ namespace Semester03.Areas.Client.Controllers
         public async Task<IActionResult> Details(int id, int cmtPage = 1)
         {
             int? currentUserId = GetCurrentUserId();
-            const int CommentPageSize = 5;
+            const int CommentPageSize = 100;
 
             var ev = await _repo.GetEventByIdAsync(id, currentUserId, cmtPage, CommentPageSize);
             if (ev == null)
@@ -134,7 +128,6 @@ namespace Semester03.Areas.Client.Controllers
                 return Json(new { success = false, message = "Please enter your comment content." });
             }
 
-            // Check event + trạng thái
             var evt = await _context.TblEvents
                 .AsNoTracking()
                 .FirstOrDefaultAsync(e => e.EventId == eventId && e.EventStatus == 1);
@@ -146,7 +139,6 @@ namespace Semester03.Areas.Client.Controllers
 
             var now = DateTime.Now;
 
-            // ❗ Chỉ CHẶN comment khi sự kiện CHƯA BẮT ĐẦU
             if (now < evt.EventStart)
             {
                 return Json(new
@@ -155,8 +147,6 @@ namespace Semester03.Areas.Client.Controllers
                     message = "You can only comment after the event starts."
                 });
             }
-
-            // Khi đã bắt đầu hoặc đã kết thúc vẫn cho comment
             await _repo.AddCommentAsync(eventId, userId.Value, rate, text);
 
             return Json(new

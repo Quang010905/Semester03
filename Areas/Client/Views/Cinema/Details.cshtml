@@ -507,6 +507,46 @@
                                 {
                                     <div class="empty-comments">No comments yet — be the first!</div>
                                 }
+                                @if (Model.CommentTotalPages > 1)
+                                {
+                                    <nav class="mt-3">
+                                        <ul class="pagination pagination-sm justify-content-center">
+                                            @* Prev *@
+                                            @if (Model.CommentPageIndex > 1)
+                                            {
+                                                <li class="page-item">
+                                                    <a class="page-link"
+                                                       href="@Url.Action("Details", "Cinema", new { area = "Client", id = Model.Id, cmtPage = Model.CommentPageIndex - 1 })">
+                                                        «
+                                                    </a>
+                                                </li>
+                                            }
+
+                                            @* Số trang *@
+                                            @for (var i = 1; i <= Model.CommentTotalPages; i++)
+                                            {
+                                                <li class="page-item @(i == Model.CommentPageIndex ? "active" : "")">
+                                                    <a class="page-link"
+                                                       href="@Url.Action("Details", "Cinema", new { area = "Client", id = Model.Id, cmtPage = i })">
+                                                        @i
+                                                    </a>
+                                                </li>
+                                            }
+
+                                            @* Next *@
+                                            @if (Model.CommentPageIndex < Model.CommentTotalPages)
+                                            {
+                                                <li class="page-item">
+                                                    <a class="page-link"
+                                                       href="@Url.Action("Details", "Cinema", new { area = "Client", id = Model.Id, cmtPage = Model.CommentPageIndex + 1 })">
+                                                        »
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </nav>
+                                }
+
                             </div>
                         </div>
                     </div>

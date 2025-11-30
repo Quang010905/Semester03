@@ -67,7 +67,7 @@ namespace Semester03.Areas.Client.Controllers
         // 2️⃣ Store details page
         // =======================
         [HttpGet]
-        public IActionResult Details(int id)
+        public IActionResult Details(int id, int cmtPage = 1)
         {
             int? currentUserId = null;
 
@@ -80,7 +80,9 @@ namespace Semester03.Areas.Client.Controllers
                 }
             }
 
-            var model = _tenantRepo.GetTenantDetails(id, currentUserId);
+            const int CommentPageSize = 100; 
+
+            var model = _tenantRepo.GetTenantDetails(id, currentUserId, cmtPage, CommentPageSize);
             if (model == null) return NotFound();
 
             model.ProductCategories = _tenantRepo.GetProductCategoriesByTenant(id)
@@ -88,6 +90,7 @@ namespace Semester03.Areas.Client.Controllers
 
             return View(model);
         }
+
 
         // =======================
         // 3️⃣ Add tenant comment (AJAX)
