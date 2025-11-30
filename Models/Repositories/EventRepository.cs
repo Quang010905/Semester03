@@ -6,9 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Semester03.Areas.Partner.Models;
-using Microsoft.Extensions.Logging;
-using System.ComponentModel;
-using DocumentFormat.OpenXml.Vml.Office;
 using System.Globalization;
 using System.Text;
 
@@ -23,8 +20,12 @@ namespace Semester03.Models.Repositories
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        // PAST EVENTS (with paging)
-        public async Task<PagedResult<EventCardVm>> GetPastEventsAsync(int pageIndex, int pageSize)
+        // PAST EVENTS (with paging + optional date filter)
+        public async Task<PagedResult<EventCardVm>> GetPastEventsAsync(
+            int pageIndex,
+            int pageSize,
+            DateTime? fromDate = null,
+            DateTime? toDate = null)
         {
             var now = DateTime.Now;
 
@@ -34,6 +35,16 @@ namespace Semester03.Models.Repositories
             var baseQuery = _context.TblEvents
                 .AsNoTracking()
                 .Where(e => e.EventStatus == 1 && e.EventEnd < now);
+
+            if (fromDate.HasValue)
+            {
+                baseQuery = baseQuery.Where(e => e.EventStart >= fromDate.Value);
+            }
+
+            if (toDate.HasValue)
+            {
+                baseQuery = baseQuery.Where(e => e.EventStart <= toDate.Value);
+            }
 
             var totalItems = await baseQuery.CountAsync();
 
@@ -68,16 +79,31 @@ namespace Semester03.Models.Repositories
             };
         }
 
-        // UPCOMING EVENTS (top N)
-        public async Task<List<EventCardVm>> GetUpcomingEventsAsync(int top = 6)
+        // UPCOMING EVENTS (top N, optional date filter)
+        public async Task<List<EventCardVm>> GetUpcomingEventsAsync(
+            int top = 6,
+            DateTime? fromDate = null,
+            DateTime? toDate = null)
         {
             var now = DateTime.Now;
 
             try
             {
-                var q = _context.TblEvents
+                var query = _context.TblEvents
                     .AsNoTracking()
-                    .Where(e => e.EventEnd >= now && e.EventStatus == 1)
+                    .Where(e => e.EventEnd >= now && e.EventStatus == 1);
+
+                if (fromDate.HasValue)
+                {
+                    query = query.Where(e => e.EventStart >= fromDate.Value);
+                }
+
+                if (toDate.HasValue)
+                {
+                    query = query.Where(e => e.EventStart <= toDate.Value);
+                }
+
+                var list = await query
                     .OrderBy(e => e.EventStart)
                     .Take(top)
                     .Select(e => new EventCardVm
@@ -95,14 +121,17 @@ namespace Semester03.Models.Repositories
                         MaxSlot = e.EventMaxSlot,
                         Status = (int)e.EventStatus,
                         TenantPositionId = e.EventTenantPositionId
-                    });
+                    })
+                    .ToListAsync();
 
-                var list = await q.ToListAsync();
-                if (list != null && list.Any()) return list;
+                if (list != null && list.Any())
+                    return list;
             }
-            catch { }
+            catch
+            {
+            }
 
-            // Default placeholder events if there are no upcoming events or DB error
+            // Default placeholder nếu không có event
             var defaults = new List<EventCardVm>(top);
             for (int i = 1; i <= top; i++)
             {
@@ -122,12 +151,59 @@ namespace Semester03.Models.Repositories
             return defaults;
         }
 
-        // ===============================
-        // EVENT DETAILS + COMMENTS
-        // ===============================
-        public async Task<EventDetailsVm> GetEventByIdAsync(int eventId, int? currentUserId = null)
+        // ALL UPCOMING EVENTS (for View more)
+        public async Task<List<EventCardVm>> GetAllUpcomingEventsAsync(
+            DateTime? fromDate = null,
+            DateTime? toDate = null)
         {
-            // Load event with position, bookings, and tenant navigation
+            var now = DateTime.Now;
+
+            var q = _context.TblEvents
+                .AsNoTracking()
+                .Where(e => e.EventEnd >= now && e.EventStatus == 1);
+
+            if (fromDate.HasValue)
+            {
+                q = q.Where(e => e.EventStart >= fromDate.Value);
+            }
+
+            if (toDate.HasValue)
+            {
+                q = q.Where(e => e.EventStart <= toDate.Value);
+            }
+
+            return await q.OrderBy(e => e.EventStart)
+                .Select(e => new EventCardVm
+                {
+                    Id = e.EventId,
+                    Title = e.EventName,
+                    ShortDescription = string.IsNullOrEmpty(e.EventDescription)
+                        ? ""
+                        : (e.EventDescription.Length > 200
+                            ? e.EventDescription.Substring(0, 197) + "..."
+                            : e.EventDescription),
+                    StartDate = e.EventStart,
+                    EndDate = e.EventEnd,
+                    ImageUrl = string.IsNullOrEmpty(e.EventImg) ? "/images/event-placeholder.png" : e.EventImg,
+                    MaxSlot = e.EventMaxSlot,
+                    Status = (int)(e.EventStatus ?? 0),
+                    TenantPositionId = e.EventTenantPositionId
+                })
+                .ToListAsync();
+        }
+
+        // ===============================
+        // EVENT DETAILS + COMMENTS (PAGING)
+        // ===============================
+        public async Task<EventDetailsVm> GetEventByIdAsync(
+            int eventId,
+            int? currentUserId,
+            int commentPage,
+            int pageSize)
+        {
+            if (commentPage < 1) commentPage = 1;
+            if (pageSize < 1) pageSize = 5;
+
             var e = await _context.TblEvents
                 .AsNoTracking()
                 .Include(ev => ev.EventTenantPosition)
@@ -140,43 +216,57 @@ namespace Semester03.Models.Repositories
 
             var now = DateTime.Now;
 
-            // Comments for this event
-            var commentQuery = _context.TblCustomerComplaints
+            // ===== COMMENT QUERY BASE =====
+            var baseCommentQuery = _context.TblCustomerComplaints
                 .AsNoTracking()
                 .Where(c => c.CustomerComplaintEventId == eventId);
 
-            // If logged in, show approved comments + the current user's pending comment
             if (currentUserId.HasValue)
-                commentQuery = commentQuery.Where(c => c.CustomerComplaintStatus == 1
-                    || c.CustomerComplaintCustomerUserId == currentUserId.Value);
+            {
+                baseCommentQuery = baseCommentQuery.Where(c =>
+                    c.CustomerComplaintStatus == 1 ||
+                    c.CustomerComplaintCustomerUserId == currentUserId.Value);
+            }
             else
-                // Guest: only see approved comments
-                commentQuery = commentQuery.Where(c => c.CustomerComplaintStatus == 1);
+            {
+                baseCommentQuery = baseCommentQuery.Where(c => c.CustomerComplaintStatus == 1);
+            }
 
-            var comments = await (from c in commentQuery
-                                  join u in _context.TblUsers.AsNoTracking()
-                                    on c.CustomerComplaintCustomerUserId equals u.UsersId into gj
-                                  from user in gj.DefaultIfEmpty()
-                                  orderby c.CustomerComplaintCreatedAt descending
-                                  select new CommentVm
-                                  {
-                                      Id = c.CustomerComplaintId,
-                                      UserId = c.CustomerComplaintCustomerUserId,
-                                      UserName = user != null
-                                          ? (string.IsNullOrWhiteSpace(user.UsersFullName)
-                                                ? user.UsersUsername
-                                                : user.UsersFullName)
-                                          : "Anonymous",
-                                      Rate = c.CustomerComplaintRate,
-                                      Text = c.CustomerComplaintDescription,
-                                      CreatedAt = c.CustomerComplaintCreatedAt
-                                  }).ToListAsync();
+            var totalComments = await baseCommentQuery.CountAsync();
 
-            // Price: if 0 => treat as free
+            double avgRate = 0;
+            if (totalComments > 0)
+            {
+                avgRate = await baseCommentQuery.AverageAsync(c => c.CustomerComplaintRate);
+            }
+
+            var comments = await (
+                from c in baseCommentQuery
+                join u in _context.TblUsers.AsNoTracking()
+                    on c.CustomerComplaintCustomerUserId equals u.UsersId into gj
+                from user in gj.DefaultIfEmpty()
+                orderby c.CustomerComplaintCreatedAt descending
+                select new CommentVm
+                {
+                    Id = c.CustomerComplaintId,
+                    UserId = c.CustomerComplaintCustomerUserId,
+                    UserName = user != null
+                        ? (string.IsNullOrWhiteSpace(user.UsersFullName)
+                                ? user.UsersUsername
+                                : user.UsersFullName)
+                        : "Anonymous",
+                    Rate = c.CustomerComplaintRate,
+                    Text = c.CustomerComplaintDescription,
+                    CreatedAt = c.CustomerComplaintCreatedAt
+                })
+                .Skip((commentPage - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // ===== PRICE =====
             decimal? price = null;
             try
             {
-                // POCO: EventUnitPrice (decimal)
                 price = e.EventUnitPrice > 0 ? e.EventUnitPrice : (decimal?)null;
             }
             catch
@@ -184,20 +274,61 @@ namespace Semester03.Models.Repositories
                 price = null;
             }
 
-            // Total booked quantity = sum of EventBookingQuantity
-            int totalBooked = 0;
+            // ===== CONFIRMED SLOTS =====
+            int confirmedSlots = 0;
             try
             {
-                if (e.TblEventBookings != null && e.TblEventBookings.Any())
+                var confirmedStatuses = new[] { 1, 2 }; // 1 = Paid, 2 = Free / PartiallyRefunded
+
+                var bookings = await _context.TblEventBookings
+                    .AsNoTracking()
+                    .Where(b => b.EventBookingEventId == e.EventId &&
+                                b.EventBookingPaymentStatus != null &&
+                                confirmedStatuses.Contains(b.EventBookingPaymentStatus.Value))
+                    .Select(b => new { b.EventBookingQuantity, b.EventBookingNotes })
+                    .ToListAsync();
+
+                foreach (var b in bookings)
                 {
-                    totalBooked = e.TblEventBookings.Sum(b => b.EventBookingQuantity ?? 0);
+                    int qty = b.EventBookingQuantity ?? 0;
+
+                    if (qty <= 0)
+                    {
+                        qty = 1;
+
+                        try
+                        {
+                            var notes = b.EventBookingNotes ?? "";
+                            var parts = notes.Split(';', StringSplitOptions.RemoveEmptyEntries);
+
+                            foreach (var part in parts)
+                            {
+                                var t = part.Trim();
+                                if (t.StartsWith("Qty", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    var digits = new string(t.Where(char.IsDigit).ToArray());
+                                    if (int.TryParse(digits, out var q) && q > 0)
+                                    {
+                                        qty = q;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    confirmedSlots += Math.Max(1, qty);
                 }
             }
             catch
             {
-                totalBooked = 0;
+                confirmedSlots = 0;
             }
 
+            // ===== MAP VM =====
             var vm = new EventDetailsVm
             {
                 Id = e.EventId,
@@ -213,26 +344,30 @@ namespace Semester03.Models.Repositories
                 Price = price
             };
 
-            vm.CommentCount = vm.Comments.Count;
-            vm.AvgRate = vm.CommentCount > 0 ? vm.Comments.Average(c => c.Rate) : 0; // default 0 if no comments
+            vm.CommentCount = totalComments;
+            vm.AvgRate = totalComments > 0 ? avgRate : 0.0;
+            vm.CommentPageIndex = commentPage;
+            vm.CommentPageSize = pageSize;
+            vm.CommentTotalPages = pageSize == 0 ? 0 : (int)Math.Ceiling(totalComments / (double)pageSize);
 
             vm.IsActive = (e.EventStatus ?? 0) == 1;
             vm.IsPast = e.EventEnd < now;
             vm.IsOngoing = e.EventStart <= now && e.EventEnd >= now;
             vm.IsUpcoming = e.EventStart > now;
 
-            vm.AvailableSlots = Math.Max(0, e.EventMaxSlot - totalBooked);
+            var maxSlot = e.EventMaxSlot;
+            vm.AvailableSlots = maxSlot > 0
+                ? Math.Max(0, maxSlot - confirmedSlots)
+                : 0;
 
-            // --- Position (from navigation) ---
+            // --- Position ---
             if (e.EventTenantPosition != null)
             {
                 vm.PositionLocation = e.EventTenantPosition.TenantPositionLocation ?? "";
                 vm.PositionFloor = e.EventTenantPosition.TenantPositionFloor;
             }
 
-            // --- Tenant (shop) priority:
-            // 1. TenantPosition.AssignedTenant
-            // 2. Fallback: latest booking.EventBookingTenant
+            // --- Tenant (shop) ---
             TblTenant tenant = null;
 
             if (e.EventTenantPosition?.TenantPositionAssignedTenantId.HasValue == true
@@ -243,7 +378,6 @@ namespace Semester03.Models.Repositories
 
             if (tenant == null)
             {
-                // Try from latest booking that has tenant navigation
                 var latestBooking = e.TblEventBookings?
                     .OrderByDescending(b => b.EventBookingCreatedDate ?? DateTime.MinValue)
                     .FirstOrDefault(b => b.EventBookingTenant != null);
@@ -260,7 +394,6 @@ namespace Semester03.Models.Repositories
 
                 vm.OrganizerDescription = tenant.TenantDescription ?? "";
 
-                // Try to read tenant contact via TenantUserId (POCO maybe TenantUserId or Tenant_UserID)
                 int? tenantUserId = null;
                 try
                 {
@@ -270,7 +403,10 @@ namespace Semester03.Models.Repositories
                     if (prop != null)
                         tenantUserId = (int?)(prop.GetValue(tenant));
                 }
-                catch { tenantUserId = null; }
+                catch
+                {
+                    tenantUserId = null;
+                }
 
                 if (tenantUserId.HasValue && tenantUserId.Value != 0)
                 {
@@ -286,13 +422,11 @@ namespace Semester03.Models.Repositories
             }
             else
             {
-                // No specific shop -> leave null so views can treat it as a mall event
                 vm.OrganizerShopName = null;
                 vm.OrganizerDescription = vm.OrganizerDescription ?? "";
-                // OrganizerEmail / OrganizerPhone also remain empty
             }
 
-            // Related events
+            // RELATED EVENTS
             var relatedQuery = _context.TblEvents
                 .AsNoTracking()
                 .Where(x => x.EventId != e.EventId && x.EventStatus == 1 && x.EventEnd >= now)
@@ -319,6 +453,12 @@ namespace Semester03.Models.Repositories
                 .ToListAsync();
 
             return vm;
+        }
+
+        // Overload cũ để code cũ vẫn chạy
+        public Task<EventDetailsVm> GetEventByIdAsync(int eventId, int? currentUserId = null)
+        {
+            return GetEventByIdAsync(eventId, currentUserId, 1, 5);
         }
 
         public async Task<bool> EventExistsAsync(int eventId)
@@ -349,9 +489,7 @@ namespace Semester03.Models.Repositories
             await _context.SaveChangesAsync();
         }
 
-        // ===============================
-        // ADMIN CRUD METHODS
-        // ===============================
+        // ADMIN CRUD
         public async Task<IEnumerable<TblEvent>> GetAllAsync()
         {
             return await _context.TblEvents
@@ -406,7 +544,7 @@ namespace Semester03.Models.Repositories
         {
             var events = await _context.TblEvents
                 .Include(e => e.EventTenantPosition)
-                .Where(e => e.EventStatus == 1) // Only active events
+                .Where(e => e.EventStatus == 1)
                 .ToListAsync();
 
             return events.Select(e => new
@@ -415,10 +553,9 @@ namespace Semester03.Models.Repositories
                 title = e.EventName,
                 start = e.EventStart,
                 end = e.EventEnd,
-                // Color based on location or type (optional)
                 backgroundColor = "#4e73df",
                 borderColor = "#4e73df",
-                url = $"/Admin/Events/Details/{e.EventId}" // Click to view details
+                url = $"/Admin/Events/Details/{e.EventId}"
             });
         }
 
@@ -432,11 +569,10 @@ namespace Semester03.Models.Repositories
                 query = query.Where(e => e.EventId != excludeEventId.Value);
             }
 
-            // Overlap condition: existingStart < newEnd AND existingEnd > newStart
             return await query.AnyAsync(e => e.EventStart < end && e.EventEnd > start);
         }
 
-        //Partner
+        // Partner
         public async Task<List<Event>> GetAllEventsByPositionId(int positionId)
         {
             return await _context.TblEvents
@@ -459,30 +595,22 @@ namespace Semester03.Models.Repositories
 
         public async Task AddEvent(Event entity)
         {
-            try
+            var item = new TblEvent
             {
-                var item = new TblEvent
-                {
-                    EventName = entity.Name,
-                    EventImg = entity.Img,
-                    EventDescription = entity.Description,
-                    EventStart = entity.Start,
-                    EventEnd = entity.End,
-                    EventStatus = entity.Status,
-                    EventMaxSlot = entity.MaxSlot,
-                    EventUnitPrice = entity.UnitPrice,
-                    EventTenantPositionId = entity.TenantPositionId,
-                };
-                _context.TblEvents.Add(item);
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
+                EventName = entity.Name,
+                EventImg = entity.Img,
+                EventDescription = entity.Description,
+                EventStart = entity.Start,
+                EventEnd = entity.End,
+                EventStatus = entity.Status,
+                EventMaxSlot = entity.MaxSlot,
+                EventUnitPrice = entity.UnitPrice,
+                EventTenantPositionId = entity.TenantPositionId,
+            };
+            _context.TblEvents.Add(item);
+            await _context.SaveChangesAsync();
         }
-        //Xóa category
+
         public async Task<bool> DeleteEvent(int Id)
         {
             try
@@ -495,13 +623,12 @@ namespace Semester03.Models.Repositories
                 }
                 return false;
             }
-            catch (Exception)
+            catch
             {
-
                 return false;
             }
         }
-        //Update category
+
         public async Task<bool> UpdateEvent(Event entity)
         {
             var q = await _context.TblEvents.FirstOrDefaultAsync(t => t.EventId == entity.Id);
@@ -521,6 +648,7 @@ namespace Semester03.Models.Repositories
             }
             return false;
         }
+
         public async Task<Event?> FindById(int id)
         {
             return await _context.TblEvents
@@ -535,7 +663,7 @@ namespace Semester03.Models.Repositories
                     Start = t.EventStart,
                     End = t.EventEnd,
                     MaxSlot = t.EventMaxSlot,
-                    UnitPrice  = t.EventUnitPrice,
+                    UnitPrice = t.EventUnitPrice,
                     TenantPositionId = t.EventTenantPositionId
                 })
                 .FirstOrDefaultAsync();
@@ -556,15 +684,14 @@ namespace Semester03.Models.Repositories
             return allEventsNames.Any(dbName => NormalizeName(dbName) == normalizedInput);
         }
 
-
         private string NormalizeName(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
                 return string.Empty;
 
-            // Bỏ khoảng trắng và chuyển về chữ thường
             return new string(input.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToLowerInvariant();
         }
+
         public string NormalizeSearch(string input)
         {
             if (string.IsNullOrWhiteSpace(input))

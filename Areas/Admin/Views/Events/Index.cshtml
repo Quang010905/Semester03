@@ -4,8 +4,10 @@
     ViewData["Title"] = "Event Management";
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
 
-    var pendingEvents = Model.Where(e => e.EventStatus == 0).ToList();
+    var pendingEvents = Model.Where(e => e.EventStatus == 2).ToList();
     var activeEvents = Model.Where(e => e.EventStatus == 1).ToList();
+    var rejectedEvents = Model.Where(e => e.EventStatus == 0).ToList();
+    var cancelledEvents = Model.Where(e => e.EventStatus == 3).ToList();
     // Date for JS validation
     var todayIso = DateTime.Now.ToString("yyyy-MM-dd");
 }
@@ -90,11 +92,24 @@
     </li>
     <li class="nav-item">
         <a class="nav-link" id="list-tab" data-toggle="tab" href="#listView" role="tab">
-            <i class="fas fa-list mr-2"></i> Approval
+            <i class="fas fa-list mr-2"></i> Active & Pending
             @if (pendingEvents.Any())
             {
                 <span class="badge badge-danger ml-1">@pendingEvents.Count</span>
             }
+        </a>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link" id="cancelled-tab" data-toggle="tab" href="#cancelledView" role="tab">
+            <i class="fas fa-ban mr-2"></i> Cancelled
+        </a>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link" id="rejected-tab" data-toggle="tab" href="#rejectedView" role="tab">
+            <i class="fas fa-times-circle mr-2"></i> Rejected
+            <span class="badge badge-secondary ml-1">@rejectedEvents.Count</span>
         </a>
     </li>
 </ul>
@@ -168,6 +183,98 @@
                                     <td>
                                         <button class="btn @(isPast ? "btn-info" : "btn-warning") btn-sm" onclick="fetchAndEdit(@item.EventId)">
                                             <i class="fas @(isPast ? "fa-eye" : "fa-edit")"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="cancelledView">
+        <div class="card shadow mb-4 border-left-secondary">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-secondary">Cancelled Events History</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped" id="cancelledTable">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Event Name</th>
+                                <th>Original Schedule</th>
+                                <th>Location</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in cancelledEvents)
+                            {
+                                <tr>
+                                    <td class="text-muted">
+                                        <del>@item.EventName</del>
+                                        <br />
+                                        <small class="text-danger font-italic">Cancelled</small>
+                                    </td>
+                                    <td>
+                                        @item.EventStart.ToString("dd/MM/yyyy HH:mm") <br />
+                                        <small>to @item.EventEnd.ToString("HH:mm")</small>
+                                    </td>
+                                    <td>@item.EventTenantPosition?.TenantPositionLocation</td>
+                                    <td>
+                                        <a asp-action="Details" asp-route-id="@item.EventId" class="btn btn-secondary btn-sm shadow-sm">
+                                            <i class="fas fa-info-circle"></i> Details
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="rejectedView">
+        <div class="card shadow mb-4 border-left-danger">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-danger">Rejected Applications</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="rejectedTable">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Event Name</th>
+                                <th>Proposed Time</th>
+                                <th>Location</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in rejectedEvents)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="text-secondary font-weight-bold">@item.EventName</span>
+                                        <br />
+                                        <small class="text-danger">Status: Rejected</small>
+                                    </td>
+                                    <td>
+                                        @item.EventStart.ToString("dd/MM/yyyy HH:mm") <br />
+                                        <small>to @item.EventEnd.ToString("HH:mm")</small>
+                                    </td>
+                                    <td>@item.EventTenantPosition?.TenantPositionLocation</td>
+                                    <td>
+                                        <a asp-action="Details" asp-route-id="@item.EventId" class="btn btn-secondary btn-sm shadow-sm">
+                                            <i class="fas fa-info-circle"></i> Details
+                                        </a>
+
+                                        <button class="btn btn-danger btn-sm shadow-sm ml-1" onclick="deleteRejected(@item.EventId)">
+                                            <i class="fas fa-trash"></i>
                                         </button>
                                     </td>
                                 </tr>
@@ -307,6 +414,16 @@
             $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) { calendar.render(); });
             calendar.render();
             $('#dataTable').DataTable({ "order": [[ 1, "desc" ]] });
+            $('#cancelledTable').DataTable({ "order": [[ 1, "desc" ]] });
+            $('#rejectedTable').DataTable({ "order": [[ 1, "desc" ]] });
+
+
+            window.deleteRejected = function(id) {
+                if(confirm("Permanently delete this rejected event proposal?")) {
+                    $('#Delete_Id').val(id);
+                    $('#deleteForm').submit();
+                }
+            }
 
             // --- Functions ---
             window.openCreateModal = function(start, end) {
@@ -358,6 +475,22 @@
                             $('#btnDelete').show();
                         }
 
+                        if (data.eventStatus == 1) {
+                            // Khóa những field quan trọng
+                            $('#Input_Pos').prop('disabled', true);  // Vị trí
+                            $('#Input_Name').prop('disabled', true); // Tên
+                            $('#Input_Start').prop('disabled', true);// Ngày bắt đầu
+                            $('#Input_End').prop('disabled', true);  // Ngày kết thúc
+                            $('#Input_Price').prop('disabled', true);
+
+                            // Field cho phép sửa: Desc, Img, Slots (Tăng), Price (Cẩn thận)
+                            // Nếu đã có booking thì nên khóa luôn Price
+                            // Ở đây ta cứ để Price mở, Backend sẽ chặn nếu có booking.
+                        } else {
+                            // Mở hết nếu chưa duyệt
+                            $('#saveEventModal input, #saveEventModal textarea, #saveEventModal select').prop('disabled', false);
+                        }
+
                         $('#editModeFeatures').show();
                         $('#btnViewDetails').attr('href', '/Admin/Events/Details/' + data.id);
 
@@ -367,7 +500,20 @@
                         $('#Input_End').val(data.eventEnd);
                         $('#Input_Slots').val(data.eventMaxSlot);
                         $('#Input_Price').val(data.eventUnitPrice);
-                        $('#Input_Pos').val(data.eventTenantPositionId).trigger('change');
+                        var posSelect = $('#Input_Pos');
+                        if (posSelect.find("option[value='" + data.eventTenantPositionId + "']").length) {
+                            posSelect.val(data.eventTenantPositionId).trigger('change');
+                        } else {
+                            // data.positionName được trả về từ Controller GetEventJson
+                            var newOption = new Option(data.positionName, data.eventTenantPositionId, true, true);
+                            posSelect.append(newOption).trigger('change');
+                        }
+                        if (data.eventStatus == 1) {
+                            $('#Input_Pos').prop('disabled', true);
+                        } else {
+                            // Nếu là Pending hoặc Rejected thì cho sửa thoải mái
+                            $('#Input_Pos').prop('disabled', false);
+                        }
                         var imgSrc = data.eventImg ? '/Content/Uploads/Events/' + data.eventImg : '/Content/Uploads/noimage.png';
                         $('#Modal_ImgPreview').attr('src', imgSrc);
 

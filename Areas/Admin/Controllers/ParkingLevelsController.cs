@@ -81,11 +81,17 @@ namespace Semester03.Areas.Admin.Controllers
         }
 
         // GET: Admin/ParkingLevels/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        public async Task<IActionResult> Edit(int? id, string? returnUrl)
         {
             if (id == null) return NotFound();
             var level = await _levelRepo.GetByIdAsync(id.Value);
             if (level == null) return NotFound();
+            if (string.IsNullOrEmpty(returnUrl))
+            {
+                returnUrl = Url.Action(nameof(Index));
+            }
+            ViewData["ReturnUrl"] = returnUrl;
+
             return View(level);
         }
 
@@ -93,7 +99,7 @@ namespace Semester03.Areas.Admin.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id,
-            [Bind("LevelId,LevelName,LevelCapacity")] TblParkingLevel tblParkingLevel)
+            [Bind("LevelId,LevelName,LevelCapacity")] TblParkingLevel tblParkingLevel, string? returnUrl)
         {
             if (id != tblParkingLevel.LevelId) return NotFound();
 
@@ -121,6 +127,10 @@ namespace Semester03.Areas.Admin.Controllers
                     if (exists == null) return NotFound();
                     else throw;
                 }
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                {
+                    return Redirect(returnUrl);
+                }
                 return RedirectToAction(nameof(Index));
             }
             return View(tblParkingLevel);
@@ -133,12 +143,25 @@ namespace Semester03.Areas.Admin.Controllers
             var level = await _levelRepo.GetByIdAsync(id.Value);
             if (level == null) return NotFound();
 
-            // Check for dependencies (Tbl_ParkingSpot)
-            bool hasSpots = await _context.TblParkingSpots.AnyAsync(s => s.SpotLevelId == id);
-            if (hasSpots)
+            int totalSpots = await _context.TblParkingSpots.CountAsync(s => s.SpotLevelId == id);
+            int occupiedSpots = await _context.TblParkingSpots.CountAsync(s => s.SpotLevelId == id && s.SpotStatus == 1);
+
+            ViewData["TotalSpots"] = totalSpots;
+            ViewData["OccupiedSpots"] = occupiedSpots;
+
+            if (occupiedSpots > 0)
             {
-                ViewData["HasDependencies"] = true;
-                ViewData["ErrorMessage"] = "This level cannot be deleted. It has existing parking spots linked to it. Please delete those spots first.";
+                ViewData["ErrorMessage"] = $"STOP! This level has {occupiedSpots} cars currently parked. You CANNOT delete it until they leave.";
+                ViewData["CanDelete"] = false;
+            }
+            else if (totalSpots > 0)
+            {
+                ViewData["ErrorMessage"] = $"WARNING: This level has {totalSpots} configured spots (Empty). Deleting the level will delete ALL these spots configuration.";
+                ViewData["CanDelete"] = true;
+            }
+            else
+            {
+                ViewData["CanDelete"] = true;
             }
 
             return View(level);
@@ -149,15 +172,32 @@ namespace Semester03.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            bool hasSpots = await _context.TblParkingSpots.AnyAsync(s => s.SpotLevelId == id);
-            if (hasSpots)
+            var level = await _levelRepo.GetByIdAsync(id);
+            if (level == null) return NotFound();
+
+            var spots = await _context.TblParkingSpots.Where(s => s.SpotLevelId == id).ToListAsync();
+
+            // --- (REALITY CHECK) ---
+
+            
+            if (spots.Any(s => s.SpotStatus == 1))
             {
-                TempData["Error"] = "This level cannot be deleted (it has spots).";
+                TempData["Error"] = "CRITICAL: Cannot delete this level because there are cars currently parked (Occupied spots)! Please clear the parking lot first.";
                 return RedirectToAction(nameof(Index));
             }
 
+            
+            if (spots.Any())
+            {
+                _context.TblParkingSpots.RemoveRange(spots);
+            }
+
+            
             await _levelRepo.DeleteAsync(id);
-            TempData["Success"] = "Parking level deleted successfully.";
+
+             
+
+            TempData["Success"] = "Parking level and all associated empty spots were deleted successfully.";
             return RedirectToAction(nameof(Index));
         }
     }

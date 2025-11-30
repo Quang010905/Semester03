@@ -7,6 +7,7 @@ using Semester03.Areas.Admin.Models;
 using System.Globalization;
 using System.Text;
 using Semester03.Areas.Client.Models.ViewModels;
+using System;
 
 namespace Semester03.Models.Repositories
 {
@@ -42,10 +43,6 @@ namespace Semester03.Models.Repositories
                 .ToList();
         }
 
-
-
-
-
         // Lấy stores theo typeId và search
         public List<FeaturedStoreViewModel> GetStores(int? typeId = null, string search = "")
         {
@@ -75,8 +72,18 @@ namespace Semester03.Models.Repositories
                         .ToList();
         }
 
-        public TenantDetailsViewModel? GetTenantDetails(int tenantId)
+        // =========================
+        // Tenant details + comments
+        // =========================
+        public TenantDetailsViewModel? GetTenantDetails(
+            int tenantId,
+            int? currentUserId,
+            int commentPage,
+            int pageSize)
         {
+            if (commentPage < 1) commentPage = 1;
+            if (pageSize < 1) pageSize = 10;
+
             var tenant = _context.TblTenants
                 .Include(t => t.TenantType)
                 .Include(t => t.TblTenantPositions)
@@ -84,22 +91,54 @@ namespace Semester03.Models.Repositories
 
             if (tenant == null) return null;
 
-            // Lấy bình luận tenant (status = 1) – Movie/Event để null
-            var comments = _context.TblCustomerComplaints
+            // ====== COMMENTS QUERY ======
+            var commentsQuery = _context.TblCustomerComplaints
                 .Include(c => c.CustomerComplaintCustomerUser)
-                .Where(c => c.CustomerComplaintTenantId == tenantId && c.CustomerComplaintStatus == 1)
+                .Where(c => c.CustomerComplaintTenantId == tenantId);
+
+            if (currentUserId.HasValue)
+            {
+                int uid = currentUserId.Value;
+                // user hiện tại: thấy comment đã duyệt + comment của chính họ
+                commentsQuery = commentsQuery.Where(c =>
+                    c.CustomerComplaintStatus == 1 ||
+                    c.CustomerComplaintCustomerUserId == uid);
+            }
+            else
+            {
+                // khách: chỉ thấy comment đã duyệt
+                commentsQuery = commentsQuery.Where(c => c.CustomerComplaintStatus == 1);
+            }
+
+            // tổng số comment (sau khi lọc theo status + user)
+            int totalComments = commentsQuery.Count();
+
+            // lấy 1 trang comment
+            var comments = commentsQuery
+                .OrderByDescending(c => c.CustomerComplaintCreatedAt)
+                .Skip((commentPage - 1) * pageSize)
+                .Take(pageSize)
                 .Select(c => new CustomerCommentVm
                 {
-                    UserName = c.CustomerComplaintCustomerUser.UsersFullName,
+                    UserName = c.CustomerComplaintCustomerUser != null
+                        ? (string.IsNullOrWhiteSpace(c.CustomerComplaintCustomerUser.UsersFullName)
+                            ? c.CustomerComplaintCustomerUser.UsersUsername
+                            : c.CustomerComplaintCustomerUser.UsersFullName)
+                        : "Guest",
                     Text = c.CustomerComplaintDescription ?? "",
                     Rate = c.CustomerComplaintRate,
                     CreatedAt = c.CustomerComplaintCreatedAt
                 })
-                .OrderByDescending(c => c.CreatedAt)
                 .ToList();
 
-            double? avgRate = comments.Any() ? comments.Average(c => c.Rate) : null;
+            // trung bình rate chỉ trên comment đã duyệt
+            var approvedQuery = _context.TblCustomerComplaints
+                .Where(c => c.CustomerComplaintTenantId == tenantId &&
+                            c.CustomerComplaintStatus == 1);
 
+            double? avgRate = approvedQuery.Any()
+                ? approvedQuery.Average(c => c.CustomerComplaintRate)
+                : null;
 
             var promotions = GetTenantPromotions(tenantId);
 
@@ -115,11 +154,26 @@ namespace Semester03.Models.Repositories
                     : "",
                 AvgRate = avgRate,
                 Comments = comments,
-                Promotions = promotions
+                Promotions = promotions,
+
+                // ✅ thông tin phân trang
+                CommentPageIndex = commentPage,
+                CommentPageSize = pageSize,
+                CommentTotalPages = pageSize == 0
+                    ? 0
+                    : (int)Math.Ceiling(totalComments / (double)pageSize),
+                CommentCount = totalComments
             };
         }
 
-
+        // overload cũ để code khác không bị lỗi gọi
+        public TenantDetailsViewModel? GetTenantDetails(
+            int tenantId,
+            int? currentUserId = null)
+        {
+            // mặc định trang 1, mỗi trang 10 cmt
+            return GetTenantDetails(tenantId, currentUserId, 1, 10);
+        }
 
         public bool AddTenantComment(int tenantId, int userId, int rate, string text)
         {
@@ -147,7 +201,6 @@ namespace Semester03.Models.Repositories
             }
         }
 
-
         public List<ProductCategoryVm> GetProductCategoriesByTenant(int tenantId)
         {
             return _context.TblProductCategories
@@ -170,7 +223,7 @@ namespace Semester03.Models.Repositories
                     Id = x.TenantId,
                     Name = x.TenantName,
                     Image = x.TenantImg,
-                    UserId = x.TenantUserId,    
+                    UserId = x.TenantUserId,
                     TypeId = x.TenantTypeId,
                     Description = x.TenantDescription,
                     Status = x.TenantStatus ?? 0
@@ -256,7 +309,7 @@ namespace Semester03.Models.Repositories
                 .FirstOrDefaultAsync();
         }
         //kiem tra trung ten
-        public async Task<bool> CheckTenantNameAsync(string name, int userId,  int? excludeId = null)
+        public async Task<bool> CheckTenantNameAsync(string name, int userId, int? excludeId = null)
         {
             string normalizedInput = NormalizeName(name);
 
@@ -301,8 +354,6 @@ namespace Semester03.Models.Repositories
                 .ToArray());
         }
 
-
-
         //hàm lấy Promotions
         public List<TenantPromotionVm> GetTenantPromotions(int tenantId)
         {
@@ -328,11 +379,5 @@ namespace Semester03.Models.Repositories
                 })
                 .ToList();
         }
-
-
-
-       
-
-
     }
 }

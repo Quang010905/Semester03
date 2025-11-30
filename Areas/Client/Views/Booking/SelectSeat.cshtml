@@ -330,6 +330,11 @@
                             // Seat under maintenance / hư -> yellow, disabled
                             btn.classList.add('seat-maint');
                             btn.disabled = true;
+
+                        } else if (status === 'blocked' || status === 'locked') {
+                            btn.classList.add('seat-maint'); // Dùng chung class màu vàng hoặc tạo class mới .seat-blocked
+                            btn.title = "Seat blocked (Not available)";
+                            btn.disabled = true;
                         } else if (status === 'available' || status === '' || status === 'free') {
                             btn.classList.add('seat-available');
                             btn.addEventListener('click', onSeatClick);

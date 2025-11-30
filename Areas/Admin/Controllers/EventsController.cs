@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Semester03.Models.Entities;
 using Semester03.Models.Repositories;
+using Semester03.Services.Email;
 using System;
 using System.IO;
 using System.Linq;
@@ -18,12 +19,14 @@ namespace Semester03.Areas.Admin.Controllers
         private readonly EventRepository _eventRepo;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly AbcdmallContext _context;
+        private readonly IEmailSender _emailSender;
 
-        public EventsController(EventRepository eventRepo, IWebHostEnvironment webHostEnvironment, AbcdmallContext context)
+        public EventsController(EventRepository eventRepo, IWebHostEnvironment webHostEnvironment, AbcdmallContext context, IEmailSender emailSender)
         {
             _eventRepo = eventRepo;
             _webHostEnvironment = webHostEnvironment;
             _context = context;
+            _emailSender = emailSender;
         }
 
         // --- Helper ---
@@ -127,7 +130,70 @@ namespace Semester03.Areas.Admin.Controllers
                             TempData["Error"] = "Action Denied: This event has already started/finished.";
                             return RedirectToAction(nameof(Index));
                         }
+                        if (existingEvt.EventStatus == 1)
+                        {
+                            // Nếu form bị disable, giá trị gửi lên sẽ là null/default.
+                            // Ta phải giữ nguyên giá trị cũ.
 
+                            // 1. Tên (Input text disabled -> null)
+                            if (string.IsNullOrEmpty(tblEvent.EventName)) tblEvent.EventName = existingEvt.EventName;
+
+                            // 2. Ngày tháng (Input date disabled -> MinValue)
+                            if (tblEvent.EventStart == DateTime.MinValue) tblEvent.EventStart = existingEvt.EventStart;
+                            if (tblEvent.EventEnd == DateTime.MinValue) tblEvent.EventEnd = existingEvt.EventEnd;
+
+                            // 3. Vị trí (Đã làm rồi)
+                            if (tblEvent.EventTenantPositionId == 0) tblEvent.EventTenantPositionId = existingEvt.EventTenantPositionId;
+
+                            // --- VALIDATION CHẶT CHẼ HƠN ---
+                            // Dù Frontend có hack để enable, Backend vẫn phải chặn thay đổi
+                            if (tblEvent.EventName != existingEvt.EventName ||
+                                tblEvent.EventStart != existingEvt.EventStart ||
+                                tblEvent.EventEnd != existingEvt.EventEnd ||
+                                tblEvent.EventTenantPositionId != existingEvt.EventTenantPositionId ||
+                                    tblEvent.EventUnitPrice != existingEvt.EventUnitPrice)
+                            {
+                                TempData["Error"] = "Action Denied: Name, Date, and Location cannot be changed for an Active event.";
+                                return RedirectToAction(nameof(Index));
+                            }
+                        }
+                        var soldSlots = await _context.TblEventBookings
+                            .Where(b => b.EventBookingEventId == tblEvent.EventId
+                                        && b.EventBookingStatus == 1
+                                        && b.EventBookingPaymentStatus != 3)
+                            .SumAsync(b => b.EventBookingQuantity ?? 0);
+
+                        // Nếu số Slot mới < Số vé đã bán -> CHẶN
+                        if (tblEvent.EventMaxSlot < soldSlots)
+                        {
+                            TempData["Error"] = $"Cannot decrease Max Slots to {tblEvent.EventMaxSlot}. You have already sold {soldSlots} tickets.";
+                            return RedirectToAction(nameof(Index));
+                        }
+                        if (existingEvt.EventStatus == 1)
+                        {
+                            // Nếu ID vị trí gửi lên KHÁC ID vị trí cũ -> CHẶN
+                            if (tblEvent.EventTenantPositionId != existingEvt.EventTenantPositionId)
+                            {
+                                TempData["Error"] = "Action Denied: You cannot change the Location of an Approved/Active event. Please Reject or Cancel it instead.";
+                                return RedirectToAction(nameof(Index));
+                            }
+                        }
+                        bool hasBookings = await _context.TblEventBookings
+                            .AnyAsync(b => b.EventBookingEventId == tblEvent.EventId && b.EventBookingStatus == 1);
+
+                        if (hasBookings)
+                        {
+                            // Nếu đã có khách đặt, cấm sửa Ngày Giờ và Địa Điểm
+                            // Chỉ cho sửa Tên, Mô tả, Ảnh, Số lượng slot (nếu tăng thêm)
+                            if (tblEvent.EventStart != existingEvt.EventStart ||
+                                tblEvent.EventEnd != existingEvt.EventEnd ||
+                                tblEvent.EventTenantPositionId != existingEvt.EventTenantPositionId ||
+                                tblEvent.EventUnitPrice != existingEvt.EventUnitPrice)
+                            {
+                                TempData["Error"] = "Cannot change Date, Location, or Price because there are active bookings. Please Cancel this event and create a new one if rescheduling is needed.";
+                                return RedirectToAction(nameof(Index));
+                            }
+                        }
                         if (newFileName != null)
                         {
                             if (!string.IsNullOrEmpty(existingEvt.EventImg)) DeleteImageFile(existingEvt.EventImg);
@@ -171,7 +237,7 @@ namespace Semester03.Areas.Admin.Controllers
             bool hasBookings = await _context.TblEventBookings.AnyAsync(b => b.EventBookingEventId == id);
             if (hasBookings)
             {
-                TempData["Error"] = "Cannot delete: Event has bookings.";
+                TempData["Error"] = "Cannot DELETE because bookings exist (Active or History). Please use 'Cancel Event' in Details page to stop the event.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -181,6 +247,91 @@ namespace Semester03.Areas.Admin.Controllers
             TempData["Success"] = "Event deleted successfully.";
             return RedirectToAction(nameof(Index));
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CancelEvent(int id, string reason)
+        {
+            // 1. Get Event
+            var eventObj = await _context.TblEvents.FindAsync(id);
+            if (eventObj == null) return NotFound();
+
+            // 2. Check Event in past
+            if (eventObj.EventStart <= DateTime.Now)
+            {
+                TempData["Error"] = "Cannot cancel event: It has already started or finished.";
+                return RedirectToAction(nameof(Details), new { id = id });
+            }
+
+            // 3. Get List Active Booking (Paid/Unpaid/Free)
+            // Status: 1=Paid, 0=Unpaid, 2=Free. (3=Cancelled bỏ qua)
+            var activeBookings = await _context.TblEventBookings
+                .Include(b => b.EventBookingUser)
+                .Where(b => b.EventBookingEventId == id && b.EventBookingPaymentStatus != 3)
+                .ToListAsync();
+
+            using (var transaction = _context.Database.BeginTransaction())
+            {
+                try
+                {
+                    // A. Update Status -> 3 (Cancelled) 
+                    eventObj.EventStatus = 3;
+                    _context.TblEvents.Update(eventObj);
+
+                    // B. Update Status Booking -> 3 (Cancelled)
+                    foreach (var booking in activeBookings)
+                    {
+                        booking.EventBookingPaymentStatus = 3; // Cancelled
+                        booking.EventBookingStatus = 0;
+
+                    }
+                    _context.TblEventBookings.UpdateRange(activeBookings);
+
+                    await _context.SaveChangesAsync();
+                    transaction.Commit();
+                }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                    TempData["Error"] = "System Error: Could not cancel event.";
+                    return RedirectToAction(nameof(Details), new { id = id });
+                }
+            }
+
+            // 4. Send Email
+            int mailCount = 0;
+            foreach (var booking in activeBookings)
+            {
+                if (booking.EventBookingUser != null && !string.IsNullOrEmpty(booking.EventBookingUser.UsersEmail))
+                {
+                    string subject = $"[URGENT] Event Cancelled: {eventObj.EventName}";
+                    string body = $@"
+                        <h3 style='color:red;'>Event Cancellation Notice</h3>
+                        <p>Dear {booking.EventBookingUser.UsersFullName},</p>
+                        <p>We regret to inform you that the event <strong>{eventObj.EventName}</strong> (scheduled for {eventObj.EventStart:dd/MM/yyyy}) has been <strong>CANCELLED</strong> by the organizers.</p>
+                        
+                        <div style='background-color:#ffeeba; padding:15px; margin: 10px 0; border-left: 5px solid #ffc107;'>
+                            <strong>Reason:</strong> {reason ?? "Unforeseen circumstances"}
+                        </div>
+
+                        <p>Your booking #{booking.EventBookingId} has been cancelled automatically.</p>
+                        <p>If you have already paid, <strong>we will process your refund shortly</strong>. Please contact us if you don't receive it within 7 days.</p>
+                        <br/>
+                        <p>Sincerely,<br/>ABCD Mall Management</p>";
+
+                    try
+                    {
+                        await _emailSender.SendEmailAsync(booking.EventBookingUser.UsersEmail, subject, body);
+                        mailCount++;
+                    }
+                    catch { /* Continue */ }
+                }
+            }
+
+            TempData["Success"] = $"Event cancelled. {activeBookings.Count} bookings cancelled. {mailCount} emails sent.";
+            return RedirectToAction(nameof(Details), new { id = id });
+        }
+
 
         // [POST] Reschedule (Drag & Drop)
         [HttpPost]
@@ -195,6 +346,18 @@ namespace Semester03.Areas.Admin.Controllers
 
             if (newStart < DateTime.Now)
                 return Json(new { success = false, message = "Cannot move to past." });
+
+            bool hasBookings = await _context.TblEventBookings
+                .AnyAsync(b => b.EventBookingEventId == id && b.EventBookingStatus == 1);
+
+            if (hasBookings)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Action Denied: Cannot reschedule this event because tickets have already been sold/booked. Please Cancel and create a new one."
+                });
+            }
 
             bool isConflict = await _eventRepo.CheckOverlapAsync(
                 evt.EventTenantPositionId,
@@ -256,6 +419,12 @@ namespace Semester03.Areas.Admin.Controllers
             var evt = await _eventRepo.GetByIdAdminAsync(id);
             if (evt == null) return NotFound();
 
+            string posName = "Unknown Location";
+            if (evt.EventTenantPosition != null)
+            {
+                posName = $"{evt.EventTenantPosition.TenantPositionLocation} ({evt.EventTenantPosition.TenantPositionAreaM2} m2)";
+            }
+
             return Json(new
             {
                 id = evt.EventId,
@@ -266,7 +435,9 @@ namespace Semester03.Areas.Admin.Controllers
                 eventMaxSlot = evt.EventMaxSlot,
                 eventUnitPrice = evt.EventUnitPrice,
                 eventTenantPositionId = evt.EventTenantPositionId,
-                eventImg = evt.EventImg
+                eventImg = evt.EventImg,
+                eventStatus = evt.EventStatus,
+                positionName = posName
             });
         }
 

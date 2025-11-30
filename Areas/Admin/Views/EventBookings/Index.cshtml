@@ -11,12 +11,51 @@
 
 <div class="card mb-4 border-bottom-primary">
     <div class="card-body">
-        <form method="get" class="form-inline">
-            <label class="mr-2 font-weight-bold text-gray-700">Select Event to Manage:</label>
-            <select name="eventId" class="form-control mr-2" onchange="this.form.submit()" asp-items="ViewBag.EventList">
-                <option value="">-- View All Bookings --</option>
-            </select>
-            <noscript><button type="submit" class="btn btn-primary">Filter</button></noscript>
+        <form method="get" asp-action="Index">
+            <div class="form-row align-items-end">
+                <div class="col-md-3 mb-2">
+                    <label class="small font-weight-bold">Event</label>
+                    <select name="eventId" class="form-control" asp-items="ViewBag.EventList">
+                        <option value="">-- All Events --</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 mb-2">
+                    <label class="small font-weight-bold">Search</label>
+                    <input type="text" name="search" value="@ViewData["CurrentSearch"]" class="form-control" placeholder="Name, Phone..." />
+                </div>
+
+                <div class="col-md-2 mb-2">
+                    <label class="small font-weight-bold">From Date</label>
+                    <input type="date" name="fromDate" value="@ViewData["FromDate"]" class="form-control" />
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label class="small font-weight-bold">To Date</label>
+                    <input type="date" name="toDate" value="@ViewData["ToDate"]" class="form-control" />
+                </div>
+
+                <div class="col-md-1 mb-2">
+                    <label class="small font-weight-bold">Status</label>
+                    <select name="status" class="form-control">
+                        <option value="all">All</option>
+                        <option value="paid" selected="@((string)ViewData["CurrentStatus"] == "paid")">Paid</option>
+                        <option value="unpaid" selected="@((string)ViewData["CurrentStatus"] == "unpaid")">Unpaid</option>
+                        <option value="cancelled" selected="@((string)ViewData["CurrentStatus"] == "cancelled")">Cancelled</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 mb-2 d-flex">
+                    <button type="submit" class="btn btn-primary flex-fill mr-1" title="Filter Data">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary mr-1" title="Reset">
+                        <i class="fas fa-undo"></i>
+                    </a>
+                    <button type="submit" formaction="@Url.Action("ExportEventSummary")" formmethod="post" class="btn btn-success" title="Export Excel">
+                        <i class="fas fa-file-excel"></i>
+                    </button>
+                </div>
+            </div>
         </form>
     </div>
 </div>
@@ -148,6 +187,19 @@
                                 <a asp-action="Details" asp-route-id="@item.EventBookingId" class="btn btn-info btn-sm shadow-sm">
                                     <i class="fas fa-eye"></i> View
                                 </a>
+
+                                @if (item.EventBookingPaymentStatus == 0 || item.EventBookingPaymentStatus == 1 || item.EventBookingPaymentStatus == 2)
+                                {
+                                    <button class="btn btn-danger btn-sm shadow-sm ml-1" onclick="promptCancel(@item.EventBookingId)">
+                                        <i class="fas fa-ban"></i>Cancel
+                                    </button>
+
+                                    <form id="cancelForm_@item.EventBookingId" asp-action="Cancel" method="post" style="display:none;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@item.EventBookingId" />
+                                        <input type="hidden" name="reason" id="cancelReason_@item.EventBookingId" />
+                                    </form>
+                                }
                             </td>
                         </tr>
                     }
@@ -164,5 +216,17 @@
               "order": [[ 0, "desc" ]]
           });
         });
+
+        function promptCancel(id) {
+            var reason = prompt("Please enter the reason for cancellation (Required):");
+            if (reason != null && reason.trim() !== "") {
+                // Điền lý do vào input ẩn
+                document.getElementById('cancelReason_' + id).value = reason;
+                // Submit form
+                document.getElementById('cancelForm_' + id).submit();
+            } else if (reason != null) {
+                alert("Cancellation reason is required!");
+            }
+        }
     </script>
 }

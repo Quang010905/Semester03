@@ -1,8 +1,10 @@
 ﻿using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Semester03.Models.Entities;
 using Semester03.Models.Repositories;
+using Semester03.Services.Email;
 using System.Text;
 
 namespace Semester03.Areas.Admin.Controllers
@@ -12,20 +14,33 @@ namespace Semester03.Areas.Admin.Controllers
     public class TicketsController : Controller
     {
         private readonly TicketRepository _ticketRepo;
+        private readonly AbcdmallContext _context;
+        private readonly TicketEmailService _emailService;
 
-        public TicketsController(TicketRepository ticketRepo)
+        public TicketsController(TicketRepository ticketRepo, AbcdmallContext context, TicketEmailService emailService)
         {
             _ticketRepo = ticketRepo;
+            _context = context;
+            _emailService = emailService;
         }
 
         // GET: Admin/Tickets
-        public async Task<IActionResult> Index(string search, DateTime? date, int? showtimeId)
+        public async Task<IActionResult> Index(
+            string search,
+            DateTime? fromDate,
+            DateTime? toDate,
+            string status) // [NEW] status
         {
-            var tickets = await _ticketRepo.SearchTicketsAsync(search, showtimeId, date);
+            // Mặc định: Nếu chưa chọn ngày thì lấy 30 ngày gần nhất (để không load quá nặng)
+             if (!fromDate.HasValue) fromDate = DateTime.Now.AddDays(-30);
 
+            var tickets = await _ticketRepo.SearchTicketsAsync(search, null, fromDate, toDate, status);
+
+            // Lưu lại giá trị để hiển thị trên View
             ViewData["CurrentSearch"] = search;
-            ViewData["CurrentDate"] = date?.ToString("yyyy-MM-dd");
-            ViewData["CurrentShowtime"] = showtimeId;
+            ViewData["FromDate"] = fromDate?.ToString("yyyy-MM-dd");
+            ViewData["ToDate"] = toDate?.ToString("yyyy-MM-dd");
+            ViewData["CurrentStatus"] = status;
 
             return View(tickets);
         }
@@ -43,18 +58,48 @@ namespace Semester03.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Cancel(int id)
         {
+            var ticket = await _ticketRepo.GetByIdAsync(id);
+            if (ticket == null) return NotFound();
+
+            var showTime = ticket.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeStart;
+
+            if (showTime.HasValue && showTime.Value <= DateTime.Now)
+            {
+                TempData["Error"] = "Cannot cancel this ticket because the showtime has already started or ended.";
+                return RedirectToAction(nameof(Details), new { id = id });
+            }
+
             var result = await _ticketRepo.CancelTicketAsync(id);
 
             if (result)
             {
-                TempData["Success"] = $"Ticket #{id} has been successfully cancelled and the seat is now available.";
+                try
+                {
+                    var userId = ticket.TicketBuyerUserId;
+                    var movieName = ticket.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeMovie?.MovieTitle;
+                    var seatLabel = ticket.TicketShowtimeSeat?.ShowtimeSeatSeat?.SeatLabel;
+
+                    // Call TicketEmailService
+                    await _emailService.SendMovieCancelEmailAsync(
+                        userId,
+                        movieName ?? "Movie",
+                        showTime ?? DateTime.Now,
+                        new List<string> { seatLabel ?? "N/A" },
+                        ticket.TicketPrice
+                    );
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Email Error: " + ex.Message);
+                }
+
+                TempData["Success"] = $"Ticket #{id} cancelled successfully. Refund email sent.";
             }
             else
             {
                 TempData["Error"] = $"Could not cancel Ticket #{id}. It might already be cancelled or an error occurred.";
             }
 
-            // Redirect back to the Details page for that ticket
             return RedirectToAction(nameof(Details), new { id = id });
         }
 
@@ -62,12 +107,64 @@ namespace Semester03.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CancelAllTickets(int id)
         {
+            var showtime = await _context.TblShowtimes.FindAsync(id);
+            if (showtime == null) return NotFound();
+
+            if (showtime.ShowtimeStart <= DateTime.Now)
+            {
+                TempData["Error"] = "Cannot cancel tickets: The showtime has already started or ended!";
+                return RedirectToAction("Details", "Showtimes", new { id = id });
+            }
+
+            var soldTickets = await _context.TblTickets
+                .Include(t => t.TicketBuyerUser)
+                .Include(t => t.TicketShowtimeSeat)
+                    .ThenInclude(ss => ss.ShowtimeSeatSeat) // Get seat count
+                .Include(t => t.TicketShowtimeSeat)
+                    .ThenInclude(ss => ss.ShowtimeSeatShowtime)
+                        .ThenInclude(s => s.ShowtimeMovie) // Get Movie Name
+                .Where(t => t.TicketShowtimeSeat.ShowtimeSeatShowtimeId == id
+                            && t.TicketStatus == "sold") 
+                .ToListAsync();
+
+            if (!soldTickets.Any())
+            {
+                TempData["Info"] = "No sold tickets found to cancel.";
+                return RedirectToAction("Details", "Showtimes", new { id = id });
+            }
+
             // 'id' here is the ShowtimeId
             var result = await _ticketRepo.CancelAllTicketsForShowtimeAsync(id);
 
             if (result > 0)
             {
-                TempData["Success"] = $"Successfully cancelled {result} tickets for this showtime.";
+                var customerGroups = soldTickets.GroupBy(t => t.TicketBuyerUserId);
+                int mailCount = 0;
+
+                foreach (var group in customerGroups)
+                {
+                    try
+                    {
+                        var firstItem = group.First();
+                        var userId = group.Key;
+                        var movieName = firstItem.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeMovie?.MovieTitle;
+                        var sTime = firstItem.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeStart ?? DateTime.Now;
+
+                        // Gom danh sách ghế: "A1, A2, B5"
+                        var seats = group.Select(t => t.TicketShowtimeSeat?.ShowtimeSeatSeat?.SeatLabel).ToList();
+
+                        // Tổng tiền hoàn
+                        var totalRefund = group.Sum(t => t.TicketPrice);
+
+                        await _emailService.SendMovieCancelEmailAsync(
+                            userId, movieName, sTime, seats, totalRefund
+                        );
+                        mailCount++;
+                    }
+                    catch { /* Ignore mail error */ }
+                }
+
+                TempData["Success"] = $"Cancelled {result} tickets. Sent refund emails to {mailCount} customers.";
             }
             else if (result == 0)
             {
@@ -83,10 +180,14 @@ namespace Semester03.Areas.Admin.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ExportSummary(string search, DateTime? date, int? showtimeId)
+        public async Task<IActionResult> ExportSummary(
+            string search,
+            DateTime? fromDate,
+            DateTime? toDate,
+            string status)
         {
             // 1. Get Raw Data
-            var tickets = await _ticketRepo.SearchTicketsAsync(search, showtimeId, date);
+            var tickets = await _ticketRepo.SearchTicketsAsync(search, null, fromDate, toDate, status);
             var soldTickets = tickets.Where(t => t.TicketStatus.ToLower() == "sold").ToList();
 
             // 2. Prepare reporting data

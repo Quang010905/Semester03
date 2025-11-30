@@ -32,21 +32,14 @@
                 <i class="bi @(isActive ? "bi-check-circle" : "bi-pause-circle") me-1"></i>
                 @(isActive ? "Active" : "Deactivated")
             </span>
-
-            <button type="button"
-                    class="btn btn-sm btn-primary"
-                    data-bs-toggle="modal"
-                    data-bs-target="#editProfileModal">
-                <i class="bi bi-pencil-square me-1"></i> Edit
-            </button>
         </div>
     </div>
 
     <div class="card border-0 shadow-lg mb-4">
         <div class="card-body p-4">
-            <div class="row g-4 align-items-center">
+            <div class="row g-4 align-items-start">
 
-                <!-- avatar -->
+                <!-- avatar + info ngắn -->
                 <div class="col-md-4 border-end">
                     <div class="d-flex flex-column align-items-center text-center">
                         <div class="rounded-circle d-flex align-items-center justify-content-center mb-3"
@@ -57,18 +50,23 @@
                         <h5 class="mb-1">@displayName</h5>
                         <p class="text-muted small mb-2">@user.UsersEmail</p>
 
-                        <span class="badge rounded-pill bg-light text-secondary d-inline-flex align-items-center">
+                        <span class="badge rounded-pill bg-light text-secondary d-inline-flex align-items-center mb-2">
                             <i class="bi bi-telephone me-1"></i>@user.UsersPhone
                         </span>
+
+                        <small class="text-muted">
+                            Username: <strong>@user.UsersUsername</strong>
+                        </small>
                     </div>
                 </div>
 
-                <!-- Info -->
+                <!-- Info + Khu vực chỉnh sửa (AJAX, không dùng form) -->
                 <div class="col-md-8">
-                    <div class="row g-3 mb-3">
 
+                    <!-- Thông tin tổng quan -->
+                    <div class="row g-3 mb-3">
                         <div class="col-sm-6">
-                            <div class="p-3 rounded-3 bg-light d-flex justify-content-between">
+                            <div class="p-3 rounded-3 bg-light d-flex justify-content-between align-items-center">
                                 <div>
                                     <div class="text-muted small mb-1">Reward Points</div>
                                     <div class="fs-4 fw-semibold">@points</div>
@@ -78,7 +76,7 @@
                         </div>
 
                         <div class="col-sm-6">
-                            <div class="p-3 rounded-3 bg-light d-flex justify-content-between">
+                            <div class="p-3 rounded-3 bg-light d-flex justify-content-between align-items-center">
                                 <div>
                                     <div class="text-muted small mb-1">Account Created</div>
                                     <div class="fw-semibold">@(user.UsersCreatedAt?.ToString("dd/MM/yyyy") ?? "-")</div>
@@ -86,12 +84,80 @@
                                 <i class="bi bi-calendar-event fs-2 text-primary"></i>
                             </div>
                         </div>
+                    </div>
 
+                    <!-- Alert lỗi / thành công -->
+                    <div id="editProfileError" class="alert alert-danger d-none mb-3"></div>
+                    <div id="editProfileSuccess" class="alert alert-success d-none mb-3"></div>
+
+                    <!-- Khu vực edit profile (không dùng form) -->
+                    <h5 class="mb-3">
+                        <i class="bi bi-pencil-square me-1"></i> Edit Profile
+                    </h5>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label class="form-label">Full name</label>
+                            <input type="text"
+                                   id="editFullName"
+                                   class="form-control"
+                                   value="@user.UsersFullName" />
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="form-label">Username</label>
+                            <input type="text"
+                                   class="form-control"
+                                   value="@user.UsersUsername"
+                                   disabled />
+                            <div class="form-text">Username cannot be changed.</div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="form-label">Email</label>
+                            <input type="email"
+                                   id="editEmail"
+                                   class="form-control"
+                                   value="@user.UsersEmail" />
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="form-label">Phone number</label>
+                            <input type="text"
+                                   id="editPhone"
+                                   class="form-control"
+                                   value="@user.UsersPhone" />
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="form-label">
+                                New password
+                                <span class="text-muted small">(optional)</span>
+                            </label>
+                            <input type="password"
+                                   id="editPassword"
+                                   class="form-control"
+                                   autocomplete="new-password" />
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mb-3">
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                id="btnResetProfile">
+                            Reset
+                        </button>
+                        <button type="button"
+                                class="btn btn-primary"
+                                id="btnSaveProfile">
+                            <i class="bi bi-save me-1"></i> Save
+                        </button>
                     </div>
 
                     <hr />
 
-                    <dl class="row small">
+                    <!-- Thông tin hiển thị lại dưới dạng read-only -->
+                    <dl class="row small mt-3">
                         <dt class="col-sm-4 text-muted">Username</dt>
                         <dd class="col-sm-8">@user.UsersUsername</dd>
 
@@ -108,83 +174,41 @@
             </div>
         </div>
     </div>
-</section>
 
-<!-- Edit Profile Modal (AJAX, no server-side form) -->
-<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editProfileModalLabel">
-                    <i class="bi bi-pencil-square me-1"></i> Edit Profile
+    @* Nếu bạn muốn hiển thị lịch sử vé / khiếu nại thì phần dưới này giữ nguyên *@
+    @if (Model.TicketHistory != null && Model.TicketHistory.Any())
+    {
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="mb-3">
+                    <i class="bi bi-ticket-perforated me-1"></i> Ticket History
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-
-            <div class="modal-body">
-                <div id="editProfileError" class="alert alert-danger d-none mb-3"></div>
-                <div id="editProfileSuccess" class="alert alert-success d-none mb-3"></div>
-
-                <div class="mb-3">
-                    <label class="form-label">Full name</label>
-                    <input type="text"
-                           id="editFullName"
-                           class="form-control"
-                           value="@user.UsersFullName" />
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Email</label>
-                    <input type="email"
-                           id="editEmail"
-                           class="form-control"
-                           value="@user.UsersEmail" />
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Phone number</label>
-                    <input type="text"
-                           id="editPhone"
-                           class="form-control"
-                           value="@user.UsersPhone" />
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">
-                        New password
-                        <span class="text-muted small">(optional)</span>
-                    </label>
-                    <input type="password"
-                           id="editPassword"
-                           class="form-control"
-                           autocomplete="new-password" />
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button"
-                        class="btn btn-secondary"
-                        data-bs-dismiss="modal">
-                    Close
-                </button>
-                <button type="button"
-                        class="btn btn-primary"
-                        id="btnSaveProfile">
-                    Save
-                </button>
+                <!-- render ticket history ở đây -->
             </div>
         </div>
-    </div>
-</div>
+    }
+
+    @if (Model.ComplaintHistory != null && Model.ComplaintHistory.Any())
+    {
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="mb-3">
+                    <i class="bi bi-chat-dots me-1"></i> Complaint History
+                </h5>
+                <!-- render complaint history ở đây -->
+            </div>
+        </div>
+    }
+</section>
 
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var btnSave = document.getElementById('btnSaveProfile');
+            var btnReset = document.getElementById('btnResetProfile');
             var errorBox = document.getElementById('editProfileError');
             var successBox = document.getElementById('editProfileSuccess');
             var passwordInput = document.getElementById('editPassword');
-            var modalElement = document.getElementById('editProfileModal');
 
             function hideMessages() {
                 if (errorBox) {
@@ -197,13 +221,11 @@
                 }
             }
 
-            // Clear password & messages when modal opens
-            if (modalElement) {
-                modalElement.addEventListener('show.bs.modal', function () {
-                    if (passwordInput) {
-                        passwordInput.value = '';
-                    }
-                    hideMessages();
+            // Reset: reload lại trang cho dễ
+            if (btnReset) {
+                btnReset.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    window.location.reload();
                 });
             }
 
@@ -224,7 +246,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json; charset=utf-8'
-                            // If you enable AntiForgery later:
+                            // Nếu sau này bạn bật AntiForgery:
                             // 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
                         },
                         body: JSON.stringify(model)
@@ -242,7 +264,7 @@
                                     successBox.textContent = res.message || 'Cập nhật thành công.';
                                 }
 
-                                // Reload to update UI
+                                // Reload lại để đồng bộ UI
                                 setTimeout(function () {
                                     window.location.reload();
                                 }, 1000);

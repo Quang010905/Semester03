@@ -18,39 +18,32 @@
             if (string.IsNullOrWhiteSpace(raw))
                 return noImageUrl;
 
-            // Nếu là link tuyệt đối (http/https) thì trả về luôn
             if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 return raw;
 
-            // Chuẩn hóa path
             var file = raw.Replace("\\", "/").Trim();
 
-            // Nếu trong chuỗi đã chứa "Content/Uploads/TenantPromotion/xxx"
             var keyword = "Content/Uploads/TenantPromotion";
             var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
             if (idxKeyword >= 0)
             {
-                // chỉ lấy tên file phía sau dấu /
                 var lastSlash = file.LastIndexOf('/');
-                if (lastSlash >= 0) file = file[(lastSlash + 1)..];
+                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
             }
 
-            // Loại bỏ prefix thừa
             if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
-                file = file["wwwroot/".Length..];
+                file = file.Substring("wwwroot/".Length);
             if (file.StartsWith("~/"))
-                file = file[2..];
+                file = file.Substring(2);
             if (file.StartsWith("/"))
-                file = file[1..];
+                file = file.Substring(1);
 
             if (string.IsNullOrWhiteSpace(file))
                 return noImageUrl;
 
-            // Lấy IWebHostEnvironment để build physical path
             var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
             if (env == null)
             {
-                // fallback: cứ trả về đường dẫn tương đối
                 return Url.Content("~/Content/Uploads/TenantPromotion/" + Uri.EscapeDataString(file));
             }
 
@@ -65,7 +58,6 @@
                 return Url.Content("~/Content/Uploads/TenantPromotion/" + Uri.EscapeDataString(file));
             }
 
-            // nếu file không tồn tại -> fallback
             return noImageUrl;
         }
         catch
@@ -86,7 +78,6 @@
             margin: 0 auto;
         }
 
-        /* BACK BUTTON */
         .back-btn {
             padding: .42rem 1.1rem;
             border-radius: 999px;
@@ -107,7 +98,6 @@
                 transform: translateX(-2px);
             }
 
-        /* MAIN CARD */
         .promo-card-detail {
             border-radius: 1.4rem;
             padding: 1.8rem 1.8rem 2.1rem;
@@ -129,7 +119,6 @@
             }
         }
 
-        /* TITLE */
         .promo-kicker {
             font-weight: 800;
             letter-spacing: .18em;
@@ -165,7 +154,6 @@
                 color: #fb7185;
             }
 
-        /* TOP META / BADGES */
         .promo-badges {
             display: flex;
             flex-wrap: wrap;
@@ -201,7 +189,6 @@
             border: 1px solid rgba(45,212,191,.6);
         }
 
-        /* BANNER */
         .promo-banner {
             border-radius: 1.1rem;
             overflow: hidden;
@@ -236,13 +223,48 @@
             backdrop-filter: blur(10px);
         }
 
-        /* CONTENT SIDE */
+        /* === DESCRIPTION: SmartEditor HTML + tự bẻ dòng mạnh === */
         .promo-desc {
             font-size: .95rem;
             margin-top: 1rem;
             line-height: 1.7;
             color: #111827;
+            white-space: normal;
+            word-break: break-all;
+            overflow-wrap: anywhere;
         }
+
+            .promo-desc * {
+                max-width: 100% !important;
+                box-sizing: border-box;
+                white-space: normal !important;
+                word-break: break-all !important;
+                overflow-wrap: anywhere !important;
+            }
+
+            .promo-desc img,
+            .promo-desc video,
+            .promo-desc iframe {
+                max-width: 100% !important;
+                height: auto !important;
+            }
+
+            .promo-desc table {
+                width: 100% !important;
+                border-collapse: collapse;
+                display: block;
+                overflow-x: auto;
+            }
+
+            .promo-desc p {
+                margin-bottom: .6rem;
+            }
+
+            .promo-desc ul,
+            .promo-desc ol {
+                padding-left: 1.2rem;
+                margin-bottom: .6rem;
+            }
 
         .promo-sidebar-box {
             border-radius: 1rem;
@@ -354,8 +376,9 @@
                         </div>
                     </div>
 
+                    <!-- SMARTEDITOR DESCRIPTION (decode rồi render HTML) -->
                     <div class="promo-desc">
-                        @Html.Raw(Model.Description)
+                        @Html.Raw(System.Net.WebUtility.HtmlDecode(Model.Description ?? ""))
                     </div>
 
                     <div class="promo-sidebar-box mt-3">

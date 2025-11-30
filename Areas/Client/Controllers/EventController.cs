@@ -49,29 +49,50 @@ namespace Semester03.Areas.Client.Controllers
             return null;
         }
 
-        public async Task<IActionResult> Index(int page = 1)
+        // Index with paging + filter + view more
+        public async Task<IActionResult> Index(
+            int page = 1,
+            bool showUpcomingAll = false,
+            DateTime? fromDate = null,
+            DateTime? toDate = null)
         {
             const int PageSize = 9;
 
             ViewData["Title"] = "Events";
             ViewData["MallName"] = ViewData["MallName"] ?? "ABCD Mall";
+            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+            ViewBag.ShowUpcomingAll = showUpcomingAll;
+
+            List<EventCardVm> upcoming;
+
+            if (showUpcomingAll)
+            {
+                upcoming = await _repo.GetAllUpcomingEventsAsync(fromDate, toDate);
+            }
+            else
+            {
+                upcoming = await _repo.GetUpcomingEventsAsync(6, fromDate, toDate);
+            }
+
+            var past = await _repo.GetPastEventsAsync(page, PageSize, fromDate, toDate);
 
             var vm = new EventHomeVm
             {
-                Upcoming = await _repo.GetUpcomingEventsAsync(),
-                Past = await _repo.GetPastEventsAsync(page, PageSize)
+                Upcoming = upcoming,
+                Past = past
             };
-
             ViewBag.Events = vm.Upcoming ?? new List<EventCardVm>();
 
             return View(vm);
         }
 
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Details(int id, int cmtPage = 1)
         {
             int? currentUserId = GetCurrentUserId();
+            const int CommentPageSize = 100;
 
-            var ev = await _repo.GetEventByIdAsync(id, currentUserId);
+            var ev = await _repo.GetEventByIdAsync(id, currentUserId, cmtPage, CommentPageSize);
             if (ev == null)
                 return NotFound();
 
@@ -107,12 +128,25 @@ namespace Semester03.Areas.Client.Controllers
                 return Json(new { success = false, message = "Please enter your comment content." });
             }
 
-            var evtExists = await _repo.EventExistsAsync(eventId);
-            if (!evtExists)
+            var evt = await _context.TblEvents
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.EventId == eventId && e.EventStatus == 1);
+
+            if (evt == null)
             {
                 return Json(new { success = false, message = "The event does not exist or has been discontinued." });
             }
 
+            var now = DateTime.Now;
+
+            if (now < evt.EventStart)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "You can only comment after the event starts."
+                });
+            }
             await _repo.AddCommentAsync(eventId, userId.Value, rate, text);
 
             return Json(new

@@ -64,14 +64,13 @@ namespace Semester03.Models.Repositories
                 .GroupJoin(showInfo,
                            m => m.MovieId,
                            si => si.MovieId,
-                           (m, sis) => new { Movie = m, Show = sis.FirstOrDefault() }) // FirstOrDefault on the joined set is translatable here
+                           (m, sis) => new { Movie = m, Show = sis.FirstOrDefault() })
                 .Select(x => new
                 {
                     MovieId = x.Movie.MovieId,
                     MovieTitle = x.Movie.MovieTitle,
                     MovieDescription = x.Movie.MovieDescription,
                     MovieDurationMin = x.Movie.MovieDurationMin,
-                    // Show may be null => ShowtimeStart is nullable
                     ShowtimeStart = x.Show != null ? x.Show.ShowtimeStart : (DateTime?)null,
                     ShowtimePrice = x.Show != null ? x.Show.ShowtimePrice : (decimal?)null,
                     ShowtimeId = x.Show != null ? x.Show.ShowtimeId : (int?)null,
@@ -79,7 +78,6 @@ namespace Semester03.Models.Repositories
                     CinemaName = x.Show != null ? x.Show.CinemaName : null,
                     ScreenName = x.Show != null ? x.Show.ScreenName : null
                 })
-                // 5) order: ưu tiên có showtime trước (0), không có showtime sau (1); sau đó theo thời gian showtime
                 .OrderBy(x => x.ShowtimeStart == null ? 1 : 0)
                 .ThenBy(x => x.ShowtimeStart ?? DateTime.MaxValue);
 
@@ -155,8 +153,16 @@ namespace Semester03.Models.Repositories
             }).ToList();
         }
 
-        public async Task<MovieDetailsVm> GetMovieDetailsAsync(int movieId)
+        // ==================== CHI TIẾT PHIM + COMMENT ====================
+        public async Task<MovieDetailsVm> GetMovieDetailsAsync(
+     int movieId,
+     int? currentUserId,
+     int commentPage,
+     int pageSize)
         {
+            if (commentPage < 1) commentPage = 1;
+            if (pageSize < 1) pageSize = 5;
+
             var movie = await _db.TblMovies
                 .AsNoTracking()
                 .Where(m => m.MovieId == movieId)
@@ -176,19 +182,53 @@ namespace Semester03.Models.Repositories
 
             if (movie == null) return null;
 
-            movie.Comments = await _db.TblCustomerComplaints
+            // ====== BASE QUERY COMMENT ======
+            var commentsQuery = _db.TblCustomerComplaints
                 .AsNoTracking()
-                .Where(c => c.CustomerComplaintMovieId == movieId && c.CustomerComplaintStatus == 1)
+                .Where(c => c.CustomerComplaintMovieId == movieId);
+
+            if (currentUserId.HasValue)
+            {
+                var uid = currentUserId.Value;
+                commentsQuery = commentsQuery.Where(c =>
+                    c.CustomerComplaintStatus == 1 ||
+                    c.CustomerComplaintCustomerUserId == uid);
+            }
+            else
+            {
+                commentsQuery = commentsQuery.Where(c => c.CustomerComplaintStatus == 1);
+            }
+
+            // Tổng số comment
+            var totalComments = await commentsQuery.CountAsync();
+
+            // Lấy page
+            var comments = await commentsQuery
                 .OrderByDescending(c => c.CustomerComplaintCreatedAt)
+                .Skip((commentPage - 1) * pageSize)
+                .Take(pageSize)
                 .Select(c => new CommentVm
                 {
                     Id = c.CustomerComplaintId,
                     UserId = c.CustomerComplaintCustomerUserId,
-                    UserName = c.CustomerComplaintCustomerUser != null ? c.CustomerComplaintCustomerUser.UsersFullName : "Khách",
+                    UserName = c.CustomerComplaintCustomerUser != null
+                        ? (string.IsNullOrWhiteSpace(c.CustomerComplaintCustomerUser.UsersFullName)
+                            ? c.CustomerComplaintCustomerUser.UsersUsername
+                            : c.CustomerComplaintCustomerUser.UsersFullName)
+                        : "Khách",
                     Rate = c.CustomerComplaintRate,
                     Text = c.CustomerComplaintDescription,
                     CreatedAt = c.CustomerComplaintCreatedAt
-                }).ToListAsync();
+                })
+                .ToListAsync();
+
+            movie.Comments = comments;
+            movie.CommentCount = totalComments;
+            movie.CommentPageIndex = commentPage;
+            movie.CommentPageSize = pageSize;
+            movie.CommentTotalPages = pageSize == 0
+                ? 0
+                : (int)Math.Ceiling(totalComments / (double)pageSize);
 
             return movie;
         }
@@ -201,7 +241,7 @@ namespace Semester03.Models.Repositories
                 CustomerComplaintMovieId = movieId,
                 CustomerComplaintRate = rate,
                 CustomerComplaintDescription = text,
-                CustomerComplaintStatus = 0,
+                CustomerComplaintStatus = 0,      // 0 = chờ duyệt
                 CustomerComplaintCreatedAt = DateTime.Now
             };
 

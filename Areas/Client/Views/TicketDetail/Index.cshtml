@@ -11,7 +11,7 @@
 
     var dayOfWeek = Model.Showtime.ToString("dddd", new System.Globalization.CultureInfo("en-US"));
 
-    // ===== IMAGE HELPER FOR MOVIE / POSTER =====
+    // ===== IMAGE HELPER FOR MOVIE / POSTER (thư mục Movie – giữ nguyên như cũ) =====
     Func<string, string> ImgMovie = (raw) =>
     {
         var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
@@ -75,6 +75,7 @@
             return noImageUrl;
         }
     };
+
 }
 
 <style>
@@ -649,17 +650,7 @@
                 <i class="bi bi-arrow-left"></i>
             </a>
             Movie ticket details
-        </div>
-
-        <div class="ticket-media">
-            <!-- USE ImgMovie HELPER INSTEAD OF USING Model.MovieImg DIRECTLY -->
-            <img src="@ImgMovie(Model.MovieImg)" class="ticket-poster" />
-        </div>
-
-        @if (Model.IsUsed)
-        {
-            <img src="/images/stamp_used.png" class="stamp-used" />
-        }
+        </div>       
 
         <div class="ticket-body">
             <div class="ticket-value-main mb-1">@Model.MovieTitle</div>

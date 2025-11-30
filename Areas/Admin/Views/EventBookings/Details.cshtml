@@ -174,10 +174,6 @@
                 <h5 class="font-weight-bold">@Model.EventBookingUser?.UsersFullName</h5>
                 <p class="text-muted mb-1">@Model.EventBookingUser?.UsersEmail</p>
                 <p class="text-muted"><i class="fas fa-phone fa-sm"></i> @Model.EventBookingUser?.UsersPhone</p>
-
-                <a href="mailto:@Model.EventBookingUser?.UsersEmail" class="btn btn-sm btn-outline-primary btn-block">
-                    <i class="fas fa-envelope"></i> Send Email
-                </a>
             </div>
         </div>
 
@@ -207,6 +203,47 @@
                     Use this only for corrections or refunds. <br>
                     Normal payments are automated via VNPay.
                 </div>
+
+                <hr />
+
+                @{
+                    bool canCancel = Model.EventBookingPaymentStatus != 3; // Chưa hủy
+                    bool isFuture = Model.EventBookingEvent?.EventStart > DateTime.Now; // Chưa diễn ra
+                }
+
+                @if (canCancel && isFuture)
+                {
+                    <label class="small font-weight-bold text-danger">Emergency Cancellation:</label>
+                    <button class="btn btn-danger btn-block" onclick="cancelInDetails()">
+                        <i class="fas fa-ban"></i> Cancel Booking & Notify User
+                    </button>
+
+                    <form id="detailsCancelForm" asp-action="Cancel" method="post" style="display:none;">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.EventBookingId" />
+                        <input type="hidden" name="reason" id="detailsCancelReason" />
+                    </form>
+
+                    <script>
+                        function cancelInDetails() {
+                            var r = prompt("Reason for cancellation (sent to user via email):");
+                            if (r && r.trim() !== "") {
+                                document.getElementById('detailsCancelReason').value = r;
+                                document.getElementById('detailsCancelForm').submit();
+                            }
+                        }
+                    </script>
+                }
+                else if (!canCancel)
+                {
+                    <div class="alert alert-danger text-center small m-0">Booking is already Cancelled</div>
+                }
+                else
+                {
+                    <div class="alert alert-secondary text-center small m-0">
+                        <i class="fas fa-lock"></i> Cannot cancel (Event started/ended)
+                    </div>
+                }
             </div>
         </div>
 

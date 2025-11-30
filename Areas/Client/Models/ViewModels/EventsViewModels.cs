@@ -13,6 +13,7 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public int TotalPages =>
             PageSize == 0 ? 0 : (int)Math.Ceiling((double)TotalItems / PageSize);
     }
+
     public class EventCardVm
     {
         public int Id { get; set; }
@@ -27,16 +28,19 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public int? MaxSlot { get; set; }
         public int Status { get; set; }
         public int? TenantPositionId { get; set; }
+
         public int OrganizerId { get; set; } = 0;
         public string OrganizerName { get; set; } = "-";
         public string PositionName { get; set; } = "-";
         public decimal? Price { get; set; }
     }
+
     public class EventHomeVm
     {
         public List<EventCardVm> Upcoming { get; set; } = new();
         public PagedResult<EventCardVm> Past { get; set; } = new();
     }
+
     public class EventDetailsVm
     {
         public int Id { get; set; }
@@ -53,28 +57,35 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public int Status { get; set; }
 
         public int TenantPositionId { get; set; }
-        public string OrganizerShopName { get; set; } = "-";      
+        public string OrganizerShopName { get; set; } = "-";
         public string OrganizerImageUrl { get; set; } = "";
         public string OrganizerDescription { get; set; } = "";
         public string OrganizerEmail { get; set; } = "";
         public string OrganizerPhone { get; set; } = "";
-        public string PositionLocation { get; set; } = "";      
-        public int? PositionFloor { get; set; } = null;          
+        public string PositionLocation { get; set; } = "";
+        public int? PositionFloor { get; set; } = null;
 
-        public decimal? Price { get; set; }        
-        public int AvailableSlots { get; set; } = 0;   
+        public decimal? Price { get; set; }
+        public int AvailableSlots { get; set; } = 0;
 
         public List<EventCardVm> Related { get; set; } = new();
 
         public List<CommentVm> Comments { get; set; } = new();
-        public double AvgRate { get; set; }            
+        public double AvgRate { get; set; }
         public int CommentCount { get; set; }
 
         public bool IsPast { get; set; }
         public bool IsOngoing { get; set; }
         public bool IsUpcoming { get; set; }
         public bool IsActive { get; set; }
+
+        // ===== Phân trang comment =====
+        public int CommentPageIndex { get; set; }
+        public int CommentPageSize { get; set; }
+        public int CommentTotalItems { get; set; }
+        public int CommentTotalPages { get; set; }
     }
+
     public class EventRegisterVm
     {
         public EventDetailsVm Event { get; set; }

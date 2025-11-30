@@ -7,6 +7,7 @@
     int soldSlots = Model.TblEventBookings.Count(b => b.EventBookingPaymentStatus == 1);
     int availableSlots = totalSlots - soldSlots;
     decimal occupancy = (totalSlots > 0) ? ((decimal)soldSlots / totalSlots) * 100 : 0;
+    bool canCancel = Model.EventStart > DateTime.Now && Model.EventStatus == 1;
 }
 
 <h1 class="h3 mb-2 text-gray-800">Event Details</h1>
@@ -148,5 +149,47 @@
     <div classs="card-footer" style="padding: 1.25rem;">
         <a asp-action="Edit" asp-route-id="@Model.EventId" class="btn btn-warning">Edit</a>
         <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+        <div class="card shadow mb-4 border-left-danger">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-danger">Danger Zone</h6>
+            </div>
+            <div class="card-body">
+                <p>Cancelling this event will automatically <strong>cancel ALL associated bookings</strong> and send notification emails to all registered customers.</p>
+
+                @if (canCancel)
+                {
+                    <button class="btn btn-danger btn-block" onclick="confirmCancelEvent(@Model.EventId)">
+                        <i class="fas fa-bomb"></i> CANCEL EVENT & NOTIFY GUESTS
+                    </button>
+
+                    <form id="cancelEventForm" asp-action="CancelEvent" method="post" style="display:none;">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.EventId" />
+                        <input type="hidden" name="reason" id="cancelEventReason" />
+                    </form>
+
+                    <script>
+                        function confirmCancelEvent() {
+                            var reason = prompt("WARNING: You are about to CANCEL this entire event!\n\nPlease enter the reason to email to all customers:");
+
+                            if (reason != null && reason.trim() !== "") {
+                                if (confirm("Are you absolutely sure? This cannot be undone easily.")) {
+                                    document.getElementById('cancelEventReason').value = reason;
+                                    document.getElementById('cancelEventForm').submit();
+                                }
+                            } else if (reason != null) {
+                                alert("Reason is required to notify customers.");
+                            }
+                        }
+                    </script>
+                }
+                else
+                {
+                    <button class="btn btn-secondary btn-block" disabled>
+                        Cannot Cancel (Event Started/Ended or Inactive)
+                    </button>
+                }
+            </div>
+        </div>
     </div>
 </div>

@@ -299,10 +299,14 @@
                 margin-bottom: .35rem;
             }
 
+            /* DESCRIPTION: tự wrap + giữ xuống dòng */
             .synopsis-card p {
                 margin-bottom: 0;
                 font-size: .94rem;
                 color: #374151;
+                white-space: pre-line; /* giữ \n trong DB thành <br> */
+                word-wrap: break-word;
+                overflow-wrap: break-word; /* cắt từ quá dài để không vỡ layout */
             }
 
         .comment-box-glass {
@@ -348,6 +352,10 @@
         .comment-text {
             margin-top: .25rem;
             font-size: .9rem;
+            /* comment cũng tự wrap + giữ xuống dòng */
+            white-space: pre-line;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         .empty-comments {
@@ -452,9 +460,9 @@
                                 </div>
 
                                 <textarea id="commentText"
-                                      class="form-control mb-2"
-                                      rows="3"
-                                      placeholder="Share your thoughts about this movie..."></textarea>
+                                          class="form-control mb-2"
+                                          rows="3"
+                                          placeholder="Share your thoughts about this movie..."></textarea>
                                 <button id="submitComment" class="btn btn-primary btn-sm rounded-pill px-3">
                                     <i class="bi bi-send me-1"></i>Submit
                                 </button>
@@ -499,6 +507,46 @@
                                 {
                                     <div class="empty-comments">No comments yet — be the first!</div>
                                 }
+                                @if (Model.CommentTotalPages > 1)
+                                {
+                                    <nav class="mt-3">
+                                        <ul class="pagination pagination-sm justify-content-center">
+                                            @* Prev *@
+                                            @if (Model.CommentPageIndex > 1)
+                                            {
+                                                <li class="page-item">
+                                                    <a class="page-link"
+                                                       href="@Url.Action("Details", "Cinema", new { area = "Client", id = Model.Id, cmtPage = Model.CommentPageIndex - 1 })">
+                                                        «
+                                                    </a>
+                                                </li>
+                                            }
+
+                                            @* Số trang *@
+                                            @for (var i = 1; i <= Model.CommentTotalPages; i++)
+                                            {
+                                                <li class="page-item @(i == Model.CommentPageIndex ? "active" : "")">
+                                                    <a class="page-link"
+                                                       href="@Url.Action("Details", "Cinema", new { area = "Client", id = Model.Id, cmtPage = i })">
+                                                        @i
+                                                    </a>
+                                                </li>
+                                            }
+
+                                            @* Next *@
+                                            @if (Model.CommentPageIndex < Model.CommentTotalPages)
+                                            {
+                                                <li class="page-item">
+                                                    <a class="page-link"
+                                                       href="@Url.Action("Details", "Cinema", new { area = "Client", id = Model.Id, cmtPage = Model.CommentPageIndex + 1 })">
+                                                        »
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </nav>
+                                }
+
                             </div>
                         </div>
                     </div>
@@ -566,7 +614,7 @@
                     const data = await resp.json();
                     alert(data?.message ?? 'Comment submitted.');
 
-                    // Optionally reload to show new comment & updated rating
+                    // reload để user thấy comment của chính mình
                     if (data?.success) {
                         window.location.reload();
                     }

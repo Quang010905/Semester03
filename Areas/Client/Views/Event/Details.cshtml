@@ -17,19 +17,24 @@
             if (string.IsNullOrWhiteSpace(raw))
                 return noImageUrl;
 
+            // nếu là url tuyệt đối thì trả luôn
             if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 return raw;
 
+            // chuẩn hóa slashes
             var file = raw.Replace("\\", "/").Trim();
 
+            // nếu string chứa "Content/Uploads/Events/xxxxx"
             var keyword = "Content/Uploads/Events";
             var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
             if (idxKeyword >= 0)
             {
+                // lấy phần tên file phía sau dấu /
                 var lastSlash = file.LastIndexOf('/');
                 if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
             }
 
+            // bỏ prefix wwwroot, ~/, /
             if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
                 file = file.Substring("wwwroot/".Length);
             if (file.StartsWith("~/"))
@@ -40,9 +45,11 @@
             if (string.IsNullOrWhiteSpace(file))
                 return noImageUrl;
 
+            // lấy IWebHostEnvironment để check file vật lý
             var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
             if (env == null)
             {
+                // fallback: cứ trỏ vào đường dẫn tương đối
                 return Url.Content("~/Content/Uploads/Events/" + Uri.EscapeDataString(file));
             }
 
@@ -607,7 +614,6 @@
         }
     </style>
 }
-
 <div class="container page-wrapper-glass">
     <a class="back-link mb-3" href="@Url.Action("Index", "Event", new { area = "Client" })">
         <i class="bi bi-arrow-left"></i> Back to events
@@ -692,6 +698,20 @@
 
             <div class="row event-content-row g-4 mt-3">
                 <div class="col-lg-8">
+                    @* ================== DESCRIPTION SECTION (optional) ================== *@
+                    @if (!string.IsNullOrWhiteSpace(Model.Description))
+                    {
+                        <section class="event-section-glass mb-3">
+                            <div class="event-section-title">
+                                <i class="bi bi-card-text"></i>
+                                <span>Event description</span>
+                            </div>
+                            <div style="font-size:.9rem; color:#374151; white-space:pre-wrap;">
+                                @Html.Raw(System.Net.WebUtility.HtmlEncode(Model.Description))
+                            </div>
+                        </section>
+                    }
+
                     <section class="event-section-glass">
                         <div class="event-section-title">
                             <i class="bi bi-chat-right-text"></i>
@@ -702,7 +722,15 @@
                             <div>
                                 <div class="user-rating-row">
                                     <span class="fw-semibold">Your rating:</span>
-                                    @if (User?.Identity?.IsAuthenticated == true)
+
+                                    @* CHỈ CHẶN KHI SỰ KIỆN CHƯA BẮT ĐẦU *@
+                                    @if (Model.IsUpcoming)
+                                    {
+                                        <span class="text-muted small ms-1">
+                                            You can rate and comment after the event starts.
+                                        </span>
+                                    }
+                                    else if (User?.Identity?.IsAuthenticated == true)
                                     {
                                         <div id="userStars" class="stars-input">
                                             @for (int i = 1; i <= 5; i++)
@@ -722,12 +750,18 @@
 
                             <div class="avg-rate-box">
                                 <span class="big-rate">@displayAvg.ToString("0.0") / 5</span>
-                                <span>(@Model.CommentCount review(s))</span>
                             </div>
                         </div>
 
                         <div id="commentFormArea" class="mb-2">
-                            @if (User?.Identity?.IsAuthenticated == true)
+                            @* CHỈ CHẶN KHI UPCOMING *@
+                            @if (Model.IsUpcoming)
+                            {
+                                <div class="alert alert-warning py-2 mb-2">
+                                    You can only comment after the event starts.
+                                </div>
+                            }
+                            else if (User?.Identity?.IsAuthenticated == true)
                             {
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" id="eventId" value="@Model.Id" />
@@ -790,6 +824,44 @@
                                 </div>
                             }
                         </div>
+
+                        @* PHÂN TRANG COMMENT *@
+                        @if (Model.CommentTotalPages > 1)
+                        {
+                            <nav class="mt-3">
+                                <ul class="pagination pagination-sm justify-content-center">
+                                    @if (Model.CommentPageIndex > 1)
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link"
+                                               href="@Url.Action("Details", "Event", new { area = "Client", id = Model.Id, cmtPage = Model.CommentPageIndex - 1 })">
+                                                «
+                                            </a>
+                                        </li>
+                                    }
+
+                                    @for (var i = 1; i <= Model.CommentTotalPages; i++)
+                                    {
+                                        <li class="page-item @(i == Model.CommentPageIndex ? "active" : "")">
+                                            <a class="page-link"
+                                               href="@Url.Action("Details", "Event", new { area = "Client", id = Model.Id, cmtPage = i })">
+                                                @i
+                                            </a>
+                                        </li>
+                                    }
+
+                                    @if (Model.CommentPageIndex < Model.CommentTotalPages)
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link"
+                                               href="@Url.Action("Details", "Event", new { area = "Client", id = Model.Id, cmtPage = Model.CommentPageIndex + 1 })">
+                                                »
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            </nav>
+                        }
                     </section>
 
                     @if (Model.Related != null && Model.Related.Any())
@@ -843,8 +915,14 @@
                     <div class="event-side-card">
                         <h6><i class="bi bi-info-circle"></i> Event information</h6>
 
-                        <p><strong>Start date:</strong> @Model.StartDate.ToString("dd/MM/yyyy HH:mm")</p>
-                        <p><strong>End date:</strong> @(Model.EndDate.HasValue? Model.EndDate.Value.ToString("dd/MM/yyyy HH:mm") : "-")</p>
+                        <p>
+                            <strong>Start date:</strong>
+                            @Model.StartDate.ToString("dd/MM/yyyy HH:mm")
+                        </p>
+                        <p>
+                            <strong>End date:</strong>
+                            @(Model.EndDate.HasValue? Model.EndDate.Value.ToString("dd/MM/yyyy HH:mm") : "-")
+                        </p>
 
                         <p>
                             <strong>Ticket price:</strong>
@@ -1029,7 +1107,7 @@
                 }
             });
 
-            // ========== UPCOMING SCROLL DOTS (optional – đơn giản) ==========
+            // ========== UPCOMING SCROLL DOTS ==========
             const scrollEl = document.getElementById('upcomingEventsScroll');
             const dotsEl = document.getElementById('upcomingDots');
             const prevBtn = document.getElementById('upcomingPrevBtn');
