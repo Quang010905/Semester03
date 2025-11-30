@@ -12,22 +12,88 @@
     <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2018.3.1017/styles/kendo.material.mobile.min.css" />
 }
 <div style="margin-left:20px; margin-right: 50px">
-    <h2>List Position</h2>
-    @if (ViewBag.itemTenant != null)
+    <h2>List Event Complaint</h2>
+    @if (ViewBag.itemEvent != null)
     {
-        Semester03.Areas.Admin.Models.Tenant tenant =
-        (Semester03.Areas.Admin.Models.Tenant)ViewBag.itemTenant;
+        Semester03.Areas.Partner.Models.Event eve =
+        (Semester03.Areas.Partner.Models.Event)ViewBag.itemEvent;
+
         <div class="form-group mb-3">
-            <label>Tenant name</label>
-            <input type="text" class="form-control" value="@tenant.Name" style="width: 300px;" readonly />
+            <label>Event</label>
+            <input type="text" class="form-control" value="@eve.Name" style="width: 300px;" readonly />
+        </div>
+        <div class="form-group">
+            <a href="@Url.Action("CreateEvent", "Event", new{id = eve.TenantPositionId})" class="btn btn-secondary">Back</a>
         </div>
     }
-    <div class="form-group">
-        <a href="@Url.Action("Index", "Shop")" class="btn btn-secondary">Back</a>
+    <div class="mb-3">
+        <h5>Rating Summary</h5>
+
+        @{
+       
+            int total = ViewBag.TotalCount ?? 0;
+
+            double pct5 = total > 0 ? (double)ViewBag.Star5 / total * 100 : 0;
+            double pct4 = total > 0 ? (double)ViewBag.Star4 / total * 100 : 0;
+            double pct3 = total > 0 ? (double)ViewBag.Star3 / total * 100 : 0;
+            double pct2 = total > 0 ? (double)ViewBag.Star2 / total * 100 : 0;
+            double pct1 = total > 0 ? (double)ViewBag.Star1 / total * 100 : 0;
+        }
+
+        <div>
+            <div>
+                5 stars: @ViewBag.Star5
+                <div class="progress" style="height:10px; width: 300px">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width:@pct5%"></div>
+                </div>
+            </div>
+            <div>
+                4 stars: @ViewBag.Star4
+                <div class="progress" style="height:10px; width: 300px">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width:@pct4%"></div>
+                </div>
+            </div>
+            <div>
+                3 stars: @ViewBag.Star3
+                <div class="progress" style="height:10px; width: 300px">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width:@pct3%"></div>
+                </div>
+            </div>
+            <div>
+                2 stars: @ViewBag.Star2
+                <div class="progress" style="height:10px; width: 300px">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width:@pct2%"></div>
+                </div>
+            </div>
+            <div>
+                1 star: @ViewBag.Star1
+                <div class="progress" style="height:10px; width: 300px">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width:@pct1%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-2">
+            <strong>Average Rating: </strong> @String.Format("{0:F1}", ViewBag.AvgRate)
+            <span style="color:#FFD700;">
+                @for (int i = 1; i <= 5; i++)
+                {
+                    if (i <= Math.Round(ViewBag.AvgRate))
+                    {
+                        <i class="fa fa-star"></i>
+                    }
+                    else
+                    {
+                        <i class="fa fa-star-o"></i>
+                    }
+                }
+            </span>
+        </div>
     </div>
-    @if (ViewBag.listPosition != null)
+
+    @if (ViewBag.listComplaint != null)
     {
-        var ls = (List<Semester03.Areas.Partner.Models.Position>)ViewBag.listPosition;
+        var ls = (List<Semester03.Areas.Partner.Models.ComPlaint>)ViewBag.listComplaint;
         if (ls != null && ls.Count > 0)
         {
             int i = ViewBag.StartIndex;
@@ -38,26 +104,18 @@
                             <thead>
                                 <tr>
                                     <th scope="col">No</th>
-                                    <th scope="col">Location</th>
-                                    <th scope="col">Floor</th>
-                                    <th scope="col">Area</th>
-                                    <th scope="col">PricePerM2</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Start Date</th>
-                                    <th scope="col">End Date</th>
+                                    <th scope="col">Customer name</th>
+                                    <th scope="col">Rating</th>
+                                    <th scope="col">Created At</th>
                                     <th scope="col">Action</th>
                                 </tr>
                             </thead>
                             <tfoot>
                                 <tr>
                                     <th scope="col">No</th>
-                                    <th scope="col">Location</th>
-                                    <th scope="col">Floor</th>
-                                    <th scope="col">Area</th>
-                                    <th scope="col">PricePerM2</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Start Date</th>
-                                    <th scope="col">End Date</th>
+                                    <th scope="col">Customer name</th>
+                                    <th scope="col">Rating</th>
+                                    <th scope="col">Created At</th>
                                     <th scope="col">Action</th>
                                 </tr>
                             </tfoot>
@@ -66,31 +124,14 @@
                                 {
                                     <tr>
                                         <th scope="row">@i</th>
-                                        <td>@item.Location</td>
-                                        <td>@item.Floor</td>
-                                        <td>@item.Area</td>
-                                        <td>@item.PricePerM2</td>
+                                        <td>@item.CustomerName</td>
+                                        <td>@item.Rate <i class="fa-regular fa-star"></i></td>
+                                        <td>@item.Created</td>
                                         <td>
-                                            @if (item.Status == 1)
-                                            {
-                                                <span style="color:green">Active</span>
-                                            }
-                                            else
-                                            {
-                                                <span style="color:red">InActive</span>
-                                            }
+                                            <a href="@Url.Action("Detail", "Complaint", new {id = item.Id})">
+                                                <i class="fa-solid fa-circle-info"></i>
+                                            </a>
                                         </td>
-                                        <td>@item.Start</td>
-                                        <td>@item.End</td>
-                                        <td>
-                                            @if (item.Status == 1)  
-                                            {
-                                                <a href="@Url.Action("CreateEvent", "Event", new { id = item.Id })">
-                                                    <i class="fa-solid fa-calendar"></i>
-                                                </a>
-                                            }
-                                        </td>
-
                                     </tr>
                                     i++;
                                 }
@@ -143,32 +184,24 @@
                 <thead>
                     <tr>
                         <th scope="col">No</th>
-                        <th scope="col">Location</th>
-                        <th scope="col">Floor</th>
-                        <th scope="col">Area</th>
-                        <th scope="col">PricePerM2</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Start Date</th>
-                        <th scope="col">End Date</th>
+                        <th scope="col">Customer name</th>
+                        <th scope="col">Rating</th>
+                        <th scope="col">Created At</th>
                         <th scope="col">Action</th>
                     </tr>
                 </thead>
                 <tfoot>
                     <tr>
                         <th scope="col">No</th>
-                        <th scope="col">Location</th>
-                        <th scope="col">Floor</th>
-                        <th scope="col">Area</th>
-                        <th scope="col">PricePerM2</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Start Date</th>
-                        <th scope="col">End Date</th>
+                        <th scope="col">Customer name</th>
+                        <th scope="col">Rating</th>
+                        <th scope="col">Created At</th>
                         <th scope="col">Action</th>
                     </tr>
                 </tfoot>
                 <tbody>
                     <tr>
-                        <td colspan="4" class="text-center">No Position.</td>
+                        <td colspan="4" class="text-center">No Complaint.</td>
                     </tr>
                 </tbody>
             </table>
@@ -180,32 +213,24 @@
             <thead>
                 <tr>
                     <th scope="col">No</th>
-                    <th scope="col">Location</th>
-                    <th scope="col">Floor</th>
-                    <th scope="col">Area</th>
-                    <th scope="col">PricePerM2</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Start Date</th>
-                    <th scope="col">End Date</th>
+                    <th scope="col">Customer name</th>
+                    <th scope="col">Rating</th>
+                    <th scope="col">Created At</th>
                     <th scope="col">Action</th>
                 </tr>
             </thead>
             <tfoot>
                 <tr>
                     <th scope="col">No</th>
-                    <th scope="col">Location</th>
-                    <th scope="col">Floor</th>
-                    <th scope="col">Area</th>
-                    <th scope="col">PricePerM2</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Start Date</th>
-                    <th scope="col">End Date</th>
+                    <th scope="col">Customer name</th>
+                    <th scope="col">Rating</th>
+                    <th scope="col">Created At</th>
                     <th scope="col">Action</th>
                 </tr>
             </tfoot>
             <tbody>
                 <tr>
-                    <td colspan="4" class="text-center">No Position.</td>
+                    <td colspan="4" class="text-center">No Complaint.</td>
                 </tr>
             </tbody>
         </table>

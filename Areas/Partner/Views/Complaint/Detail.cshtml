@@ -1,0 +1,31 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "/Areas/Partner/Views/Shared/_LayoutPartner.cshtml";
+    ViewData["Title"] = "Partner Dashboard";
+}
+
+<div style="margin-left:20px; margin-right: 50px">
+    <h2>Detail Complaint</h2>
+    @if (ViewBag.itemComplaint != null)
+    {
+        Semester03.Areas.Partner.Models.ComPlaint comp =
+        (Semester03.Areas.Partner.Models.ComPlaint)ViewBag.itemComplaint;
+        <div class="form-group mb-3">
+            <label>CustomerName</label>
+            <input type="text" class="form-control" name="CategoryName" value="@comp.CustomerName" style="width: 300px;" readonly />
+        </div>
+        <div class="form-group mb-3">
+            <label>Rating</label>
+            @comp.Rate <i class="fa-regular fa-star"></i>
+        </div>
+        <div class="form-group mb-3">
+            <label>Complaint Description</label>
+            <textarea class="form-control" rows="3" readonly>@comp.Description</textarea>
+        </div>
+        <div class="form-group">
+            <a href="@Url.Action("Index", "Complaint", new{id = comp.EventId})" class="btn btn-secondary">Back</a>
+        </div>
+    }
+</div>

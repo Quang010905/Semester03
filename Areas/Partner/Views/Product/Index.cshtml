@@ -135,10 +135,10 @@
                                             </td>
                                             <td>
                                                 <a href="@Url.Action("Edit", "Product", new {id = item.Id, tenantId = ViewBag.tenantId})">
-                                                    <img src="@Url.Content("~/Icon/pen.png")" style="width:1vw; height:2vh;" />
+                                                    <i class="fa-solid fa-pen-to-square"></i>
                                                 </a>
                                                 <a href="@Url.Action("DeletePro", "Product", new {id = item.Id, cateId = item.CateId})" onclick="return confirm('Are you sure to delete this product ?')">
-                                                    <img src="@Url.Content("~/Icon/delete.png")" style="width:1vw; height:2vh;" />
+                                                    <i class="fa-solid fa-delete-left"></i>
                                                 </a>
                                             </td>
                                         </tr>

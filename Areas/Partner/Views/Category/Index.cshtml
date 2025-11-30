@@ -112,13 +112,13 @@
                                             </td>
                                             <td>
                                                 <a href="@Url.Action("Index", "Product", new {id = item.Id})">
-                                                    <img src="@Url.Content("~/Icon/product.png")" style="width:1vw; height:2vh;" />
+                                                    <i class="fa-brands fa-product-hunt"></i>
                                                 </a>
                                                 <a href="@Url.Action("Edit", "Category", new {id = item.Id})">
-                                                    <img src="@Url.Content("~/Icon/pen.png")" style="width:1vw; height:2vh;" />
+                                                    <i class="fa-solid fa-pen-to-square"></i>
                                                 </a>
                                                 <a href="@Url.Action("DeleteCate", "Category", new {id = item.Id, tenantId = item.TenantId})" onclick="return confirm('Are you sure to delete this category ?')">
-                                                    <img src="@Url.Content("~/Icon/delete.png")" style="width:1vw; height:2vh;" />
+                                                    <i class="fa-solid fa-delete-left"></i>
                                                 </a>
                                             </td>
                                         </tr>

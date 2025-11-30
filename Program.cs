@@ -62,7 +62,11 @@ builder.Services.AddScoped<TicketRepository>();
 builder.Services.AddScoped<EventTicketRepository>(); 
 builder.Services.AddScoped<EventBookingRepository>();
 builder.Services.AddScoped<TenantPromotionRepository>();
+
+builder.Services.AddScoped<ComplaintRepository>();
+
 builder.Services.AddScoped<CustomerComplaintRepository>();
+
 
 
 

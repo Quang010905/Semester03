@@ -170,11 +170,11 @@
                                                 @if (!isRunning)
                                                 {
                                                     <a href="@Url.Action("Edit", "TenantPromotion", new { id = item.ID })">
-                                                        <img src="@Url.Content("~/Icon/pen.png")" style="width:1vw; height:2vh;" />
+                                                        <i class="fa-solid fa-pen-to-square"></i>
                                                     </a>
                                                     <a href="@Url.Action("DeletePromotion", "TenantPromotion", new { id = item.ID, tenantId = item.TenantId })"
                                                        onclick="return confirm('Are you sure to delete this promotion ?')">
-                                                        <img src="@Url.Content("~/Icon/delete.png")" style="width:1vw; height:2vh;" />
+                                                        <i class="fa-solid fa-delete-left"></i>
                                                     </a>
                                                 }
                                             </td>
