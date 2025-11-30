@@ -318,6 +318,23 @@ namespace Semester03.Models.Repositories
             return total;
         }
 
+        /// <summary>
+        /// Check xem 1 user đã có booking confirmed (Paid / Free) cho 1 event chưa.
+        /// Dùng để giới hạn 1 vé free / user / event.
+        /// </summary>
+        public async Task<bool> HasConfirmedBookingForUserAsync(int eventId, int userId)
+        {
+            var confirmedStatuses = new[] { 1, 2 }; // 1 = Paid, 2 = Free / PartiallyRefunded
+
+            return await _db.TblEventBookings
+                .AsNoTracking()
+                .AnyAsync(b =>
+                    b.EventBookingEventId == eventId &&
+                    b.EventBookingUserId == userId &&
+                    b.EventBookingPaymentStatus != null &&
+                    confirmedStatuses.Contains(b.EventBookingPaymentStatus.Value));
+        }
+
         private int ParseQtyFromNotes(string notes)
         {
             if (string.IsNullOrWhiteSpace(notes)) return 1;
