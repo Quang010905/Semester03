@@ -8,9 +8,12 @@
     int totalSeats = Model.ShowtimeScreen?.ScreenSeats ?? 0;
     int soldSeats = Model.TblShowtimeSeats.Count(s => s.ShowtimeSeatStatus.ToLower() == "sold");
     int availableSeats = Model.TblShowtimeSeats.Count(s => s.ShowtimeSeatStatus.ToLower() == "available");
+    int blockedSeats = Model.TblShowtimeSeats.Count(s => s.ShowtimeSeatStatus.ToLower() == "blocked" || s.ShowtimeSeatStatus.ToLower() == "locked");
 
     // Occupancy percentage
     decimal occupancy = (totalSeats > 0) ? ((decimal)soldSeats / totalSeats) * 100 : 0;
+    bool isPast = Model.ShowtimeStart <= DateTime.Now;
+    bool isCancelled = (totalSeats > 0) && (blockedSeats == totalSeats);
 }
 
 <style>
@@ -272,21 +275,43 @@
 
     </div>
 
-    <div class="card-footer d-flex justify-content-between">
-        
+    <div class="card shadow mb-4 border-left-danger">
+        <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-danger">Emergency Actions</h6></div>
+        <div class="card-body">
+            @if (isPast)
+            {
+                <div class="alert alert-secondary m-0">
+                    <i class="fas fa-history"></i> Showtime has started/ended. No actions available.
+                </div>
+            }
+            else if (isCancelled) // [NEW] Nếu đã hủy
+            {
+                <div class="alert alert-danger m-0 text-center">
+                    <i class="fas fa-ban"></i> <strong>SHOWTIME CANCELLED</strong><br />
+                    All seats are blocked. No further actions required.
+                </div>
+            }
+            else
+            {
+                <p class="small">Options to handle technical issues (Broken projector, etc.)</p>
 
-        @if (soldSeats > 0)
-        {
-            <form asp-action="CancelAllTickets" asp-route-id="@Model.ShowtimeId" asp-controller="Tickets" method="post"
-                  onsubmit="return confirm('WARNING: This will cancel @soldSeats sold tickets! Are you sure?');">
-                <button type="submit" class="btn btn-danger">
-                    <i class="fas fa-bomb"></i> Cancel All Tickets
-                </button>
-            </form>
-        }
-        else
-        {
-            <button class="btn btn-secondary" disabled>No Tickets to Cancel</button>
-        }
+                @if (soldSeats > 0)
+                {
+                    <form asp-action="CancelAllTickets" asp-controller="Tickets" asp-route-id="@Model.ShowtimeId" method="post" class="mb-2">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-warning btn-block" onclick="return confirm('Refund ALL @soldSeats tickets?');">
+                            <i class="fas fa-ticket-alt"></i> Refund All Tickets Only
+                        </button>
+                    </form>
+                }
+
+                <form asp-action="CancelShowtime" asp-controller="Showtimes" asp-route-id="@Model.ShowtimeId" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger btn-block" onclick="return confirm('DANGER: This will REFUND tickets and BLOCK all seats.\n\nProceed?');">
+                        <i class="fas fa-ban"></i> Cancel Showtime (Block Seats)
+                    </button>
+                </form>
+            }
+        </div>
     </div>
 </div>

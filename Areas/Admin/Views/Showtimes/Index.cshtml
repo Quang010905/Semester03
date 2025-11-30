@@ -483,6 +483,12 @@
                         openCreateModal(newScreenId, newScreenName, movieId, movieTitle, fullDateStr);
                     }
                     else if (ui.draggable.hasClass("showtime-block")) {
+                        var sold = ui.draggable.data('sold');
+                        if (sold > 0) {
+                            alert("Action Denied: Tickets sold! You cannot reschedule this showtime. Please Cancel and create a new one.");
+                            ui.draggable.animate({top: "10px", left: ui.draggable.data("original-left")}, "fast");
+                            return;
+                        }
                         // RESCHEDULE
                         var id = ui.draggable.data('id');
                         rescheduleShowtime(id, newScreenId, fullDateISO, ui.draggable);
@@ -560,6 +566,24 @@
             $('#Input_MovieId').val(movieId);
             $('#Input_StartTime').val(startTime);
             $('#Input_Price').val(price);
+
+            if (sold > 0) {
+                // Khóa Movie, Screen, Time
+                $('#Input_MovieId').prop('disabled', true); // (Input hidden ko cần khóa, nhưng nếu có dropdown thì khóa)
+                $('#Display_MovieTitle').prop('disabled', true); // Chỉ để hiển thị
+
+                $('#Input_ScreenId').prop('disabled', true);
+
+                $('#Input_StartTime').prop('disabled', true).addClass('bg-light');
+
+                $('#Input_Price').prop('disabled', true);
+
+                // Thêm cảnh báo
+                $('#modalTitle').append(' <small class="text-danger">(Locked)</small>');
+            } else {
+                // Mở khóa nếu chưa bán vé (để tái sử dụng modal)
+                $('#Input_StartTime').prop('disabled', false).removeClass('bg-light');
+            }
 
             $('#showtimeModal').modal('show');
         }

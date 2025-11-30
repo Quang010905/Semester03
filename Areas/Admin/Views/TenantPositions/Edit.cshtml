@@ -162,6 +162,7 @@ else
                         <li>Top Pct: @Model.TenantPositionTopPct%</li>
                     </ul>
                 </div>
+                
                 @if (Model.PositionLeaseEnd.HasValue && Model.PositionLeaseEnd.Value <= DateTime.Now.AddDays(30) && Model.PositionLeaseEnd.Value > DateTime.Now)
                 {
                     <div class="alert alert-warning mt-3 p-2">
@@ -175,6 +176,26 @@ else
                             </button>
                         </form>
                     </div>
+                }
+                @if (Model.TenantPositionStatus == 1 && Model.TenantPositionAssignedTenantId != null)
+                {
+                    if (!Model.PositionLeaseEnd.HasValue || Model.PositionLeaseEnd.Value >= DateTime.Now)
+                    {
+                        <hr />
+                        <div class="alert alert-light border-warning">
+                            <h6 class="font-weight-bold text-warning">Early Termination</h6>
+                            <p class="small text-muted mb-2">Tenant leaving before contract end?</p>
+
+                            <form asp-action="Evict" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.TenantPositionId" />
+                                <button type="submit" class="btn btn-outline-danger btn-block btn-sm"
+                                        onclick="return confirm('CONFIRM: Tenant creates vacancy early?\n\nThis will remove the tenant and clear lease dates immediately.');">
+                                    <i class="fas fa-user-slash"></i> Terminate Lease & Vacate
+                                </button>
+                            </form>
+                        </div>
+                    }
                 }
                 @if (Model.PositionLeaseEnd.HasValue && Model.PositionLeaseEnd.Value < DateTime.Now)
                 {
@@ -240,6 +261,31 @@ else
                 placeholder: "-- Search & Select Tenant --",
                 allowClear: true     // Cho phép xóa chọn về trống (Vacant)
             });
+
+            function toggleLeaseInputs() {
+                var tenantId = $('#TenantPositionAssignedTenantId').val();
+                var $dateInputs = $('#PositionLeaseStart, #PositionLeaseEnd');
+
+                if (tenantId && tenantId !== "") {
+                    // Có Tenant -> Cho phép nhập ngày
+                    $dateInputs.prop('disabled', false);
+                    $dateInputs.removeClass('bg-light'); // Bỏ màu xám (nếu có)
+                } else {
+                    // Vacant -> Khóa và Xóa ngày
+                    $dateInputs.prop('disabled', true);
+                    $dateInputs.val(''); // Reset về rỗng
+                    $dateInputs.addClass('bg-light'); // Thêm màu xám cho rõ
+                }
+            }
+
+            // Gọi hàm ngay khi trang vừa load (để xử lý trạng thái ban đầu)
+            toggleLeaseInputs();
+
+            // Gọi hàm mỗi khi người dùng thay đổi dropdown Tenant
+            $('#TenantPositionAssignedTenantId').on('change', function() {
+                toggleLeaseInputs();
+            });
+
         });
     </script>
 

@@ -259,6 +259,7 @@ namespace Semester03.Models.Repositories
             if (booking == null) return false;
 
             booking.EventBookingPaymentStatus = cancelStatus;
+            booking.EventBookingStatus = 0;
             try
             {
                 var updatedProp = booking.GetType().GetProperty("EventBookingUpdatedDate") ??
@@ -449,5 +450,69 @@ namespace Semester03.Models.Repositories
             _db.TblEventBookingHistories.Add(history);
             await _db.SaveChangesAsync();
         }
+
+
+        public async Task<IEnumerable<TblEventBooking>> SearchBookingsAsync(
+            int? eventId,
+            string keyword,
+            DateTime? fromDate,
+            DateTime? toDate,
+            string status) // status: "paid", "unpaid", "cancelled", "all"
+        {
+            var query = GetFullBookingQuery();
+
+            // 1. Filter by Event
+            if (eventId.HasValue)
+            {
+                query = query.Where(b => b.EventBookingEventId == eventId);
+            }
+
+            // 2. Filter by Date Range (Booking Date)
+            if (fromDate.HasValue)
+            {
+                query = query.Where(b => b.EventBookingCreatedDate >= fromDate.Value.Date);
+            }
+            if (toDate.HasValue)
+            {
+                query = query.Where(b => b.EventBookingCreatedDate < toDate.Value.Date.AddDays(1));
+            }
+
+            // 3. Filter by Status
+            if (!string.IsNullOrEmpty(status) && status.ToLower() != "all")
+            {
+                switch (status.ToLower())
+                {
+                    case "paid":
+                        query = query.Where(b => b.EventBookingPaymentStatus == 1);
+                        break;
+                    case "unpaid":
+                        query = query.Where(b => b.EventBookingPaymentStatus == 0);
+                        break;
+                    case "free":
+                        query = query.Where(b => b.EventBookingPaymentStatus == 2);
+                        break;
+                    case "cancelled":
+                        query = query.Where(b => b.EventBookingPaymentStatus == 3 || b.EventBookingStatus == 0);
+                        break;
+                }
+            }
+
+            // 4. Keyword Search (Customer Name, Phone, Email, BookingID)
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                string k = keyword.ToLower();
+                query = query.Where(b =>
+                    b.EventBookingId.ToString() == k ||
+                    (b.EventBookingUser != null && (
+                        b.EventBookingUser.UsersFullName.ToLower().Contains(k) ||
+                        b.EventBookingUser.UsersPhone.Contains(k) ||
+                        b.EventBookingUser.UsersEmail.ToLower().Contains(k)
+                    ))
+                );
+            }
+
+            return await query.OrderByDescending(b => b.EventBookingCreatedDate).ToListAsync();
+        }
+
     }
 }

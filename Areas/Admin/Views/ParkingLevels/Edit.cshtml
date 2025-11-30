@@ -15,8 +15,10 @@
             </div>
             <div class="card-body">
                 <form asp-action="Edit">
-                    <div asp-validation-summary="All" class="text-danger"></div>
+                    <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                     <input type="hidden" asp-for="LevelId" />
+                    
 
                     <div class="form-group">
                         <label asp-for="LevelName" class="control-label">Level Name (e.g., "Basement 1 (B1)")</label>

@@ -6,6 +6,7 @@ using Semester03.Areas.Admin.Models;
 using Semester03.Areas.Client.Models.ViewModels;
 using Semester03.Models.Entities;
 using Semester03.Models.Repositories;
+using Semester03.Services.Email;
 using System.Globalization;
 
 namespace Semester03.Areas.Admin.Controllers
@@ -17,14 +18,22 @@ namespace Semester03.Areas.Admin.Controllers
         private readonly ShowtimeRepository _showtimeRepo;
         // We inject the context to get lists for Dropdowns
         private readonly AbcdmallContext _context;
+        private readonly TicketRepository _ticketRepo;      
+        private readonly TicketEmailService _emailService;
 
-        public ShowtimesController(ShowtimeRepository showtimeRepo, AbcdmallContext context)
+        public ShowtimesController(
+            ShowtimeRepository showtimeRepo,
+            TicketRepository ticketRepo,
+            TicketEmailService emailService,
+            AbcdmallContext context)
         {
             _showtimeRepo = showtimeRepo;
+            _ticketRepo = ticketRepo;
+            _emailService = emailService;
             _context = context;
         }
 
-        
+
 
         // GET: Admin/Showtimes
         public async Task<IActionResult> Index(DateTime? date)
@@ -100,6 +109,16 @@ namespace Semester03.Areas.Admin.Controllers
                 TempData["Error"] = "Cannot schedule a showtime in the past.";
                 return RedirectToAction(nameof(Index), new { date = tblShowtime.ShowtimeStart.Date });
             }
+            var movie = await _context.TblMovies.FindAsync(tblShowtime.ShowtimeMovieId);
+            if (movie != null)
+            {
+                if (tblShowtime.ShowtimeStart.Date < movie.MovieStartDate.Date ||
+                    tblShowtime.ShowtimeStart.Date > movie.MovieEndDate.Date)
+                {
+                    TempData["Error"] = $"Invalid Date! The movie '{movie.MovieTitle}' is only available from {movie.MovieStartDate:dd/MM/yyyy} to {movie.MovieEndDate:dd/MM/yyyy}.";
+                    return RedirectToAction(nameof(Index), new { date = tblShowtime.ShowtimeStart.Date });
+                }
+            }
 
             int duration = await _showtimeRepo.GetMovieDurationAsync(tblShowtime.ShowtimeMovieId);
 
@@ -135,8 +154,33 @@ namespace Semester03.Areas.Admin.Controllers
                 // 2. EDIT EXISTING
                 else
                 {
+                    bool hasSoldTickets = await _context.TblTickets
+                        .Include(t => t.TicketShowtimeSeat)
+                        .AnyAsync(t => t.TicketShowtimeSeat.ShowtimeSeatShowtimeId == tblShowtime.ShowtimeId
+                                       && t.TicketStatus == "sold");
+
+                    if (hasSoldTickets)
+                    {
+                        // Lấy thông tin cũ để so sánh
+                        var oldShowtime = await _showtimeRepo.GetByIdAsync(tblShowtime.ShowtimeId);
+
+
+                        if (oldShowtime.ShowtimeMovieId != tblShowtime.ShowtimeMovieId ||
+                            oldShowtime.ShowtimeStart != tblShowtime.ShowtimeStart ||
+                            oldShowtime.ShowtimeScreenId != tblShowtime.ShowtimeScreenId ||
+                            oldShowtime.ShowtimePrice != tblShowtime.ShowtimePrice)
+                        {
+                            TempData["Error"] = "Action Denied: Cannot change Movie, Time, or Screen because tickets have already been sold. Please cancel this showtime and create a new one.";
+                            return RedirectToAction(nameof(Index), new { date = oldShowtime.ShowtimeStart.Date });
+                        }
+                        tblShowtime.ShowtimeMovieId = oldShowtime.ShowtimeMovieId;
+                        tblShowtime.ShowtimeScreenId = oldShowtime.ShowtimeScreenId;
+                        tblShowtime.ShowtimeStart = oldShowtime.ShowtimeStart;
+                        tblShowtime.ShowtimePrice = oldShowtime.ShowtimePrice;
+                    }
                     try
                     {
+
                         await _showtimeRepo.UpdateAsync(tblShowtime);
                         TempData["Success"] = "Showtime updated successfully.";
                     }
@@ -177,8 +221,37 @@ namespace Semester03.Areas.Admin.Controllers
                 return Json(new { success = false, message = "Cannot move showtime to the past." });
             }
 
+            bool hasSold = await _context.TblTickets
+                .Include(t => t.TicketShowtimeSeat)
+                .AnyAsync(t => t.TicketShowtimeSeat.ShowtimeSeatShowtimeId == id
+                               && t.TicketStatus == "sold");
+
+            if (hasSold)
+            {
+                return Json(new { success = false, message = "Cannot reschedule: Tickets have been sold." });
+            }
+
             var showtime = await _showtimeRepo.GetByIdAsync(id);
             if (showtime == null) return Json(new { success = false, message = "Not found." });
+
+            var newScreen = await _context.TblScreens.FindAsync(newScreenId);
+            if (newScreen == null) return Json(new { success = false, message = "New screen not found." });
+
+            int soldTickets = await _context.TblTickets
+                .Include(t => t.TicketShowtimeSeat)
+                .CountAsync(t => t.TicketShowtimeSeat.ShowtimeSeatShowtimeId == id
+                                 && t.TicketStatus == "sold"); 
+
+            // Nếu số vé đã bán > Tổng số ghế của phòng mới -> CHẶN
+            if (soldTickets > newScreen.ScreenSeats)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = $"Cannot move to '{newScreen.ScreenName}'! This showtime has sold {soldTickets} tickets, but the new screen only has {newScreen.ScreenSeats} seats."
+                });
+            }
+
 
             // Update
             showtime.ShowtimeScreenId = newScreenId;
@@ -214,20 +287,107 @@ namespace Semester03.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index), new { date = returnDate });
             }
 
-            // Check dependencies
-            bool hasSeats = await _context.TblShowtimeSeats.AnyAsync(s => s.ShowtimeSeatShowtimeId == id && s.ShowtimeSeatStatus == "sold");
-            if (hasSeats)
+            bool hasTickets = await _context.TblTickets
+                .Include(t => t.TicketShowtimeSeat)
+                .AnyAsync(t => t.TicketShowtimeSeat.ShowtimeSeatShowtimeId == id);
+
+            if (hasTickets)
             {
-                TempData["Error"] = "Cannot delete: Tickets have already been sold!";
+                TempData["Error"] = "Cannot DELETE: Tickets exist (Active or Cancelled history). Please use 'Cancel Showtime' inside Details page to preserve history.";
                 return RedirectToAction(nameof(Index), new { date = returnDate });
             }
 
-
+            
             await _showtimeRepo.DeleteAsync(id);
             TempData["Success"] = "Showtime deleted.";
             return RedirectToAction(nameof(Index), new { date = returnDate });
         }
 
-        
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CancelShowtime(int id)
+        {
+            var showtime = await _context.TblShowtimes.FindAsync(id);
+            if (showtime == null) return NotFound();
+
+            // 1. Check Showtime Time
+            if (showtime.ShowtimeStart <= DateTime.Now)
+            {
+                TempData["Error"] = "Cannot cancel: Showtime has already started or ended.";
+                return RedirectToAction(nameof(Details), new { id = id });
+            }
+
+            // 2. Get Sold Tickets
+            var soldTickets = await _context.TblTickets
+                .Include(t => t.TicketBuyerUser)
+                .Include(t => t.TicketShowtimeSeat)
+                    .ThenInclude(ss => ss.ShowtimeSeatShowtime)
+                        .ThenInclude(s => s.ShowtimeMovie)
+                .Include(t => t.TicketShowtimeSeat).ThenInclude(ss => ss.ShowtimeSeatSeat)
+                .Where(t => t.TicketShowtimeSeat.ShowtimeSeatShowtimeId == id && t.TicketStatus == "sold")
+                .ToListAsync();
+
+            // 3. Send Email
+            if (soldTickets.Any())
+            {
+                var customerGroups = soldTickets.GroupBy(t => t.TicketBuyerUserId);
+                foreach (var group in customerGroups)
+                {
+                    try
+                    {
+                        var userId = group.Key;
+                        var first = group.First();
+                        var movie = first.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeMovie?.MovieTitle;
+                        var date = showtime.ShowtimeStart;
+                        var seats = group.Select(t => t.TicketShowtimeSeat?.ShowtimeSeatSeat?.SeatLabel).ToList();
+                        var refundAmount = group.Sum(t => t.TicketPrice);
+
+                        await _emailService.SendMovieCancelEmailAsync(userId, movie, date, seats, refundAmount);
+                    }
+                    catch { /* Log error but continue */ }
+                }
+            }
+
+            // 4. TRANSACTION: UPDATE DB (Cancel Ticket + Lock Seat)
+            using (var transaction = _context.Database.BeginTransaction())
+            {
+                try
+                {
+                    // A. Update Status -> "cancelled"
+                    foreach (var t in soldTickets)
+                    {
+                        t.TicketStatus = "cancelled";
+                        t.TicketUpdatedAt = DateTime.Now;
+                    }
+                    _context.TblTickets.UpdateRange(soldTickets);
+
+                    // B. [MAIN LOGIC] Lock All Seat -> "blocked"
+                    var allSeats = await _context.TblShowtimeSeats
+                        .Where(ss => ss.ShowtimeSeatShowtimeId == id)
+                        .ToListAsync();
+
+                    foreach (var seat in allSeats)
+                    {
+                        seat.ShowtimeSeatStatus = "blocked"; 
+                        seat.ShowtimeSeatReservedByUserId = null; 
+                        seat.ShowtimeSeatReservedAt = null;
+                        seat.ShowtimeSeatUpdatedAt = DateTime.Now;
+                    }
+                    _context.TblShowtimeSeats.UpdateRange(allSeats);
+
+                    await _context.SaveChangesAsync();
+                    transaction.Commit();
+
+                    TempData["Success"] = $"Showtime cancelled. {soldTickets.Count} tickets refunded. All seats are now BLOCKED.";
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    TempData["Error"] = "System Error: Could not cancel showtime. " + ex.Message;
+                }
+            }
+
+            return RedirectToAction(nameof(Details), new { id = id });
+        }
     }
 }
