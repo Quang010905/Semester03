@@ -34,6 +34,13 @@ namespace Semester03.Areas.Admin.Controllers
             ViewBag.ComplaintEvent = complaintEvent;
 
 
+            var allcomplaint= await _cusRepo.GetAllComplaintsAsync();
+            ViewBag.AllComplaint = allcomplaint; 
+
+
+
+
+
             return View();
         }
 
