@@ -1,0 +1,238 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "/Areas/Partner/Views/Shared/_LayoutPartner.cshtml";
+    ViewData["Title"] = "Partner Dashboard";
+}
+@section headerContent
+{
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2018.3.1017/styles/kendo.common-material.min.css" />
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2018.3.1017/styles/kendo.material.min.css" />
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2018.3.1017/styles/kendo.material.mobile.min.css" />
+}
+<div style="margin-left:20px; margin-right: 50px">
+    <h2>List Event Complaint</h2>
+    @if (ViewBag.itemTenant != null)
+    {
+        Semester03.Areas.Admin.Models.Tenant tenant =
+        (Semester03.Areas.Admin.Models.Tenant)ViewBag.itemTenant;
+
+        <div class="form-group mb-3">
+            <label>Tenant</label>
+            <input type="text" class="form-control" value="@tenant.Name" style="width: 300px;" readonly />
+        </div>
+        <div class="form-group">
+            <a href="@Url.Action("Index", "Shop")" class="btn btn-secondary">Back</a>
+        </div>
+    }
+    <div class="mb-3">
+        <h5>Rating Summary</h5>
+
+        @{
+
+            int total = ViewBag.TotalCount ?? 0;
+
+            double pct5 = total > 0 ? (double)ViewBag.Star5 / total * 100 : 0;
+            double pct4 = total > 0 ? (double)ViewBag.Star4 / total * 100 : 0;
+            double pct3 = total > 0 ? (double)ViewBag.Star3 / total * 100 : 0;
+            double pct2 = total > 0 ? (double)ViewBag.Star2 / total * 100 : 0;
+            double pct1 = total > 0 ? (double)ViewBag.Star1 / total * 100 : 0;
+        }
+
+        <div>
+            <div>
+                5 stars: @ViewBag.Star5
+                <div class="progress" style="height:10px; width: 300px">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width:@pct5%"></div>
+                </div>
+            </div>
+            <div>
+                4 stars: @ViewBag.Star4
+                <div class="progress" style="height:10px; width: 300px">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width:@pct4%"></div>
+                </div>
+            </div>
+            <div>
+                3 stars: @ViewBag.Star3
+                <div class="progress" style="height:10px; width: 300px">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width:@pct3%"></div>
+                </div>
+            </div>
+            <div>
+                2 stars: @ViewBag.Star2
+                <div class="progress" style="height:10px; width: 300px">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width:@pct2%"></div>
+                </div>
+            </div>
+            <div>
+                1 star: @ViewBag.Star1
+                <div class="progress" style="height:10px; width: 300px">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width:@pct1%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-2">
+            <strong>Average Rating: </strong> @String.Format("{0:F1}", ViewBag.AvgRate)
+            <span style="color:#FFD700;">
+                @for (int i = 1; i <= 5; i++)
+                {
+                    if (i <= Math.Round(ViewBag.AvgRate))
+                    {
+                        <i class="fa fa-star"></i>
+                    }
+                    else
+                    {
+                        <i class="fa fa-star-o"></i>
+                    }
+                }
+            </span>
+        </div>
+    </div>
+
+    @if (ViewBag.listComplaint != null)
+    {
+        var ls = (List<Semester03.Areas.Partner.Models.ComPlaint>)ViewBag.listComplaint;
+        if (ls != null && ls.Count > 0)
+        {
+            int i = ViewBag.StartIndex;
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th scope="col">No</th>
+                                    <th scope="col">Customer name</th>
+                                    <th scope="col">Rating</th>
+                                    <th scope="col">Created At</th>
+                                    <th scope="col">Action</th>
+                                </tr>
+                            </thead>
+                            <tfoot>
+                                <tr>
+                                    <th scope="col">No</th>
+                                    <th scope="col">Customer name</th>
+                                    <th scope="col">Rating</th>
+                                    <th scope="col">Created At</th>
+                                    <th scope="col">Action</th>
+                                </tr>
+                            </tfoot>
+                            <tbody>
+                                @foreach (var item in ls)
+                                {
+                                    <tr>
+                                        <th scope="row">@i</th>
+                                        <td>@item.CustomerName</td>
+                                        <td>@item.Rate <i class="fa-regular fa-star"></i></td>
+                                        <td>@item.Created</td>
+                                        <td>
+                                            <a href="@Url.Action("DetailByTenant", "Complaint", new {id = item.Id})">
+                                                <i class="fa-solid fa-circle-info"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    i++;
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                @{
+                    string search = ViewBag.Search ?? "";
+                }
+                <div class="row">
+                    <div class="col-sm-12 col-md-5">
+                        <div class="dataTables_info" role="status" aria-live="polite" style="margin-left:20px">
+                            @if (ViewBag.TotalItems > 0)
+                            {
+                                <text>
+                                    Page @ViewBag.CurrentPage
+                                    of @ViewBag.TotalPages
+                                </text>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="col-sm-12 col-md-7">
+                        <div class="dataTables_paginate paging_simple_numbers">
+                            <ul class="pagination">
+                                <li class="paginate_button page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                                    <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage - 1 , search = search})">Previous</a>
+                                </li>
+
+                                @for (int j = 1; j <= ViewBag.TotalPages; j++)
+                                {
+                                    <li class="paginate_button page-item @(j == ViewBag.CurrentPage ? "active" : "")">
+                                        <a class="page-link" href="@Url.Action("Index", new { page = j, search = search })">@j</a>
+                                    </li>
+                                }
+
+                                <li class="paginate_button page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                                    <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage + 1, search = search })">Next</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th scope="col">No</th>
+                        <th scope="col">Customer name</th>
+                        <th scope="col">Rating</th>
+                        <th scope="col">Created At</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tfoot>
+                    <tr>
+                        <th scope="col">No</th>
+                        <th scope="col">Customer name</th>
+                        <th scope="col">Rating</th>
+                        <th scope="col">Created At</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </tfoot>
+                <tbody>
+                    <tr>
+                        <td colspan="4" class="text-center">No Complaint.</td>
+                    </tr>
+                </tbody>
+            </table>
+        }
+    }
+    else
+    {
+        <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+            <thead>
+                <tr>
+                    <th scope="col">No</th>
+                    <th scope="col">Customer name</th>
+                    <th scope="col">Rating</th>
+                    <th scope="col">Created At</th>
+                    <th scope="col">Action</th>
+                </tr>
+            </thead>
+            <tfoot>
+                <tr>
+                    <th scope="col">No</th>
+                    <th scope="col">Customer name</th>
+                    <th scope="col">Rating</th>
+                    <th scope="col">Created At</th>
+                    <th scope="col">Action</th>
+                </tr>
+            </tfoot>
+            <tbody>
+                <tr>
+                    <td colspan="4" class="text-center">No Complaint.</td>
+                </tr>
+            </tbody>
+        </table>
+    }
+</div>

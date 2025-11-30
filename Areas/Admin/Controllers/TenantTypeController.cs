@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Semester03.Areas.Admin.Models;
 using Semester03.Models.Repositories;
 using System;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 namespace Semester03.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = "1")]
     public class TenantTypeController : Controller
     {
         private readonly TenantTypeRepository _tenantTypeRepo;
@@ -70,10 +72,18 @@ namespace Semester03.Areas.Admin.Controllers
         [HttpPost]
         public async Task<ActionResult> AddTenantType()
         {
-            string? name = Request.Form["TenantTypeName"];
             string statusRaw = Request.Form["TenantTypeStatus"];
             int status = (statusRaw == "true" || statusRaw == "1") ? 1 : 0;
+            string? rawName = Request.Form["TenantTypeName"];
+            string name = rawName.Trim();
+            string normalized = Normalize(name);
 
+            // ❌ Không cho phép thêm Cinema (mọi kiểu viết)
+            if (normalized == "cinema")
+            {
+                TempData["ErrorMessage"] = "Tenant type 'Cinema' is not allowed.";
+                return RedirectToAction("Index");
+            }
             if (string.IsNullOrWhiteSpace(name))
             {
                 TempData["ErrorMessage"] = "Please enter enough information";
@@ -120,7 +130,16 @@ namespace Semester03.Areas.Admin.Controllers
         public async Task<ActionResult> UpdateTenantType()
         {
             string? tenantTypeIdRaw = Request.Form["TenantTypeId"];
-            string? tenantTypeName = Request.Form["TenantTypeName"];
+            string? rawName = Request.Form["TenantTypeName"];
+            string name = rawName.Trim();
+            string normalized = Normalize(name);
+
+            // ❌ Không cho phép thêm Cinema (mọi kiểu viết)
+            if (normalized == "cinema")
+            {
+                TempData["ErrorMessage"] = "Tenant type 'Cinema' is not allowed.";
+                return RedirectToAction("Index");
+            }
             string statusRaw = Request.Form["TenantTypeStatus"];
 
             if (!int.TryParse(tenantTypeIdRaw, out int tenantTypeId))
@@ -131,14 +150,14 @@ namespace Semester03.Areas.Admin.Controllers
 
             int status = statusRaw.Contains("1") || statusRaw == "true" ? 1 : 0;
 
-            if (string.IsNullOrWhiteSpace(tenantTypeName))
+            if (string.IsNullOrWhiteSpace(name))
             {
                 TempData["ErrorMessage"] = "Please enter enough information";
                 return RedirectToAction("Edit", new { id = tenantTypeId });
             }
 
             // Kiểm tra trùng tên, loại trừ chính id đang update
-            bool exists = await _tenantTypeRepo.CheckTenantTypeNameAsync(tenantTypeName, tenantTypeId);
+            bool exists = await _tenantTypeRepo.CheckTenantTypeNameAsync(name, tenantTypeId);
             if (exists)
             {
                 TempData["ErrorMessage"] = "Tenant type name already exist";
@@ -148,7 +167,7 @@ namespace Semester03.Areas.Admin.Controllers
             var item = new TenantType
             {
                 Id = tenantTypeId,
-                Name = tenantTypeName,
+                Name = name,
                 Status = status
             };
 
@@ -164,5 +183,14 @@ namespace Semester03.Areas.Admin.Controllers
 
             return RedirectToAction("Index", "TenantType");
         }
+        private string Normalize(string s)
+        {
+            return new string(s
+                .Trim()
+                .ToLower()
+                .Where(char.IsLetterOrDigit) 
+                .ToArray());
+        }
+
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Semester03.Areas.Admin.Models;
 using Semester03.Areas.Partner.Models;
 using Semester03.Models.Repositories;
@@ -6,6 +7,7 @@ using Semester03.Models.Repositories;
 namespace Semester03.Areas.Partner.Controllers
 {
     [Area("Partner")]
+    [Authorize(Roles = "2")]
     public class ProductController : Controller
     {
         private readonly CategoryRepository _categoryRepo;

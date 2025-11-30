@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using DocumentFormat.OpenXml.InkML;
+using Microsoft.EntityFrameworkCore;
+using Semester03.Areas.Partner.Models;
 using Semester03.Models.Entities;
 using System;
 using System.Collections.Generic;
@@ -530,6 +532,52 @@ namespace Semester03.Models.Repositories
 
             return await query.OrderByDescending(b => b.EventBookingCreatedDate).ToListAsync();
         }
-
+        //Partner
+        public async Task<List<EventBooking>> GetAllBookingsByEventId(int eventId)
+        {
+            return await _db.TblEventBookings
+                .Where(x => x.EventBookingEventId == eventId && x.EventBookingPaymentStatus == 1)
+                .Select(x => new EventBooking
+                {
+                    Id = x.EventBookingId,
+                    TenantId = x.EventBookingTenantId,
+                    UserId = x.EventBookingUserId,
+                    EventId = x.EventBookingEventId,
+                    Date = (DateOnly)x.EventBookingDate,
+                    Quantity = x.EventBookingQuantity ?? 0,
+                    UnitPrice = (decimal)x.EventBookingUnitPrice,
+                    TotalCost = (decimal)x.EventBookingTotalCost,
+                    PaymentStatus = x.EventBookingPaymentStatus ?? 0,
+                    Status = x.EventBookingStatus ?? 0,
+                    Note = x.EventBookingNotes,
+                    Created = x.EventBookingCreatedDate ?? DateTime.MinValue,
+                    Username = x.EventBookingUser.UsersFullName
+                })
+                .ToListAsync();
+        }
+        public async Task<EventBooking?> FindById(int id)
+        {
+            return await _db.TblEventBookings
+                .Where(t => t.EventBookingId == id)
+                .Select(x => new EventBooking
+                {
+                    Id = x.EventBookingId,
+                    TenantId = x.EventBookingTenantId,
+                    UserId = x.EventBookingUserId,
+                    EventId = x.EventBookingEventId,
+                    Date = (DateOnly)x.EventBookingDate,
+                    Quantity = x.EventBookingQuantity ?? 0,
+                    UnitPrice = (decimal)x.EventBookingUnitPrice,
+                    TotalCost = (decimal)x.EventBookingTotalCost,
+                    PaymentStatus = x.EventBookingPaymentStatus ?? 0,
+                    Status = x.EventBookingStatus ?? 0,
+                    Note = x.EventBookingNotes,
+                    Created = x.EventBookingCreatedDate ?? DateTime.MinValue,
+                    //Username = x.EventBookingUser.UsersFullName,
+                    //EventName = x.EventBookingEvent.EventName,
+                    //TenantName = x.EventBookingTenant.TenantName
+                })
+                .FirstOrDefaultAsync();
+        }
     }
 }

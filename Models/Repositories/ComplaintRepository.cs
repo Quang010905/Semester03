@@ -52,5 +52,25 @@ namespace Semester03.Models.Repositories
                 .FirstOrDefaultAsync();
         }
 
+
+        public async Task<List<ComPlaint>> GetAllComplaintsByTenant(int tenantId)
+        {
+            return await _context.TblCustomerComplaints
+                .Where(x => x.CustomerComplaintTenantId == tenantId && x.CustomerComplaintStatus == 1)
+                .Select(x => new ComPlaint
+                {
+                    Id = x.CustomerComplaintId,
+                    CustomerUserId = x.CustomerComplaintCustomerUserId,
+                    TenantId = x.CustomerComplaintTenantId ?? 0,
+                    Rate = x.CustomerComplaintRate,
+                    Description = x.CustomerComplaintDescription,
+                    Status = x.CustomerComplaintStatus ?? 0,
+                    Created = x.CustomerComplaintCreatedAt ?? DateTime.MinValue,
+                    MovieId = x.CustomerComplaintMovieId ?? 0,
+                    EventId = x.CustomerComplaintEventId ?? 0,
+                    CustomerName = x.CustomerComplaintCustomerUser.UsersFullName
+                })
+                .ToListAsync();
+        }
     }
 }
