@@ -14,6 +14,10 @@
         public string Description { get; set; }
 
         public List<CommentVm> Comments { get; set; } = new List<CommentVm>();
+        public int CommentPageIndex { get; set; }
+        public int CommentPageSize { get; set; }
+        public int CommentTotalPages { get; set; }
+        public int CommentCount { get; set; }
     }
 
     public class CommentVm
