@@ -2,7 +2,9 @@
 @{
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
     ViewData["Title"] = "Register for Event";
+
     var price = ViewBag.Price as decimal? ?? 0m;
+
     Func<string, string> Img = (raw) =>
     {
         if (string.IsNullOrWhiteSpace(raw))
@@ -29,6 +31,10 @@
 
     // mall name fallback
     var mallName = ViewData["MallName"] as string ?? "ABCD Mall";
+
+    // prefill contact info từ ViewBag
+    var defaultContactName = ViewBag.DefaultContactName as string ?? "";
+    var defaultContactEmail = ViewBag.DefaultContactEmail as string ?? "";
 
     var localFallback = "/mnt/data/42367463-3aa2-497c-8350-8f22d9917819.png";
     var imgSrc = string.IsNullOrWhiteSpace(Model?.Event?.ImageUrl)
@@ -269,7 +275,10 @@
 
                     <div class="stat-list">
                         <div class="stat-item"><strong>Max slots:</strong> @Model.Event.MaxSlot</div>
-                        <div class="stat-item"><strong>Available:</strong> <span id="availableSlots">@Model.AvailableSlots</span></div>
+                        <div class="stat-item">
+                            <strong>Available:</strong>
+                            <span id="availableSlots">@Model.AvailableSlots</span>
+                        </div>
                         <div class="stat-item">
                             <strong>Ticket price:</strong>
                             @if (price > 0m)
@@ -293,8 +302,6 @@
                 </div>
 
                 @{
-                    // Nếu có OrganizerShopName => sự kiện của shop
-                    // Ngược lại => sự kiện của mall
                     var organizerName = !string.IsNullOrWhiteSpace(Model.Event?.OrganizerShopName)
                     ? Model.Event.OrganizerShopName
                     : mallName;
@@ -323,7 +330,8 @@
 
                 <div class="small-muted mt-3"><strong>Notes:</strong></div>
                 <div class="mb-0" style="color:#374151;">
-                    You will receive a confirmation email once your booking is successful. For paid events, the system will redirect you to the payment gateway.
+                    You will receive a confirmation email once your booking is successful.
+                    For paid events, the system will redirect you to the payment gateway.
                 </div>
             </div>
 
@@ -341,22 +349,38 @@
 
                 <div class="form-row">
                     <label class="form-label" for="contactName">Full name</label>
-                    <input id="contactName" name="contactName" class="form-control" />
+                    <input id="contactName"
+                           name="contactName"
+                           class="form-control"
+                           value="@defaultContactName" />
                 </div>
 
                 <div class="form-row">
                     <label class="form-label" for="contactEmail">Email</label>
-                    <input id="contactEmail" name="contactEmail" type="email" class="form-control" />
-                </div>
-
-                <div class="form-row">
-                    <label class="form-label" for="quantity">Quantity</label>
-                    <input id="quantity" name="quantity" type="number" min="1" max="@Model.AvailableSlots" value="1" class="form-control" required />
-                    <div class="small-muted mt-1">Maximum <strong id="maxSlots">@Model.AvailableSlots</strong> ticket(s)</div>
+                    <input id="contactEmail"
+                           name="contactEmail"
+                           type="email"
+                           class="form-control"
+                           value="@defaultContactEmail" />
                 </div>
 
                 @if (price > 0m)
                 {
+                    <div class="form-row">
+                        <label class="form-label" for="quantity">Quantity</label>
+                        <input id="quantity"
+                               name="quantity"
+                               type="number"
+                               min="1"
+                               max="@Model.AvailableSlots"
+                               value="1"
+                               class="form-control"
+                               required />
+                        <div class="small-muted mt-1">
+                            Maximum <strong id="maxSlots">@Model.AvailableSlots</strong> ticket(s)
+                        </div>
+                    </div>
+
                     <div class="price-box">
                         <div>Price / ticket</div>
                         <div id="priceLabel">@price.ToString("N0") VND</div>
@@ -373,6 +397,13 @@
                 }
                 else
                 {
+                    <!-- FREE EVENT: quantity cố định = 1, ẩn input -->
+                    <input type="hidden" id="quantity" name="quantity" value="1" />
+
+                    <div class="small-muted mb-2">
+                        This is a free event. Each account can only book <strong>1 free ticket</strong> for this event.
+                    </div>
+
                     <div class="form-row">
                         <button id="btnSubmit" type="submit" class="btn btn-success">Register (Free)</button>
                     </div>
@@ -395,7 +426,7 @@
             const priceValue = parseFloat(document.getElementById('priceValue').value || '0');
             const totalLabel = document.getElementById('totalLabel');
             const availableEl = document.getElementById('availableSlots');
-            const maxSlotsEl = document.getElementById('maxSlots');
+            const maxSlotsEl = document.getElementById('maxSlots'); // chỉ tồn tại nếu event có giá
 
             function showAlert(msg, isError = true) {
                 alertBox.textContent = msg;
@@ -413,22 +444,22 @@
             }
 
             function updateTotal() {
+                if (!qty || !totalLabel) return;
                 const q = Math.max(1, parseInt(qty.value || '1'));
                 const total = priceValue * q;
-                if (totalLabel) {
-                    totalLabel.textContent = (total > 0 ? total.toLocaleString('en-US') + ' VND' : 'Free');
-                }
+                totalLabel.textContent = (total > 0 ? total.toLocaleString('en-US') + ' VND' : 'Free');
             }
 
-            // init
-            if (qty) {
+            // init quantity cho event có giá
+            if (qty && priceValue > 0) {
                 const max = parseInt(qty.max || '1');
                 if (max < 1) qty.max = 1;
                 qty.addEventListener('input', () => {
                     let v = parseInt(qty.value || '1');
                     if (isNaN(v) || v < 1) v = 1;
-                    if (v > parseInt(qty.max)) {
-                        v = parseInt(qty.max);
+                    const maxLocal = parseInt(qty.max || '1');
+                    if (v > maxLocal) {
+                        v = maxLocal;
                         showAlert('Quantity exceeds the number of remaining slots.', true);
                     } else {
                         clearAlert();
@@ -449,10 +480,13 @@
                     return;
                 }
 
-                // client-side available check
-                const requested = parseInt(qty.value || '1');
+                // client-side available check (chỉ meaningful với event có giá)
+                let requested = 1;
+                if (qty) {
+                    requested = parseInt(qty.value || '1');
+                }
                 const available = parseInt(availableEl.textContent || '0');
-                if (requested > available) {
+                if (priceValue > 0 && requested > available) {
                     showAlert(`Not enough slots. Only ${available} slot(s) left.`, true);
                     return;
                 }
@@ -485,6 +519,11 @@
                     }
 
                     if (!data.success) {
+                        // nếu backend trả requiresLogin => chuyển sang trang login
+                        if (data.requiresLogin && data.loginUrl) {
+                            window.location.href = data.loginUrl;
+                            return;
+                        }
                         throw new Error(data.message || 'Booking failed.');
                     }
 
@@ -495,12 +534,15 @@
 
                     showAlert('Registration successful!', false);
 
+                    // cập nhật available trên UI (phù hợp cho event có giá)
                     const newAvailable = Math.max(0, available - requested);
-                    availableEl.textContent = newAvailable;
-                    maxSlotsEl.textContent = newAvailable;
-                    qty.max = newAvailable > 0 ? newAvailable : 1;
-                    qty.value = 1;
-                    updateTotal();
+                    if (availableEl) availableEl.textContent = newAvailable;
+                    if (maxSlotsEl) maxSlotsEl.textContent = newAvailable;
+                    if (qty && priceValue > 0) {
+                        qty.max = newAvailable > 0 ? newAvailable : 1;
+                        qty.value = 1;
+                        updateTotal();
+                    }
 
                 } catch (err) {
                     console.error(err);

@@ -61,7 +61,7 @@ namespace Semester03.Areas.Client.Controllers
             ViewData["Title"] = "Events";
             ViewData["MallName"] = ViewData["MallName"] ?? "ABCD Mall";
 
-            // Lưu format yyyy-MM-dd để gán lại vào input type="date"
+            // format để đưa lại vào input type="date"
             ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
             ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
             ViewBag.ShowUpcomingAll = showUpcomingAll;
@@ -70,12 +70,12 @@ namespace Semester03.Areas.Client.Controllers
 
             if (showUpcomingAll)
             {
-                // View more: lấy tất cả upcoming
+                // Xem tất cả upcoming
                 upcoming = await _repo.GetAllUpcomingEventsAsync(fromDate, toDate);
             }
             else
             {
-                // Mặc định: chỉ lấy top 6 upcoming
+                // Mặc định: top 6 upcoming
                 upcoming = await _repo.GetUpcomingEventsAsync(6, fromDate, toDate);
             }
 
@@ -87,17 +87,18 @@ namespace Semester03.Areas.Client.Controllers
                 Past = past
             };
 
-            // Dùng cho layout (carousel / sidebar)
+            // cho layout dùng (carousel / sidebar)
             ViewBag.Events = vm.Upcoming ?? new List<EventCardVm>();
 
             return View(vm);
         }
 
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Details(int id, int cmtPage = 1)
         {
             int? currentUserId = GetCurrentUserId();
+            const int CommentPageSize = 5;
 
-            var ev = await _repo.GetEventByIdAsync(id, currentUserId);
+            var ev = await _repo.GetEventByIdAsync(id, currentUserId, cmtPage, CommentPageSize);
             if (ev == null)
                 return NotFound();
 
@@ -133,12 +134,29 @@ namespace Semester03.Areas.Client.Controllers
                 return Json(new { success = false, message = "Please enter your comment content." });
             }
 
-            var evtExists = await _repo.EventExistsAsync(eventId);
-            if (!evtExists)
+            // Check event + trạng thái
+            var evt = await _context.TblEvents
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.EventId == eventId && e.EventStatus == 1);
+
+            if (evt == null)
             {
                 return Json(new { success = false, message = "The event does not exist or has been discontinued." });
             }
 
+            var now = DateTime.Now;
+
+            // ❗ Chỉ CHẶN comment khi sự kiện CHƯA BẮT ĐẦU
+            if (now < evt.EventStart)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "You can only comment after the event starts."
+                });
+            }
+
+            // Khi đã bắt đầu hoặc đã kết thúc vẫn cho comment
             await _repo.AddCommentAsync(eventId, userId.Value, rate, text);
 
             return Json(new

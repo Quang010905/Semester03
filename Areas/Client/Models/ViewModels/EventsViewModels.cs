@@ -28,6 +28,7 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public int? MaxSlot { get; set; }
         public int Status { get; set; }
         public int? TenantPositionId { get; set; }
+
         public int OrganizerId { get; set; } = 0;
         public string OrganizerName { get; set; } = "-";
         public string PositionName { get; set; } = "-";
@@ -77,6 +78,12 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public bool IsOngoing { get; set; }
         public bool IsUpcoming { get; set; }
         public bool IsActive { get; set; }
+
+        // ===== Phân trang comment =====
+        public int CommentPageIndex { get; set; }
+        public int CommentPageSize { get; set; }
+        public int CommentTotalItems { get; set; }
+        public int CommentTotalPages { get; set; }
     }
 
     public class EventRegisterVm

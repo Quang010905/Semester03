@@ -46,19 +46,24 @@ namespace Semester03.Areas.Client.Controllers
 
         // =====================================================================================
         // GET: Client/EventBooking/Register/5
+        // - BẮT BUỘC LOGIN
+        // - Prefill tên + email của user hiện tại
         // =====================================================================================
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> Register(int id)
         {
             var evt = await _eventRepo.GetEventByIdAsync(id);
             if (evt == null) return NotFound();
 
+            // confirmed slots (Paid + Free) giống EventBookingRepository
             var confirmed = await _bookingRepo.GetConfirmedSlotsForEventAsync(id);
             var available = Math.Max(0, evt.MaxSlot - confirmed);
 
+            // Giá vé
             decimal pricePerTicket = evt.Price ?? 0m;
 
-            // Fallback if the Price is not mapped in TblEvents
+            // Fallback nếu Price không map trong TblEvents
             if (pricePerTicket <= 0m)
             {
                 try
@@ -86,6 +91,28 @@ namespace Semester03.Areas.Client.Controllers
 
             ViewBag.Price = pricePerTicket;
 
+            // ===== LẤY USER HIỆN TẠI ĐỂ PREFILL TÊN + EMAIL =====
+            try
+            {
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out var uid))
+                {
+                    var user = await _context.TblUsers.FindAsync(uid);
+                    if (user != null)
+                    {
+                        ViewBag.DefaultContactName = string.IsNullOrWhiteSpace(user.UsersFullName)
+                            ? user.UsersUsername
+                            : user.UsersFullName;
+
+                        ViewBag.DefaultContactEmail = user.UsersEmail;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Register(): error while pre-filling user info");
+            }
+
             var vm = new EventRegisterVm
             {
                 Event = evt,
@@ -97,8 +124,11 @@ namespace Semester03.Areas.Client.Controllers
 
         // =====================================================================================
         // POST: Client/EventBooking/CreateBooking
+        // - BẮT BUỘC LOGIN
+        // - FREE EVENT: mỗi user chỉ được 1 vé (quantity = 1)
         // =====================================================================================
         [HttpPost]
+        [Authorize]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateBooking(
             [FromForm] int eventId,
@@ -110,6 +140,7 @@ namespace Semester03.Areas.Client.Controllers
             {
                 if (quantity <= 0) quantity = 1;
 
+                // Lấy event từ repo
                 var evt = await _eventRepo.GetEventByIdAsync(eventId);
                 if (evt == null)
                 {
@@ -118,22 +149,10 @@ namespace Semester03.Areas.Client.Controllers
                     return RedirectToAction("Index", "Event");
                 }
 
-                var confirmed = await _bookingRepo.GetConfirmedSlotsForEventAsync(eventId);
-                var available = Math.Max(0, evt.MaxSlot - confirmed);
-
-                if (quantity > available)
-                {
-                    var msg = $"Not enough slots. Remaining {available} slot(s).";
-
-                    if (IsAjaxRequest()) return Json(new { success = false, message = msg });
-                    TempData["BookingError"] = msg;
-                    return RedirectToAction("Register", new { id = eventId });
-                }
-
-                // ===== GET TICKET PRICE =====
+                // ===== LẤY GIÁ VÉ TRƯỚC =====
                 decimal pricePerTicket = evt.Price ?? 0m;
 
-                // Fallback price
+                // Fallback vào TblEvents nếu Price của ViewModel chưa map
                 if (pricePerTicket <= 0m)
                 {
                     try
@@ -159,29 +178,81 @@ namespace Semester03.Areas.Client.Controllers
                     }
                 }
 
+                bool isFreeEvent = pricePerTicket <= 0m;
+
+                // FREE EVENT: ép quantity = 1
+                if (isFreeEvent)
+                {
+                    quantity = 1;
+                }
+
+                // ===== CHECK SỐ LƯỢNG CÒN LẠI =====
+                var confirmed = await _bookingRepo.GetConfirmedSlotsForEventAsync(eventId);
+                var available = Math.Max(0, evt.MaxSlot - confirmed);
+
+                if (quantity > available)
+                {
+                    var msg = $"Not enough slots. Remaining {available} slot(s).";
+
+                    if (IsAjaxRequest()) return Json(new { success = false, message = msg });
+                    TempData["BookingError"] = msg;
+                    return RedirectToAction("Register", new { id = eventId });
+                }
+
+                // ===== TOTAL COST =====
                 var totalCost = pricePerTicket * quantity;
 
+                // ===== LẤY USER ID (bắt buộc phải có) =====
                 int? userId = null;
                 var claim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (int.TryParse(claim, out var uid)) userId = uid;
 
+                if (!userId.HasValue)
+                {
+                    var loginUrl = Url.Action("Login", "Account", new
+                    {
+                        area = "Client",
+                        returnUrl = Url.Action("Register", "EventBooking",
+                            new { area = "Client", id = eventId })
+                    });
+
+                    if (IsAjaxRequest())
+                        return Json(new { success = false, requiresLogin = true, loginUrl });
+
+                    return Redirect(loginUrl);
+                }
+
                 var notes = $"ContactName:{contactName};ContactEmail:{contactEmail};Qty:{quantity}";
 
                 // =====================================================================================
-                // FREE EVENT
+                // FREE EVENT - MỖI USER CHỈ ĐƯỢC 1 VÉ
                 // =====================================================================================
-                if (totalCost <= 0m)
+                if (isFreeEvent)
                 {
+                    // check đã có vé free/paid cho event này chưa (status 1 hoặc 2)
+                    var alreadyBooked = await _bookingRepo.HasConfirmedBookingForUserAsync(eventId, userId.Value);
+                    if (alreadyBooked)
+                    {
+                        var msgFree = "You have already booked a free ticket for this event. Each account can only have one free ticket.";
+
+                        if (IsAjaxRequest())
+                            return Json(new { success = false, message = msgFree });
+
+                        TempData["BookingError"] = msgFree;
+                        return RedirectToAction("Register", new { id = eventId });
+                    }
+
+                    // tạo booking free
                     var booking = await _bookingRepo.CreateBookingAsync(
                         tenantId: evt.TenantPositionId,
                         userId: userId,
                         eventId: eventId,
-                        totalCost: totalCost,
-                        quantity: quantity,
+                        totalCost: totalCost,    // 0
+                        quantity: quantity,      // 1
                         notes: notes
                     );
 
-                    // Send confirmation email for event booking
+                    // gửi email xác nhận
                     _ = Task.Run(async () =>
                     {
                         try
@@ -206,7 +277,7 @@ namespace Semester03.Areas.Client.Controllers
                 }
 
                 // =====================================================================================
-                // PAID EVENT
+                // PAID EVENT - ĐẶT BAO NHIÊU VÉ CŨNG ĐƯỢC (THEO LIMIT SLOT)
                 // =====================================================================================
                 var pendingBooking = await _bookingRepo.CreateBookingAsync(
                     tenantId: evt.TenantPositionId,
@@ -514,7 +585,7 @@ namespace Semester03.Areas.Client.Controllers
                 // PaymentStatus: 1 = Paid, 2 = PartiallyRefunded, 3 = Cancelled
                 booking.EventBookingPaymentStatus = remainingQty > 0 ? 2 : 3;
 
-                // Status: 0 = Cancelled (UI đang dùng 0 => "Cancelled")
+                // Status: 0 = Cancelled
                 if (remainingQty == 0)
                 {
                     booking.EventBookingStatus = 0;
@@ -565,7 +636,6 @@ namespace Semester03.Areas.Client.Controllers
                 catch (Exception exMail)
                 {
                     _logger.LogError(exMail, "Error sending event cancel email for booking {BookingId}", bookingId);
-                    // Không throw, vì hủy vé vẫn coi là thành công
                 }
 
                 return Json(new
