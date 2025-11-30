@@ -194,7 +194,12 @@
                 </dl>
             </div>
             <div classs="card-footer" style="padding: 1.25rem;">
-                <a asp-controller="ParkingLevels" asp-action="Edit" asp-route-id="@Model.ParkingLevel.LevelId" class="btn btn-warning btn-block">Edit Level Properties</a>
+                <a asp-action="Edit"
+                   asp-route-id="@Model.ParkingLevel.LevelId"
+                   asp-route-returnUrl="@Url.Action("Details", "ParkingLevels", new { id = Model.ParkingLevel.LevelId })"
+                   class="btn btn-warning btn-block mt-2">
+                    <i class="fas fa-edit"></i> Edit Level Properties
+                </a>
                 <a asp-controller="ParkingLevels" asp-action="Index" class="btn btn-secondary btn-block mt-2">Back to Level List</a>
             </div>
         </div>

@@ -93,13 +93,18 @@ namespace Semester03.Areas.Admin.Controllers
         }
 
         // GET: Admin/Screens/Edit/5
-        public async Task<IActionResult> Edit(int? id, string returnUrl) // 1. Add returnUrl
+        public async Task<IActionResult> Edit(int? id, string? returnUrl) 
         {
             if (id == null) return NotFound();
             var screen = await _screenRepo.GetByIdAsync(id.Value);
             if (screen == null) return NotFound();
 
-            // 2. Pass the returnUrl to the View
+            if (string.IsNullOrEmpty(returnUrl))
+            {
+                returnUrl = Url.Action(nameof(Index));
+            }
+
+            // Pass the returnUrl to the View
             ViewData["ReturnUrl"] = returnUrl;
             return View(screen);
         }
@@ -109,7 +114,7 @@ namespace Semester03.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id,
             [Bind("ScreenId,ScreenName,ScreenSeats")] TblScreen tblScreen,
-            string returnUrl)
+            string? returnUrl)
         {
             ModelState.Remove("ScreenCinemaId");
             ModelState.Remove("ScreenCinema");
@@ -136,6 +141,7 @@ namespace Semester03.Areas.Admin.Controllers
                     // Manually set the Cinema ID again to ensure it's correct
                     tblScreen.ScreenCinemaId = FIXED_CINEMA_ID;
                     await _screenRepo.UpdateAsync(tblScreen);
+                    TempData["Success"] = "Screen updated successfully.";
                 }
                 catch (DbUpdateConcurrencyException)
                 {

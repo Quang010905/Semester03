@@ -188,7 +188,7 @@ namespace Semester03.Models.Repositories
         // ==========================================================
         // === ADMIN: ADVANCED SEARCH ===
         // ==========================================================
-        public async Task<IEnumerable<TblTicket>> SearchTicketsAsync(string keyword, int? showtimeId, DateTime? date)
+        public async Task<IEnumerable<TblTicket>> SearchTicketsAsync(string keyword, int? showtimeId, DateTime? fromDate, DateTime? toDate, string status)
         {
             var query = GetFullTicketQuery();
 
@@ -198,23 +198,35 @@ namespace Semester03.Models.Repositories
                 query = query.Where(t => t.TicketShowtimeSeat.ShowtimeSeatShowtimeId == showtimeId);
             }
 
-            // 2. Filter by Date (Purchase Date)
-            if (date.HasValue)
+            // 2. [UPGRADE] Filter by Date Range (Created Date)
+            if (fromDate.HasValue)
             {
-                // Compare only the DATE part
-                query = query.Where(t => t.TicketCreatedAt.HasValue && t.TicketCreatedAt.Value.Date == date.Value.Date);
+                query = query.Where(t => t.TicketCreatedAt >= fromDate.Value.Date);
+            }
+            if (toDate.HasValue)
+            {
+                // (23:59:59)
+                query = query.Where(t => t.TicketCreatedAt < toDate.Value.Date.AddDays(1));
             }
 
-            // 3. Search by Keyword (TicketID, Customer Name, Phone)
+            // 3. [NEW] Filter by Status
+            if (!string.IsNullOrEmpty(status) && status.ToLower() != "all")
+            {
+                query = query.Where(t => t.TicketStatus.ToLower() == status.ToLower());
+            }
+
+            // 4. [UPGRADE] Smart Search (Keyword)
             if (!string.IsNullOrEmpty(keyword))
             {
                 string k = keyword.ToLower();
                 query = query.Where(t =>
-                    t.TicketId.ToString() == k || // Exact Ticket ID
+                    t.TicketId.ToString() == k || // Ticket ID
                     (t.TicketBuyerUser != null && (
                         t.TicketBuyerUser.UsersFullName.ToLower().Contains(k) ||
-                        t.TicketBuyerUser.UsersPhone.Contains(k)
-                    ))
+                        t.TicketBuyerUser.UsersPhone.Contains(k) ||
+                        t.TicketBuyerUser.UsersEmail.ToLower().Contains(k) // [NEW] Email
+                    )) ||
+                    (t.TicketShowtimeSeat.ShowtimeSeatShowtime.ShowtimeMovie.MovieTitle.ToLower().Contains(k)) // [NEW] Movie Title
                 );
             }
 

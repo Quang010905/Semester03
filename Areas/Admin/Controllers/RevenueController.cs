@@ -29,7 +29,7 @@ namespace Semester03.Areas.Admin.Controllers
                 .SumAsync(t => t.TicketPrice);
 
             model.TotalEventRevenue = await _context.TblEventBookings
-                .Where(e => e.EventBookingStatus == 1)
+                .Where(e => e.EventBookingStatus == 1 && e.EventBookingPaymentStatus == 1) 
                 .SumAsync(e => e.EventBookingTotalCost ?? 0);
 
             model.TotalRevenue = model.TotalMovieRevenue + model.TotalEventRevenue;
@@ -56,7 +56,8 @@ namespace Semester03.Areas.Admin.Controllers
 
                 // Event revenue that day
                 var eventRev = await _context.TblEventBookings
-                    .Where(e => e.EventBookingStatus == 1 && e.EventBookingCreatedDate.HasValue && e.EventBookingCreatedDate.Value.Date == date)
+                    .Where(e => e.EventBookingStatus == 1 && e.EventBookingPaymentStatus == 1 
+                                && e.EventBookingCreatedDate.HasValue && e.EventBookingCreatedDate.Value.Date == date)
                     .SumAsync(e => e.EventBookingTotalCost ?? 0);
                 model.EventChartData.Add(eventRev);
             }
@@ -78,7 +79,7 @@ namespace Semester03.Areas.Admin.Controllers
 
             // 4. TOP 5 EVENTS
             var topEvents = await _context.TblEventBookings
-                .Where(e => e.EventBookingStatus == 1)
+                .Where(e => e.EventBookingStatus == 1 && e.EventBookingPaymentStatus == 1)
                 .Include(e => e.EventBookingEvent)
                 .GroupBy(e => e.EventBookingEvent.EventName)
                 .Select(g => new { Name = g.Key, Revenue = g.Sum(x => x.EventBookingTotalCost ?? 0) })

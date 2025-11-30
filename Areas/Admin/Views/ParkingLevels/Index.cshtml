@@ -6,7 +6,7 @@
 }
 
 <h1 class="h3 mb-2 text-gray-800">Parking Level Management</h1>
-[cite_start]<p class="mb-4">Define the 7 parking levels [cite: 1, 1-2] and their capacity.</p>
+<p class="mb-4">Define the 7 parking levels and their capacity.</p>
 
 @if (TempData["Success"] != null)
 {
@@ -52,7 +52,16 @@
                             <td>
                                 <a asp-action="Details" asp-route-id="@item.LevelId" class="btn btn-info btn-sm">Manage Spots</a>
                                 <a asp-action="Edit" asp-route-id="@item.LevelId" class="btn btn-warning btn-sm">Edit Level</a>
-                                <a asp-action="Delete" asp-route-id="@item.LevelId" class="btn btn-danger btn-sm">Delete</a>
+                                @if (!item.TblParkingSpots.Any())
+                                {
+                                    <a asp-action="Delete" asp-route-id="@item.LevelId" class="btn btn-danger btn-sm">Delete</a>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-secondary btn-sm" disabled title="Cannot delete level with active spots">
+                                        <i class="fas fa-lock"></i>
+                                    </button>
+                                }
                             </td>
                         </tr>
                     }

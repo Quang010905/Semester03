@@ -118,17 +118,32 @@
     </div>
     <div class="card-footer" style="padding: 1.25rem;">
         <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+        @{
+            var showTime = Model.TicketShowtimeSeat?.ShowtimeSeatShowtime?.ShowtimeStart;
+            bool isPastShow = showTime.HasValue && showTime.Value <= DateTime.Now;
+        }
+
         @if (Model.TicketStatus.ToLower() == "sold")
         {
-            <div class="float-right">
-                <form asp-action="Cancel" asp-route-id="@Model.TicketId" method="post" style="display:inline;">
-                    <button type="submit" class="btn btn-danger"
-                            onclick="return confirm('Are you sure you want to cancel this ticket and refund the customer? This action cannot be undone.')">
-                        <i class="fas fa-times"></i> Cancel Ticket
-                    </button>
-                </form>
-            </div>
+            if (isPastShow)
+            {
+                <span class="float-right text-muted font-italic">
+                    <i class="fas fa-history"></i> Cannot cancel (Show started/ended)
+                </span>
+            }
+            else
+            {
+                <div class="float-right">
+                    <form asp-action="Cancel" asp-route-id="@Model.TicketId" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-danger"
+                                onclick="return confirm('Are you sure you want to cancel this ticket and refund the customer? This action cannot be undone.')">
+                            <i class="fas fa-times"></i> Cancel Ticket
+                        </button>
+                    </form>
+                </div>
+            }
         }
+    </div>
     </div>
 </div>
 

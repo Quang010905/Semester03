@@ -14,33 +14,42 @@
 
 <div class="card mb-4 border-bottom-primary">
     <div class="card-body">
-        <form method="get" asp-action="Index" class="form-inline justify-content-between">
-
-            <div class="d-flex">
-                <div class="input-group mr-2">
-                    <input type="text" name="search" value="@ViewData["CurrentSearch"]"
-                           class="form-control bg-light border-0 small" placeholder="Ticket ID, Name, Phone..." />
-                    
-                </div>
-
-                <div class="input-group mr-2">
-                    <div class="input-group-prepend">
-                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                    </div>
-                    <input type="date" name="date" value="@ViewData["CurrentDate"]" class="form-control" />
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-icon-split btn-sm">
-                    <span class="icon text-white-50"><i class="fas fa-search"></i></span>
-                    <span class="text">Search</span>
-                </button>
-
-                <a asp-action="Index" class="btn btn-secondary btn-sm ml-2">Reset</a>
+        <form method="get" asp-action="Index" class="form-row align-items-end">
+            <div class="col-md-3 mb-2">
+                <label class="small font-weight-bold">Keyword</label>
+                <input type="text" name="search" value="@ViewData["CurrentSearch"]" class="form-control" placeholder="ID, Name, Phone, Movie..." />
             </div>
 
-            <button type="submit" formaction="@Url.Action("ExportSummary")" formmethod="post" class="btn btn-info btn-sm">
-                <i class="fas fa-chart-bar fa-sm text-white-50"></i> Export Revenue Report
-            </button>
+            <div class="col-md-2 mb-2">
+                <label class="small font-weight-bold">From Date</label>
+                <input type="date" name="fromDate" value="@ViewData["FromDate"]" class="form-control" />
+            </div>
+            <div class="col-md-2 mb-2">
+                <label class="small font-weight-bold">To Date</label>
+                <input type="date" name="toDate" value="@ViewData["ToDate"]" class="form-control" />
+            </div>
+
+            <div class="col-md-2 mb-2">
+                <label class="small font-weight-bold">Status</label>
+                <select name="status" class="form-control">
+                    <option value="all">All Status</option>
+                    <option value="sold" selected="@((string)ViewData["CurrentStatus"] == "sold")">Sold</option>
+                    <option value="cancelled" selected="@((string)ViewData["CurrentStatus"] == "cancelled")">Cancelled</option>
+                </select>
+            </div>
+
+            <div class="col-md-3 mb-2 d-flex">
+                <button type="submit" class="btn btn-primary mr-2 flex-fill">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+                <a asp-action="Index" class="btn btn-secondary mr-2" title="Reset">
+                    <i class="fas fa-undo"></i>
+                </a>
+
+                <button type="submit" formaction="@Url.Action("ExportSummary")" formmethod="post" class="btn btn-success" title="Export Excel">
+                    <i class="fas fa-file-excel"></i>
+                </button>
+            </div>
         </form>
     </div>
 </div>

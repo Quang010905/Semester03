@@ -3,40 +3,42 @@
 @{
     ViewData["Title"] = "Delete Parking Level";
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
-    bool hasDependencies = (ViewData["HasDependencies"] as bool?) ?? false;
+    bool canDelete = (bool?)ViewData["CanDelete"] ?? false;
+    string errorMsg = ViewData["ErrorMessage"] as string;
 }
 
 <h1 class="h3 mb-2 text-gray-800">Delete Parking Level</h1>
 
-@if (hasDependencies)
-{
-    <div class="alert alert-danger">
-        <h4 class="alert-heading">Cannot Delete Level!</h4>
-        <p>@ViewData["ErrorMessage"]</p>
-    </div>
-}
-else
-{
-    <h3 class="text-danger">Are you sure you want to delete this level?</h3>
-}
-
-<div class="card shadow mb-4">
+<div class="card shadow mb-4 border-left-danger">
     <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">@Model.LevelName</h6>
+        <h6 class="m-0 font-weight-bold text-danger">Deletion Confirmation</h6>
     </div>
     <div class="card-body">
-        <dl class="row">
+
+        @if (!string.IsNullOrEmpty(errorMsg))
+        {
+            <div class="alert @(canDelete ? "alert-warning" : "alert-danger")">
+                <i class="fas @(canDelete ? "fa-exclamation-triangle" : "fa-ban")"></i>
+                <strong>@errorMsg</strong>
+            </div>
+        }
+        else
+        {
+            <h3 class="text-danger">Are you sure you want to delete this level?</h3>
+        }
+
+        <dl class="row mt-4">
             <dt class="col-sm-3">Level Name</dt>
             <dd class="col-sm-9">@Html.DisplayFor(model => model.LevelName)</dd>
             <dt class="col-sm-3">Capacity</dt>
             <dd class="col-sm-9">@Html.DisplayFor(model => model.LevelCapacity)</dd>
         </dl>
 
-        @if (!hasDependencies)
+        @if (canDelete)
         {
             <form asp-action="Delete">
                 <input type="hidden" asp-for="LevelId" />
-                <input type="submit" value="Delete" class="btn btn-danger" />
+                <input type="submit" value="Confirm Delete" class="btn btn-danger" />
                 <a asp-action="Index" class="btn btn-secondary">Cancel</a>
             </form>
         }

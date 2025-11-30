@@ -100,19 +100,36 @@ namespace Semester03.Areas.Admin.Controllers
             ModelState.Remove("TenantPositionAssignedTenant");
             ModelState.Remove("TenantPositionAssignedCinema");
 
+            if (tblPosition.TenantPositionAssignedTenantId != null)
+            {
+                tblPosition.TenantPositionStatus = 1; // Occupied
+                if (tblPosition.PositionLeaseStart == null)
+                {
+                    ModelState.AddModelError("PositionLeaseStart", "Start Date is required when assigning a tenant.");
+                }
+                if (tblPosition.PositionLeaseEnd == null)
+                {
+                    ModelState.AddModelError("PositionLeaseEnd", "End Date is required when assigning a tenant.");
+                }
+                if (tblPosition.PositionLeaseStart != null && tblPosition.PositionLeaseEnd != null)
+                {
+                    if (tblPosition.PositionLeaseEnd < tblPosition.PositionLeaseStart)
+                    {
+                        ModelState.AddModelError("PositionLeaseEnd", "End Date must be AFTER Start Date.");
+                    }
+                }
+            }
+            else
+            {
+                tblPosition.TenantPositionStatus = 0; // Vacant
+                tblPosition.PositionLeaseStart = null;
+                tblPosition.PositionLeaseEnd = null;
+            }
+
             if (ModelState.IsValid)
             {
                 try
                 {
-                    if (tblPosition.TenantPositionAssignedTenantId != null)
-                    {
-                        tblPosition.TenantPositionStatus = 1; // Occupied
-                    }
-                    else
-                    {
-                        tblPosition.TenantPositionStatus = 0; // Vacant
-                    }
-
                     await _posRepo.UpdateAsync(tblPosition);
                     TempData["Success"] = $"Unit {tblPosition.TenantPositionLocation} updated successfully.";
                 }
