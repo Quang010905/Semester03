@@ -24,7 +24,7 @@ namespace Semester03.Models.Repositories
 
 
         //function to get list of complaints
-        public async Task<List<TblCustomerComplaint>> GetAllAsync()
+        public async Task<List<TblCustomerComplaint>> GetAllComplaintsAsync()
         {
             return await _context.TblCustomerComplaints
                 .Include(c => c.CustomerComplaintCustomerUser)   // lấy thông tin User
@@ -81,7 +81,14 @@ namespace Semester03.Models.Repositories
 
 
 
-
+        public async Task<List<TblCustomerComplaint>> GetAllEventComplaintsAsync()
+        {
+            return await _context.TblCustomerComplaints
+                .Where(c => c.CustomerComplaintEventId != null) 
+                .Include(c => c.CustomerComplaintCustomerUser)  
+                .Include(c => c.CustomerComplaintEvent)         
+                .ToListAsync();
+        }
 
 
 

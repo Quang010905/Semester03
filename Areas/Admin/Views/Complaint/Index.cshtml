@@ -26,6 +26,11 @@
         <span class="tab-title">Complaint Event</span>
     </a>
 
+    <a href="#" class="browser-tab" data-target="all-tab-content">
+        <span class="tab-icon"><i class="fa-solid fa-list"></i></span>
+        <span class="tab-title">All Complaints</span>
+    </a>
+
 
 </div>
 
@@ -233,6 +238,89 @@
 
 
 
+
+
+
+
+<!-- TAB: All Complaints -->
+<div id="all-tab-content" style="padding: 20px; display: none;">
+    <h3>All Complaints</h3>
+    <div class="table-header">
+        <!-- Hàng trên: Search -->
+        <div class="search-row">
+            <div class="search-container">
+                <input type="text" placeholder="Search..." class="search-all-input">
+                <i class="fa fa-search search-icon"></i>
+            </div>
+        </div>
+
+        <!-- Hàng dưới: Filters -->
+        <div class="filter-row">
+            <select id="filter-type" class="filter-select">
+                <option value="">All</option>
+                <option value="Tenant">Tenant</option>
+                <option value="Movie">Movie</option>
+                <option value="Event">Event</option>
+            </select>
+            <select id="filter-rate" class="filter-select">
+                <option value="">All Rates</option>
+                <option value="1">1 Star</option>
+                <option value="2">2 Stars</option>
+                <option value="3">3 Stars</option>
+                <option value="4">4 Stars</option>
+                <option value="5">5 Stars</option>
+            </select>
+        </div>
+    </div>
+
+    <table class="table table-bordered table-hover mt-3">
+        <thead>
+            <tr>
+                <th>
+                    <input type="checkbox" id="select-all-all" />
+                </th>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Customer</th>
+                <th>Target</th>
+                <th>Rate</th>
+                <th>Description</th>
+                <th>Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in ViewBag.AllComplaint)
+            {
+                var type = c.CustomerComplaintTenantId != null ? "Tenant" :
+                c.CustomerComplaintMovieId != null ? "Movie" :
+                c.CustomerComplaintEventId != null ? "Event" : "";
+
+                <tr>
+                    <td><input type="checkbox" class="select-all-checkbox" value="@c.CustomerComplaintId" /></td>
+                    <td>@c.CustomerComplaintId</td>
+                    <td>@type</td>
+                    <td>@c.CustomerComplaintCustomerUser.UsersUsername</td>
+                    <td>
+                        @(type == "Tenant" ? c.CustomerComplaintTenant?.TenantName :
+                            type == "Movie" ? c.CustomerComplaintMovie?.MovieTitle :
+                            type == "Event" ? c.CustomerComplaintEvent?.EventName : "")
+                    </td>
+                    <td>@c.CustomerComplaintRate <i class="fa-solid fa-star yellow-star"></i></td>
+                    <td>@c.CustomerComplaintDescription</td>
+                    <td>@c.CustomerComplaintCreatedAt?.ToString("dd/MM/yyyy")</td>
+                </tr>
+            }
+        </tbody>
+        </table>
+</div>
+
+
+
+
+
+
+
+
 <style>
     body {
         font-family: Arial, sans-serif;
@@ -371,7 +459,14 @@
         transition: 0.3s;
     }
 
-
+    
+    .search-all-input {
+        width: 100%;
+        padding: 10px 40px 10px 15px;
+        border-radius: 25px;
+        border: 1px solid #ccc;
+        transition: 0.3s;
+    }
     .search-container {
         position: relative;
         width: 280px;
@@ -441,6 +536,26 @@
 
 
 
+
+
+
+    /*  filter */
+    .filter-row {
+        display: flex;
+        gap: 15px; /* khoảng cách giữa 2 filter */
+        flex-wrap: wrap; /* nếu màn hình nhỏ sẽ xuống dòng */
+    }
+
+    .filter-select {
+        flex: 1; /* 2 filter bằng nhau */
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+        background-color: #fff;
+        cursor: pointer;
+    }
+
 </style>
 
 
@@ -455,16 +570,25 @@
         const tenantTab = tabs[0];
         const movieTab = tabs[1];
         const eventTab = tabs[2];
+        const allTab = tabs[3];
 
         const tenantContent = document.getElementById("tenant-tab-content");
         const movieContent = document.getElementById("movie-tab-content");
         const eventContent = document.getElementById("event-tab-content");
+        const allContent = document.getElementById("all-tab-content");
+
 
         function safeHide(el){ if(el) el.style.display="none"; }
         function safeShow(el){ if(el) el.style.display="block"; }
 
-        function hideAll(){ safeHide(tenantContent); safeHide(movieContent); safeHide(eventContent); }
-        function deactivateAll(){ tabs.forEach(t => t.classList.remove("active")); }
+        function hideAll(){
+            safeHide(tenantContent); 
+            safeHide(movieContent); 
+            safeHide(eventContent); 
+            safeHide(allContent);
+        }
+        function deactivateAll(){ 
+            tabs.forEach(t => t.classList.remove("active")); }
 
         function setupTab(tab, content){
             if(tab){
@@ -480,6 +604,7 @@
         setupTab(tenantTab, tenantContent);
         setupTab(movieTab, movieContent);
         setupTab(eventTab, eventContent);
+        setupTab(allTab, allContent);
 
         deactivateAll();
         hideAll();
@@ -510,6 +635,7 @@
     setupSearch(".search-tenant-input","#tenant-tab-content table");
     setupSearch(".search-movie-input","#movie-tab-content table");
     setupSearch(".search-event-input","#event-tab-content table");
+    setupSearch(".search-all-input","#all-tab-content table");
 
 
 
@@ -591,6 +717,49 @@
             }
         });
     });
+
+        document.addEventListener("DOMContentLoaded", () => {
+        const filterType = document.getElementById("filter-type");
+        const allContent = document.getElementById("all-tab-content");
+
+        filterType.addEventListener("change", () => {
+            const value = filterType.value;
+            const rows = allContent.querySelectorAll("tbody tr"); // Lấy rows MỚI mỗi lần filter
+            rows.forEach(row => {
+                const typeCell = row.cells[2].textContent.trim(); // cột Type
+                row.style.display = !value || typeCell === value ? "" : "none";
+            });
+        });
+    });
+
+
+
+
+
+
+    document.addEventListener("DOMContentLoaded", () => {
+    const filterType = document.getElementById("filter-type");
+    const filterRate = document.getElementById("filter-rate");
+    const allContent = document.getElementById("all-tab-content");
+
+    function applyFilter() {
+        const typeValue = filterType.value;
+        const rateValue = filterRate.value;
+        const rows = allContent.querySelectorAll("tbody tr");
+
+        rows.forEach(row => {
+            const typeCell = row.cells[2].textContent.trim();  // cột Type
+            const rateCell = row.cells[5].textContent.trim().charAt(0); // lấy số đầu tiên
+                const matchType = !typeValue || typeCell === typeValue;
+            const matchRate = !rateValue || rateCell === rateValue;
+            row.style.display = (matchType && matchRate) ? "" : "none";
+        });
+    }
+
+    filterType.addEventListener("change", applyFilter);
+    filterRate.addEventListener("change", applyFilter);
+});
+
 
 
 </script>

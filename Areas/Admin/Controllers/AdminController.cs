@@ -8,7 +8,6 @@ using System.Globalization;
 namespace Semester03.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    // [Authorize(Roles = "Super Admin, Mall Manager")]
     public class AdminController : Controller
     {
         private readonly AbcdmallContext _context;
@@ -25,7 +24,7 @@ namespace Semester03.Areas.Admin.Controllers
             var firstDayOfMonth = new DateTime(now.Year, now.Month, 1);
             var today = now.Date;
 
-            // Thống kê tổng quan
+            // General statistics
             var totalUsers = await _context.TblUsers.CountAsync();
             var totalTenants = await _context.TblTenants.CountAsync();
             var activeTenants = await _context.TblTenants.CountAsync(t => t.TenantStatus == 1);
@@ -33,14 +32,14 @@ namespace Semester03.Areas.Admin.Controllers
             var activeMovies = await _context.TblMovies.CountAsync(m => m.MovieStatus == 1 && m.MovieStartDate <= now && m.MovieEndDate >= now);
             var upcomingMovies = await _context.TblMovies.CountAsync(m => m.MovieStatus == 1 && m.MovieStartDate > now);
 
-            // Thống kê vé
+            // Ticket statistics
             var totalTicketsSold = await _context.TblTickets.CountAsync();
             var totalTicketRevenue = await _context.TblTickets.SumAsync(t => (decimal?)t.TicketPrice) ?? 0;
             var monthlyTicketRevenue = await _context.TblTickets
                 .Where(t => t.TicketCreatedAt >= firstDayOfMonth)
                 .SumAsync(t => (decimal?)t.TicketPrice) ?? 0;
 
-            // Thống kê sự kiện
+            //Event statistics
             var totalEvents = await _context.TblEvents.CountAsync();
             var totalEventRevenue = await _context.TblEventBookings
                 .Where(eb => eb.EventBookingPaymentStatus == 1)
@@ -50,22 +49,22 @@ namespace Semester03.Areas.Admin.Controllers
                 .SumAsync(eb => (decimal?)eb.EventBookingTotalCost) ?? 0;
             var todayEventBookings = await _context.TblEventBookings
      .CountAsync(eb => eb.EventBookingCreatedDate >= today && eb.EventBookingCreatedDate < tomorrow);
-            // Thống kê khiếu nại
+            // Complaint statistics
             var pendingComplaints = await _context.TblCustomerComplaints
                 .CountAsync(c => c.CustomerComplaintStatus == 0);
 
-            // Thống kê suất chiếu hôm nay
+            //Today's screening statistics
             var todayShowtimes = await _context.TblShowtimes
                 .CountAsync(s => s.ShowtimeStart.Date == today);
 
-            // Thống kê bãi đỗ xe
+            // Parking statistics
             var totalParkingSpots = await _context.TblParkingSpots.CountAsync();
             var occupiedParkingSpots = await _context.TblParkingSpots.CountAsync(p => p.SpotStatus == 1);
             var parkingOccupancyRate = totalParkingSpots > 0
                 ? (decimal)occupiedParkingSpots / totalParkingSpots * 100
                 : 0;
 
-            // Top 5 phim bán chạy nhất
+            // Top 5 best-selling movies
             var topMovies = await _context.TblTickets
                 .Include(t => t.TicketShowtimeSeat)
                     .ThenInclude(ss => ss.ShowtimeSeatShowtime)
@@ -84,7 +83,7 @@ namespace Semester03.Areas.Admin.Controllers
                 .Take(5)
                 .ToListAsync();
 
-            // Thống kê loại cửa hàng
+            // Store type statistics
             var tenantTypeStats = await _context.TblTenants
                 .Include(t => t.TenantType)
                 .GroupBy(t => t.TenantType.TenantTypeName)
@@ -95,14 +94,14 @@ namespace Semester03.Areas.Admin.Controllers
                 })
                 .ToListAsync();
 
-            // Gán màu cho từng loại
+            // Assign colors to each type
             var colors = new[] { "#4e73df", "#1cc88a", "#36b9cc", "#f6c23e", "#e74a3b", "#858796" };
             for (int i = 0; i < tenantTypeStats.Count; i++)
             {
                 tenantTypeStats[i].Color = colors[i % colors.Length];
             }
 
-            // Doanh thu 6 tháng gần nhất
+            // Revenue for the last 6 months
             var monthlyRevenue = new List<MonthlyRevenueDto>();
             for (int i = 5; i >= 0; i--)
             {
