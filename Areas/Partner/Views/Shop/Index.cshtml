@@ -120,6 +120,9 @@
                                                 <a href="@Url.Action("Edit", "Shop", new {id = item.Id})">
                                                     <i class="fa-solid fa-pen-to-square"></i>
                                                 </a>
+                                                <a href="@Url.Action("GetComplaintByTenantId", "Complaint", new {id = item.Id})">
+                                                    <i class="fa-solid fa-comment"></i>
+                                                </a>
                                             </td>
                                         </tr>
                                         i++;

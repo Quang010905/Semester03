@@ -1,0 +1,32 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "/Areas/Partner/Views/Shared/_LayoutPartner.cshtml";
+    ViewData["Title"] = "Partner Dashboard";
+}
+
+<div style="margin-left:20px; margin-right: 50px">
+    <h2>Detail Event Booking</h2>
+    @if (ViewBag.itemEventBooking != null)
+    {
+        Semester03.Areas.Partner.Models.EventBooking evb =
+        (Semester03.Areas.Partner.Models.EventBooking)ViewBag.itemEventBooking;
+        <div class="form-group mb-3">
+            <label>Date</label>
+            <input type="date" class="form-control" name="End"
+                   value="@evb.Date.ToString("yyyy-MM-dd")" style="width: 300px;" readonly/>
+        </div>
+        <div class="form-group mb-3">
+            <label>Unit Price</label>
+            <input type="text" class="form-control" value="@evb.UnitPrice" style="width: 300px;" readonly />
+        </div>
+        <div class="form-group mb-3">
+            <label>Note</label>
+            <textarea class="form-control" rows="3" readonly>@evb.Note</textarea>
+        </div>
+        <div class="form-group">
+            <a href="@Url.Action("Index", "EventBooking", new{id = evb.EventId})" class="btn btn-secondary">Back</a>
+        </div>
+    }
+</div>

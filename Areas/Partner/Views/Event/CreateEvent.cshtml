@@ -162,16 +162,28 @@
                                                     <a href="@Url.Action("DeleteEvent", "Event", new {id = item.Id, positionId = item.TenantPositionId})" onclick="return confirm('Are you sure to delete this event ?')">
                                                         <i class="fa-solid fa-delete-left"></i>
                                                     </a>
+                                                    <a href="@Url.Action("Index", "Complaint", new {id = item.Id})">
+                                                        <i class="fa-solid fa-comment"></i>
+                                                    </a>
+                                                    <a href="@Url.Action("Index", "EventBooking", new {id = item.Id})">
+                                                        <i class="fa-solid fa-calendar-check"></i>
+                                                    </a>
                                                 }else if(item.Status == 1)
                                                 {
                                                     <a href="@Url.Action("Index", "Complaint", new {id = item.Id})">
                                                         <i class="fa-solid fa-comment"></i>
+                                                    </a>
+                                                    <a href="@Url.Action("Index", "EventBooking", new {id = item.Id})">
+                                                        <i class="fa-solid fa-calendar-check"></i>
                                                     </a>
                                                 }
                                                 else
                                                 {
                                                     <a href="@Url.Action("Index", "Complaint", new {id = item.Id})">
                                                         <i class="fa-solid fa-comment"></i>
+                                                    </a>
+                                                    <a href="@Url.Action("Index", "EventBooking", new {id = item.Id})">
+                                                        <i class="fa-solid fa-calendar-check"></i>
                                                     </a>
                                                 }
                                             </td>

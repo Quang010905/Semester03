@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Semester03.Areas.Admin.Models;
 using Semester03.Models.Repositories;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 namespace Semester03.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = "1")]
     public class TenantController : Controller
     {
         private readonly UserRepository _userRepo;
