@@ -157,10 +157,21 @@
                                                 @if (item.Status == 2)
                                                 {
                                                     <a href="@Url.Action("Edit", "Event", new {id = item.Id})">
-                                                        <img src="@Url.Content("~/Icon/pen.png")" style="width:1vw; height:2vh;" />
+                                                        <i class="fa-solid fa-pen-to-square"></i>
                                                     </a>
                                                     <a href="@Url.Action("DeleteEvent", "Event", new {id = item.Id, positionId = item.TenantPositionId})" onclick="return confirm('Are you sure to delete this event ?')">
-                                                        <img src="@Url.Content("~/Icon/delete.png")" style="width:1vw; height:2vh;" />
+                                                        <i class="fa-solid fa-delete-left"></i>
+                                                    </a>
+                                                }else if(item.Status == 1)
+                                                {
+                                                    <a href="@Url.Action("Index", "Complaint", new {id = item.Id})">
+                                                        <i class="fa-solid fa-comment"></i>
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <a href="@Url.Action("Index", "Complaint", new {id = item.Id})">
+                                                        <i class="fa-solid fa-comment"></i>
                                                     </a>
                                                 }
                                             </td>
