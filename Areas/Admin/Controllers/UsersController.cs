@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Semester03.Models.Entities;
 using Semester03.Models.Repositories;
+using Microsoft.AspNetCore.Identity;
 
 namespace Semester03.Areas.Admin.Controllers
 {
@@ -10,6 +11,7 @@ namespace Semester03.Areas.Admin.Controllers
     {
         private readonly UserRepository _userRepo;
         private readonly RoleRepository _roleRepo;
+        private readonly PasswordHasher<TblUser> _hasher = new PasswordHasher<TblUser>();
 
         public UsersController(UserRepository userRepo, RoleRepository roleRepo)
         {
@@ -205,11 +207,11 @@ namespace Semester03.Areas.Admin.Controllers
             if (!ModelState.IsValid)
             {
                 TempData["Error"] = "Please check your input!";
-                return RedirectToAction("Index"); // Hoặc trả về tab create
+                return RedirectToAction("Index");
             }
 
-            // Mã hóa password (nếu cần)
-            // model.UsersPassword = HashPassword(model.UsersPassword);
+            // ⭐ HASH PASSWORD TẠI ĐÂY ⭐
+            model.UsersPassword = _hasher.HashPassword(model, model.UsersPassword);
 
             bool result = _userRepo.AddPartner(model);
 
@@ -218,7 +220,28 @@ namespace Semester03.Areas.Admin.Controllers
             else
                 TempData["Error"] = "Failed to create partner!";
 
-            return RedirectToAction("Index"); // Quay về trang danh sách
+            return RedirectToAction("Index");
+        }
+
+        // ===================== RESET PASSWORD =====================
+        public async Task<IActionResult> ResetPassword(int id)
+        {
+            if (id <= 0)
+                return RedirectToAction("Index");
+
+            var user = await _userRepo.GetByIdAsync(id);
+            if (user == null)
+                return RedirectToAction("Index");
+
+           
+            string newPassword = "password123";
+            user.UsersPassword = _hasher.HashPassword(user, newPassword);
+            user.UsersUpdatedAt = DateTime.Now;
+
+            await _userRepo.UpdateAsync(user);
+
+        
+            return RedirectToAction("Index");
         }
 
 
