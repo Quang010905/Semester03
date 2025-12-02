@@ -174,12 +174,26 @@
                             </a>
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
                                  aria-labelledby="userDropdown">
+
+                                <!-- RESET PASSWORD -->
+                                <a class="dropdown-item"
+                                   asp-area="Partner"
+                                   asp-controller="Shop"
+                                   asp-action="ResetPassword">
+                                    <i class="fas fa-key fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Reset Password
+                                </a>
+
+                                <div class="dropdown-divider"></div>
+
                                 <a class="dropdown-item" href="@Url.Action("Logout", "Account", new { area = "Client" })" data-toggle="modal" data-target="#logoutModal">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Logout
                                 </a>
                             </div>
                         </li>
+
+
 
                     </ul>
 

@@ -4,6 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 using Semester03.Areas.Admin.Models;
 using Semester03.Models.Repositories;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Identity;
+using Semester03.Models.Entities;
+using System.ComponentModel.DataAnnotations;
+
 
 namespace Semester03.Areas.Partner.Controllers
 {
@@ -144,5 +148,79 @@ namespace Semester03.Areas.Partner.Controllers
 
             return RedirectToAction("Index", "Shop");
         }
+        // ===================== RESET PASSWORD CHO PARTNER =====================
+        public class PartnerResetPasswordVm
+        {
+            [Required]
+            [DataType(DataType.Password)]
+            public string CurrentPassword { get; set; } = string.Empty;
+
+            [Required]
+            [MinLength(6, ErrorMessage = "New password must be at least 6 characters.")]
+            [DataType(DataType.Password)]
+            public string NewPassword { get; set; } = string.Empty;
+
+            [Required]
+            [DataType(DataType.Password)]
+            [Compare("NewPassword", ErrorMessage = "Confirm password does not match.")]
+            public string ConfirmPassword { get; set; } = string.Empty;
+        }
+
+        [HttpGet]
+        public IActionResult ResetPassword()
+        {
+            return View(new PartnerResetPasswordVm());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(PartnerResetPasswordVm model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            // Lấy id user đang đăng nhập
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdString))
+            {
+                TempData["ErrorMessage"] = "You are not logged in.";
+                return RedirectToAction("Login", "Account", new { area = "Client" });
+            }
+
+            int userId = int.Parse(userIdString);
+            var user = await _userRepo.GetByIdAsync(userId);
+            if (user == null)
+            {
+                ModelState.AddModelError(string.Empty, "User not found.");
+                return View(model);
+            }
+
+            var hasher = new PasswordHasher<TblUser>();
+
+            // kiểm tra mật khẩu hiện tại
+            var verifyResult = hasher.VerifyHashedPassword(
+                user,
+                user.UsersPassword ?? "",
+                model.CurrentPassword
+            );
+
+            if (verifyResult == PasswordVerificationResult.Failed)
+            {
+                ModelState.AddModelError("CurrentPassword", "Current password is incorrect.");
+                return View(model);
+            }
+
+            // Hash và lưu mật khẩu mới
+            user.UsersPassword = hasher.HashPassword(user, model.NewPassword);
+            user.UsersUpdatedAt = DateTime.Now;
+            await _userRepo.UpdateAsync(user);
+
+            ViewBag.Success = "Password has been changed successfully.";
+            ModelState.Clear();
+
+            return View(new PartnerResetPasswordVm());
+        }
+
+
     }
 }
