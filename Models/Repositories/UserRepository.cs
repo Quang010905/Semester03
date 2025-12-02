@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
@@ -33,16 +35,31 @@ namespace Semester03.Models.Repositories
                 .FirstOrDefaultAsync(u => u.UsersId == id);
         }
 
+        // ================== VERIFY / SET PASSWORD ==================
 
-
-   
-
-
-
-        // Verify password
+        // Verify password (đã bọc try/catch FormatException)
         public PasswordVerificationResult VerifyPassword(TblUser user, string plainPassword)
         {
-            return _hasher.VerifyHashedPassword(user, user.UsersPassword ?? "", plainPassword);
+            if (user == null)
+                return PasswordVerificationResult.Failed;
+
+            var hashed = user.UsersPassword;
+
+            // nếu trong DB chưa có password thì fail
+            if (string.IsNullOrWhiteSpace(hashed))
+                return PasswordVerificationResult.Failed;
+
+            try
+            {
+                // Chuỗi hashed phải được tạo bởi _hasher.HashPassword
+                return _hasher.VerifyHashedPassword(user, hashed, plainPassword);
+            }
+            catch (FormatException)
+            {
+                // Trường hợp chuỗi trong DB không đúng format hash (plain text, MD5, SHA1, ...),
+                // Identity cố decode base64 sẽ ném FormatException. Ta coi như xác thực thất bại.
+                return PasswordVerificationResult.Failed;
+            }
         }
 
         // Set/update password hash
@@ -78,7 +95,7 @@ namespace Semester03.Models.Repositories
         }
 
         /// <summary>
-        /// Create new user (hashes password). UsersRoleId default = 2 (customer).
+        /// Create new user (hashes password). UsersRoleId default = 3 (customer).
         /// Returns created entity with UsersId.
         /// </summary>
         public async Task<TblUser> CreateUserAsync(string username, string fullName, string email, string phone, string plainPassword)
@@ -92,13 +109,14 @@ namespace Semester03.Models.Repositories
                 UsersFullName = fullName?.Trim(),
                 UsersEmail = email?.Trim().ToLowerInvariant(),
                 UsersPhone = phone?.Trim(),
-                UsersRoleId = 3, // role = 2 when registering
+                UsersRoleId = 3, // customer
                 UsersPoints = 0,
                 UsersCreatedAt = DateTime.Now,
                 UsersUpdatedAt = DateTime.Now,
-                UsersStatus = 1 // <-- ensure account is active when created
+                UsersStatus = 1 // active
             };
 
+            // HASH PASSWORD bằng Identity
             user.UsersPassword = _hasher.HashPassword(user, plainPassword);
 
             _context.TblUsers.Add(user);
@@ -106,6 +124,8 @@ namespace Semester03.Models.Repositories
 
             return user;
         }
+
+        // ================== SEARCH NORMALIZE ==================
 
         public string NormalizeSearch(string input)
         {
@@ -130,6 +150,8 @@ namespace Semester03.Models.Repositories
                 .ToArray());
         }
 
+        // ================== LIST USERS BY ROLE / STATUS ==================
+
         public async Task<List<User>> GetAllUserFilterByStatus()
         {
             return await _context.TblUsers
@@ -148,6 +170,7 @@ namespace Semester03.Models.Repositories
                 }).Where(x => x.Role == 2).OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
         }
+
         public async Task<User?> CreateTenantByUserId(int id)
         {
             return await _context.TblUsers
@@ -167,7 +190,6 @@ namespace Semester03.Models.Repositories
                 })
                 .FirstOrDefaultAsync();
         }
-
 
         //========================== Huỳnh Như ==========================
         public async Task<List<User>> GetAllCustomersAsync()
@@ -192,9 +214,6 @@ namespace Semester03.Models.Repositories
                 .ToListAsync();
         }
 
-
-
-
         public async Task<List<User>> GetAllPartnersAsync()
         {
             return await _context.TblUsers
@@ -216,10 +235,6 @@ namespace Semester03.Models.Repositories
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
         }
-
-
-
-
 
         public async Task<List<User>> GetAllAdminAsync()
         {
@@ -243,15 +258,11 @@ namespace Semester03.Models.Repositories
                 .ToListAsync();
         }
 
-
-
         // status = 0, user inactive
-
-
         public async Task<List<User>> GetInactiveAccountAsync()
         {
             return await _context.TblUsers
-                .Where(x =>  x.UsersStatus == 0)  // partner và status = 0
+                .Where(x => x.UsersStatus == 0)  // tất cả user status = 0
                 .Select(x => new User
                 {
                     Id = x.UsersId,
@@ -270,9 +281,6 @@ namespace Semester03.Models.Repositories
                 .ToListAsync();
         }
 
-
-
-
         public void RestoreUserStatus(int id)
         {
             var user = _context.TblUsers.FirstOrDefault(x => x.UsersId == id);
@@ -286,9 +294,7 @@ namespace Semester03.Models.Repositories
             }
         }
 
-
-
-
+        // ================== UPDATE PROFILE (CLIENT) ==================
 
         // Cập nhật hồ sơ người dùng (họ tên, email, phone, password)
         public async Task<(bool Success, string? Error)> UpdateProfileAsync(
@@ -351,49 +357,42 @@ namespace Semester03.Models.Repositories
             return await _context.TblUsers.FirstOrDefaultAsync(u => u.UsersId == id);
         }
 
-
-
-
         public async Task UpdateAsync(TblUser user)
         {
             _context.TblUsers.Update(user);
             await _context.SaveChangesAsync();
         }
 
-
-
-
+        // ================== ADD PARTNER (ADMIN) ==================
 
         public bool AddPartner(TblUser partner)
         {
             try
             {
+                if (partner == null)
+                    return false;
+
                 // Mặc định role = 2 (Partner)
                 partner.UsersRoleId = 2;
                 partner.UsersRoleChangeReason = null;
                 partner.UsersCreatedAt = DateTime.Now;
                 partner.UsersUpdatedAt = null;
 
+                // RẤT QUAN TRỌNG: hash password nếu đang là plain text từ form
+                if (!string.IsNullOrWhiteSpace(partner.UsersPassword))
+                {
+                    partner.UsersPassword = _hasher.HashPassword(partner, partner.UsersPassword);
+                }
+
                 _context.TblUsers.Add(partner);
                 _context.SaveChanges();
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // TODO: log exception nếu cần
                 return false;
             }
         }
-
-
-
-
-
-
-
-
-
-
-
     }
 }
