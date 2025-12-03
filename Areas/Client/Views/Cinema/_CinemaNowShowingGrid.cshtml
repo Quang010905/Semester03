@@ -1,0 +1,114 @@
+﻿@model List<Semester03.Areas.Client.Models.ViewModels.MovieCardVm>
+@using System
+
+@{
+    Func<string, string> Img = (raw) =>
+    {
+        var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return noImageUrl;
+
+            raw = raw.Trim();
+
+            if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                return raw;
+
+            var qIndex = raw.IndexOfAny(new[] { '?', '#' });
+            if (qIndex >= 0)
+                raw = raw.Substring(0, qIndex);
+
+            raw = raw.Replace("\\", "/");
+
+            var lastSlash = raw.LastIndexOf('/');
+            string fileName;
+            if (lastSlash >= 0 && lastSlash < raw.Length - 1)
+                fileName = raw.Substring(lastSlash + 1);
+            else
+                fileName = raw;
+
+            if (string.IsNullOrWhiteSpace(fileName))
+                return noImageUrl;
+
+            return Url.Content("~/Content/Uploads/Movies/" + fileName);
+        }
+        catch
+        {
+            return noImageUrl;
+        }
+    };
+}
+
+<div class="row g-3">
+    @{
+        var index = 0;
+    }
+    @foreach (var m in Model)
+    {
+        var isToday = m.NextShowtime?.Date == DateTime.Today;
+        <div class="col-6 col-md-4 col-lg-3 movie-grid-item" data-index="@index">
+            <div class="movie-card h-100">
+                <div class="movie-poster-wrapper">
+                    <div class="movie-badge">
+                        <span class="badge badge-primary text-white me-1">Now showing</span>
+                        @if (isToday)
+                        {
+                            <span class="badge badge-danger text-white">Today</span>
+                        }
+                    </div>
+
+                    <a href="@Url.Action("Details", "Cinema", new { area = "Client", id = m.Id })">
+                        <img src="@Img(m.PosterUrl)" class="movie-poster" />
+                    </a>
+
+                    <div class="movie-gradient-overlay"></div>
+
+                    @if (m.NextShowtimeId.HasValue)
+                    {
+                        <a href="@Url.Action("BookTicket", "Booking", new { area = "Client", movieId = m.Id })" class="movie-quick-book btn btn-sm">
+                            <i class="bi bi-ticket-perforated me-1"></i> Quick book
+                        </a>
+                    }
+                </div>
+
+                <div class="card-body px-3 pt-2 pb-1">
+                    <h6 class="movie-title mb-1 text-truncate">@m.Title</h6>
+                    <div class="movie-meta-line mb-1 d-flex justify-content-between">
+                        <span>
+                            <i class="bi bi-clock me-1"></i>@((m.DurationMin ?? 0) + " min")
+                        </span>
+                    </div>
+                    <div class="movie-tagline text-truncate">
+                        @m.Description
+                    </div>
+                </div>
+
+                <div class="card-footer bg-transparent border-0 px-3 pb-3 pt-1 movie-footer d-flex justify-content-between align-items-center">
+                    <div>
+                        @if (m.NextShowtime.HasValue)
+                        {
+                            <div class="text-muted">
+                                <i class="bi bi-calendar-event me-1"></i>@m.NextShowtime.Value.ToString("dd MMM HH:mm")
+                            </div>
+                            @if (!string.IsNullOrEmpty(m.ScreenName))
+                            {
+                                <div class="text-muted small">
+                                    <i class="bi bi-tv me-1"></i>@m.ScreenName
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-muted">
+                                <i class="bi bi-calendar-x me-1"></i>No showtime
+                            </span>
+                        }
+                    </div>                   
+                </div>
+            </div>
+        </div>
+        index++;
+    }
+</div>

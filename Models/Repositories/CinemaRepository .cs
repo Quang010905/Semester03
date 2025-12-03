@@ -13,128 +13,133 @@ namespace Semester03.Models.Repositories
         private readonly AbcdmallContext _db;
         public CinemaRepository(AbcdmallContext db) => _db = db;
 
-        // ==================== FEATURED (sửa ổn định cho EF Core) ====================
+        // ==================== FEATURED ====================
+        // Lấy tất cả phim đang công bố chiếu (status = 1, trong Start/End),
+        // và nếu có thì kèm suất chiếu sắp tới nhất.
         public async Task<List<MovieCardVm>> GetFeaturedMoviesAsync(int top = int.MaxValue)
         {
             var now = DateTime.Now;
+            var today = DateTime.Today;
 
-            // 1) NextStarts: mỗi movie có NextStart (nullable DateTime)
-            var nextStarts = _db.TblShowtimes
-                .AsNoTracking()
+            // Phim đang công bố chiếu
+            var movies = _db.TblMovies.AsNoTracking()
+                .Where(m =>
+                    (m.MovieStatus ?? 0) == 1 &&
+                    (m.MovieStartDate == null || m.MovieStartDate <= today) &&
+                    (m.MovieEndDate == null || m.MovieEndDate >= today)
+                );
+
+            // Suất chiếu tương lai (từ bây giờ trở đi) để lấy suất gần nhất cho mỗi phim
+            var futureShowtimes = _db.TblShowtimes.AsNoTracking()
                 .Where(s => s.ShowtimeStart >= now)
                 .GroupBy(s => s.ShowtimeMovieId)
                 .Select(g => new
                 {
                     MovieId = g.Key,
-                    NextStart = (DateTime?)g.Min(s => s.ShowtimeStart)
+                    NextShowtime = (DateTime?)g.Min(x => x.ShowtimeStart),
+                    NextShowtimeId = (int?)g
+                        .OrderBy(x => x.ShowtimeStart)
+                        .ThenBy(x => x.ShowtimeId)
+                        .Select(x => x.ShowtimeId)
+                        .FirstOrDefault(),
+                    NextPrice = (decimal?)g
+                        .OrderBy(x => x.ShowtimeStart)
+                        .ThenBy(x => x.ShowtimeId)
+                        .Select(x => x.ShowtimePrice)
+                        .FirstOrDefault()
                 });
 
-            // 2) showInfo: nối nextStarts -> showtime -> screen -> cinema, trả projection phẳng
-            var showInfo = nextStarts
-                .Join(_db.TblShowtimes.AsNoTracking(),
-                      ns => new { ns.MovieId, NextStart = ns.NextStart },
-                      s => new { MovieId = s.ShowtimeMovieId, NextStart = (DateTime?)s.ShowtimeStart },
-                      (ns, s) => new { ns.MovieId, ShowtimeStart = (DateTime?)s.ShowtimeStart, s.ShowtimePrice, s.ShowtimeId, ScreenId = s.ShowtimeScreenId })
-                .Join(_db.TblScreens.AsNoTracking(),
-                      si => si.ScreenId,
-                      scr => scr.ScreenId,
-                      (si, scr) => new { si.MovieId, si.ShowtimeStart, si.ShowtimePrice, si.ShowtimeId, scr.ScreenName, scr.ScreenCinemaId })
-                .Join(_db.TblCinemas.AsNoTracking(),
-                      temp => temp.ScreenCinemaId,
-                      c => c.CinemaId,
-                      (temp, c) => new
-                      {
-                          MovieId = temp.MovieId,
-                          ShowtimeStart = temp.ShowtimeStart,
-                          ShowtimePrice = temp.ShowtimePrice,
-                          ShowtimeId = temp.ShowtimeId,
-                          ScreenName = temp.ScreenName,
-                          CinemaName = c.CinemaName
-                      });
+            var q = from m in movies
+                    join fs in futureShowtimes
+                        on m.MovieId equals fs.MovieId into gj
+                    from fs in gj.DefaultIfEmpty()
+                    select new
+                    {
+                        m.MovieId,
+                        m.MovieTitle,
+                        m.MovieDescription,
+                        m.MovieDurationMin,
+                        m.MovieImg,
+                        NextShowtime = fs != null ? fs.NextShowtime : (DateTime?)null,
+                        NextShowtimeId = fs != null ? fs.NextShowtimeId : (int?)null,
+                        NextPrice = fs != null ? fs.NextPrice : (decimal?)null
+                    };
 
-            // 3) moviesInRun: tất cả phim đang trong khoảng public run
-            var moviesInRun = _db.TblMovies.AsNoTracking()
-                .Where(m =>
-                    (m.MovieStartDate == null || m.MovieStartDate <= now) &&
-                    (m.MovieEndDate == null || m.MovieEndDate >= now)
-                );
+            q = q
+                .OrderBy(x => x.NextShowtime == null ? 1 : 0)
+                .ThenBy(x => x.NextShowtime ?? DateTime.MaxValue);
 
-            // 4) Left join moviesInRun với showInfo (GroupJoin + DefaultIfEmpty) và select phẳng
-            var q = moviesInRun
-                .GroupJoin(showInfo,
-                           m => m.MovieId,
-                           si => si.MovieId,
-                           (m, sis) => new { Movie = m, Show = sis.FirstOrDefault() })
-                .Select(x => new
-                {
-                    MovieId = x.Movie.MovieId,
-                    MovieTitle = x.Movie.MovieTitle,
-                    MovieDescription = x.Movie.MovieDescription,
-                    MovieDurationMin = x.Movie.MovieDurationMin,
-                    ShowtimeStart = x.Show != null ? x.Show.ShowtimeStart : (DateTime?)null,
-                    ShowtimePrice = x.Show != null ? x.Show.ShowtimePrice : (decimal?)null,
-                    ShowtimeId = x.Show != null ? x.Show.ShowtimeId : (int?)null,
-                    PosterUrl = x.Movie.MovieImg,
-                    CinemaName = x.Show != null ? x.Show.CinemaName : null,
-                    ScreenName = x.Show != null ? x.Show.ScreenName : null
-                })
-                .OrderBy(x => x.ShowtimeStart == null ? 1 : 0)
-                .ThenBy(x => x.ShowtimeStart ?? DateTime.MaxValue);
+            var data = (top == int.MaxValue)
+                ? await q.ToListAsync()
+                : await q.Take(top).ToListAsync();
 
-            var list = (top == int.MaxValue) ? await q.ToListAsync() : await q.Take(top).ToListAsync();
-
-            return list.Select(x => new MovieCardVm
+            return data.Select(x => new MovieCardVm
             {
                 Id = x.MovieId,
                 Title = x.MovieTitle ?? "",
                 Description = x.MovieDescription ?? "",
                 DurationMin = x.MovieDurationMin,
-                NextShowtime = x.ShowtimeStart,
-                NextPrice = x.ShowtimePrice,
-                NextShowtimeId = x.ShowtimeId,
-                PosterUrl = string.IsNullOrWhiteSpace(x.PosterUrl) ? "/images/movie-placeholder.png" : x.PosterUrl
+                NextShowtime = x.NextShowtime,
+                NextPrice = x.NextPrice,
+                NextShowtimeId = x.NextShowtimeId,
+                PosterUrl = string.IsNullOrWhiteSpace(x.MovieImg)
+                    ? "/images/movie-placeholder.png"
+                    : x.MovieImg,
+                ScreenName = null // Featured không cần Screen cụ thể
             }).ToList();
         }
 
-        // ==================== NOW SHOWING (giữ nguyên) ====================
+        // ==================== NOW SHOWING ====================
+        // Chỉ lấy phim status = 1, còn trong khoảng start/end,
+        // có suất chiếu từ bây giờ đến 7 ngày tới,
+        // và lấy suất gần nhất + ScreenName.
         public async Task<List<MovieCardVm>> GetNowShowingAsync()
         {
             var now = DateTime.Now;
+            var today = now.Date;
+            var endDate = today.AddDays(7); // hôm nay + 6 ngày (7 ngày tổng)
 
+            // Bước 1: tìm NextStart (suất gần nhất) cho từng movie trong khoảng [now, endDate)
             var nextStarts = from s in _db.TblShowtimes.AsNoTracking()
                              join m in _db.TblMovies.AsNoTracking()
                                  on s.ShowtimeMovieId equals m.MovieId
-                             where s.ShowtimeStart >= now
-                                && (m.MovieStartDate == null || m.MovieStartDate <= now)
-                                && (m.MovieEndDate == null || m.MovieEndDate >= now)
+                             where
+                                 s.ShowtimeStart >= now &&
+                                 s.ShowtimeStart < endDate &&
+                                 (m.MovieStatus ?? 0) == 1 &&
+                                 (m.MovieStartDate == null || m.MovieStartDate <= today) &&
+                                 (m.MovieEndDate == null || m.MovieEndDate >= today)
                              group s by s.ShowtimeMovieId into g
                              select new
                              {
                                  MovieId = g.Key,
-                                 NextStart = g.Min(s => s.ShowtimeStart)
+                                 NextStart = g.Min(x => x.ShowtimeStart)
                              };
 
+            // Bước 2: join lại để lấy thông tin đầy đủ + ScreenName
             var q = from ns in nextStarts
                     join s in _db.TblShowtimes.AsNoTracking()
                         on new { MovieId = ns.MovieId, NextStart = ns.NextStart }
                         equals new { MovieId = s.ShowtimeMovieId, NextStart = s.ShowtimeStart }
-                    join m in _db.TblMovies.AsNoTracking() on ns.MovieId equals m.MovieId
-                    join scr in _db.TblScreens.AsNoTracking() on s.ShowtimeScreenId equals scr.ScreenId
-                    join c in _db.TblCinemas.AsNoTracking() on scr.ScreenCinemaId equals c.CinemaId
-                    where (m.MovieStartDate == null || m.MovieStartDate <= now)
-                          && (m.MovieEndDate == null || m.MovieEndDate >= now)
+                    join m in _db.TblMovies.AsNoTracking()
+                        on ns.MovieId equals m.MovieId
+                    join scr in _db.TblScreens.AsNoTracking()
+                        on s.ShowtimeScreenId equals scr.ScreenId
+                    where
+                        (m.MovieStatus ?? 0) == 1 &&
+                        (m.MovieStartDate == null || m.MovieStartDate <= today) &&
+                        (m.MovieEndDate == null || m.MovieEndDate >= today)
                     orderby s.ShowtimeStart
                     select new
                     {
-                        MovieId = m.MovieId,
-                        MovieTitle = m.MovieTitle,
-                        MovieDescription = m.MovieDescription,
-                        MovieDurationMin = m.MovieDurationMin,
+                        m.MovieId,
+                        m.MovieTitle,
+                        m.MovieDescription,
+                        m.MovieDurationMin,
+                        m.MovieImg,
                         ShowtimeStart = s.ShowtimeStart,
                         ShowtimePrice = s.ShowtimePrice,
                         ShowtimeId = s.ShowtimeId,
-                        PosterUrl = m.MovieImg,
-                        CinemaName = c.CinemaName,
                         ScreenName = scr.ScreenName
                     };
 
@@ -149,16 +154,19 @@ namespace Semester03.Models.Repositories
                 NextShowtime = x.ShowtimeStart,
                 NextPrice = x.ShowtimePrice,
                 NextShowtimeId = x.ShowtimeId,
-                PosterUrl = string.IsNullOrWhiteSpace(x.PosterUrl) ? "/images/movie-placeholder.png" : x.PosterUrl
+                PosterUrl = string.IsNullOrWhiteSpace(x.MovieImg)
+                    ? "/images/movie-placeholder.png"
+                    : x.MovieImg,
+                ScreenName = x.ScreenName
             }).ToList();
         }
 
         // ==================== CHI TIẾT PHIM + COMMENT ====================
         public async Task<MovieDetailsVm> GetMovieDetailsAsync(
-     int movieId,
-     int? currentUserId,
-     int commentPage,
-     int pageSize)
+            int movieId,
+            int? currentUserId,
+            int commentPage,
+            int pageSize)
         {
             if (commentPage < 1) commentPage = 1;
             if (pageSize < 1) pageSize = 5;
@@ -199,10 +207,8 @@ namespace Semester03.Models.Repositories
                 commentsQuery = commentsQuery.Where(c => c.CustomerComplaintStatus == 1);
             }
 
-            // Tổng số comment
             var totalComments = await commentsQuery.CountAsync();
 
-            // Lấy page
             var comments = await commentsQuery
                 .OrderByDescending(c => c.CustomerComplaintCreatedAt)
                 .Skip((commentPage - 1) * pageSize)
@@ -311,5 +317,80 @@ namespace Semester03.Models.Repositories
             _db.Entry(cinemaSettings).State = EntityState.Modified;
             await _db.SaveChangesAsync();
         }
+
+        public async Task<List<MovieCardVm>> GetMoviesByDateAsync(DateTime date)
+        {
+            var dayStart = date.Date;
+            var dayEnd = dayStart.AddDays(1);
+
+            var today = DateTime.Today;
+
+            // Phim đang công bố chiếu (status 1 + trong khoảng start/end)
+            var baseMovies = _db.TblMovies.AsNoTracking()
+                .Where(m =>
+                    (m.MovieStatus ?? 0) == 1 &&
+                    (m.MovieStartDate == null || m.MovieStartDate <= today) &&
+                    (m.MovieEndDate == null || m.MovieEndDate >= today)
+                );
+
+            var q = from s in _db.TblShowtimes.AsNoTracking()
+                    join m in baseMovies on s.ShowtimeMovieId equals m.MovieId
+                    join scr in _db.TblScreens.AsNoTracking() on s.ShowtimeScreenId equals scr.ScreenId
+                    where s.ShowtimeStart >= dayStart && s.ShowtimeStart < dayEnd
+                    group new { m, s, scr } by new
+                    {
+                        m.MovieId,
+                        m.MovieTitle,
+                        m.MovieDescription,
+                        m.MovieDurationMin,
+                        m.MovieImg
+                    }
+                into g
+                    select new
+                    {
+                        g.Key.MovieId,
+                        g.Key.MovieTitle,
+                        g.Key.MovieDescription,
+                        g.Key.MovieDurationMin,
+                        g.Key.MovieImg,
+                        NextShowtime = (DateTime?)g.Min(x => x.s.ShowtimeStart),
+                        NextShowtimeId = (int?)g
+                            .OrderBy(x => x.s.ShowtimeStart)
+                            .ThenBy(x => x.s.ShowtimeId)
+                            .Select(x => x.s.ShowtimeId)
+                            .FirstOrDefault(),
+                        NextPrice = (decimal?)g
+                            .OrderBy(x => x.s.ShowtimeStart)
+                            .ThenBy(x => x.s.ShowtimeId)
+                            .Select(x => x.s.ShowtimePrice)
+                            .FirstOrDefault(),
+                        ScreenName = g
+                            .OrderBy(x => x.s.ShowtimeStart)
+                            .ThenBy(x => x.s.ShowtimeId)
+                            .Select(x => x.scr.ScreenName)
+                            .FirstOrDefault()
+                    };
+
+            var list = await q
+                .OrderBy(x => x.NextShowtime)
+                .ThenBy(x => x.MovieTitle)
+                .ToListAsync();
+
+            return list.Select(x => new MovieCardVm
+            {
+                Id = x.MovieId,
+                Title = x.MovieTitle ?? "",
+                Description = x.MovieDescription ?? "",
+                DurationMin = x.MovieDurationMin,
+                NextShowtime = x.NextShowtime,
+                NextPrice = x.NextPrice,
+                NextShowtimeId = x.NextShowtimeId,
+                PosterUrl = string.IsNullOrWhiteSpace(x.MovieImg)
+                    ? "/images/movie-placeholder.png"
+                    : x.MovieImg,
+                ScreenName = x.ScreenName
+            }).ToList();
+        }
+
     }
 }
