@@ -606,10 +606,15 @@
                                         <span class="badge-status badge-upcoming">
                                             @e.Status.ToUpper()
                                         </span>
-                                        <div class="ticket-title">@e.EventName</div>
-                                        <div class="ticket-time">@e.EventStart.ToString("dd/MM/yyyy HH:mm")</div>
+                                        <div class="ticket-time">
+                                            Start: @e.EventStart.ToString("dd/MM/yyyy HH:mm")
+                                        </div>
+                                        <div class="ticket-time">
+                                            End: @e.EventEnd.ToString("dd/MM/yyyy HH:mm")
+                                        </div>
                                         <div class="ticket-time">Quantity: @e.Quantity</div>
                                         <div class="ticket-time">Total amount: @e.TotalCost.ToString("N0") đ</div>
+
 
                                         <a href="@Url.Action("Details", "EventBooking", new { area = "Client", id = e.BookingId })"
                                            class="btn btn-primary btn-sm w-100 mt-2">
@@ -644,9 +649,15 @@
                                             @e.Status.ToUpper()
                                         </span>
                                         <div class="ticket-title">@e.EventName</div>
-                                        <div class="ticket-time">@e.EventStart.ToString("dd/MM/yyyy HH:mm")</div>
+                                        <div class="ticket-time">
+                                            Start: @e.EventStart.ToString("dd/MM/yyyy HH:mm")
+                                        </div>
+                                        <div class="ticket-time">
+                                            End: @e.EventEnd.ToString("dd/MM/yyyy HH:mm")
+                                        </div>
                                         <div class="ticket-time">Quantity: @e.Quantity</div>
                                         <div class="ticket-time">Total amount: @e.TotalCost.ToString("N0") đ</div>
+
                                     </div>
                                 </div>
                             </div>
@@ -671,14 +682,31 @@
                             <div class="col-6 col-md-4 col-lg-3">
                                 <div class="ticket-card" style="opacity:.6;">
                                     <img src="@poster" class="ticket-img" />
+
                                     <div class="event-body">
+
                                         <span class="badge-status badge-cancelled">
                                             @e.Status.ToUpper()
                                         </span>
+
                                         <div class="ticket-title">@e.EventName</div>
-                                        <div class="ticket-time">@e.EventStart.ToString("dd/MM/yyyy HH:mm")</div>
-                                        <div class="ticket-time">Quantity: @e.Quantity</div>
-                                        <div class="ticket-time">Total amount refund: @e.TotalCost.ToString("N0") đ</div>                                       
+
+                                        <div class="ticket-time">
+                                            Start: @e.EventStart.ToString("dd/MM/yyyy HH:mm")
+                                        </div>
+
+                                        <div class="ticket-time">
+                                            End: @e.EventEnd.ToString("dd/MM/yyyy HH:mm")
+                                        </div>
+
+                                        <div class="ticket-time">
+                                            Quantity: @e.Quantity
+                                        </div>
+
+                                        <div class="ticket-time">
+                                            Total amount refund: @e.TotalCost.ToString("N0") đ
+                                        </div>
+
                                     </div>
                                 </div>
                             </div>
@@ -686,6 +714,7 @@
                     </div>
                 }
             </div>
+
         }
     </div>
 

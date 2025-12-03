@@ -297,12 +297,17 @@
             <div class="ticket-value">@Model.BookingId</div>
 
             <div class="ticket-label mt-3">Time:</div>
+
+            <!-- Thời gian bắt đầu -->
             <div class="ticket-value" style="color:#e00063">
-                @Model.EventStart.ToString("HH:mm") - @Model.EventEnd.ToString("HH:mm")
+                Start: @Model.EventStart.ToString("HH:mm dd/MM/yyyy")
             </div>
-            <div class="ticket-value">
-                @dayOfWeek, @Model.EventStart.ToString("dd/MM/yyyy")
+
+            <!-- Thời gian kết thúc -->
+            <div class="ticket-value" style="color:#e00063">
+                End: @Model.EventEnd.ToString("HH:mm dd/MM/yyyy")
             </div>
+
         </div>
 
         <div class="ticket-section">
