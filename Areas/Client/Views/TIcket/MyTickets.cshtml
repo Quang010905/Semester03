@@ -38,20 +38,19 @@
         .OrderByDescending(t => t.Showtime)
         .ToList();
 
-    // ===== GROUP EVENT TICKETS BY TIME + STATUS =====
-    //  - Upcoming: EventStart >= now && chưa hủy hoàn toàn (Quantity > 0 & status không chứa CANCEL/HỦY)
-    //  - Past    : EventStart <  now && chưa hủy hoàn toàn
-    //  - Cancelled:
-    //        + status chứa "CANCEL" / "HUỶ" / "HỦY"
-    //        + HOẶC Quantity <= 0  (đã hủy hết bằng PartialCancel)
+    
     var upcomingEvents = Model.EventTickets
-        .Where(e => !IsCancelled(e.Status) && e.Quantity > 0 && e.EventStart >= now)
-        .OrderBy(e => e.EventStart)
-        .ToList();
+         .Where(e => !IsCancelled(e.Status)
+                     && e.Quantity > 0
+                     && e.EventEnd >= now)
+         .OrderBy(e => e.EventStart)
+         .ToList();
 
     var pastEvents = Model.EventTickets
-        .Where(e => !IsCancelled(e.Status) && e.Quantity > 0 && e.EventStart < now)
-        .OrderByDescending(e => e.EventStart)
+        .Where(e => !IsCancelled(e.Status)
+                    && e.Quantity > 0
+                    && e.EventEnd < now)
+        .OrderByDescending(e => e.EventEnd)
         .ToList();
 
     var cancelledEvents = Model.EventTickets
