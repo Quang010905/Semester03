@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Semester03.Areas.Client.Models.ViewModels;
+using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -25,19 +26,40 @@ namespace Semester03.Areas.Client.Controllers
             _db = db;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(DateTime? date, int pageSize = 100)
         {
+            if (pageSize <= 0) pageSize = 100;
+
+            var today = DateTime.Today;
+
+            // Tạo list 7 ngày: hôm nay + 6 ngày
+            var weekDays = Enumerable.Range(0, 7)
+                .Select(i => today.AddDays(i))
+                .ToList();
+
+            var selectedDate = date?.Date ?? today;
+
+            // Featured: lấy theo repo cũ
+            var featured = await _repo.GetFeaturedMoviesAsync();
+
+            // NowShowing: theo ngày được chọn
+            var moviesOfDay = await _repo.GetMoviesByDateAsync(selectedDate);
+            var totalItems = moviesOfDay.Count;
+
             var vm = new CinemaHomeVm
             {
-                // BỎ giới hạn 3, dùng default của repo (hiển thị tất cả phim trong khoảng công chiếu)
-                Featured = await _repo.GetFeaturedMoviesAsync(),
-                NowShowing = await _repo.GetNowShowingAsync()
+                Featured = featured,
+                NowShowing = moviesOfDay,
+                NowShowingPageIndex = 1,
+                NowShowingPageSize = pageSize,
+                NowShowingTotalItems = totalItems,
+                SelectedDate = selectedDate,
+                WeekDays = weekDays
             };
 
-            // LẤY USER ID ĐÚNG CLAIM
+            // Coupon & points
             if (User?.Identity?.IsAuthenticated == true)
             {
-                // AccountController đang set ClaimTypes.NameIdentifier = UsersId
                 var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
                 if (int.TryParse(userIdStr, out var userId))
@@ -50,6 +72,8 @@ namespace Semester03.Areas.Client.Controllers
 
             return View(vm);
         }
+
+
         [HttpGet]
         public async Task<IActionResult> Details(int id, int cmtPage = 1)
         {
@@ -73,7 +97,6 @@ namespace Semester03.Areas.Client.Controllers
             return View(vm);
         }
 
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddComment(int movieId, int rate, string text)
@@ -81,7 +104,6 @@ namespace Semester03.Areas.Client.Controllers
             if (!(User?.Identity?.IsAuthenticated ?? false))
                 return Unauthorized(new { success = false, message = "You need to log in to comment." });
 
-      
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                               ?? User.FindFirst("UserId")?.Value;
 
@@ -100,6 +122,7 @@ namespace Semester03.Areas.Client.Controllers
             {
                 return Json(new { success = false, message = "Please write a comment." });
             }
+
             var movie = await _db.TblMovies
                 .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.MovieId == movieId);
@@ -108,6 +131,7 @@ namespace Semester03.Areas.Client.Controllers
             {
                 return Json(new { success = false, message = "Movie does not exist." });
             }
+
             var now = DateTime.Now;
 
             var hasPastShowtime = await _db.TblShowtimes
@@ -122,6 +146,7 @@ namespace Semester03.Areas.Client.Controllers
                     message = "You can only comment when the movie already has at least one showtime that has been shown."
                 });
             }
+
             await _repo.AddCommentAsync(movieId, userId, rate, text);
 
             return Json(new
@@ -131,7 +156,6 @@ namespace Semester03.Areas.Client.Controllers
             });
         }
 
-
         [HttpGet]
         public async Task<IActionResult> DebugNowShowing()
         {
@@ -139,8 +163,30 @@ namespace Semester03.Areas.Client.Controllers
             return Json(new
             {
                 count = list.Count,
-                items = list.Select(x => new { x.Id, x.Title, x.NextShowtime, x.NextShowtimeId })
+                items = list.Select(x => new
+                {
+                    x.Id,
+                    x.Title,
+                    x.NextShowtime,
+                    x.NextShowtimeId,
+                    x.ScreenName
+                })
             });
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetMoviesByDate(string date)
+        {
+            if (!DateTime.TryParse(date, out var day))
+            {
+                day = DateTime.Today;
+            }
+
+            var movies = await _repo.GetMoviesByDateAsync(day);
+
+            // Dùng lại card layout NowShowing nhưng trong partial
+            return PartialView("_CinemaNowShowingGrid", movies);
+        }
+
     }
 }

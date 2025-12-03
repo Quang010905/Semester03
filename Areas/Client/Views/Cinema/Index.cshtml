@@ -1,5 +1,4 @@
 ﻿@using System
-@using System.IO
 @using Microsoft.AspNetCore.Hosting
 @model Semester03.Areas.Client.Models.ViewModels.CinemaHomeVm
 
@@ -7,7 +6,7 @@
     Layout = "~/Areas/Client/Views/Shared/_LayoutClient.cshtml";
     ViewData["HideCenterMain"] = false;
 
-    // Xử lý ảnh poster
+    // HÀM ẢNH MOVIE: luôn lấy từ /Content/Uploads/Movies
     Func<string, string> Img = (raw) =>
     {
         var noImageUrl = Url.Content("~/Content/Uploads/noimage.png");
@@ -17,49 +16,37 @@
             if (string.IsNullOrWhiteSpace(raw))
                 return noImageUrl;
 
+            raw = raw.Trim();
+
+            // Link tuyệt đối (http/https) thì trả về luôn
             if (raw.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 return raw;
 
-            var file = raw.Replace("\\", "/").Trim();
+            // Bỏ query string nếu có
+            var qIndex = raw.IndexOfAny(new[] { '?', '#' });
+            if (qIndex >= 0)
+                raw = raw.Substring(0, qIndex);
 
-            var keyword = "Content/Uploads/Movies";
-            var idxKeyword = file.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
-            if (idxKeyword >= 0)
-            {
-                var lastSlash = file.LastIndexOf('/');
-                if (lastSlash >= 0) file = file.Substring(lastSlash + 1);
-            }
+            // Chuẩn hóa slash
+            raw = raw.Replace("\\", "/");
 
-            if (file.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
-                file = file.Substring("wwwroot/".Length);
-            if (file.StartsWith("~/"))
-                file = file.Substring(2);
-            if (file.StartsWith("/"))
-                file = file.Substring(1);
-
-            if (string.IsNullOrWhiteSpace(file))
-                return noImageUrl;
-
-            var env = Context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
-            if (env == null)
-            {
-                return Url.Content("~/Content/Uploads/Movies/" + Uri.EscapeDataString(file));
-            }
-
-            var physical = System.IO.Path.Combine(env.WebRootPath ?? "wwwroot", "Content", "Uploads", "Movies", file);
-
-            if (System.IO.File.Exists(physical))
-            {
-                return Url.Content("~/Content/Uploads/Movies/" + Uri.EscapeDataString(file));
-            }
+            // Chỉ lấy tên file sau dấu /
+            var lastSlash = raw.LastIndexOf('/');
+            string fileName;
+            if (lastSlash >= 0 && lastSlash < raw.Length - 1)
+                fileName = raw.Substring(lastSlash + 1);
             else
-            {
+                fileName = raw;
+
+            if (string.IsNullOrWhiteSpace(fileName))
                 return noImageUrl;
-            }
+
+            // Build URL: /Content/Uploads/Movies/<fileName>
+            return Url.Content("~/Content/Uploads/Movies/" + fileName);
         }
         catch
         {
-            return Url.Content("~/Content/Uploads/noimage.png");
+            return noImageUrl;
         }
     };
 
@@ -76,7 +63,6 @@
 
 @section Styles {
     <style>
-        /* ===== SECTION WRAPPER (glow giống Events/Map) ===================== */
         .section-wrapper {
             position: relative;
             padding: 2.2rem 1.8rem 2.5rem;
@@ -119,7 +105,6 @@
             pointer-events: none;
         }
 
-        /* ==== PAGE WRAPPER ================================================== */
         .cinema-home-page {
             max-width: 1200px;
             margin: auto;
@@ -146,7 +131,6 @@
                 -webkit-text-fill-color: transparent;
             }
 
-        /* ==== FEATURED CAROUSEL =========================================== */
         .carousel-poster {
             height: 420px;
             width: 100%;
@@ -171,7 +155,6 @@
             color: #4f46e5;
         }
 
-        /* ==== MOVIE GRID ==================================================== */
         .movie-card {
             position: relative;
             background: radial-gradient(circle at 0 0,#eef2ff,#ffffff 55%);
@@ -276,7 +259,6 @@
             color: #9ca3af;
         }
 
-        /* ==== SEARCH + FILTER ============================================= */
         .movie-search-box input {
             border-radius: 999px;
         }
@@ -285,7 +267,36 @@
             border-radius: 999px;
         }
 
-        /* ==== RESPONSIVE =================================================== */
+        .week-days {
+            display: flex;
+            gap: .6rem;
+            overflow-x: auto;
+            padding-bottom: .5rem;
+        }
+
+        .day-card {
+            min-width: 110px;
+            text-align: center;
+            padding: .55rem .6rem;
+            border-radius: .9rem;
+            cursor: pointer;
+            border: 1px solid transparent;
+            background: #f3f4f6;
+            font-size: .85rem;
+            transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+        }
+
+            .day-card .fw-semibold {
+                font-size: .9rem;
+            }
+
+            .day-card.selected {
+                background: linear-gradient(135deg, #0d6efd, #6366f1);
+                color: #fff;
+                border-color: transparent;
+                box-shadow: 0 10px 28px rgba(37,99,235,0.4);
+            }
+
         @@media (max-width: 992px) {
             .carousel-poster {
                 height: 320px;
@@ -386,136 +397,70 @@
             </form>
         </div>
 
+        <!-- DAY SELECTOR -->
+        <div class="card p-3 mb-3">
+            <div class="week-days" id="weekDays">
+                @foreach (var d in Model.WeekDays)
+                {
+                    var sel = d.Date == Model.SelectedDate.Date ? "selected" : "";
+                    <div class="day-card @sel" data-date="@d.ToString("yyyy-MM-dd")">
+                        <div class="fw-semibold">@d.ToString("ddd")</div>
+                        <div>@d.ToString("dd MMM")</div>
+                    </div>
+                }
+            </div>
+        </div>
+
         <!-- NOW SHOWING GRID -->
         <div class="d-flex justify-content-between align-items-center mb-2">
             <h5 class="mb-0 fw-bold">Now showing</h5>
-            <span class="text-muted small">@((Model.NowShowing?.Count ?? 0)) movies in theaters</span>
+            <span class="text-muted small">
+                @Model.NowShowing.Count movies on @Model.SelectedDate.ToString("dd MMM")
+            </span>
         </div>
 
-        <div class="row g-3" id="nowShowingGrid">
-            @{
-                var index = 0;
-            }
-            @foreach (var m in Model.NowShowing)
-            {
-                var isToday = m.NextShowtime?.Date == DateTime.Today;
-                <div class="col-6 col-md-4 col-lg-3 movie-grid-item" data-index="@index">
-                    <div class="movie-card h-100">
-                        <div class="movie-poster-wrapper">
-                            <div class="movie-badge">
-                                <span class="badge badge-primary text-white me-1">Now showing</span>
-                                @if (isToday)
-                                {
-                                    <span class="badge badge-danger text-white">Today</span>
-                                }
-                            </div>
-
-                            <a href="@Url.Action("Details", "Cinema", new { area = "Client", id = m.Id })">
-                                <img src="@Img(m.PosterUrl)" class="movie-poster" />
-                            </a>
-
-                            <div class="movie-gradient-overlay"></div>
-
-                            @if (m.NextShowtimeId.HasValue)
-                            {
-                                <a href="@BookHref(m.Id)" class="movie-quick-book btn btn-sm">
-                                    <i class="bi bi-ticket-perforated me-1"></i> Quick book
-                                </a>
-                            }
-                        </div>
-
-                        <div class="card-body px-3 pt-2 pb-1">
-                            <h6 class="movie-title mb-1 text-truncate">@m.Title</h6>
-                            <div class="movie-meta-line mb-1 d-flex justify-content-between">
-                                <span>
-                                    <i class="bi bi-clock me-1"></i>@((m.DurationMin ?? 0) + " min")
-                                </span>
-                            </div>
-                            <div class="movie-tagline text-truncate">
-                                @m.Description
-                            </div>
-                        </div>
-
-                        <div class="card-footer bg-transparent border-0 px-3 pb-3 pt-1 movie-footer d-flex justify-content-between align-items-center">
-                            <div>
-                                @if (m.NextShowtime.HasValue)
-                                {
-                                    <span class="text-muted">
-                                        <i class="bi bi-calendar-event me-1"></i>@m.NextShowtime.Value.ToString("dd MMM HH:mm")
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">
-                                        <i class="bi bi-calendar-x me-1"></i>No showtime
-                                    </span>
-                                }
-                            </div>
-
-                            <div class="movie-rating-stars">
-                                @* nếu sau này có Rating thì thay thế *@
-                                ★★★★☆
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                index++;
-            }
+        <div id="nowShowingGrid">
+            @Html.Partial("_CinemaNowShowingGrid", Model.NowShowing)
         </div>
-
-        @if (Model.NowShowing != null && Model.NowShowing.Count > 8)
-        {
-            <div class="text-center mt-3">
-                <button type="button" id="btnViewMore" class="btn btn-outline-primary btn-sm rounded-pill px-4">
-                    View more movies
-                </button>
-            </div>
-        }
     </div>
 </div>
 
 @section Scripts {
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const STEP = 8;
-            const gridItems = Array.from(document.querySelectorAll(".movie-grid-item"));
-            const btnMore = document.getElementById("btnViewMore");
-            let shown = 8;
-
-            function updateGrid() {
-                gridItems.forEach((item, idx) => {
-                    item.style.display = (idx < shown) ? "" : "none";
-                });
-
-                if (btnMore) {
-                    btnMore.style.display = (shown >= gridItems.length) ? "none" : "";
-                }
-            }
-
-            if (gridItems.length > 0) {
-                updateGrid();
-            }
-
-            if (btnMore) {
-                btnMore.addEventListener("click", () => {
-                    shown += STEP;
-                    updateGrid();
-                    if (shown - STEP < gridItems.length) {
-                        const firstNew = gridItems[shown - STEP];
-                        if (firstNew) firstNew.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }
-                });
-            }
-        });
-
         function filterMovies() {
             const q = document.getElementById("movieSearch").value.toLowerCase();
-            document.querySelectorAll(".movie-card").forEach(card => {
-                const title = (card.querySelector(".movie-title")?.innerText || "").toLowerCase();
-                const wrapper = card.closest(".movie-grid-item");
-                if (!wrapper) return;
-                wrapper.style.display = title.includes(q) ? "" : "none";
+            document.querySelectorAll(".movie-grid-item").forEach(item => {
+                const title = (item.querySelector(".movie-title")?.innerText || "").toLowerCase();
+                item.style.display = title.includes(q) ? "" : "none";
             });
         }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const week = document.getElementById("weekDays");
+            if (!week) return;
+
+            week.addEventListener("click", function (e) {
+                const card = e.target.closest(".day-card");
+                if (!card) return;
+
+                document.querySelectorAll(".day-card").forEach(c => c.classList.remove("selected"));
+                card.classList.add("selected");
+
+                const date = card.getAttribute("data-date");
+                const grid = document.getElementById("nowShowingGrid");
+                grid.innerHTML = "<div class='text-center py-3'>Loading...</div>";
+
+                fetch("@Url.Action("GetMoviesByDate", "Cinema", new { area = "Client" })?date=" + encodeURIComponent(date))
+                    .then(r => {
+                        if (!r.ok) throw new Error("Failed to load");
+                        return r.text();
+                    })
+                    .then(html => grid.innerHTML = html)
+                    .catch(err => {
+                        console.error(err);
+                        grid.innerHTML = "<div class='text-danger p-3'>Unable to load showtimes.</div>";
+                    });
+            });
+        });
     </script>
 }

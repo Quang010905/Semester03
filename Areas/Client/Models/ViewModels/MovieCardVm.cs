@@ -12,5 +12,6 @@ namespace Semester03.Areas.Client.Models.ViewModels
         public decimal? NextPrice { get; set; }
         public int? NextShowtimeId { get; set; }
         public string PosterUrl { get; set; }
+        public string ScreenName { get; set; }
     }
 }
